@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { createItem, CreateItemRequest, Identifier } from "@/lib/defarm-api";
 
 interface IdentifierInput {
   id: string;
@@ -53,10 +55,29 @@ export default function NovoItem() {
   const [identifiers, setIdentifiers] = useState<IdentifierInput[]>([
     { id: "1", namespace: "bovino", key: "sisbov", value: "", idType: "Canonical" },
   ]);
-  const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const createMutation = useMutation({
+    mutationFn: (data: CreateItemRequest) => createItem(data),
+    onSuccess: (item) => {
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      toast({
+        title: "Item criado!",
+        description: `O item foi cadastrado com sucesso.`,
+      });
+      navigate(`/app/itens/${item.dfid}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao criar item",
+        description: error instanceof Error ? error.message : "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
 
   const addIdentifier = () => {
     setIdentifiers([
@@ -107,27 +128,16 @@ export default function NovoItem() {
       return;
     }
     
-    setIsLoading(true);
+    const apiIdentifiers: Identifier[] = identifiers.map(i => ({
+      namespace: i.namespace,
+      key: i.key,
+      value: i.value.trim(),
+      id_type: i.idType,
+    }));
 
-    try {
-      // In a real app, this would call createItem from the API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Item criado!",
-        description: "O item foi cadastrado com sucesso.",
-      });
-      
-      navigate("/app/itens");
-    } catch (error) {
-      toast({
-        title: "Erro ao criar item",
-        description: error instanceof Error ? error.message : "Tente novamente",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    createMutation.mutate({
+      identifiers: apiIdentifiers,
+    });
   };
 
   return (
@@ -289,10 +299,10 @@ export default function NovoItem() {
           </Button>
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={createMutation.isPending}
             className="flex-1 btn-offset bg-primary hover:bg-primary text-primary-foreground"
           >
-            {isLoading ? (
+            {createMutation.isPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <>

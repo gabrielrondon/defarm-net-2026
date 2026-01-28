@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,41 +15,51 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Loader2, GitBranch, Shield, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { createCircuit, CreateCircuitRequest } from "@/lib/defarm-api";
 
 export default function NovoCircuito() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [adapterType, setAdapterType] = useState("none");
+  const [adapterType, setAdapterType] = useState<"none" | "StellarTestnetIpfs" | "StellarMainnetIpfs">("none");
   const [isPublic, setIsPublic] = useState(false);
   const [requiresApproval, setRequiresApproval] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      // In a real app, this would call createCircuit from the API
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated delay
-      
+  const createMutation = useMutation({
+    mutationFn: (data: CreateCircuitRequest) => createCircuit(data),
+    onSuccess: (circuit) => {
+      queryClient.invalidateQueries({ queryKey: ["circuits"] });
       toast({
         title: "Circuito criado!",
-        description: `O circuito "${name}" foi criado com sucesso.`,
+        description: `O circuito "${circuit.name}" foi criado com sucesso.`,
       });
-      
-      navigate("/app/circuitos");
-    } catch (error) {
+      navigate(`/app/circuitos/${circuit.id}`);
+    },
+    onError: (error) => {
       toast({
         title: "Erro ao criar circuito",
         description: error instanceof Error ? error.message : "Tente novamente",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
-    }
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    createMutation.mutate({
+      name,
+      description,
+      adapter_config: {
+        adapter_type: adapterType,
+        requires_approval: requiresApproval,
+        auto_migrate_existing: false,
+      },
+      allow_public_visibility: isPublic,
+    });
   };
 
   return (
@@ -122,7 +133,7 @@ export default function NovoCircuito() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="adapter">Adapter de armazenamento</Label>
-              <Select value={adapterType} onValueChange={setAdapterType}>
+              <Select value={adapterType} onValueChange={(v) => setAdapterType(v as typeof adapterType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -190,10 +201,10 @@ export default function NovoCircuito() {
           </Button>
           <Button
             type="submit"
-            disabled={isLoading || !name || !description}
+            disabled={createMutation.isPending || !name || !description}
             className="flex-1 btn-offset bg-primary hover:bg-primary text-primary-foreground"
           >
-            {isLoading ? (
+            {createMutation.isPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <>

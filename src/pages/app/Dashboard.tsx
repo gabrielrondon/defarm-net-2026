@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   GitBranch, 
@@ -9,9 +10,11 @@ import {
   ArrowRight,
   TrendingUp,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getWorkspaceStats, getCircuits, getItems, getEvents } from "@/lib/defarm-api";
 
 interface StatCardProps {
   icon: typeof GitBranch;
@@ -20,9 +23,10 @@ interface StatCardProps {
   change?: string;
   changeType?: "positive" | "negative" | "neutral";
   href: string;
+  isLoading?: boolean;
 }
 
-function StatCard({ icon: Icon, label, value, change, changeType = "neutral", href }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, change, changeType = "neutral", href, isLoading }: StatCardProps) {
   return (
     <Link
       to={href}
@@ -34,7 +38,11 @@ function StatCard({ icon: Icon, label, value, change, changeType = "neutral", hr
         </div>
         <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
-      <p className="text-3xl font-bold text-foreground mb-1">{value}</p>
+      {isLoading ? (
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+      ) : (
+        <p className="text-3xl font-bold text-foreground mb-1">{value}</p>
+      )}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{label}</p>
         {change && (
@@ -77,14 +85,6 @@ function QuickAction({ icon: Icon, label, description, href }: QuickActionProps)
   );
 }
 
-// Mock recent activity for demo
-const recentActivity = [
-  { id: 1, type: "item_created", description: "Item DFID-20260128-000142 criado", time: "há 2 min" },
-  { id: 2, type: "circuit_push", description: "5 itens enviados para Circuito Orgânico", time: "há 15 min" },
-  { id: 3, type: "item_tokenized", description: "Item tokenizado na blockchain", time: "há 1 hora" },
-  { id: 4, type: "member_joined", description: "Novo membro no Circuito Exportação", time: "há 3 horas" },
-];
-
 export default function Dashboard() {
   const { user } = useAuth();
   const [greeting, setGreeting] = useState("");
@@ -96,12 +96,48 @@ export default function Dashboard() {
     else setGreeting("Boa noite");
   }, []);
 
-  // In a real app, these would come from the API
-  const stats = {
-    circuits: 8,
-    items: 1247,
-    events: 3842,
-    itemsThisMonth: 156,
+  // Fetch data from API
+  const { data: circuits = [], isLoading: isLoadingCircuits } = useQuery({
+    queryKey: ["circuits"],
+    queryFn: getCircuits,
+  });
+
+  const { data: items = [], isLoading: isLoadingItems } = useQuery({
+    queryKey: ["items"],
+    queryFn: getItems,
+  });
+
+  const { data: events = [], isLoading: isLoadingEvents } = useQuery({
+    queryKey: ["events"],
+    queryFn: () => getEvents(),
+  });
+
+  const activeCircuits = circuits.filter(c => c.status === "Active").length;
+  const tokenizedItems = items.filter(i => i.dfid.startsWith("DFID-")).length;
+  const tokenizationRate = items.length > 0 ? Math.round((tokenizedItems / items.length) * 100) : 0;
+
+  // Get recent events for activity feed
+  const recentEvents = events.slice(0, 5);
+
+  const eventTypeLabels: Record<string, string> = {
+    ItemCreated: "Item criado",
+    ItemEnriched: "Item enriquecido",
+    CircuitPush: "Push para circuito",
+    CircuitPull: "Pull de circuito",
+  };
+
+  const formatEventTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `há ${diffMins} min`;
+    if (diffHours < 24) return `há ${diffHours}h`;
+    if (diffDays < 7) return `há ${diffDays}d`;
+    return date.toLocaleDateString("pt-BR");
   };
 
   return (
@@ -131,30 +167,30 @@ export default function Dashboard() {
         <StatCard
           icon={GitBranch}
           label="Circuitos ativos"
-          value={stats.circuits}
+          value={activeCircuits}
           href="/app/circuitos"
+          isLoading={isLoadingCircuits}
         />
         <StatCard
           icon={Package}
           label="Itens rastreados"
-          value={stats.items.toLocaleString("pt-BR")}
-          change={`+${stats.itemsThisMonth} este mês`}
-          changeType="positive"
+          value={items.length.toLocaleString("pt-BR")}
           href="/app/itens"
+          isLoading={isLoadingItems}
         />
         <StatCard
           icon={Activity}
           label="Eventos registrados"
-          value={stats.events.toLocaleString("pt-BR")}
+          value={events.length.toLocaleString("pt-BR")}
           href="/app/eventos"
+          isLoading={isLoadingEvents}
         />
         <StatCard
           icon={TrendingUp}
           label="Taxa de tokenização"
-          value="94%"
-          change="+2.3%"
-          changeType="positive"
+          value={`${tokenizationRate}%`}
           href="/app/itens"
+          isLoading={isLoadingItems}
         />
       </div>
 
@@ -201,22 +237,40 @@ export default function Dashboard() {
             </Link>
           </div>
           
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center gap-4 py-3 border-b border-border last:border-0"
-              >
-                <div className="w-2 h-2 bg-primary rounded-full" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{activity.description}</p>
+          {isLoadingEvents ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : recentEvents.length > 0 ? (
+            <div className="space-y-4">
+              {recentEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center gap-4 py-3 border-b border-border last:border-0"
+                >
+                  <div className="w-2 h-2 bg-primary rounded-full" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground">
+                      {eventTypeLabels[event.event_type] || event.event_type}:{" "}
+                      <span className="font-mono text-xs">
+                        {event.dfid.length > 20 ? `${event.dfid.slice(0, 20)}...` : event.dfid}
+                      </span>
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatEventTime(event.timestamp)}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {activity.time}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Nenhuma atividade recente
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
