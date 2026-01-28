@@ -82,9 +82,9 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Local ID</span>
             <span className="text-foreground font-mono text-xs">
-              {item.local_id.length > 15
-                ? `${item.local_id.slice(0, 15)}...`
-                : item.local_id}
+              {(item.local_id || "").length > 15
+                ? `${(item.local_id || "").slice(0, 15)}...`
+                : item.local_id || "-"}
             </span>
           </div>
         </div>
