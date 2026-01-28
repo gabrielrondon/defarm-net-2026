@@ -20,7 +20,6 @@ import {
   XCircle,
   Shield,
   Trash2,
-  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,11 +53,11 @@ import {
   getCircuit, 
   getCircuitItems, 
   pushItemToCircuit,
-  deleteCircuit,
   getItems,
   Circuit, 
   Item 
 } from "@/lib/defarm-api";
+import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 
 export default function CircuitoDetail() {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +67,7 @@ export default function CircuitoDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
@@ -314,12 +314,15 @@ export default function CircuitoDetail() {
                     Editar
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsMembersDialogOpen(true)}>
                   <Users className="h-4 w-4 mr-2" />
                   Gerenciar membros
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Excluir circuito
                 </DropdownMenuItem>
@@ -506,6 +509,22 @@ export default function CircuitoDetail() {
           </div>
         )}
       </div>
+
+      {/* Dialogs */}
+      {circuit && (
+        <>
+          <ManageMembersDialog
+            circuit={circuit}
+            open={isMembersDialogOpen}
+            onOpenChange={setIsMembersDialogOpen}
+          />
+          <DeleteCircuitDialog
+            circuit={circuit}
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+          />
+        </>
+      )}
     </div>
   );
 }
