@@ -173,21 +173,31 @@ async function apiRequest<T>(
     (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  console.log(`[DeFarm API] ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`);
   
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new ApiError(
-      response.status,
-      errorData.error || "UNKNOWN_ERROR",
-      errorData.message || `Request failed with status ${response.status}`
-    );
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+    
+    console.log(`[DeFarm API] Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`[DeFarm API] Error:`, errorData);
+      throw new ApiError(
+        response.status,
+        errorData.error || "UNKNOWN_ERROR",
+        errorData.message || `Request failed with status ${response.status}`
+      );
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error(`[DeFarm API] Network error:`, error);
+    throw error;
   }
-  
-  return response.json();
 }
 
 // Auth endpoints
