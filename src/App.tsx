@@ -18,8 +18,10 @@ import NotFound from "./pages/NotFound";
 // App pages
 import Dashboard from "./pages/app/Dashboard";
 import CircuitosList from "./pages/app/CircuitosList";
+import CircuitoDetail from "./pages/app/CircuitoDetail";
 import NovoCircuito from "./pages/app/NovoCircuito";
 import ItensList from "./pages/app/ItensList";
+import ItemDetail from "./pages/app/ItemDetail";
 import NovoItem from "./pages/app/NovoItem";
 import EventosList from "./pages/app/EventosList";
 
@@ -45,8 +47,10 @@ const App = () => (
             <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
             <Route path="/app/circuitos" element={<AppLayout><CircuitosList /></AppLayout>} />
             <Route path="/app/circuitos/novo" element={<AppLayout><NovoCircuito /></AppLayout>} />
+            <Route path="/app/circuitos/:id" element={<AppLayout><CircuitoDetail /></AppLayout>} />
             <Route path="/app/itens" element={<AppLayout><ItensList /></AppLayout>} />
             <Route path="/app/itens/novo" element={<AppLayout><NovoItem /></AppLayout>} />
+            <Route path="/app/itens/:id" element={<AppLayout><ItemDetail /></AppLayout>} />
             <Route path="/app/eventos" element={<AppLayout><EventosList /></AppLayout>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
