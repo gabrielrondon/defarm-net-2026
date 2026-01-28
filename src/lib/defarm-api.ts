@@ -33,6 +33,21 @@ export interface User {
   workspace_id: string;
 }
 
+// API response format
+interface CircuitApiResponse {
+  circuit_id: string;
+  name: string;
+  description: string;
+  owner_id: string;
+  created_timestamp: number;
+  last_modified: number;
+  status: "Active" | "Inactive";
+  members?: CircuitMember[];
+  permissions?: CircuitPermissions;
+  adapter_config?: AdapterConfig;
+}
+
+// Normalized format used in the app
 export interface Circuit {
   id: string;
   name: string;
@@ -44,6 +59,22 @@ export interface Circuit {
   members?: CircuitMember[];
   permissions?: CircuitPermissions;
   adapter_config?: AdapterConfig;
+}
+
+// Transform API response to app format
+function normalizeCircuit(data: CircuitApiResponse): Circuit {
+  return {
+    id: data.circuit_id,
+    name: data.name,
+    description: data.description,
+    owner_id: data.owner_id,
+    created_at: new Date(data.created_timestamp * 1000).toISOString(),
+    updated_at: new Date(data.last_modified * 1000).toISOString(),
+    status: data.status,
+    members: data.members,
+    permissions: data.permissions,
+    adapter_config: data.adapter_config,
+  };
 }
 
 export interface CircuitMember {
@@ -237,25 +268,29 @@ export async function getMyWorkspaces(): Promise<Workspace[]> {
 
 // Circuit endpoints
 export async function getCircuits(): Promise<Circuit[]> {
-  return apiRequest<Circuit[]>("/circuits");
+  const data = await apiRequest<CircuitApiResponse[]>("/circuits");
+  return data.map(normalizeCircuit);
 }
 
 export async function getCircuit(circuitId: string): Promise<Circuit> {
-  return apiRequest<Circuit>(`/circuits/${circuitId}`);
+  const data = await apiRequest<CircuitApiResponse>(`/circuits/${circuitId}`);
+  return normalizeCircuit(data);
 }
 
 export async function createCircuit(data: CreateCircuitRequest): Promise<Circuit> {
-  return apiRequest<Circuit>("/circuits", {
+  const response = await apiRequest<CircuitApiResponse>("/circuits", {
     method: "POST",
     body: JSON.stringify(data),
   });
+  return normalizeCircuit(response);
 }
 
 export async function updateCircuit(circuitId: string, data: Partial<CreateCircuitRequest>): Promise<Circuit> {
-  return apiRequest<Circuit>(`/circuits/${circuitId}`, {
+  const response = await apiRequest<CircuitApiResponse>(`/circuits/${circuitId}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
+  return normalizeCircuit(response);
 }
 
 export async function deleteCircuit(circuitId: string): Promise<void> {
