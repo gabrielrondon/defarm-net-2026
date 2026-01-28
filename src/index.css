@@ -106,10 +106,26 @@
 
 @layer components {
   .highlight-text {
-    @apply bg-primary text-primary-foreground px-2 py-1 rounded-md inline-block;
+    @apply bg-primary text-primary-foreground px-2 py-1 rounded-md inline-block relative;
+    box-shadow: 4px 4px 0 0 hsl(0 0% 10%);
   }
   
   .section-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .btn-offset {
+    @apply relative transition-all duration-150;
+    box-shadow: 4px 4px 0 0 hsl(0 0% 10%);
+  }
+  
+  .btn-offset:hover {
+    box-shadow: 2px 2px 0 0 hsl(0 0% 10%);
+    transform: translate(2px, 2px);
+  }
+  
+  .btn-offset:active {
+    box-shadow: 0 0 0 0 hsl(0 0% 10%);
+    transform: translate(4px, 4px);
   }
 }

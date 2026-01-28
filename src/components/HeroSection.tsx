@@ -26,10 +26,10 @@ export function HeroSection() {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
             <Button
               size="lg"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-6 text-lg"
+              className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 py-6 text-lg rounded-lg"
             >
               Solicitar Demo
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -38,7 +38,7 @@ export function HeroSection() {
               variant="outline"
               size="lg"
               asChild
-              className="font-semibold px-8 py-6 text-lg border-2"
+              className="btn-offset font-semibold px-8 py-6 text-lg border-2 rounded-lg"
             >
               <Link to="/solucoes">
                 <Play className="mr-2 h-5 w-5" />
