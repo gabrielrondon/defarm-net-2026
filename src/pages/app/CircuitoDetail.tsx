@@ -117,10 +117,10 @@ export default function CircuitoDetail() {
     const searchLower = searchQuery.toLowerCase();
     return (
       item.dfid.toLowerCase().includes(searchLower) ||
-      item.identifiers.some(
+      (item.identifiers || []).some(
         (id) =>
-          id.key.toLowerCase().includes(searchLower) ||
-          id.value.toLowerCase().includes(searchLower)
+          (id.key || "").toLowerCase().includes(searchLower) ||
+          (id.value || "").toLowerCase().includes(searchLower)
       )
     );
   });
@@ -261,12 +261,12 @@ export default function CircuitoDetail() {
                             {item.dfid.length > 25 ? `${item.dfid.slice(0, 25)}...` : item.dfid}
                           </p>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {item.identifiers.slice(0, 2).map((id, idx) => (
+                            {(item.identifiers || []).slice(0, 2).map((id, idx) => (
                               <span
                                 key={idx}
                                 className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground"
                               >
-                                {id.key}: {id.value}
+                                {id.key}: {id.value || ""}
                               </span>
                             ))}
                           </div>
@@ -436,17 +436,17 @@ export default function CircuitoDetail() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {item.identifiers.slice(0, 2).map((id, idx) => (
+                      {(item.identifiers || []).slice(0, 2).map((id, idx) => (
                         <span
                           key={idx}
                           className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground"
                         >
-                          {id.key}: {id.value.length > 12 ? `${id.value.slice(0, 12)}...` : id.value}
+                          {id.key}: {(id.value || "").length > 12 ? `${(id.value || "").slice(0, 12)}...` : id.value}
                         </span>
                       ))}
-                      {item.identifiers.length > 2 && (
+                      {(item.identifiers || []).length > 2 && (
                         <span className="text-xs text-muted-foreground">
-                          +{item.identifiers.length - 2}
+                          +{(item.identifiers || []).length - 2}
                         </span>
                       )}
                     </div>
