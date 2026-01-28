@@ -40,22 +40,21 @@ export default function Login() {
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          {/* Back button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-            className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-
-          {/* Logo */}
-          <Link to="/" className="inline-flex items-center gap-3 mb-12">
-            <img src={logoIcon} alt="DeFarm" className="h-10 w-10" />
-            <span className="text-2xl font-bold text-foreground">DeFarm</span>
-          </Link>
+          {/* Header with back and logo */}
+          <div className="flex items-center gap-6 mb-12">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-sm font-medium">Voltar</span>
+            </button>
+            
+            <Link to="/" className="inline-flex items-center gap-2">
+              <img src={logoIcon} alt="DeFarm" className="h-8 w-8" />
+              <span className="text-xl font-bold text-foreground">DeFarm</span>
+            </Link>
+          </div>
 
           {/* Header */}
           <div className="mb-8">
