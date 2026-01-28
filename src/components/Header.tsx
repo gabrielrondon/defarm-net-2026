@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 const navItems = [
   { name: "Soluções", href: "/solucoes" },
@@ -18,11 +19,8 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
       <nav className="section-container flex items-center justify-between py-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">D</span>
-          </div>
-          <span className="text-2xl font-bold text-foreground">DeFarm</span>
+        <Link to="/" className="flex items-center">
+          <img src={logo} alt="DeFarm" className="h-8 sm:h-10" />
         </Link>
 
         {/* Desktop Navigation */}

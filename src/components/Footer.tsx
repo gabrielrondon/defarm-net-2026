@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Linkedin, Twitter, Instagram } from "lucide-react";
+import logoIcon from "@/assets/logo-icon.png";
 
 const footerLinks = {
   produto: [
@@ -20,10 +21,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xl">D</span>
-              </div>
+            <div className="flex items-center gap-3 mb-4">
+              <img src={logoIcon} alt="DeFarm" className="h-10 w-10" />
               <span className="text-2xl font-bold">DeFarm</span>
             </div>
             <p className="text-background/70 max-w-sm mb-6">
