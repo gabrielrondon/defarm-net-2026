@@ -1,23 +1,23 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { 
   ArrowRight, 
+  ArrowLeft,
   MapPin, 
-  Shield, 
-  Share2, 
-  CheckCircle2, 
-  Leaf, 
-  FileCheck, 
-  Globe,
   QrCode,
-  Link2
+  Link2,
+  Share2,
+  CheckCircle2,
+  Leaf,
+  Shield,
+  FileCheck,
+  Globe
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import satelliteImage from "@/assets/satellite-farm-polygon.jpg";
 
 interface ComoFuncionaDialogProps {
@@ -27,116 +27,259 @@ interface ComoFuncionaDialogProps {
 
 const steps = [
   {
+    id: 1,
     icon: MapPin,
-    title: "1. Cadastre sua Propriedade",
-    description: "Delimite o polígono da sua propriedade rural com coordenadas GPS precisas.",
+    title: "Cadastre sua Propriedade",
+    subtitle: "Georreferenciamento preciso",
+    description: "Delimite o polígono da sua propriedade rural com coordenadas GPS.",
+    visual: "satellite",
+    color: "from-primary/20 to-primary/5",
   },
   {
+    id: 2,
     icon: QrCode,
-    title: "2. Tokenize seus Itens",
-    description: "Cada animal ou lote recebe um identificador único (DFID) registrado em blockchain.",
+    title: "Tokenize seus Itens",
+    subtitle: "Identificador único blockchain",
+    description: "Cada animal ou lote recebe um DFID registrado em blockchain imutável.",
+    visual: "token",
+    color: "from-primary/20 to-primary/5",
   },
   {
+    id: 3,
     icon: Link2,
-    title: "3. Crie Circuitos",
-    description: "Circuitos conectam diferentes participantes da cadeia com permissões controladas.",
+    title: "Crie Circuitos",
+    subtitle: "Conecte a cadeia produtiva",
+    description: "Circuitos conectam participantes com permissões controladas.",
+    visual: "circuit",
+    color: "from-primary/20 to-primary/5",
   },
   {
+    id: 4,
     icon: Share2,
-    title: "4. Compartilhe Verificações",
+    title: "Compartilhe Verificações",
+    subtitle: "Transparência total",
     description: "Gere links verificáveis para compradores, auditores e consumidores.",
+    visual: "share",
+    color: "from-primary/20 to-primary/5",
+  },
+  {
+    id: 5,
+    icon: CheckCircle2,
+    title: "Checagens Verificáveis",
+    subtitle: "Compliance automático",
+    description: "Todas as checagens socioambientais em um só lugar.",
+    visual: "checks",
+    color: "from-primary/20 to-primary/5",
   },
 ];
 
 const checks = [
-  { icon: Leaf, label: "Compliance Ambiental", description: "Verificação CAR, APP e Reserva Legal" },
-  { icon: Shield, label: "Livre de Desmatamento", description: "Checagem automática via satélite" },
-  { icon: FileCheck, label: "Documentação Sanitária", description: "GTA, vacinas e certificados" },
-  { icon: Globe, label: "Compliance EUDR", description: "Rastreabilidade para exportação UE" },
+  { icon: Leaf, label: "Compliance Ambiental" },
+  { icon: Shield, label: "Livre de Desmatamento" },
+  { icon: FileCheck, label: "Documentação Sanitária" },
+  { icon: Globe, label: "Compliance EUDR" },
 ];
 
-export function ComoFuncionaDialog({ open, onOpenChange }: ComoFuncionaDialogProps) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
-            Como funciona a Rastreabilidade DeFarm
-          </DialogTitle>
-          <DialogDescription>
-            Entenda como itens e circuitos garantem transparência do campo à mesa
-          </DialogDescription>
-        </DialogHeader>
+// Visual illustrations for each step
+function StepVisual({ type }: { type: string }) {
+  if (type === "satellite") {
+    return (
+      <div className="relative rounded-2xl overflow-hidden">
+        <img 
+          src={satelliteImage} 
+          alt="Propriedade rural" 
+          className="w-full h-40 object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+        <div className="absolute bottom-3 left-3 flex items-center gap-2 text-xs text-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
+          <MapPin className="h-3 w-3 text-primary" />
+          Polígono verificado
+        </div>
+      </div>
+    );
+  }
 
-        {/* Satellite Image */}
-        <div className="relative rounded-lg overflow-hidden mt-4">
-          <img 
-            src={satelliteImage} 
-            alt="Imagem de satélite com polígono de propriedade rural" 
-            className="w-full h-48 object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
-            <p className="text-sm text-foreground font-medium">
-              Polígono georreferenciado de propriedade rural
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Coordenadas verificadas via satélite em tempo real
-            </p>
+  if (type === "token") {
+    return (
+      <div className="flex items-center justify-center h-40 bg-gradient-to-br from-muted/50 to-muted rounded-2xl">
+        <div className="relative">
+          <div className="w-24 h-24 bg-background rounded-2xl shadow-lg flex items-center justify-center border border-border">
+            <QrCode className="h-12 w-12 text-primary" />
+          </div>
+          <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">
+            DFID
+          </div>
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full border border-border">
+            #A7B2C4
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Steps */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-          {steps.map((step, idx) => (
-            <div
-              key={idx}
-              className="flex gap-3 p-4 bg-muted/50 rounded-lg border border-border"
-            >
-              <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <step.icon className="h-5 w-5 text-primary" />
+  if (type === "circuit") {
+    return (
+      <div className="flex items-center justify-center h-40 bg-gradient-to-br from-muted/50 to-muted rounded-2xl px-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-background rounded-xl shadow flex items-center justify-center border border-border">
+            <span className="text-lg">🐄</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="w-8 h-0.5 bg-primary rounded-full" />
+            <div className="w-8 h-0.5 bg-primary/50 rounded-full" />
+          </div>
+          <div className="w-12 h-12 bg-background rounded-xl shadow flex items-center justify-center border border-border">
+            <span className="text-lg">🏭</span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="w-8 h-0.5 bg-primary rounded-full" />
+            <div className="w-8 h-0.5 bg-primary/50 rounded-full" />
+          </div>
+          <div className="w-12 h-12 bg-background rounded-xl shadow flex items-center justify-center border border-border">
+            <span className="text-lg">🛒</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "share") {
+    return (
+      <div className="flex items-center justify-center h-40 bg-gradient-to-br from-muted/50 to-muted rounded-2xl">
+        <div className="relative">
+          <div className="w-48 bg-background rounded-xl shadow-lg p-3 border border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground text-sm">{step.title}</h4>
-                <p className="text-xs text-muted-foreground mt-1">{step.description}</p>
-              </div>
+              <span className="text-xs font-medium text-foreground">Link Verificável</span>
             </div>
+            <div className="bg-muted rounded-lg p-2 text-xs text-muted-foreground font-mono truncate">
+              defarm.net/v/a7b2c4
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "checks") {
+    return (
+      <div className="grid grid-cols-2 gap-2 h-40">
+        {checks.map((check, idx) => (
+          <div
+            key={idx}
+            className="flex items-center gap-2 bg-background rounded-xl p-3 border border-border shadow-sm"
+          >
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <check.icon className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-xs font-medium text-foreground leading-tight">{check.label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+export function ComoFuncionaDialog({ open, onOpenChange }: ComoFuncionaDialogProps) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const step = steps[currentStep];
+  const isLast = currentStep === steps.length - 1;
+  const isFirst = currentStep === 0;
+
+  const handleNext = () => {
+    if (isLast) {
+      window.open("https://circuits.defarm.net", "_blank");
+    } else {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (!isFirst) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      setCurrentStep(0);
+    }
+    onOpenChange(open);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+        {/* Progress dots */}
+        <div className="flex justify-center gap-1.5 pt-6 pb-4">
+          {steps.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentStep(idx)}
+              className={cn(
+                "w-2 h-2 rounded-full transition-all duration-300",
+                idx === currentStep 
+                  ? "w-6 bg-primary" 
+                  : idx < currentStep 
+                    ? "bg-primary/50" 
+                    : "bg-muted-foreground/20"
+              )}
+            />
           ))}
         </div>
 
-        {/* Verification Checks */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-primary" />
-            Checagens Verificáveis e Compartilháveis
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {checks.map((check, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/10"
-              >
-                <check.icon className="h-5 w-5 text-primary flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{check.label}</p>
-                  <p className="text-xs text-muted-foreground">{check.description}</p>
-                </div>
-              </div>
-            ))}
+        {/* Card content */}
+        <div className="px-6 pb-6">
+          {/* Step header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <step.icon className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">
+                Passo {step.id} de {steps.length}
+              </p>
+              <h3 className="text-lg font-bold text-foreground">{step.title}</h3>
+            </div>
           </div>
-        </div>
 
-        {/* CTA */}
-        <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
-          <p className="text-sm text-muted-foreground mb-4">
-            Pronto para garantir a rastreabilidade completa da sua cadeia produtiva?
+          {/* Visual */}
+          <div className="mb-4">
+            <StepVisual type={step.visual} />
+          </div>
+
+          {/* Description */}
+          <p className="text-muted-foreground text-sm mb-6">
+            {step.description}
           </p>
-          <a href="https://circuits.defarm.net" target="_blank" rel="noopener noreferrer">
-            <Button className="w-full btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold">
-              Acessar Plataforma
+
+          {/* Navigation */}
+          <div className="flex gap-3">
+            {!isFirst && (
+              <Button
+                variant="outline"
+                onClick={handlePrev}
+                className="flex-1"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+              </Button>
+            )}
+            <Button
+              onClick={handleNext}
+              className={cn(
+                "flex-1 btn-offset bg-primary hover:bg-primary text-primary-foreground",
+                isFirst && "w-full"
+              )}
+            >
+              {isLast ? "Acessar Plataforma" : "Próximo"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-          </a>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
