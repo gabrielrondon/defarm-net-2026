@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import logoIcon from "@/assets/logo-icon.png";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login({ username: email, password });
+      await login({ username, password });
       navigate("/app");
     } catch (error) {
       toast({
@@ -59,13 +59,13 @@ export default function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Usuário ou Email</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="seu_usuario ou email@exemplo.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 className="h-12"
               />
