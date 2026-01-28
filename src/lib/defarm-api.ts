@@ -218,6 +218,9 @@ export async function register(data: RegisterRequest): Promise<AuthResponse> {
 export async function logout(): Promise<void> {
   try {
     await apiRequest("/auth/logout", { method: "POST" });
+  } catch (error) {
+    // Ignore logout errors - the endpoint may not exist
+    console.log("[DeFarm API] Logout endpoint returned error, clearing local auth anyway");
   } finally {
     clearAuth();
   }
