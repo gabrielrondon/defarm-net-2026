@@ -96,7 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    // During HMR or before provider mounts, return a safe default
+    // This prevents crashes during hot reload
+    console.warn("useAuth called outside AuthProvider - returning default state");
+    return {
+      user: null,
+      isAuthenticated: false,
+      isLoading: true,
+      login: async () => { throw new Error("AuthProvider not available"); },
+      register: async () => { throw new Error("AuthProvider not available"); },
+      logout: async () => { throw new Error("AuthProvider not available"); },
+    };
   }
   return context;
 }
