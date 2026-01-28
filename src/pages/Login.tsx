@@ -38,23 +38,24 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          {/* Header with back and logo */}
-          <div className="flex items-center gap-6 mb-12">
-            <button
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="text-sm font-medium">Voltar</span>
-            </button>
-            
-            <Link to="/" className="inline-flex items-center gap-2">
-              <img src={logoIcon} alt="DeFarm" className="h-8 w-8" />
-              <span className="text-xl font-bold text-foreground">DeFarm</span>
+      <div className="flex-1 flex flex-col p-8">
+        {/* Back button - top left */}
+        <button
+          onClick={() => navigate(-1)}
+          className="self-start inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-background border-2 border-foreground rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--foreground))] hover:shadow-[1px_1px_0px_0px_hsl(var(--foreground))] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </button>
+
+        {/* Form container */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-md">
+            {/* Logo */}
+            <Link to="/" className="inline-flex items-center gap-3 mb-12">
+              <img src={logoIcon} alt="DeFarm" className="h-10 w-10" />
+              <span className="text-2xl font-bold text-foreground">DeFarm</span>
             </Link>
-          </div>
 
           {/* Header */}
           <div className="mb-8">
@@ -134,9 +135,9 @@ export default function Login() {
               Criar conta
             </Link>
           </p>
+          </div>
         </div>
       </div>
-
       {/* Right side - Visual */}
       <div className="hidden lg:flex flex-1 bg-primary/5 items-center justify-center p-12">
         <div className="max-w-lg text-center">
