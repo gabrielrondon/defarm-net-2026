@@ -113,20 +113,20 @@ export function PlatformSwitcher() {
         onClick={() => setActivePlatform(prevPlatform)}
         className={cn(
           "fixed left-0 top-1/2 -translate-y-1/2 z-40",
-          "group flex items-center gap-3",
-          "bg-foreground/5 hover:bg-foreground/10 backdrop-blur-sm",
-          "border-y border-r border-border/50 hover:border-primary/50",
-          "rounded-r-2xl py-10 px-4",
-          "transition-all duration-300 ease-out",
-          "hover:px-6 hover:shadow-lg"
+          "group flex items-center",
+          "bg-foreground/5 hover:bg-primary/10 backdrop-blur-md",
+          "border-y border-r border-border/50 hover:border-primary",
+          "rounded-r-3xl py-12 px-5",
+          "transition-all duration-500 ease-out",
+          "hover:px-10 hover:py-16 hover:shadow-2xl hover:scale-105"
         )}
       >
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-4 transition-all duration-500 group-hover:gap-6">
           {(() => {
             const Icon = platforms[prevPlatform].icon;
-            return <Icon className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />;
+            return <Icon className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:h-14 group-hover:w-14 transition-all duration-500" />;
           })()}
-          <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors [writing-mode:vertical-lr] rotate-180">
+          <span className="text-base font-bold text-muted-foreground group-hover:text-primary group-hover:text-xl transition-all duration-500 [writing-mode:vertical-lr] rotate-180 tracking-wide">
             {platforms[prevPlatform].shortLabel}
           </span>
         </div>
@@ -137,20 +137,20 @@ export function PlatformSwitcher() {
         onClick={() => setActivePlatform(nextPlatform)}
         className={cn(
           "fixed right-0 top-1/2 -translate-y-1/2 z-40",
-          "group flex items-center gap-3",
-          "bg-foreground/5 hover:bg-foreground/10 backdrop-blur-sm",
-          "border-y border-l border-border/50 hover:border-primary/50",
-          "rounded-l-2xl py-10 px-4",
-          "transition-all duration-300 ease-out",
-          "hover:px-6 hover:shadow-lg"
+          "group flex items-center",
+          "bg-foreground/5 hover:bg-primary/10 backdrop-blur-md",
+          "border-y border-l border-border/50 hover:border-primary",
+          "rounded-l-3xl py-12 px-5",
+          "transition-all duration-500 ease-out",
+          "hover:px-10 hover:py-16 hover:shadow-2xl hover:scale-105"
         )}
       >
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-4 transition-all duration-500 group-hover:gap-6">
           {(() => {
             const Icon = platforms[nextPlatform].icon;
-            return <Icon className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />;
+            return <Icon className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:h-14 group-hover:w-14 transition-all duration-500" />;
           })()}
-          <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors [writing-mode:vertical-lr]">
+          <span className="text-base font-bold text-muted-foreground group-hover:text-primary group-hover:text-xl transition-all duration-500 [writing-mode:vertical-lr] tracking-wide">
             {platforms[nextPlatform].shortLabel}
           </span>
         </div>
