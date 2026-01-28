@@ -12,10 +12,10 @@ export function CTASection() {
           <p className="text-xl text-primary-foreground/80 mb-8">
             Junte-se a centenas de produtores que já estão usando a DeFarm para garantir rastreabilidade e compliance.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Button
               size="lg"
-              className="bg-background text-foreground hover:bg-background/90 font-semibold px-8 py-6 text-lg"
+              className="btn-offset bg-background text-foreground hover:bg-background font-semibold px-8 py-6 text-lg rounded-lg"
             >
               Começar Agora
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -23,7 +23,7 @@ export function CTASection() {
             <Button
               variant="outline"
               size="lg"
-              className="border-2 border-primary-foreground text-primary-foreground bg-transparent hover:bg-primary-foreground/10 font-semibold px-8 py-6 text-lg"
+              className="btn-offset border-2 border-primary-foreground text-primary-foreground bg-transparent hover:bg-transparent font-semibold px-8 py-6 text-lg rounded-lg"
             >
               Falar com Especialista
             </Button>

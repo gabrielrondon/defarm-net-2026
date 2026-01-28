@@ -43,7 +43,7 @@ export function Header() {
 
         {/* CTA Button */}
         <div className="hidden md:block">
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6">
+          <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-6 rounded-lg">
             Solicitar Acesso
           </Button>
         </div>
