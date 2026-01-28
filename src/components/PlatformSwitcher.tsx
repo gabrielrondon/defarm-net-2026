@@ -21,6 +21,7 @@ interface PlatformData {
   shortLabel: string;
   headline: string;
   highlight: string;
+  headlineEnd?: string;
   description: string;
   cta: string;
   secondaryCta: string;
@@ -33,21 +34,22 @@ const platforms: Record<Platform, PlatformData> = {
   rastreabilidade: {
     id: "rastreabilidade",
     icon: Scan,
-    label: "Rastreabilidade",
+    label: "Plataforma #1 em Rastreabilidade",
     shortLabel: "Rastro",
-    headline: "Rastreabilidade agrícola",
-    highlight: "do campo à mesa",
-    description: "Conecte toda a cadeia produtiva com transparência, blockchain e compliance EUDR. Cada animal, cada etapa, 100% rastreável.",
+    headline: "A plataforma de",
+    highlight: "rastreabilidade agrícola",
+    headlineEnd: "mais completa do Brasil",
+    description: "Conectamos toda a cadeia produtiva com transparência, tecnologia blockchain e compliance EUDR. Do campo até a mesa do consumidor.",
     cta: "Solicitar Demo",
     secondaryCta: "Ver como funciona",
     stats: [
       { value: "20.000+", label: "Gados rastreados" },
       { value: "143", label: "Produtores ativos" },
-      { value: "100%", label: "Compliance EUDR" },
+      { value: "98%", label: "Satisfação" },
     ],
     features: [
       { icon: Shield, text: "Blockchain imutável" },
-      { icon: FileText, text: "Relatórios automáticos" },
+      { icon: FileText, text: "Compliance EUDR" },
     ],
   },
   financeiro: {
@@ -152,6 +154,7 @@ export function PlatformSwitcher() {
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
                 {active.headline}{" "}
                 <span className="highlight-text">{active.highlight}</span>
+                {active.headlineEnd && ` ${active.headlineEnd}`}
               </h1>
 
               {/* Description */}
