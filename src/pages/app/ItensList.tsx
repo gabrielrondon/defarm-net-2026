@@ -46,9 +46,9 @@ export default function ItensList() {
   const filteredItems = items.filter((item) => {
     const matchesSearch = 
       item.dfid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.identifiers.some(id => 
-        id.value.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        id.key.toLowerCase().includes(searchQuery.toLowerCase())
+      (item.identifiers || []).some(id => 
+        (id.value || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (id.key || "").toLowerCase().includes(searchQuery.toLowerCase())
       );
     const matchesStatus = statusFilter === "all" || 
       (statusFilter === "active" && item.status === "Active") ||
@@ -194,18 +194,18 @@ export default function ItensList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {item.identifiers.slice(0, 2).map((id, idx) => (
+                    <div className="flex flex-wrap gap-1">
+                        {(item.identifiers || []).slice(0, 2).map((id, idx) => (
                           <span
                             key={idx}
                             className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground"
                           >
-                            {id.key}: {id.value.length > 10 ? `${id.value.slice(0, 10)}...` : id.value}
+                            {id.key}: {(id.value || "").length > 10 ? `${(id.value || "").slice(0, 10)}...` : id.value}
                           </span>
                         ))}
-                        {item.identifiers.length > 2 && (
+                        {(item.identifiers || []).length > 2 && (
                           <span className="text-xs text-muted-foreground">
-                            +{item.identifiers.length - 2}
+                            +{(item.identifiers || []).length - 2}
                           </span>
                         )}
                       </div>

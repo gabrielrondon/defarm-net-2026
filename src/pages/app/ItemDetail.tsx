@@ -240,13 +240,13 @@ export default function ItemDetail() {
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Identificadores</h2>
                 <p className="text-sm text-muted-foreground">
-                  {item.identifiers.length} identificador(es)
+                  {(item.identifiers || []).length} identificador(es)
                 </p>
               </div>
             </div>
 
             <div className="space-y-3">
-              {item.identifiers.map((identifier, idx) => (
+              {(item.identifiers || []).map((identifier, idx) => (
                 <div
                   key={idx}
                   className="p-3 bg-muted/50 rounded-lg"
@@ -267,7 +267,7 @@ export default function ItemDetail() {
                     </span>
                   </div>
                   <p className="text-sm font-mono text-foreground break-all">
-                    {identifier.value}
+                    {identifier.value || ""}
                   </p>
                 </div>
               ))}
