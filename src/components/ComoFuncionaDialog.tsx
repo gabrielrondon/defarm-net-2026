@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -186,13 +187,15 @@ function StepVisual({ type }: { type: string }) {
 
 export function ComoFuncionaDialog({ open, onOpenChange }: ComoFuncionaDialogProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const navigate = useNavigate();
   const step = steps[currentStep];
   const isLast = currentStep === steps.length - 1;
   const isFirst = currentStep === 0;
 
   const handleNext = () => {
     if (isLast) {
-      window.open("https://circuits.defarm.net", "_blank");
+      onOpenChange(false);
+      navigate("/login");
     } else {
       setCurrentStep(prev => prev + 1);
     }

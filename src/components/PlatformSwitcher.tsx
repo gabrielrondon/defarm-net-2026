@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
   Scan, 
@@ -28,6 +29,7 @@ interface PlatformData {
   description: string;
   cta: string;
   ctaExternal?: string;
+  ctaHref?: string;
   secondaryCta?: string;
   secondaryAction?: "popup" | "link";
   stats: { value: string; label: string }[];
@@ -45,7 +47,7 @@ const platforms: Record<Platform, PlatformData> = {
     headlineEnd: "mais completa do Brasil",
     description: "Conectamos toda a cadeia produtiva com transparência, tecnologia blockchain e compliance EUDR. Do campo até a mesa do consumidor.",
     cta: "Acessar Plataforma",
-    ctaExternal: "https://circuits.defarm.net",
+    ctaHref: "/login",
     secondaryCta: "Ver como funciona",
     secondaryAction: "popup",
     stats: [
@@ -229,6 +231,16 @@ export function PlatformSwitcher() {
                       <ExternalLink className="ml-2 h-5 w-5" />
                     </Button>
                   </a>
+                ) : active.ctaHref ? (
+                  <Link to={active.ctaHref}>
+                    <Button
+                      size="lg"
+                      className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 py-6 text-lg rounded-lg"
+                    >
+                      {active.cta}
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
                 ) : (
                   <Button
                     size="lg"
