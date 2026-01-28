@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -8,7 +8,7 @@ import {
   Package,
   Globe,
   Lock,
-  Settings,
+  Pencil,
   MoreHorizontal,
   Plus,
   Search,
@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   XCircle,
   Shield,
-  Activity,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ import {
   getCircuit, 
   getCircuitItems, 
   pushItemToCircuit,
+  deleteCircuit,
   getItems,
   Circuit, 
   Item 
@@ -65,6 +67,7 @@ export default function CircuitoDetail() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
@@ -305,9 +308,11 @@ export default function CircuitoDetail() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configurações
+                <DropdownMenuItem asChild>
+                  <Link to={`/app/circuitos/${id}/editar`} className="flex items-center">
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Users className="h-4 w-4 mr-2" />
@@ -315,6 +320,7 @@ export default function CircuitoDetail() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Excluir circuito
                 </DropdownMenuItem>
               </DropdownMenuContent>
