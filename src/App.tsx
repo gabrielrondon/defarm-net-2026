@@ -3,29 +3,57 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/AppLayout";
+
+// Public pages
 import Index from "./pages/Index";
 import Solucoes from "./pages/Solucoes";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
+import Login from "./pages/Login";
+import Cadastro from "./pages/Cadastro";
 import NotFound from "./pages/NotFound";
+
+// App pages
+import Dashboard from "./pages/app/Dashboard";
+import CircuitosList from "./pages/app/CircuitosList";
+import NovoCircuito from "./pages/app/NovoCircuito";
+import ItensList from "./pages/app/ItensList";
+import NovoItem from "./pages/app/NovoItem";
+import EventosList from "./pages/app/EventosList";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/solucoes" element={<Solucoes />} />
-          <Route path="/sobre" element={<Sobre />} />
-          <Route path="/contato" element={<Contato />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/solucoes" element={<Solucoes />} />
+            <Route path="/sobre" element={<Sobre />} />
+            <Route path="/contato" element={<Contato />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
+            
+            {/* App routes (protected) */}
+            <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
+            <Route path="/app/circuitos" element={<AppLayout><CircuitosList /></AppLayout>} />
+            <Route path="/app/circuitos/novo" element={<AppLayout><NovoCircuito /></AppLayout>} />
+            <Route path="/app/itens" element={<AppLayout><ItensList /></AppLayout>} />
+            <Route path="/app/itens/novo" element={<AppLayout><NovoItem /></AppLayout>} />
+            <Route path="/app/eventos" element={<AppLayout><EventosList /></AppLayout>} />
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
