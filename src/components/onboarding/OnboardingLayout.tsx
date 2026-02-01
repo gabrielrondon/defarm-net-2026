@@ -1,0 +1,87 @@
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { LogIn } from "lucide-react";
+import logoIcon from "@/assets/logo-icon.png";
+
+interface OnboardingLayoutProps {
+  children: React.ReactNode;
+  currentStep: number;
+  totalSteps: number;
+}
+
+const stepLabels = [
+  "Identificar",
+  "Registrar",
+  "Portfolio",
+  "Compliance",
+  "Oportunidades",
+];
+
+export function OnboardingLayout({ 
+  children, 
+  currentStep, 
+  totalSteps 
+}: OnboardingLayoutProps) {
+  const progressPercent = ((currentStep) / totalSteps) * 100;
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <img 
+              src={logoIcon} 
+              alt="DeFarm" 
+              className="h-8 w-8"
+            />
+            <span className="font-bold text-lg text-foreground">DeFarm</span>
+          </Link>
+          
+          <Link to="/login">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <LogIn className="h-4 w-4" />
+              <span className="hidden sm:inline">Já tem conta?</span>
+              <span className="sm:hidden">Entrar</span>
+            </Button>
+          </Link>
+        </div>
+      </header>
+
+      {/* Progress Bar */}
+      <div className="bg-muted/30 border-b border-border/30">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-3">
+            {stepLabels.map((label, index) => (
+              <div 
+                key={label}
+                className={`text-xs font-medium transition-colors ${
+                  index + 1 <= currentStep 
+                    ? "text-primary" 
+                    : "text-muted-foreground"
+                }`}
+              >
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">{index + 1}</span>
+              </div>
+            ))}
+          </div>
+          <Progress value={progressPercent} className="h-2" />
+        </div>
+      </div>
+
+      {/* Content */}
+      <main className="flex-1 flex flex-col">
+        <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-8 md:py-12 flex flex-col">
+          {children}
+        </div>
+      </main>
+
+      {/* Footer hint */}
+      <footer className="py-4 text-center text-xs text-muted-foreground border-t border-border/30">
+        <p>Seus dados estão seguros e só serão salvos quando você criar uma conta</p>
+      </footer>
+    </div>
+  );
+}
