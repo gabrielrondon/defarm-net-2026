@@ -46,8 +46,8 @@ const platforms: Record<Platform, PlatformData> = {
     highlight: "rastreabilidade agrícola",
     headlineEnd: "mais completa do Brasil",
     description: "Conectamos toda a cadeia produtiva com transparência, tecnologia blockchain e compliance EUDR. Do campo até a mesa do consumidor.",
-    cta: "Acessar Plataforma",
-    ctaHref: "/login",
+    cta: "Começar agora",
+    ctaHref: "/onboarding",
     secondaryCta: "Ver como funciona",
     secondaryAction: "popup",
     stats: [

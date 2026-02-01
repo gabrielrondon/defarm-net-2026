@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/AppLayout";
 
 // Public pages
 import Index from "./pages/Index";
+import Onboarding from "./pages/Onboarding";
 import Solucoes from "./pages/Solucoes";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
@@ -39,6 +40,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/solucoes" element={<Solucoes />} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
