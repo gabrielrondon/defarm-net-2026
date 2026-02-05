@@ -8,6 +8,7 @@ interface OnboardingLayoutProps {
   children: React.ReactNode;
   currentStep: number;
   totalSteps: number;
+  onStepClick?: (step: number) => void;
 }
 
 const stepLabels = [
@@ -21,9 +22,18 @@ const stepLabels = [
 export function OnboardingLayout({ 
   children, 
   currentStep, 
-  totalSteps 
+  totalSteps,
+  onStepClick 
 }: OnboardingLayoutProps) {
   const progressPercent = ((currentStep) / totalSteps) * 100;
+
+  const handleStepClick = (stepIndex: number) => {
+    const step = stepIndex + 1;
+    // Only allow clicking on completed steps or the current step
+    if (step < currentStep && onStepClick) {
+      onStepClick(step);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -53,19 +63,30 @@ export function OnboardingLayout({
       <div className="bg-muted/30 border-b border-border/30">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-3">
-            {stepLabels.map((label, index) => (
-              <div 
-                key={label}
-                className={`text-xs font-medium transition-colors ${
-                  index + 1 <= currentStep 
-                    ? "text-primary" 
-                    : "text-muted-foreground"
-                }`}
-              >
-                <span className="hidden sm:inline">{label}</span>
-                <span className="sm:hidden">{index + 1}</span>
-              </div>
-            ))}
+            {stepLabels.map((label, index) => {
+              const step = index + 1;
+              const isCompleted = step < currentStep;
+              const isCurrent = step === currentStep;
+              const isClickable = isCompleted;
+
+              return (
+                <button
+                  key={label}
+                  onClick={() => handleStepClick(index)}
+                  disabled={!isClickable}
+                  className={`text-xs font-medium transition-all ${
+                    isCurrent
+                      ? "text-primary font-bold"
+                      : isCompleted
+                        ? "text-primary hover:text-primary/80 cursor-pointer underline-offset-2 hover:underline"
+                        : "text-muted-foreground cursor-default"
+                  }`}
+                >
+                  <span className="hidden sm:inline">{label}</span>
+                  <span className="sm:hidden">{step}</span>
+                </button>
+              );
+            })}
           </div>
           <Progress value={progressPercent} className="h-2" />
         </div>
