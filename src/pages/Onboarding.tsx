@@ -180,7 +180,11 @@ export default function Onboarding() {
   };
 
   return (
-    <OnboardingLayout currentStep={state.currentStep} totalSteps={TOTAL_STEPS}>
+    <OnboardingLayout 
+      currentStep={state.currentStep} 
+      totalSteps={TOTAL_STEPS}
+      onStepClick={goToStep}
+    >
       {renderStep()}
     </OnboardingLayout>
   );
