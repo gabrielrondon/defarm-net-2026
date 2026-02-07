@@ -74,7 +74,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                     <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatTime(event.timestamp)}
+                        {formatTime(event.created_at)}
                       </span>
                     </div>
                   </div>

@@ -54,8 +54,7 @@ import {
   getCircuitItems, 
   pushItemToCircuit,
   getItems,
-  Circuit, 
-  Item 
+  Item, 
 } from "@/lib/defarm-api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 
@@ -88,13 +87,13 @@ export default function CircuitoDetail() {
   // Fetch all items (for push dialog)
   const { data: allItems = [] } = useQuery({
     queryKey: ["items"],
-    queryFn: getItems,
+    queryFn: () => getItems(),
   });
 
   // Push item mutation
   const pushMutation = useMutation({
-    mutationFn: ({ circuitId, localId }: { circuitId: string; localId: string }) =>
-      pushItemToCircuit(circuitId, localId),
+    mutationFn: ({ circuitId, itemId }: { circuitId: string; itemId: string }) =>
+      pushItemToCircuit(circuitId, itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuitItems", id] });
       toast({
@@ -116,18 +115,15 @@ export default function CircuitoDetail() {
   const filteredItems = circuitItems.filter((item) => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      item.dfid.toLowerCase().includes(searchLower) ||
-      (item.identifiers || []).some(
-        (id) =>
-          (id.key || "").toLowerCase().includes(searchLower) ||
-          (id.value || "").toLowerCase().includes(searchLower)
-      )
+      (item.dfid || "").toLowerCase().includes(searchLower) ||
+      (item.value_chain || "").toLowerCase().includes(searchLower) ||
+      (item.country || "").toLowerCase().includes(searchLower)
     );
   });
 
   // Items available for push (not already in circuit)
   const availableForPush = allItems.filter(
-    (item) => !circuitItems.some((ci) => ci.dfid === item.dfid)
+    (item) => !circuitItems.some((ci) => ci.id === item.id)
   );
 
   const handleCopyId = () => {
@@ -140,7 +136,7 @@ export default function CircuitoDetail() {
 
   const handlePushItem = () => {
     if (selectedItem && id) {
-      pushMutation.mutate({ circuitId: id, localId: selectedItem });
+      pushMutation.mutate({ circuitId: id, itemId: selectedItem });
     }
   };
 
@@ -211,7 +207,7 @@ export default function CircuitoDetail() {
                   {circuit.status === "Active" ? "Ativo" : "Inativo"}
                 </span>
               </div>
-              <p className="text-muted-foreground">{circuit.description}</p>
+              <p className="text-muted-foreground">{circuit.description || "Sem descrição"}</p>
               <div className="flex items-center gap-2 mt-2">
                 <button
                   onClick={handleCopyId}
@@ -248,27 +244,34 @@ export default function CircuitoDetail() {
                     <div className="space-y-2 max-h-[300px] overflow-y-auto">
                       {availableForPush.map((item) => (
                         <button
-                          key={item.dfid}
-                          onClick={() => setSelectedItem(item.local_id)}
+                          key={item.id}
+                          onClick={() => setSelectedItem(item.id)}
                           className={cn(
                             "w-full text-left p-3 rounded-lg border transition-colors",
-                            selectedItem === item.local_id
+                            selectedItem === item.id
                               ? "border-primary bg-primary/5"
                               : "border-border hover:border-primary/50"
                           )}
                         >
                           <p className="font-mono text-sm font-medium">
-                            {item.dfid.length > 25 ? `${item.dfid.slice(0, 25)}...` : item.dfid}
+                            {(item.dfid || "").length > 25 ? `${item.dfid.slice(0, 25)}...` : item.dfid}
                           </p>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {(item.identifiers || []).slice(0, 2).map((id, idx) => (
-                              <span
-                                key={idx}
-                                className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground"
-                              >
-                                {id.key}: {id.value || ""}
+                            {item.value_chain && (
+                              <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                                {item.value_chain}
                               </span>
-                            ))}
+                            )}
+                            {item.country && (
+                              <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                                {item.country}
+                              </span>
+                            )}
+                            {item.year && (
+                              <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                                {item.year}
+                              </span>
+                            )}
                           </div>
                         </button>
                       ))}
@@ -351,9 +354,7 @@ export default function CircuitoDetail() {
               <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">
-                {circuit.members?.length || 1}
-              </p>
+              <p className="text-2xl font-bold text-foreground">1</p>
               <p className="text-sm text-muted-foreground">Membros</p>
             </div>
           </div>
@@ -361,7 +362,7 @@ export default function CircuitoDetail() {
         <div className="bg-background border border-border rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              {circuit.permissions?.allow_public_visibility ? (
+              {circuit.visibility === "public" ? (
                 <Globe className="h-5 w-5 text-primary" />
               ) : (
                 <Lock className="h-5 w-5 text-primary" />
@@ -369,7 +370,7 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-lg font-bold text-foreground">
-                {circuit.permissions?.allow_public_visibility ? "Público" : "Privado"}
+                {circuit.visibility === "public" ? "Público" : "Privado"}
               </p>
               <p className="text-sm text-muted-foreground">Visibilidade</p>
             </div>
@@ -382,11 +383,9 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-lg font-bold text-foreground capitalize">
-                {circuit.adapter_config?.adapter_type === "none"
-                  ? "Local"
-                  : circuit.adapter_config?.adapter_type?.replace("Ipfs", "") || "Local"}
+                {circuit.circuit_type || "Standard"}
               </p>
-              <p className="text-sm text-muted-foreground">Adapter</p>
+              <p className="text-sm text-muted-foreground">Tipo</p>
             </div>
           </div>
         </div>
@@ -416,7 +415,7 @@ export default function CircuitoDetail() {
             <TableHeader>
               <TableRow>
                 <TableHead>DFID</TableHead>
-                <TableHead>Identificadores</TableHead>
+                <TableHead>Cadeia / País</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Última atualização</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
@@ -424,7 +423,7 @@ export default function CircuitoDetail() {
             </TableHeader>
             <TableBody>
               {filteredItems.map((item) => (
-                <TableRow key={item.dfid} className="group">
+                <TableRow key={item.id} className="group">
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -432,24 +431,21 @@ export default function CircuitoDetail() {
                       </div>
                       <div>
                         <p className="font-mono text-sm font-medium text-foreground">
-                          {item.dfid.length > 22 ? `${item.dfid.slice(0, 22)}...` : item.dfid}
+                          {(item.dfid || "").length > 22 ? `${item.dfid.slice(0, 22)}...` : item.dfid}
                         </p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {(item.identifiers || []).slice(0, 2).map((id, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground"
-                        >
-                          {id.key}: {(id.value || "").length > 12 ? `${(id.value || "").slice(0, 12)}...` : id.value}
+                      {item.value_chain && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                          {item.value_chain}
                         </span>
-                      ))}
-                      {(item.identifiers || []).length > 2 && (
-                        <span className="text-xs text-muted-foreground">
-                          +{(item.identifiers || []).length - 2}
+                      )}
+                      {item.country && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                          {item.country}
                         </span>
                       )}
                     </div>
@@ -473,7 +469,7 @@ export default function CircuitoDetail() {
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
-                      {new Date(item.last_modified).toLocaleDateString("pt-BR")}
+                      {new Date(item.updated_at).toLocaleDateString("pt-BR")}
                     </span>
                   </TableCell>
                   <TableCell>

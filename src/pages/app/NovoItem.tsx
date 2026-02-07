@@ -15,49 +15,43 @@ import {
   ArrowLeft, 
   ArrowRight, 
   Loader2, 
-  Package, 
-  Plus, 
-  Trash2,
-  Tag,
+  Package,
+  Wheat,
+  MapPin,
+  Calendar,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { createItem, CreateItemRequest, Identifier } from "@/lib/defarm-api";
+import { useAuth } from "@/contexts/AuthContext";
+import { createItem, CreateItemRequest } from "@/lib/defarm-api";
 
-interface IdentifierInput {
-  id: string;
-  namespace: string;
-  key: string;
-  value: string;
-  idType: "Canonical" | "Contextual";
-}
-
-const namespaceOptions = [
+const valueChainOptions = [
   { value: "bovino", label: "Bovino" },
   { value: "cafe", label: "Café" },
   { value: "soja", label: "Soja" },
   { value: "milho", label: "Milho" },
+  { value: "algodao", label: "Algodão" },
+  { value: "frango", label: "Frango" },
+  { value: "suino", label: "Suíno" },
   { value: "outro", label: "Outro" },
 ];
 
-const keyOptions = [
-  { value: "sisbov", label: "SISBOV", type: "Canonical" },
-  { value: "brinco", label: "Brinco/Ear Tag", type: "Contextual" },
-  { value: "lote", label: "Lote", type: "Contextual" },
-  { value: "gta", label: "GTA", type: "Canonical" },
-  { value: "cpf", label: "CPF Produtor", type: "Canonical" },
-  { value: "cnpj", label: "CNPJ", type: "Canonical" },
-  { value: "car", label: "CAR", type: "Canonical" },
-  { value: "custom", label: "Personalizado", type: "Contextual" },
+const countryOptions = [
+  { value: "BR", label: "Brasil" },
+  { value: "AR", label: "Argentina" },
+  { value: "PY", label: "Paraguai" },
+  { value: "UY", label: "Uruguai" },
+  { value: "US", label: "Estados Unidos" },
+  { value: "other", label: "Outro" },
 ];
 
 export default function NovoItem() {
-  const [identifiers, setIdentifiers] = useState<IdentifierInput[]>([
-    { id: "1", namespace: "bovino", key: "sisbov", value: "", idType: "Canonical" },
-  ]);
+  const [valueChain, setValueChain] = useState("bovino");
+  const [country, setCountry] = useState("BR");
+  const [year, setYear] = useState(new Date().getFullYear());
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -66,7 +60,7 @@ export default function NovoItem() {
       queryClient.invalidateQueries({ queryKey: ["items"] });
       toast({
         title: "Item criado!",
-        description: `O item foi cadastrado com sucesso.`,
+        description: "O item foi cadastrado com sucesso.",
       });
       navigate(`/app/itens/${item.dfid}`);
     },
@@ -79,64 +73,15 @@ export default function NovoItem() {
     },
   });
 
-  const addIdentifier = () => {
-    setIdentifiers([
-      ...identifiers,
-      { 
-        id: Date.now().toString(), 
-        namespace: "bovino", 
-        key: "brinco", 
-        value: "", 
-        idType: "Contextual" 
-      },
-    ]);
-  };
-
-  const removeIdentifier = (id: string) => {
-    if (identifiers.length > 1) {
-      setIdentifiers(identifiers.filter((i) => i.id !== id));
-    }
-  };
-
-  const updateIdentifier = (id: string, field: keyof IdentifierInput, value: string) => {
-    setIdentifiers(identifiers.map((i) => {
-      if (i.id === id) {
-        const updated = { ...i, [field]: value };
-        // Auto-set idType based on key
-        if (field === "key") {
-          const keyOption = keyOptions.find(k => k.value === value);
-          if (keyOption) {
-            updated.idType = keyOption.type as "Canonical" | "Contextual";
-          }
-        }
-        return updated;
-      }
-      return i;
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const hasEmptyValues = identifiers.some(i => !i.value.trim());
-    if (hasEmptyValues) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os valores dos identificadores",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const apiIdentifiers: Identifier[] = identifiers.map(i => ({
-      namespace: i.namespace,
-      key: i.key,
-      value: i.value.trim(),
-      id_type: i.idType,
-    }));
-
     createMutation.mutate({
-      identifiers: apiIdentifiers,
+      value_chain: valueChain,
+      country,
+      year,
+      owner_id: user?.id || null,
+      user_id: user?.id || null,
     });
   };
 
@@ -158,117 +103,74 @@ export default function NovoItem() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Identifiers */}
+        {/* Item details */}
         <div className="bg-background border border-border rounded-2xl p-6 space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-border">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Tag className="h-5 w-5 text-primary" />
+              <Package className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-semibold text-foreground">Identificadores</h2>
+              <h2 className="text-lg font-semibold text-foreground">Dados do Item</h2>
               <p className="text-sm text-muted-foreground">
-                Adicione um ou mais identificadores para o item
+                Informe a cadeia de valor, país e ano/safra
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
-            {identifiers.map((identifier, index) => (
-              <div
-                key={identifier.id}
-                className={cn(
-                  "p-4 rounded-xl border border-border",
-                  index % 2 === 0 ? "bg-muted/30" : "bg-background"
-                )}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-foreground">
-                    Identificador {index + 1}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "text-xs px-2 py-0.5 rounded-full",
-                      identifier.idType === "Canonical" 
-                        ? "bg-primary/10 text-primary" 
-                        : "bg-muted text-muted-foreground"
-                    )}>
-                      {identifier.idType === "Canonical" ? "Canônico" : "Contextual"}
-                    </span>
-                    {identifiers.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeIdentifier(identifier.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="value_chain" className="flex items-center gap-2">
+                <Wheat className="h-4 w-4 text-muted-foreground" />
+                Cadeia de Valor *
+              </Label>
+              <Select value={valueChain} onValueChange={setValueChain}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {valueChainOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Namespace</Label>
-                    <Select
-                      value={identifier.namespace}
-                      onValueChange={(v) => updateIdentifier(identifier.id, "namespace", v)}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {namespaceOptions.map((ns) => (
-                          <SelectItem key={ns.value} value={ns.value}>
-                            {ns.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <div className="space-y-2">
+              <Label htmlFor="country" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                País *
+              </Label>
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {countryOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs">Tipo</Label>
-                    <Select
-                      value={identifier.key}
-                      onValueChange={(v) => updateIdentifier(identifier.id, "key", v)}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {keyOptions.map((key) => (
-                          <SelectItem key={key.value} value={key.value}>
-                            {key.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Valor *</Label>
-                    <Input
-                      value={identifier.value}
-                      onChange={(e) => updateIdentifier(identifier.id, "value", e.target.value)}
-                      placeholder="Ex: BR12345678901234"
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addIdentifier}
-              className="w-full border-dashed"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar identificador
-            </Button>
+            <div className="space-y-2">
+              <Label htmlFor="year" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                Ano / Safra *
+              </Label>
+              <Input
+                id="year"
+                type="number"
+                value={year}
+                onChange={(e) => setYear(parseInt(e.target.value) || new Date().getFullYear())}
+                min={2000}
+                max={2100}
+                required
+              />
+            </div>
           </div>
         </div>
 
@@ -281,7 +183,8 @@ export default function NovoItem() {
                 Como funciona?
               </p>
               <p className="text-xs text-muted-foreground">
-                O item será criado localmente (LID) e poderá ser tokenizado ao ser enviado para um circuito com adapter blockchain configurado, gerando um DFID único e imutável.
+                O item será criado e receberá um DFID único. Ele poderá ser enviado para circuitos 
+                de compartilhamento para rastreabilidade completa na cadeia de valor.
               </p>
             </div>
           </div>

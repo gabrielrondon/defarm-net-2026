@@ -6,7 +6,6 @@ import {
   Filter,
   Package,
   GitBranch,
-  User,
   Clock,
   Loader2,
   RefreshCw,
@@ -20,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { getEvents, Event } from "@/lib/defarm-api";
+import { getEvents } from "@/lib/defarm-api";
 
 const eventTypeColors: Record<string, string> = {
   ItemCreated: "bg-blue-500/10 text-blue-600",
@@ -60,8 +59,9 @@ export default function EventosList() {
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch = 
-      event.dfid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.event_type.toLowerCase().includes(searchQuery.toLowerCase());
+      (event.item_id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.event_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (event.source_id || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === "all" || event.event_type === typeFilter;
     return matchesSearch && matchesType;
   });
@@ -124,7 +124,7 @@ export default function EventosList() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por DFID, tipo..."
+            placeholder="Buscar por ID, tipo..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -181,19 +181,13 @@ export default function EventosList() {
                         )}>
                           {eventTypeLabels[event.event_type] || event.event_type}
                         </span>
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded-full",
-                          event.visibility === "Public" 
-                            ? "bg-primary/10 text-primary"
-                            : "bg-muted text-muted-foreground"
-                        )}>
-                          {event.visibility === "Public" ? "Público" : 
-                           event.visibility === "CircuitOnly" ? "Circuito" : "Privado"}
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          {event.status}
                         </span>
                       </div>
                       
                       <p className="font-mono text-sm text-foreground mb-2">
-                        {event.dfid}
+                        {event.item_id || event.source_id || "-"}
                       </p>
 
                       {event.metadata && Object.keys(event.metadata).length > 0 && (
@@ -211,7 +205,7 @@ export default function EventosList() {
                     <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatTime(event.timestamp)}
+                        {formatTime(event.created_at)}
                       </span>
                     </div>
                   </div>

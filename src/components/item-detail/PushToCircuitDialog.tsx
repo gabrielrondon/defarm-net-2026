@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { getCircuits, pushItemToCircuit, Circuit, Item } from "@/lib/defarm-api";
+import { getCircuits, pushItemToCircuit, Item } from "@/lib/defarm-api";
 
 interface PushToCircuitDialogProps {
   item: Item;
@@ -32,14 +32,14 @@ export function PushToCircuitDialog({
   // Fetch available circuits
   const { data: circuits = [], isLoading } = useQuery({
     queryKey: ["circuits"],
-    queryFn: getCircuits,
+    queryFn: () => getCircuits(),
     enabled: open,
   });
 
   // Push mutation
   const pushMutation = useMutation({
-    mutationFn: ({ circuitId, localId }: { circuitId: string; localId: string }) =>
-      pushItemToCircuit(circuitId, localId),
+    mutationFn: ({ circuitId, itemId }: { circuitId: string; itemId: string }) =>
+      pushItemToCircuit(circuitId, itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["itemEvents", item.dfid] });
       queryClient.invalidateQueries({ queryKey: ["item", item.dfid] });
@@ -60,8 +60,8 @@ export function PushToCircuitDialog({
   });
 
   const handlePush = () => {
-    if (selectedCircuit && item.local_id) {
-      pushMutation.mutate({ circuitId: selectedCircuit, localId: item.local_id });
+    if (selectedCircuit && item.id) {
+      pushMutation.mutate({ circuitId: selectedCircuit, itemId: item.id });
     }
   };
 

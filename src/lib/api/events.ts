@@ -6,8 +6,11 @@ import type {
   EventFilters,
 } from "./types";
 
-export async function getEvents(params?: EventFilters): Promise<ListEventsResponse> {
-  return registryRequest<ListEventsResponse>(`/events${buildQueryString(params)}`);
+export async function getEvents(params?: EventFilters): Promise<Event[]> {
+  const response = await registryRequest<ListEventsResponse>(
+    `/events${buildQueryString(params as Record<string, any>)}`
+  );
+  return response.events;
 }
 
 export async function getEvent(id: string): Promise<Event> {
@@ -28,6 +31,6 @@ export async function updateEventStatus(
 export async function getItemEvents(
   itemId: string,
   params?: Omit<EventFilters, "item_id">
-): Promise<ListEventsResponse> {
+): Promise<Event[]> {
   return getEvents({ ...params, item_id: itemId });
 }

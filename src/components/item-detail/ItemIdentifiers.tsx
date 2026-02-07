@@ -1,5 +1,4 @@
-import { Tag } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Tag, MapPin, Wheat, Calendar } from "lucide-react";
 import { Item } from "@/lib/defarm-api";
 import { formatTime } from "./constants";
 
@@ -8,50 +7,59 @@ interface ItemIdentifiersProps {
 }
 
 export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
-  const identifiers = item.identifiers || [];
+  const metadata = item.metadata || {};
+  const metadataEntries = Object.entries(metadata);
 
   return (
     <div className="lg:col-span-1 space-y-6">
-      {/* Identifiers */}
+      {/* Item Info */}
       <div className="bg-background border border-border rounded-2xl p-6">
         <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
             <Tag className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Identificadores</h2>
-            <p className="text-sm text-muted-foreground">
-              {identifiers.length} identificador(es)
-            </p>
+            <h2 className="text-lg font-semibold text-foreground">Informações</h2>
+            <p className="text-sm text-muted-foreground">Dados do item</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          {identifiers.map((identifier, idx) => (
-            <div
-              key={idx}
-              className="p-3 bg-muted/50 rounded-lg"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted-foreground uppercase">
-                  {identifier.namespace || "default"} / {identifier.key}
-                </span>
-                <span
-                  className={cn(
-                    "text-xs px-1.5 py-0.5 rounded",
-                    identifier.id_type === "Canonical"
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {identifier.id_type === "Canonical" ? "Canônico" : "Contextual"}
-                </span>
-              </div>
-              <p className="text-sm font-mono text-foreground break-all">
-                {identifier.value || ""}
-              </p>
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Wheat className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase">
+                Cadeia de Valor
+              </span>
             </div>
-          ))}
+            <p className="text-sm font-medium text-foreground">
+              {item.value_chain || "-"}
+            </p>
+          </div>
+
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase">
+                País
+              </span>
+            </div>
+            <p className="text-sm font-medium text-foreground">
+              {item.country || "-"}
+            </p>
+          </div>
+
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase">
+                Ano / Safra
+              </span>
+            </div>
+            <p className="text-sm font-medium text-foreground">
+              {item.year || "-"}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -62,42 +70,44 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Criado em</span>
             <span className="text-foreground">
-              {formatTime(item.creation_timestamp)}
+              {formatTime(item.registered_at)}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Última atualização</span>
             <span className="text-foreground">
-              {formatTime(item.last_modified)}
+              {formatTime(item.updated_at)}
             </span>
           </div>
-          {item.confidence_score && (
+          {item.circuit_id && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Confiança</span>
-              <span className="text-foreground">
-                {Math.round(item.confidence_score * 100)}%
+              <span className="text-muted-foreground">Circuito</span>
+              <span className="text-foreground font-mono text-xs">
+                {item.circuit_id.length > 15
+                  ? `${item.circuit_id.slice(0, 15)}...`
+                  : item.circuit_id}
               </span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Local ID</span>
+            <span className="text-muted-foreground">ID</span>
             <span className="text-foreground font-mono text-xs">
-              {(item.local_id || "").length > 15
-                ? `${(item.local_id || "").slice(0, 15)}...`
-                : item.local_id || "-"}
+              {(item.id || "").length > 15
+                ? `${(item.id || "").slice(0, 15)}...`
+                : item.id || "-"}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Enriched Data */}
-      {item.enriched_data && Object.keys(item.enriched_data).length > 0 && (
+      {/* Custom Metadata */}
+      {metadataEntries.length > 0 && (
         <div className="bg-background border border-border rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-foreground mb-4">
-            Dados Enriquecidos
+            Dados Adicionais
           </h3>
           <div className="space-y-2">
-            {Object.entries(item.enriched_data).map(([key, value]) => (
+            {metadataEntries.map(([key, value]) => (
               <div key={key} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{key}</span>
                 <span className="text-foreground">

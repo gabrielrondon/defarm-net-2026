@@ -15,7 +15,7 @@ export default function ItemDetail() {
     enabled: !!id,
   });
 
-  // Fetch item events
+  // Fetch item events (now returns Event[] directly)
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["itemEvents", id],
     queryFn: () => getItemEvents(id!),

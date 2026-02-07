@@ -12,8 +12,11 @@ import type {
 } from "./types";
 
 // Circuit CRUD
-export async function getCircuits(params?: CircuitFilters): Promise<ListCircuitsResponse> {
-  return registryRequest<ListCircuitsResponse>(`/circuits${buildQueryString(params)}`);
+export async function getCircuits(params?: CircuitFilters): Promise<Circuit[]> {
+  const response = await registryRequest<ListCircuitsResponse>(
+    `/circuits${buildQueryString(params as Record<string, any>)}`
+  );
+  return response.circuits;
 }
 
 export async function getCircuit(id: string): Promise<Circuit> {
