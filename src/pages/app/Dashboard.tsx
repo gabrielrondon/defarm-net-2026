@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getWorkspaceStats, getCircuits, getItems, getEvents } from "@/lib/defarm-api";
+import { getCircuits, getItems, getEvents } from "@/lib/defarm-api";
 
 interface StatCardProps {
   icon: typeof GitBranch;
@@ -96,15 +96,15 @@ export default function Dashboard() {
     else setGreeting("Boa noite");
   }, []);
 
-  // Fetch data from API
+  // Fetch data from API - wrap in arrow functions to avoid queryFn type issues
   const { data: circuits = [], isLoading: isLoadingCircuits } = useQuery({
     queryKey: ["circuits"],
-    queryFn: getCircuits,
+    queryFn: () => getCircuits(),
   });
 
   const { data: items = [], isLoading: isLoadingItems } = useQuery({
     queryKey: ["items"],
-    queryFn: getItems,
+    queryFn: () => getItems(),
   });
 
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
@@ -113,7 +113,7 @@ export default function Dashboard() {
   });
 
   const activeCircuits = circuits.filter(c => c.status === "Active").length;
-  const tokenizedItems = items.filter(i => i.dfid.startsWith("DFID-")).length;
+  const tokenizedItems = items.filter(i => i.dfid?.startsWith("DFID-")).length;
   const tokenizationRate = items.length > 0 ? Math.round((tokenizedItems / items.length) * 100) : 0;
 
   // Get recent events for activity feed
@@ -253,12 +253,14 @@ export default function Dashboard() {
                     <p className="text-sm text-foreground">
                       {eventTypeLabels[event.event_type] || event.event_type}:{" "}
                       <span className="font-mono text-xs">
-                        {event.dfid.length > 20 ? `${event.dfid.slice(0, 20)}...` : event.dfid}
+                        {(event.item_id || event.source_id || "").length > 20
+                          ? `${(event.item_id || event.source_id || "").slice(0, 20)}...`
+                          : event.item_id || event.source_id || "-"}
                       </span>
                     </p>
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatEventTime(event.timestamp)}
+                    {formatEventTime(event.created_at)}
                   </span>
                 </div>
               ))}

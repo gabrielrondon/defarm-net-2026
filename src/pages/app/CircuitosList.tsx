@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { getCircuits, Circuit } from "@/lib/defarm-api";
+import { getCircuits } from "@/lib/defarm-api";
 
 export default function CircuitosList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,12 +31,12 @@ export default function CircuitosList() {
 
   const { data: circuits = [], isLoading, error, refetch } = useQuery({
     queryKey: ["circuits"],
-    queryFn: getCircuits,
+    queryFn: () => getCircuits(),
   });
 
   const filteredCircuits = circuits.filter((circuit) => {
     const matchesSearch = circuit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      circuit.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (circuit.description || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === "all" || 
       (filter === "active" && circuit.status === "Active") ||
       (filter === "inactive" && circuit.status === "Inactive");
@@ -160,21 +160,21 @@ export default function CircuitosList() {
                 {circuit.name}
               </h3>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {circuit.description}
+                {circuit.description || "Sem descrição"}
               </p>
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                 <span className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  {circuit.members?.length || 1}
+                  <Package className="h-4 w-4" />
+                  {circuit.circuit_type || "Standard"}
                 </span>
                 <span className="flex items-center gap-1">
-                  {circuit.permissions?.allow_public_visibility ? (
+                  {circuit.visibility === "public" ? (
                     <Globe className="h-4 w-4" />
                   ) : (
                     <Lock className="h-4 w-4" />
                   )}
-                  {circuit.permissions?.allow_public_visibility ? "Público" : "Privado"}
+                  {circuit.visibility === "public" ? "Público" : "Privado"}
                 </span>
               </div>
 

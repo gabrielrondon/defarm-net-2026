@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -13,19 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, Loader2, GitBranch, Shield, Globe } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, GitBranch, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { createCircuit, CreateCircuitRequest } from "@/lib/defarm-api";
 
 export default function NovoCircuito() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [adapterType, setAdapterType] = useState<"none" | "StellarTestnetIpfs" | "StellarMainnetIpfs">("none");
-  const [isPublic, setIsPublic] = useState(false);
-  const [requiresApproval, setRequiresApproval] = useState(false);
+  const [circuitType, setCircuitType] = useState("standard");
+  const [visibility, setVisibility] = useState("private");
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -53,12 +53,9 @@ export default function NovoCircuito() {
     createMutation.mutate({
       name,
       description,
-      adapter_config: {
-        adapter_type: adapterType,
-        requires_approval: requiresApproval,
-        auto_migrate_existing: false,
-      },
-      allow_public_visibility: isPublic,
+      circuit_type: circuitType,
+      visibility,
+      owner_id: user?.id || "anonymous",
     });
   };
 
@@ -105,60 +102,29 @@ export default function NovoCircuito() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição *</Label>
+              <Label htmlFor="description">Descrição</Label>
               <Textarea
                 id="description"
                 placeholder="Descreva o propósito deste circuito..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                required
                 rows={3}
               />
             </div>
-          </div>
-        </div>
 
-        {/* Storage adapter */}
-        <div className="bg-background border border-border rounded-2xl p-6 space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-border">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Armazenamento</h2>
-              <p className="text-sm text-muted-foreground">Configure o adapter de blockchain</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adapter">Adapter de armazenamento</Label>
-              <Select value={adapterType} onValueChange={(v) => setAdapterType(v as typeof adapterType)}>
+              <Label htmlFor="circuit_type">Tipo do circuito</Label>
+              <Select value={circuitType} onValueChange={setCircuitType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Sem blockchain (apenas local)</SelectItem>
-                  <SelectItem value="StellarTestnetIpfs">Stellar Testnet + IPFS</SelectItem>
-                  <SelectItem value="StellarMainnetIpfs">Stellar Mainnet + IPFS (Enterprise)</SelectItem>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="supply_chain">Supply Chain</SelectItem>
+                  <SelectItem value="compliance">Compliance</SelectItem>
+                  <SelectItem value="audit">Auditoria</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                O adapter determina onde os dados serão armazenados de forma imutável
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-foreground">Requer aprovação para push</p>
-                <p className="text-xs text-muted-foreground">
-                  Novos itens precisam de aprovação antes de entrar no circuito
-                </p>
-              </div>
-              <Switch
-                checked={requiresApproval}
-                onCheckedChange={setRequiresApproval}
-              />
             </div>
           </div>
         </div>
@@ -175,17 +141,21 @@ export default function NovoCircuito() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-foreground">Circuito público</p>
-              <p className="text-xs text-muted-foreground">
-                Qualquer pessoa com o link pode ver os dados publicados
-              </p>
-            </div>
-            <Switch
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-            />
+          <div className="space-y-2">
+            <Label htmlFor="visibility">Visibilidade</Label>
+            <Select value={visibility} onValueChange={setVisibility}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">Privado</SelectItem>
+                <SelectItem value="public">Público</SelectItem>
+                <SelectItem value="members_only">Apenas membros</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Circuitos públicos podem ser vistos por qualquer pessoa com o link
+            </p>
           </div>
         </div>
 
@@ -201,7 +171,7 @@ export default function NovoCircuito() {
           </Button>
           <Button
             type="submit"
-            disabled={createMutation.isPending || !name || !description}
+            disabled={createMutation.isPending || !name}
             className="flex-1 btn-offset bg-primary hover:bg-primary text-primary-foreground"
           >
             {createMutation.isPending ? (

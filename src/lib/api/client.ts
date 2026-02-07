@@ -14,7 +14,7 @@ export class ApiError extends Error {
 }
 
 // Build query string from params object
-export function buildQueryString(params?: Record<string, unknown>): string {
+export function buildQueryString(params?: Record<string, any>): string {
   if (!params) return "";
   const entries = Object.entries(params).filter(
     ([, v]) => v !== undefined && v !== null && v !== ""

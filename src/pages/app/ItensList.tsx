@@ -10,7 +10,6 @@ import {
   ExternalLink,
   Filter,
   CheckCircle2,
-  Clock,
   XCircle,
   Loader2,
   RefreshCw,
@@ -32,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { getItems, Item } from "@/lib/defarm-api";
+import { getItems } from "@/lib/defarm-api";
 
 export default function ItensList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,23 +39,21 @@ export default function ItensList() {
 
   const { data: items = [], isLoading, error, refetch } = useQuery({
     queryKey: ["items"],
-    queryFn: getItems,
+    queryFn: () => getItems(),
   });
 
   const filteredItems = items.filter((item) => {
     const matchesSearch = 
-      item.dfid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.identifiers || []).some(id => 
-        (id.value || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (id.key || "").toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      (item.dfid || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.value_chain || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.country || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || 
       (statusFilter === "active" && item.status === "Active") ||
       (statusFilter === "deprecated" && item.status === "Deprecated");
     return matchesSearch && matchesStatus;
   });
 
-  const tokenizedCount = items.filter(i => i.dfid.startsWith("DFID-")).length;
+  const tokenizedCount = items.filter(i => i.dfid?.startsWith("DFID-")).length;
   const activeCount = items.filter(i => i.status === "Active").length;
 
   if (isLoading) {
@@ -111,7 +108,7 @@ export default function ItensList() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por DFID, SISBOV, brinco..."
+            placeholder="Buscar por DFID, cadeia, país..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -159,7 +156,7 @@ export default function ItensList() {
             <TableHeader>
               <TableRow>
                 <TableHead>DFID / Identificador</TableHead>
-                <TableHead>Identificadores</TableHead>
+                <TableHead>Cadeia / País</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criado em</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
@@ -167,10 +164,10 @@ export default function ItensList() {
             </TableHeader>
             <TableBody>
               {filteredItems.map((item) => {
-                const isTokenized = item.dfid.startsWith("DFID-");
+                const isTokenized = item.dfid?.startsWith("DFID-");
                 
                 return (
-                  <TableRow key={item.dfid} className="group">
+                  <TableRow key={item.id} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className={cn(
@@ -185,7 +182,7 @@ export default function ItensList() {
                         </div>
                         <div>
                           <p className="font-mono text-sm font-medium text-foreground">
-                            {item.dfid.length > 24 ? `${item.dfid.slice(0, 24)}...` : item.dfid}
+                            {(item.dfid || "").length > 24 ? `${item.dfid.slice(0, 24)}...` : item.dfid}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {isTokenized ? "Tokenizado" : "Local (não tokenizado)"}
@@ -194,18 +191,20 @@ export default function ItensList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                        {(item.identifiers || []).slice(0, 2).map((id, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground"
-                          >
-                            {id.key}: {(id.value || "").length > 10 ? `${(id.value || "").slice(0, 10)}...` : id.value}
+                      <div className="flex flex-wrap gap-1">
+                        {item.value_chain && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                            {item.value_chain}
                           </span>
-                        ))}
-                        {(item.identifiers || []).length > 2 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{(item.identifiers || []).length - 2}
+                        )}
+                        {item.country && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                            {item.country}
+                          </span>
+                        )}
+                        {item.year && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                            {item.year}
                           </span>
                         )}
                       </div>
@@ -227,7 +226,7 @@ export default function ItensList() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {new Date(item.creation_timestamp).toLocaleDateString("pt-BR")}
+                        {new Date(item.registered_at).toLocaleDateString("pt-BR")}
                       </span>
                     </TableCell>
                     <TableCell>

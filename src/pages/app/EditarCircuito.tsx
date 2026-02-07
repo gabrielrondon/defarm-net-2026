@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Save, Loader2, GitBranch, Shield, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getCircuit, updateCircuit, Circuit } from "@/lib/defarm-api";
+import { getCircuit, updateCircuit } from "@/lib/defarm-api";
 
 export default function EditarCircuito() {
   const { id } = useParams<{ id: string }>();
@@ -25,9 +25,7 @@ export default function EditarCircuito() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [adapterType, setAdapterType] = useState<"none" | "StellarTestnetIpfs" | "StellarMainnetIpfs">("none");
-  const [isPublic, setIsPublic] = useState(false);
-  const [requiresApproval, setRequiresApproval] = useState(false);
+  const [visibility, setVisibility] = useState<string>("private");
 
   // Fetch circuit data
   const { data: circuit, isLoading: isLoadingCircuit } = useQuery({
@@ -40,15 +38,13 @@ export default function EditarCircuito() {
   useEffect(() => {
     if (circuit) {
       setName(circuit.name);
-      setDescription(circuit.description);
-      setAdapterType(circuit.adapter_config?.adapter_type || "none");
-      setIsPublic(circuit.permissions?.allow_public_visibility || false);
-      setRequiresApproval(circuit.adapter_config?.requires_approval || false);
+      setDescription(circuit.description || "");
+      setVisibility(circuit.visibility || "private");
     }
   }, [circuit]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<{ name: string; description: string; adapter_config: any; allow_public_visibility: boolean }>) =>
+    mutationFn: (data: { name?: string; description?: string; visibility?: string }) =>
       updateCircuit(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuits"] });
@@ -70,17 +66,7 @@ export default function EditarCircuito() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    updateMutation.mutate({
-      name,
-      description,
-      adapter_config: {
-        adapter_type: adapterType,
-        requires_approval: requiresApproval,
-        auto_migrate_existing: false,
-      },
-      allow_public_visibility: isPublic,
-    });
+    updateMutation.mutate({ name, description, visibility });
   };
 
   if (isLoadingCircuit) {
@@ -149,59 +135,13 @@ export default function EditarCircuito() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição *</Label>
+              <Label htmlFor="description">Descrição</Label>
               <Textarea
                 id="description"
                 placeholder="Descreva o propósito deste circuito..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                required
                 rows={3}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Storage adapter */}
-        <div className="bg-background border border-border rounded-2xl p-6 space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-border">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Armazenamento</h2>
-              <p className="text-sm text-muted-foreground">Configure o adapter de blockchain</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="adapter">Adapter de armazenamento</Label>
-              <Select value={adapterType} onValueChange={(v) => setAdapterType(v as typeof adapterType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sem blockchain (apenas local)</SelectItem>
-                  <SelectItem value="StellarTestnetIpfs">Stellar Testnet + IPFS</SelectItem>
-                  <SelectItem value="StellarMainnetIpfs">Stellar Mainnet + IPFS (Enterprise)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                O adapter determina onde os dados serão armazenados de forma imutável
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-foreground">Requer aprovação para push</p>
-                <p className="text-xs text-muted-foreground">
-                  Novos itens precisam de aprovação antes de entrar no circuito
-                </p>
-              </div>
-              <Switch
-                checked={requiresApproval}
-                onCheckedChange={setRequiresApproval}
               />
             </div>
           </div>
@@ -219,17 +159,21 @@ export default function EditarCircuito() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-            <div>
-              <p className="text-sm font-medium text-foreground">Circuito público</p>
-              <p className="text-xs text-muted-foreground">
-                Qualquer pessoa com o link pode ver os dados publicados
-              </p>
-            </div>
-            <Switch
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-            />
+          <div className="space-y-2">
+            <Label htmlFor="visibility">Visibilidade</Label>
+            <Select value={visibility} onValueChange={setVisibility}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">Privado</SelectItem>
+                <SelectItem value="public">Público</SelectItem>
+                <SelectItem value="members_only">Apenas membros</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Circuitos públicos podem ser vistos por qualquer pessoa com o link
+            </p>
           </div>
         </div>
 
@@ -245,7 +189,7 @@ export default function EditarCircuito() {
           </Button>
           <Button
             type="submit"
-            disabled={updateMutation.isPending || !name || !description}
+            disabled={updateMutation.isPending || !name}
             className="flex-1 btn-offset bg-primary hover:bg-primary text-primary-foreground"
           >
             {updateMutation.isPending ? (
