@@ -128,8 +128,35 @@ export default function Login() {
             </Button>
           </form>
 
+          {/* Divider */}
+          <div className="flex items-center gap-4 mt-6">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-sm text-muted-foreground">ou</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Demo access */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-12 mt-4 font-semibold"
+            onClick={() => {
+              const demoUser = {
+                id: "demo-user-001",
+                username: "demo",
+                email: "demo@defarm.net",
+                workspace_id: "demo-workspace",
+              };
+              localStorage.setItem("defarm_token", "demo-token");
+              localStorage.setItem("defarm_user", JSON.stringify(demoUser));
+              window.location.href = "/app";
+            }}
+          >
+            Entrar como Demo
+          </Button>
+
           {/* Sign up link */}
-          <p className="text-center text-muted-foreground mt-8">
+          <p className="text-center text-muted-foreground mt-6">
             Não tem uma conta?{" "}
             <Link to="/cadastro" className="text-primary font-medium hover:underline">
               Criar conta
