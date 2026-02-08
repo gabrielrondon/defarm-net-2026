@@ -46,11 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData: User = {
       id: response.user_id,
       username: data.username,
-      email: data.username, // API uses username as email for login
+      email: data.username,
       workspace_id: response.workspace_id,
     };
     
-    storeAuth(response.token, userData);
+    storeAuth(response.access_token, userData, response.refresh_token);
     setUser(userData);
   };
 
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       workspace_id: response.workspace_id,
     };
     
-    storeAuth(response.token, userData);
+    storeAuth(response.access_token, userData, response.refresh_token);
     setUser(userData);
   };
 

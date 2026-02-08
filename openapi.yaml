@@ -69,9 +69,13 @@ info:
   version: 0.1.0
 servers:
 - url: http://localhost:8080
-  description: Local development
+  description: Local development (direct to item-registry)
+- url: https://gateway-service-production-f54d.up.railway.app/api
+  description: Production (via API Gateway) - USE THIS FOR ALL FRONTEND REQUESTS
 - url: https://item-registry.railway.app
-  description: Production
+  description: Production direct (internal service-to-service only)
+security:
+- BearerAuth: []
 paths:
   /activity/circuit/{circuit_id}:
     get:
@@ -2608,6 +2612,23 @@ paths:
         '500':
           description: Internal server error
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT authentication via API Gateway.
+
+        To authenticate:
+        1. POST /auth/register or /auth/login to get access_token
+        2. Include token in requests: Authorization: Bearer <access_token>
+        3. Tokens expire in 15 minutes - use refresh token to get new ones
+
+        All /api/* endpoints require authentication except:
+        - /health
+        - /swagger-ui
+        - /api-docs
   schemas:
     ActivityFeed:
       type: object

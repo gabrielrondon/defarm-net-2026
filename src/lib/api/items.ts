@@ -6,6 +6,13 @@ import type {
   UpdateItemRequest,
   UpdateItemStatusRequest,
   ItemFilters,
+  MergeItemsRequest,
+  MergeItemsResponse,
+  SplitItemRequest,
+  SplitItemResponse,
+  UnmergeItemRequest,
+  UnmergeItemResponse,
+  IngestionReceipt,
 } from "./types";
 
 export async function getItems(params?: ItemFilters): Promise<Item[]> {
@@ -61,39 +68,53 @@ export async function pushItemToCircuit(
   return updateItem(itemId, { metadata: { circuit_id: circuitId } });
 }
 
-// Workflow endpoints
-export async function mergeItems(
-  primaryDfid: string,
-  secondaryDfid: string,
-  strategy: string,
-  userId?: string
-) {
-  return registryRequest(`/items/${primaryDfid}/merge`, {
+// Bulk import (CSV or JSON)
+export async function bulkIngestItems(file: File): Promise<IngestionReceipt> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // Don't set Content-Type header - browser will set it with boundary for multipart
+  return registryRequest<IngestionReceipt>("/items/bulk", {
     method: "POST",
-    body: JSON.stringify({
-      secondary_dfid: secondaryDfid,
-      strategy,
-      user_id: userId,
-    }),
+    headers: {},
+    body: formData as unknown as BodyInit,
   });
 }
 
-export async function splitItem(
-  dfid: string,
-  data: {
-    value_chain: string;
-    country: string;
-    year: number;
-    metadata: Record<string, unknown>;
-    user_id?: string;
-  }
-) {
-  return registryRequest(`/items/${dfid}/split`, {
+// Workflow: Merge items
+export async function mergeItems(
+  primaryDfid: string,
+  data: MergeItemsRequest
+): Promise<MergeItemsResponse> {
+  return registryRequest<MergeItemsResponse>(`/items/${primaryDfid}/merge`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
+// Workflow: Split item
+export async function splitItem(
+  dfid: string,
+  data: SplitItemRequest
+): Promise<SplitItemResponse> {
+  return registryRequest<SplitItemResponse>(`/items/${dfid}/split`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// Workflow: Unmerge item
+export async function unmergeItem(
+  dfid: string,
+  data: UnmergeItemRequest
+): Promise<UnmergeItemResponse> {
+  return registryRequest<UnmergeItemResponse>(`/items/${dfid}/unmerge`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// Get item relationships
 export async function getItemRelationships(dfid: string) {
   return registryRequest(`/items/${dfid}/relationships`);
 }

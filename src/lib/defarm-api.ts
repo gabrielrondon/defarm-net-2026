@@ -1,23 +1,36 @@
-// DeFarm API - Auth + Registry re-exports
-// Auth endpoints use the connect.defarm.net API
-// Registry endpoints use the Item Registry API (see src/lib/api/)
+// DeFarm API - Unified entry point
+// All requests go through the API Gateway at:
+// https://gateway-service-production-f54d.up.railway.app
+//
+// Auth endpoints: /auth/*
+// Registry endpoints: /api/*
 
 // ==========================================
 // Re-export everything from the Registry API
 // ==========================================
 export * from "./api";
 
+// Re-export token utilities from client
+export {
+  getAccessToken,
+  getRefreshToken,
+  storeTokens,
+  clearTokens,
+} from "./api/client";
+
 // ==========================================
-// Auth types & functions (connect.defarm.net)
+// Auth types & functions (via Gateway)
 // ==========================================
-const AUTH_API_BASE = "https://connect.defarm.net/api";
-const TOKEN_KEY = "defarm_token";
-const USER_KEY = "defarm_user";
+import {
+  authRequest,
+  storeTokens,
+  clearTokens,
+  getAccessToken,
+} from "./api/client";
 
 export interface LoginRequest {
   username: string;
   password: string;
-  workspace_id?: string;
 }
 
 export interface RegisterRequest {
@@ -28,10 +41,12 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-  token: string;
+  access_token: string;
+  refresh_token: string;
   user_id: string;
   workspace_id: string;
-  expires_at: number;
+  expires_at?: number;
+  token_type?: string;
 }
 
 export interface User {
@@ -41,9 +56,11 @@ export interface User {
   workspace_id: string;
 }
 
-// Token management
+// User storage
+const USER_KEY = "defarm_user";
+
 export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return getAccessToken();
 }
 
 export function getStoredUser(): User | null {
@@ -56,48 +73,17 @@ export function getStoredUser(): User | null {
   }
 }
 
-export function storeAuth(token: string, user: User): void {
-  localStorage.setItem(TOKEN_KEY, token);
+export function storeAuth(accessToken: string, user: User, refreshToken?: string): void {
+  storeTokens(accessToken, refreshToken);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearAuth(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  clearTokens();
   localStorage.removeItem(USER_KEY);
 }
 
-export function isTokenExpired(expiresAt: number): boolean {
-  return Date.now() >= expiresAt * 1000;
-}
-
-// Auth API helper
-async function authRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = getStoredToken();
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
-  if (token) {
-    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${AUTH_API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Auth request failed with status ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// Auth endpoints
+// Auth endpoints (via Gateway)
 export async function login(data: LoginRequest): Promise<AuthResponse> {
   return authRequest<AuthResponse>("/auth/login", {
     method: "POST",
@@ -109,6 +95,13 @@ export async function register(data: RegisterRequest): Promise<AuthResponse> {
   return authRequest<AuthResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function refreshToken(refresh_token: string): Promise<AuthResponse> {
+  return authRequest<AuthResponse>("/auth/refresh", {
+    method: "POST",
+    body: JSON.stringify({ refresh_token }),
   });
 }
 
