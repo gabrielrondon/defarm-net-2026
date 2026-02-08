@@ -220,6 +220,19 @@ export interface ActivitySummary {
   user_id?: string | null;
 }
 
+export interface CreateActivityInput {
+  actor_id: string;
+  action: string;
+  resource_type: string;
+  description: string;
+  is_public?: boolean;
+  actor_name?: string | null;
+  circuit_id?: string | null;
+  metadata?: Record<string, unknown> | null;
+  resource_id?: string | null;
+  resource_name?: string | null;
+}
+
 // --- Audit ---
 
 export interface AuditLog {
@@ -437,6 +450,20 @@ export interface MerkleTree {
   metadata?: Record<string, unknown> | null;
 }
 
+export interface MerkleNode {
+  id: string;
+  tree_id: string;
+  node_hash: string;
+  position: number;
+  level: number;
+  is_leaf: boolean;
+  created_at: string;
+  data_hash?: string | null;
+  left_child_id?: string | null;
+  right_child_id?: string | null;
+  parent_id?: string | null;
+}
+
 export interface ListMerkleTreesResponse {
   trees: MerkleTree[];
   count: number;
@@ -533,6 +560,8 @@ export interface IngestionSummary {
   identifiers_resolved: Record<string, number>;
   unclassified_fields: string[];
 }
+
+export type TrustLevel = "verified" | "self_reported" | "unverified";
 
 // --- Workflows ---
 

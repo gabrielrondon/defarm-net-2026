@@ -11,3 +11,4 @@ export * from "./snapshots";
 export * from "./merkle";
 export * from "./sessions";
 export * from "./admin";
+export * from "./health";
