@@ -51,7 +51,7 @@ export default function Cadastro() {
         password,
         full_name: fullName,
         workspace_slug: workspaceSlug || fullName.toLowerCase().replace(/\s+/g, "-"),
-        workspace_name: workspaceName || undefined,
+        workspace_name: workspaceName || fullName,
       });
       navigate("/app");
     } catch (error) {
