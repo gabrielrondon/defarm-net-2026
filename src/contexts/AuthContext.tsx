@@ -84,10 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = response.access_token || respAny.token;
     const refresh = response.refresh_token || respAny.refresh_token;
     storeAuth(token, userData, refresh);
-    setUser(userData);
 
-    // After auth is stored, ensure user has a circuit for RBAC
+    // Ensure circuit exists BEFORE setting user (which triggers Dashboard mount)
     await ensureDefaultCircuit(userData.id);
+    setUser(userData);
   };
 
   const register = async (data: RegisterRequest) => {
@@ -104,10 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = response.access_token || respAny.token;
     const refresh = response.refresh_token || respAny.refresh_token;
     storeAuth(token, userData, refresh);
-    setUser(userData);
 
-    // After registration, create the user's first circuit
+    // Ensure circuit exists BEFORE setting user (which triggers Dashboard mount)
     await ensureDefaultCircuit(userData.id);
+    setUser(userData);
   };
 
   const logout = async () => {
