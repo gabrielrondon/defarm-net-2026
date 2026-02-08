@@ -7,10 +7,13 @@ import {
   login as apiLogin,
   register as apiRegister,
   logout as apiLogout,
+  refreshToken as apiRefreshToken,
   getStoredToken,
   getStoredUser,
   storeAuth,
   clearAuth,
+  getRefreshToken,
+  storeTokens,
 } from "@/lib/defarm-api";
 import { createCircuit, getCircuits } from "@/lib/api/circuits";
 
@@ -65,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         owner_id: userId,
       });
       console.log("[DeFarm Auth] Default circuit created ✅");
+
+      // Refresh token to pick up new RBAC permissions after circuit creation
+      const currentRefresh = getRefreshToken();
+      if (currentRefresh) {
+        try {
+          const refreshed = await apiRefreshToken(currentRefresh);
+          storeTokens(refreshed.access_token, refreshed.refresh_token);
+          console.log("[DeFarm Auth] Token refreshed with updated RBAC ✅");
+        } catch (refreshErr) {
+          console.warn("[DeFarm Auth] Token refresh after circuit creation failed:", refreshErr);
+        }
+      }
     } catch (createErr) {
       console.warn("[DeFarm Auth] Could not create default circuit:", createErr);
     }
