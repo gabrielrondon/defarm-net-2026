@@ -87,18 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginRequest) => {
     const response: AuthResponse = await apiLogin(data);
-    const respAny = response as any;
     
     const userData: User = {
-      id: respAny.user?.id || response.user_id || "unknown",
-      username: respAny.user?.username || respAny.user?.full_name || data.email,
-      email: respAny.user?.email || data.email,
-      workspace_id: respAny.user?.workspace_id || response.workspace_id || "default",
+      id: response.user?.id || response.user_id || "unknown",
+      username: response.user?.name || data.email,
+      email: response.user?.email || data.email,
+      workspace_id: response.user?.workspace_id || response.workspace_id || "default",
     };
     
-    const token = response.access_token || respAny.token;
-    const refresh = response.refresh_token || respAny.refresh_token;
-    storeAuth(token, userData, refresh);
+    storeAuth(response.access_token, userData, response.refresh_token);
 
     // Ensure circuit exists BEFORE setting user (which triggers Dashboard mount)
     await ensureDefaultCircuit(userData.id);
@@ -107,18 +104,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: RegisterRequest) => {
     const response: AuthResponse = await apiRegister(data);
-    const respAny = response as any;
     
     const userData: User = {
-      id: respAny.user?.id || response.user_id || "unknown",
-      username: respAny.user?.username || data.full_name || data.email,
-      email: respAny.user?.email || data.email,
-      workspace_id: respAny.user?.workspace_id || response.workspace_id || "default",
+      id: response.user?.id || response.user_id || "unknown",
+      username: response.user?.name || data.full_name || data.email,
+      email: response.user?.email || data.email,
+      workspace_id: response.user?.workspace_id || response.workspace_id || "default",
     };
     
-    const token = response.access_token || respAny.token;
-    const refresh = response.refresh_token || respAny.refresh_token;
-    storeAuth(token, userData, refresh);
+    storeAuth(response.access_token, userData, response.refresh_token);
 
     // Ensure circuit exists BEFORE setting user (which triggers Dashboard mount)
     await ensureDefaultCircuit(userData.id);
