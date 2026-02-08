@@ -149,8 +149,8 @@ export default function NovoCircuito() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="private">Privado</SelectItem>
+                <SelectItem value="restricted">Restrito (apenas membros)</SelectItem>
                 <SelectItem value="public">Público</SelectItem>
-                <SelectItem value="members_only">Apenas membros</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
