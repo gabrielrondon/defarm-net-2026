@@ -44,20 +44,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Ensure the user has at least one circuit (required for RBAC permissions)
   const ensureDefaultCircuit = async (userId: string) => {
     try {
+      // Try listing circuits first
       const circuits = await getCircuits();
-      if (circuits.length === 0) {
-        console.log("[DeFarm Auth] No circuits found, creating default...");
-        await createCircuit({
-          name: "Meu Circuito",
-          description: "Circuito padrão criado automaticamente",
-          circuit_type: "private",
-          visibility: "private",
-          owner_id: userId,
-        });
-        console.log("[DeFarm Auth] Default circuit created ✅");
+      if (circuits.length > 0) {
+        console.log("[DeFarm Auth] User already has circuits, skipping creation");
+        return;
       }
     } catch (err) {
-      console.warn("[DeFarm Auth] Could not ensure default circuit:", err);
+      // 403 is expected when user has no circuit yet — proceed to create one
+      console.log("[DeFarm Auth] getCircuits failed (expected if no circuit yet), creating default...");
+    }
+
+    // Create a default circuit so the user gets RBAC permissions
+    try {
+      await createCircuit({
+        name: "Meu Circuito",
+        description: "Circuito padrão criado automaticamente",
+        circuit_type: "private",
+        visibility: "private",
+        owner_id: userId,
+      });
+      console.log("[DeFarm Auth] Default circuit created ✅");
+    } catch (createErr) {
+      console.warn("[DeFarm Auth] Could not create default circuit:", createErr);
     }
   };
 
