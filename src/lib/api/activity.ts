@@ -56,7 +56,3 @@ export async function getActivitySummaries(params: {
   return registryRequest<ActivitySummary[]>(`/activity/summaries${buildQueryString(params)}`);
 }
 
-// Health check
-export async function checkHealth() {
-  return registryRequest<{ status: string; database: { connected: boolean }; redis: { connected: boolean }; timestamp: string }>("/health");
-}
