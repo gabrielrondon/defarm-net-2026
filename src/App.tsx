@@ -26,6 +26,9 @@ import ItensList from "./pages/app/ItensList";
 import ItemDetail from "./pages/app/ItemDetail";
 import NovoItem from "./pages/app/NovoItem";
 import EventosList from "./pages/app/EventosList";
+import AuditTrail from "./pages/app/AuditTrail";
+import SnapshotsList from "./pages/app/SnapshotsList";
+import MerkleTreesList from "./pages/app/MerkleTreesList";
 import Configuracoes from "./pages/app/Configuracoes";
 
 const queryClient = new QueryClient();
@@ -57,6 +60,9 @@ const App = () => (
             <Route path="/app/itens/novo" element={<AppLayout><NovoItem /></AppLayout>} />
             <Route path="/app/itens/:id" element={<AppLayout><ItemDetail /></AppLayout>} />
             <Route path="/app/eventos" element={<AppLayout><EventosList /></AppLayout>} />
+            <Route path="/app/auditoria" element={<AppLayout><AuditTrail /></AppLayout>} />
+            <Route path="/app/snapshots" element={<AppLayout><SnapshotsList /></AppLayout>} />
+            <Route path="/app/merkle" element={<AppLayout><MerkleTreesList /></AppLayout>} />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
