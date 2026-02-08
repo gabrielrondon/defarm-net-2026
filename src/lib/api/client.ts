@@ -1,6 +1,9 @@
 // DeFarm API Client - via Gateway
 // All frontend requests go through the API Gateway
-const GATEWAY_BASE = "https://gateway-service-production-f54d.up.railway.app";
+// Uses VITE_API_BASE_URL env var with production fallback
+const GATEWAY_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://gateway-service-production-f54d.up.railway.app";
 
 // Registry endpoints are prefixed with /api on the gateway
 export const REGISTRY_API_BASE = `${GATEWAY_BASE}/api`;

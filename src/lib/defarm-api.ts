@@ -26,6 +26,7 @@ import {
   storeTokens,
   clearTokens,
   getAccessToken,
+  getRefreshToken,
 } from "./api/client";
 
 export interface LoginRequest {
@@ -41,13 +42,25 @@ export interface RegisterRequest {
   workspace_name?: string;
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  workspace_id: string;
+  workspace_slug: string;
+  role: string;
+}
+
 export interface AuthResponse {
   access_token: string;
   refresh_token: string;
-  user_id: string;
-  workspace_id: string;
+  token_type: string;
+  expires_in: number;
+  user: AuthUser;
+  // Legacy flat fields (backward compat)
+  user_id?: string;
+  workspace_id?: string;
   expires_at?: number;
-  token_type?: string;
 }
 
 export interface User {
@@ -108,7 +121,11 @@ export async function refreshToken(refresh_token: string): Promise<AuthResponse>
 
 export async function logout(): Promise<void> {
   try {
-    await authRequest("/auth/logout", { method: "POST" });
+    const refresh = getRefreshToken();
+    await authRequest("/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
   } catch {
     console.log("[DeFarm Auth] Logout endpoint error, clearing local auth");
   } finally {
