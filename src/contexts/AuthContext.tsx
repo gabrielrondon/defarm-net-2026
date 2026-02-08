@@ -12,6 +12,7 @@ import {
   storeAuth,
   clearAuth,
 } from "@/lib/defarm-api";
+import { createCircuit, getCircuits } from "@/lib/api/circuits";
 
 interface AuthContextType {
   user: User | null;
@@ -40,6 +41,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // Ensure the user has at least one circuit (required for RBAC permissions)
+  const ensureDefaultCircuit = async (userId: string) => {
+    try {
+      const circuits = await getCircuits();
+      if (circuits.length === 0) {
+        console.log("[DeFarm Auth] No circuits found, creating default...");
+        await createCircuit({
+          name: "Meu Circuito",
+          description: "Circuito padrão criado automaticamente",
+          circuit_type: "private",
+          visibility: "private",
+          owner_id: userId,
+        });
+        console.log("[DeFarm Auth] Default circuit created ✅");
+      }
+    } catch (err) {
+      console.warn("[DeFarm Auth] Could not ensure default circuit:", err);
+    }
+  };
+
   const login = async (data: LoginRequest) => {
     const response: AuthResponse = await apiLogin(data);
     const respAny = response as any;
@@ -55,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refresh = response.refresh_token || respAny.refresh_token;
     storeAuth(token, userData, refresh);
     setUser(userData);
+
+    // After auth is stored, ensure user has a circuit for RBAC
+    await ensureDefaultCircuit(userData.id);
   };
 
   const register = async (data: RegisterRequest) => {
@@ -72,6 +96,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refresh = response.refresh_token || respAny.refresh_token;
     storeAuth(token, userData, refresh);
     setUser(userData);
+
+    // After registration, create the user's first circuit
+    await ensureDefaultCircuit(userData.id);
   };
 
   const logout = async () => {
