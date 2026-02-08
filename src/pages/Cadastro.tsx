@@ -18,10 +18,11 @@ const passwordRequirements = [
 ];
 
 export default function Cadastro() {
-  const [name, setName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceSlug, setWorkspaceSlug] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
@@ -46,9 +47,10 @@ export default function Cadastro() {
 
     try {
       await register({
-        username: name,
         email,
         password,
+        full_name: fullName,
+        workspace_slug: workspaceSlug || fullName.toLowerCase().replace(/\s+/g, "-"),
         workspace_name: workspaceName || undefined,
       });
       navigate("/app");
@@ -113,13 +115,13 @@ export default function Cadastro() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome de usuário</Label>
+              <Label htmlFor="name">Nome completo</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="joaosilva"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="João Silva"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 required
                 className="h-12"
               />

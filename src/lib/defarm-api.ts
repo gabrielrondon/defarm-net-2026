@@ -29,14 +29,15 @@ import {
 } from "./api/client";
 
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  username: string;
-  password: string;
   email: string;
+  password: string;
+  full_name: string;
+  workspace_slug: string;
   workspace_name?: string;
 }
 

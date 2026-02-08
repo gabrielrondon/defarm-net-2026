@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { register as apiRegister, storeAuth } from "@/lib/defarm-api";
 import logoIcon from "@/assets/logo-icon.png";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,7 +24,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login({ username, password });
+      await login({ email, password });
       navigate("/app");
     } catch (error) {
       toast({
@@ -70,13 +72,13 @@ export default function Login() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuário ou Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="seu_usuario ou email@exemplo.com"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-12"
               />
@@ -135,24 +137,58 @@ export default function Login() {
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          {/* Demo access */}
+          {/* Demo access - registers a real user via gateway */}
           <Button
             type="button"
             variant="outline"
             className="w-full h-12 mt-4 font-semibold"
-            onClick={() => {
-              const demoUser = {
-                id: "demo-user-001",
-                username: "demo",
-                email: "demo@defarm.net",
-                workspace_id: "demo-workspace",
-              };
-              localStorage.setItem("defarm_token", "demo-token");
-              localStorage.setItem("defarm_user", JSON.stringify(demoUser));
-              window.location.href = "/app";
+            disabled={isDemoLoading}
+            onClick={async () => {
+              setIsDemoLoading(true);
+              try {
+                // Try to login first, if fails then register
+                try {
+                  await login({ email: "frontend-demo@lovable.dev", password: "DemoPass2025!" });
+                  navigate("/app");
+                  return;
+                } catch {
+                  // Login failed, try register
+                }
+
+                const response = await apiRegister({
+                  email: "frontend-demo@lovable.dev",
+                  password: "DemoPass2025!",
+                  full_name: "Frontend Demo",
+                  workspace_slug: "lovable-demo",
+                  workspace_name: "Lovable Demo",
+                });
+
+                const userData = {
+                  id: response.user_id || (response as any).user?.id || "demo-user",
+                  username: "frontend-demo",
+                  email: "frontend-demo@lovable.dev",
+                  workspace_id: response.workspace_id || (response as any).user?.workspace_id || "demo",
+                };
+
+                storeAuth(response.access_token, userData, response.refresh_token);
+                window.location.href = "/app";
+              } catch (error) {
+                console.error("[Demo] Registration/login failed:", error);
+                toast({
+                  title: "Erro no acesso Demo",
+                  description: error instanceof Error ? error.message : "Tente novamente",
+                  variant: "destructive",
+                });
+              } finally {
+                setIsDemoLoading(false);
+              }
             }}
           >
-            Entrar como Demo
+            {isDemoLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              "Entrar como Demo"
+            )}
           </Button>
 
           {/* Sign up link */}
