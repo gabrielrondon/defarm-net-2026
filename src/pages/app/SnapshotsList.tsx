@@ -9,12 +9,10 @@ import {
   RefreshCw,
   Archive,
   Trash2,
-  GitCompare,
-  RotateCcw,
   Plus,
   CheckCircle,
   Database,
-  FileText,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +50,7 @@ import {
 } from "@/lib/defarm-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { MerkleTreeViewer } from "@/components/snapshots/MerkleTreeViewer";
 
 export default function SnapshotsList() {
   const { user } = useAuth();
@@ -65,6 +64,8 @@ export default function SnapshotsList() {
   const [formDescription, setFormDescription] = useState("");
   const [formResourceType, setFormResourceType] = useState("circuit");
   const [formSnapshotType, setFormSnapshotType] = useState("manual");
+  const [merkleSnapshotId, setMerkleSnapshotId] = useState<string | null>(null);
+  const [merkleSnapshotName, setMerkleSnapshotName] = useState("");
 
   const { data: snapshots = [], isLoading, error, refetch } = useQuery({
     queryKey: ["snapshots"],
@@ -403,6 +404,19 @@ export default function SnapshotsList() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                    title="Ver Verificação Criptográfica"
+                    onClick={() => {
+                      setMerkleSnapshotId(snapshot.id);
+                      setMerkleSnapshotName(snapshot.snapshot_name);
+                    }}
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Verificação</span>
+                  </Button>
                   {!snapshot.is_archived && (
                     <Button
                       variant="ghost"
@@ -447,6 +461,13 @@ export default function SnapshotsList() {
           )}
         </div>
       )}
+      {/* Merkle Tree Viewer Drawer */}
+      <MerkleTreeViewer
+        isOpen={!!merkleSnapshotId}
+        onClose={() => setMerkleSnapshotId(null)}
+        snapshotId={merkleSnapshotId ?? ""}
+        snapshotName={merkleSnapshotName}
+      />
     </div>
   );
 }
