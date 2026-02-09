@@ -1,20 +1,23 @@
 import { Link } from "react-router-dom";
 import { Linkedin, Twitter, Instagram } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
 
-const footerLinks = {
-  produto: [
-    { name: "Rastreabilidade", href: "/solucoes" },
-    { name: "Compliance EUDR", href: "/solucoes" },
-    { name: "Tokenização", href: "/solucoes" },
-  ],
-  empresa: [
-    { name: "Sobre Nós", href: "/sobre" },
-    { name: "Contato", href: "/contato" },
-  ],
-};
-
 export function Footer() {
+  const { t } = useTranslation();
+
+  const footerLinks = {
+    produto: [
+      { name: t("footer.traceability"), href: "/solucoes" },
+      { name: t("footer.compliance"), href: "/solucoes" },
+      { name: t("footer.tokenization"), href: "/solucoes" },
+    ],
+    empresa: [
+      { name: t("footer.aboutUs"), href: "/sobre" },
+      { name: t("footer.contact"), href: "/contato" },
+    ],
+  };
+
   return (
     <footer className="bg-foreground text-background">
       <div className="section-container py-16">
@@ -26,7 +29,7 @@ export function Footer() {
               <span className="text-2xl font-bold">DeFarm</span>
             </div>
             <p className="text-background/70 max-w-sm mb-6">
-              Plataforma líder em rastreabilidade agrícola. Conectando produtores, frigoríficos e varejistas com transparência e tecnologia.
+              {t("footer.description")}
             </p>
             <div className="flex gap-4">
               <a href="#" className="text-background/70 hover:text-primary transition-colors">
@@ -43,7 +46,7 @@ export function Footer() {
 
           {/* Links */}
           <div>
-            <h4 className="font-semibold mb-4">Produto</h4>
+            <h4 className="font-semibold mb-4">{t("footer.product")}</h4>
             <ul className="space-y-3">
               {footerLinks.produto.map((link) => (
                 <li key={link.name}>
@@ -59,7 +62,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Empresa</h4>
+            <h4 className="font-semibold mb-4">{t("footer.company")}</h4>
             <ul className="space-y-3">
               {footerLinks.empresa.map((link) => (
                 <li key={link.name}>
@@ -78,14 +81,14 @@ export function Footer() {
         {/* Bottom */}
         <div className="border-t border-background/20 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-background/70 text-sm">
-            © 2025 DeFarm. Todos os direitos reservados.
+            {t("footer.rights")}
           </p>
           <div className="flex gap-6 text-sm">
             <a href="#" className="text-background/70 hover:text-primary transition-colors">
-              Política de Privacidade
+              {t("footer.privacy")}
             </a>
             <a href="#" className="text-background/70 hover:text-primary transition-colors">
-              Termos de Uso
+              {t("footer.terms")}
             </a>
           </div>
         </div>

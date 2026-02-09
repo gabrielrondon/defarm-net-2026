@@ -1,0 +1,271 @@
+{
+  "nav": {
+    "solutions": "Soluções",
+    "about": "Sobre",
+    "contact": "Contato",
+    "requestAccess": "Solicitar Acesso",
+    "back": "Voltar"
+  },
+  "platform": {
+    "rastreio": {
+      "label": "Plataforma #1 em Rastreabilidade",
+      "shortLabel": "Rastreio",
+      "headline": "Transforme rastreabilidade em",
+      "highlight": "liquidez",
+      "description": "Conectamos toda a cadeia produtiva com transparência, tecnologia blockchain e compliance EUDR. Do campo até a mesa do consumidor.",
+      "cta": "Começar agora",
+      "secondaryCta": "Ver como funciona",
+      "stats": {
+        "0": { "value": "20.000+", "label": "Gados rastreados" },
+        "1": { "value": "143", "label": "Produtores ativos" },
+        "2": { "value": "98%", "label": "Satisfação" }
+      },
+      "features": {
+        "0": "Blockchain imutável",
+        "1": "Compliance EUDR"
+      }
+    },
+    "financeiro": {
+      "label": "Financeiro",
+      "shortLabel": "Finance",
+      "headline": "CPR Digital com",
+      "highlight": "garantias reais",
+      "description": "Emita CPRs financeiros online e vincule ativos rastreáveis como garantia. Acesse melhores taxas com bancos parceiros.",
+      "cta": "Emitir CPR",
+      "secondaryCta": "Simular taxas",
+      "stats": {
+        "0": { "value": "R$50M+", "label": "Em CPRs emitidos" },
+        "1": { "value": "-2.5%", "label": "Taxa média vs mercado" },
+        "2": { "value": "24h", "label": "Aprovação rápida" }
+      },
+      "features": {
+        "0": "Melhores taxas",
+        "1": "Garantias tokenizadas"
+      }
+    },
+    "developers": {
+      "label": "Developers",
+      "shortLabel": "Devs",
+      "headline": "APIs poderosas para",
+      "highlight": "integrar tudo",
+      "description": "Documentação completa, SDKs em múltiplas linguagens e suporte dedicado. Construa sobre a infraestrutura DeFarm.",
+      "cta": "Acessar Docs",
+      "stats": {
+        "0": { "value": "REST", "label": "API moderna" },
+        "1": { "value": "99.9%", "label": "Uptime garantido" },
+        "2": { "value": "5 min", "label": "Para integrar" }
+      },
+      "features": {
+        "0": "SDKs prontos",
+        "1": "Docs completos"
+      }
+    }
+  },
+  "cta": {
+    "headline": "Pronto para transformar sua cadeia produtiva?",
+    "description": "Junte-se a centenas de produtores que já estão usando a DeFarm para garantir rastreabilidade e compliance.",
+    "primary": "Começar Agora",
+    "secondary": "Falar com Especialista"
+  },
+  "howItWorks": {
+    "title": "Como",
+    "titleHighlight": "funciona",
+    "subtitle": "Processo simples e eficiente para rastrear toda sua produção",
+    "steps": {
+      "0": { "title": "Cadastro do Animal", "description": "Registre cada animal com dados completos de origem, saúde e manejo." },
+      "1": { "title": "Rastreamento em Tempo Real", "description": "Acompanhe toda a movimentação e histórico do animal na blockchain." },
+      "2": { "title": "Compliance Automático", "description": "Gere relatórios de conformidade EUDR de forma automática e segura." },
+      "3": { "title": "Verificação por QR Code", "description": "Consumidores acessam toda a origem do produto com um simples scan." }
+    }
+  },
+  "benefits": {
+    "title": "Soluções para toda a",
+    "titleHighlight": "cadeia produtiva",
+    "subtitle": "Benefícios específicos para cada participante do ecossistema",
+    "producers": {
+      "title": "Para Produtores",
+      "description": "Valorize sua produção com certificação de origem. Acesso a mercados premium e melhor precificação.",
+      "benefits": ["Registro digital completo", "Histórico de manejo", "Certificados automáticos", "Acesso a novos mercados"]
+    },
+    "processors": {
+      "title": "Para Frigoríficos",
+      "description": "Garanta compliance total com regulamentações e rastreabilidade de ponta a ponta.",
+      "benefits": ["Compliance EUDR", "Due diligence simplificada", "Relatórios automáticos", "Integração com sistemas"]
+    },
+    "retailers": {
+      "title": "Para Varejistas",
+      "description": "Ofereça transparência total aos consumidores e diferencie sua marca no mercado.",
+      "benefits": ["QR Code para clientes", "Selo de origem", "Marketing sustentável", "Fidelização de clientes"]
+    },
+    "learnMore": "Saiba mais"
+  },
+  "footer": {
+    "description": "Plataforma líder em rastreabilidade agrícola. Conectando produtores, frigoríficos e varejistas com transparência e tecnologia.",
+    "product": "Produto",
+    "traceability": "Rastreabilidade",
+    "compliance": "Compliance EUDR",
+    "tokenization": "Tokenização",
+    "company": "Empresa",
+    "aboutUs": "Sobre Nós",
+    "contact": "Contato",
+    "rights": "© 2025 DeFarm. Todos os direitos reservados.",
+    "privacy": "Política de Privacidade",
+    "terms": "Termos de Uso"
+  },
+  "solutions": {
+    "title": "Nossas",
+    "titleHighlight": "Soluções",
+    "subtitle": "Tecnologia de ponta para rastreabilidade agrícola completa",
+    "learnMore": "Saiba mais",
+    "items": {
+      "0": {
+        "title": "Rastreabilidade de Gado",
+        "description": "Sistema completo de rastreamento individual de animais. Do nascimento ao abate, cada etapa é registrada de forma segura e imutável na blockchain.",
+        "features": ["Registro individual por animal", "Histórico completo de movimentações", "Dados de saúde e vacinação", "Integração com sistemas existentes"]
+      },
+      "1": {
+        "title": "Compliance EUDR",
+        "description": "Atenda às exigências do Regulamento de Desmatamento da União Europeia de forma automática. Relatórios e documentação prontos para exportação.",
+        "features": ["Due diligence automatizada", "Geolocalização de propriedades", "Relatórios para importadores", "Certificação de origem"]
+      },
+      "2": {
+        "title": "Tokenização",
+        "description": "Transforme seus ativos agrícolas em tokens digitais. Acesse novos mercados e possibilidades de financiamento através da tecnologia blockchain.",
+        "features": ["Tokens para cada lote", "Marketplace integrado", "Liquidez para produtores", "Transparência total"]
+      },
+      "3": {
+        "title": "Verificação por QR Code",
+        "description": "Permita que consumidores finais verifiquem toda a origem do produto com um simples scan de QR Code no ponto de venda.",
+        "features": ["QR Code por produto", "Página de verificação", "Histórico completo", "Compartilhamento em redes"]
+      }
+    }
+  },
+  "about": {
+    "title": "Sobre a",
+    "titleHighlight": "DeFarm",
+    "subtitle": "Transformando a agropecuária brasileira com tecnologia e transparência",
+    "story1": "A DeFarm nasceu da necessidade de trazer mais transparência e confiança para a cadeia produtiva agrícola brasileira. Fundada em 2020 por especialistas em tecnologia blockchain e agronegócio, nossa missão é conectar cada elo da cadeia com dados verificáveis e imutáveis.",
+    "story2": "Acreditamos que a rastreabilidade não é apenas uma exigência regulatória, mas uma oportunidade de valorizar a produção brasileira no mercado global. Com a DeFarm, produtores podem comprovar a qualidade e origem de seus produtos, frigoríficos garantem compliance total, e consumidores têm acesso à história completa do que consomem.",
+    "stats": {
+      "0": { "number": "2020", "label": "Ano de fundação" },
+      "1": { "number": "20.000+", "label": "Animais rastreados" },
+      "2": { "number": "143", "label": "Produtores parceiros" },
+      "3": { "number": "15", "label": "Estados atendidos" }
+    },
+    "valuesTitle": "Nossos",
+    "valuesHighlight": "Valores",
+    "values": {
+      "0": { "title": "Missão", "description": "Revolucionar a rastreabilidade agrícola brasileira, garantindo transparência e confiança em toda a cadeia produtiva." },
+      "1": { "title": "Propósito", "description": "Conectar produtores, indústria e consumidores através de tecnologia acessível e dados confiáveis." },
+      "2": { "title": "Integridade", "description": "Dados imutáveis e verificáveis. Nossa plataforma blockchain garante que cada informação seja verdadeira." },
+      "3": { "title": "Colaboração", "description": "Trabalhamos lado a lado com todos os participantes da cadeia para criar soluções que funcionam na prática." }
+    }
+  },
+  "contact": {
+    "title": "Entre em",
+    "titleHighlight": "Contato",
+    "subtitle": "Estamos prontos para ajudar você a transformar sua cadeia produtiva",
+    "formTitle": "Envie sua mensagem",
+    "name": "Nome",
+    "namePlaceholder": "Seu nome completo",
+    "email": "Email",
+    "emailPlaceholder": "seu@email.com",
+    "subject": "Assunto",
+    "subjectPlaceholder": "Qual o assunto?",
+    "message": "Mensagem",
+    "messagePlaceholder": "Escreva sua mensagem aqui...",
+    "send": "Enviar Mensagem",
+    "infoTitle": "Informações de Contato",
+    "infoDescription": "Entre em contato conosco através dos canais abaixo ou preencha o formulário que retornaremos em até 24 horas.",
+    "emailLabel": "Email",
+    "phoneLabel": "Telefone",
+    "addressLabel": "Endereço"
+  },
+  "login": {
+    "welcome": "Bem-vindo de volta",
+    "subtitle": "Entre para acessar sua plataforma de rastreabilidade",
+    "email": "Email",
+    "password": "Senha",
+    "forgotPassword": "Esqueceu a senha?",
+    "signIn": "Entrar",
+    "or": "ou",
+    "demoAccess": "Entrar como Demo",
+    "noAccount": "Não tem uma conta?",
+    "createAccount": "Criar conta",
+    "sideTitle": "Rastreabilidade do campo à mesa",
+    "sideDescription": "Gerencie seus circuitos, tokenize itens e garanta compliance EUDR com a plataforma mais completa do Brasil.",
+    "errorTitle": "Erro ao entrar",
+    "errorDescription": "Credenciais inválidas",
+    "demoErrorTitle": "Erro no acesso Demo"
+  },
+  "register": {
+    "title": "Criar conta",
+    "subtitle": "Preencha os dados para começar a usar a plataforma",
+    "fullName": "Nome completo",
+    "fullNamePlaceholder": "João Silva",
+    "email": "Email",
+    "emailPlaceholder": "seu@email.com",
+    "workspace": "Nome da fazenda/empresa (opcional)",
+    "workspacePlaceholder": "Fazenda São João",
+    "password": "Senha",
+    "createAccount": "Criar conta",
+    "hasAccount": "Já tem uma conta?",
+    "signIn": "Entrar",
+    "sideTitle": "Junte-se à DeFarm",
+    "sideDescription": "Crie sua conta e comece a rastrear sua cadeia produtiva com transparência e tecnologia blockchain.",
+    "passwordReqs": {
+      "length": "Mínimo 8 caracteres",
+      "uppercase": "Uma letra maiúscula",
+      "lowercase": "Uma letra minúscula",
+      "number": "Um número",
+      "special": "Um caractere especial"
+    },
+    "invalidPassword": "Senha inválida",
+    "invalidPasswordDesc": "A senha não atende todos os requisitos",
+    "errorTitle": "Erro ao criar conta",
+    "errorDescription": "Tente novamente mais tarde"
+  },
+  "comoFunciona": {
+    "steps": {
+      "0": { "title": "Cadastre sua Propriedade", "subtitle": "Georreferenciamento preciso", "description": "Delimite o polígono da sua propriedade rural com coordenadas GPS." },
+      "1": { "title": "Tokenize seus Itens", "subtitle": "Identificador único blockchain", "description": "Cada animal ou lote recebe um DFID registrado em blockchain imutável." },
+      "2": { "title": "Crie Circuitos", "subtitle": "Conecte a cadeia produtiva", "description": "Circuitos conectam participantes com permissões controladas." },
+      "3": { "title": "Compartilhe Verificações", "subtitle": "Transparência total", "description": "Gere links verificáveis para compradores, auditores e consumidores." },
+      "4": { "title": "Checagens Verificáveis", "subtitle": "Compliance automático", "description": "Todas as checagens socioambientais em um só lugar." }
+    },
+    "stepOf": "Passo {{current}} de {{total}}",
+    "back": "Voltar",
+    "next": "Próximo",
+    "accessPlatform": "Acessar Plataforma",
+    "polygonVerified": "Polígono verificado",
+    "checks": {
+      "0": "Compliance Ambiental",
+      "1": "Livre de Desmatamento",
+      "2": "Documentação Sanitária",
+      "3": "Compliance EUDR"
+    }
+  },
+  "taxas": {
+    "title": "Taxas de CPR no Mercado",
+    "description": "Taxas atualizadas do mercado de Cédula de Produto Rural (Janeiro 2026)",
+    "types": {
+      "0": "CPR Física - Grãos",
+      "1": "CPR Financeira - Soja",
+      "2": "CPR Financeira - Milho",
+      "3": "CPR Pecuária - Boi Gordo"
+    },
+    "perYear": "a.a.",
+    "promo": "Com a DeFarm, você pode emitir CPRs com garantias tokenizadas e conseguir taxas até <strong>2.5% menores</strong> que a média do mercado.",
+    "accessSpace": "Acessar meu Espaço",
+    "source": "Fonte: Mercado secundário e bancos parceiros. Atualizado em Jan/2026."
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Página não encontrada",
+    "backHome": "Voltar ao Início"
+  },
+  "languageToggle": {
+    "en": "EN",
+    "pt": "PT"
+  }
+}

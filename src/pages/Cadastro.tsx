@@ -6,16 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Loader2, Eye, EyeOff, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
 import { cn } from "@/lib/utils";
-
-const passwordRequirements = [
-  { label: "Mínimo 8 caracteres", test: (p: string) => p.length >= 8 },
-  { label: "Uma letra maiúscula", test: (p: string) => /[A-Z]/.test(p) },
-  { label: "Uma letra minúscula", test: (p: string) => /[a-z]/.test(p) },
-  { label: "Um número", test: (p: string) => /\d/.test(p) },
-  { label: "Um caractere especial", test: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
-];
 
 export default function Cadastro() {
   const [fullName, setFullName] = useState("");
@@ -28,6 +21,15 @@ export default function Cadastro() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
+
+  const passwordRequirements = [
+    { label: t("register.passwordReqs.length"), test: (p: string) => p.length >= 8 },
+    { label: t("register.passwordReqs.uppercase"), test: (p: string) => /[A-Z]/.test(p) },
+    { label: t("register.passwordReqs.lowercase"), test: (p: string) => /[a-z]/.test(p) },
+    { label: t("register.passwordReqs.number"), test: (p: string) => /\d/.test(p) },
+    { label: t("register.passwordReqs.special"), test: (p: string) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
+  ];
 
   const passwordValid = passwordRequirements.every((req) => req.test(password));
 
@@ -36,8 +38,8 @@ export default function Cadastro() {
     
     if (!passwordValid) {
       toast({
-        title: "Senha inválida",
-        description: "A senha não atende todos os requisitos",
+        title: t("register.invalidPassword"),
+        description: t("register.invalidPasswordDesc"),
         variant: "destructive",
       });
       return;
@@ -56,8 +58,8 @@ export default function Cadastro() {
       navigate("/app");
     } catch (error) {
       toast({
-        title: "Erro ao criar conta",
-        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+        title: t("register.errorTitle"),
+        description: error instanceof Error ? error.message : t("register.errorDescription"),
         variant: "destructive",
       });
     } finally {
@@ -74,23 +76,23 @@ export default function Cadastro() {
             <img src={logoIcon} alt="DeFarm" className="h-14 w-14" />
           </div>
           <h2 className="text-3xl font-bold text-foreground mb-4">
-            Junte-se à DeFarm
+            {t("register.sideTitle")}
           </h2>
           <p className="text-lg text-muted-foreground">
-            Crie sua conta e comece a rastrear sua cadeia produtiva com transparência e tecnologia blockchain.
+            {t("register.sideDescription")}
           </p>
         </div>
       </div>
 
       {/* Right side - Form */}
       <div className="flex-1 flex flex-col p-8">
-        {/* Back button - top left */}
+        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
           className="self-start inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-background border-2 border-foreground rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--foreground))] hover:shadow-[1px_1px_0px_0px_hsl(var(--foreground))] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar
+          {t("nav.back")}
         </button>
 
         {/* Form container */}
@@ -105,21 +107,21 @@ export default function Cadastro() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              Criar conta
+              {t("register.title")}
             </h1>
             <p className="text-muted-foreground">
-              Preencha os dados para começar a usar a plataforma
+              {t("register.subtitle")}
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome completo</Label>
+              <Label htmlFor="name">{t("register.fullName")}</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="João Silva"
+                placeholder={t("register.fullNamePlaceholder")}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -128,11 +130,11 @@ export default function Cadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("register.email")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder={t("register.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -141,11 +143,11 @@ export default function Cadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="workspace">Nome da fazenda/empresa (opcional)</Label>
+              <Label htmlFor="workspace">{t("register.workspace")}</Label>
               <Input
                 id="workspace"
                 type="text"
-                placeholder="Fazenda São João"
+                placeholder={t("register.workspacePlaceholder")}
                 value={workspaceName}
                 onChange={(e) => setWorkspaceName(e.target.value)}
                 className="h-12"
@@ -153,7 +155,7 @@ export default function Cadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{t("register.password")}</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -204,7 +206,7 @@ export default function Cadastro() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Criar conta
+                  {t("register.createAccount")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
@@ -213,9 +215,9 @@ export default function Cadastro() {
 
           {/* Login link */}
           <p className="text-center text-muted-foreground mt-8">
-            Já tem uma conta?{" "}
+            {t("register.hasAccount")}{" "}
             <Link to="/login" className="text-primary font-medium hover:underline">
-              Entrar
+              {t("register.signIn")}
             </Link>
           </p>
           </div>
