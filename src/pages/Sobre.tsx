@@ -1,38 +1,24 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Target, Heart, Shield, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-const values = [
-  {
-    icon: Target,
-    title: "Missão",
-    description: "Revolucionar a rastreabilidade agrícola brasileira, garantindo transparência e confiança em toda a cadeia produtiva.",
-  },
-  {
-    icon: Heart,
-    title: "Propósito",
-    description: "Conectar produtores, indústria e consumidores através de tecnologia acessível e dados confiáveis.",
-  },
-  {
-    icon: Shield,
-    title: "Integridade",
-    description: "Dados imutáveis e verificáveis. Nossa plataforma blockchain garante que cada informação seja verdadeira.",
-  },
-  {
-    icon: Users,
-    title: "Colaboração",
-    description: "Trabalhamos lado a lado com todos os participantes da cadeia para criar soluções que funcionam na prática.",
-  },
-];
-
-const stats = [
-  { number: "2020", label: "Ano de fundação" },
-  { number: "20.000+", label: "Animais rastreados" },
-  { number: "143", label: "Produtores parceiros" },
-  { number: "15", label: "Estados atendidos" },
-];
+const valueIcons = [Target, Heart, Shield, Users];
 
 const Sobre = () => {
+  const { t } = useTranslation();
+
+  const stats = [0, 1, 2, 3].map(i => ({
+    number: t(`about.stats.${i}.number`),
+    label: t(`about.stats.${i}.label`),
+  }));
+
+  const values = [0, 1, 2, 3].map(i => ({
+    icon: valueIcons[i],
+    title: t(`about.values.${i}.title`),
+    description: t(`about.values.${i}.description`),
+  }));
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -42,10 +28,10 @@ const Sobre = () => {
           <div className="section-container">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
-                Sobre a <span className="highlight-text">DeFarm</span>
+                {t("about.title")} <span className="highlight-text">{t("about.titleHighlight")}</span>
               </h1>
               <p className="text-xl text-muted-foreground">
-                Transformando a agropecuária brasileira com tecnologia e transparência
+                {t("about.subtitle")}
               </p>
             </div>
           </div>
@@ -57,10 +43,10 @@ const Sobre = () => {
             <div className="max-w-4xl mx-auto">
               <div className="prose prose-lg">
                 <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-                  A DeFarm nasceu da necessidade de trazer mais transparência e confiança para a cadeia produtiva agrícola brasileira. Fundada em 2020 por especialistas em tecnologia blockchain e agronegócio, nossa missão é conectar cada elo da cadeia com dados verificáveis e imutáveis.
+                  {t("about.story1")}
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Acreditamos que a rastreabilidade não é apenas uma exigência regulatória, mas uma oportunidade de valorizar a produção brasileira no mercado global. Com a DeFarm, produtores podem comprovar a qualidade e origem de seus produtos, frigoríficos garantem compliance total, e consumidores têm acesso à história completa do que consomem.
+                  {t("about.story2")}
                 </p>
               </div>
             </div>
@@ -88,7 +74,7 @@ const Sobre = () => {
           <div className="section-container">
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Nossos <span className="highlight-text">Valores</span>
+                {t("about.valuesTitle")} <span className="highlight-text">{t("about.valuesHighlight")}</span>
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

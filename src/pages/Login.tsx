@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowRight, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { register as apiRegister, storeAuth } from "@/lib/defarm-api";
+import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
 
 export default function Login() {
@@ -18,6 +19,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +30,8 @@ export default function Login() {
       navigate("/app");
     } catch (error) {
       toast({
-        title: "Erro ao entrar",
-        description: error instanceof Error ? error.message : "Credenciais inválidas",
+        title: t("login.errorTitle"),
+        description: error instanceof Error ? error.message : t("login.errorDescription"),
         variant: "destructive",
       });
     } finally {
@@ -47,7 +49,7 @@ export default function Login() {
           className="self-start inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-background border-2 border-foreground rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--foreground))] hover:shadow-[1px_1px_0px_0px_hsl(var(--foreground))] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar
+          {t("nav.back")}
         </button>
 
         {/* Form container */}
@@ -62,21 +64,21 @@ export default function Login() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              Bem-vindo de volta
+              {t("login.welcome")}
             </h1>
             <p className="text-muted-foreground">
-              Entre para acessar sua plataforma de rastreabilidade
+              {t("login.subtitle")}
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("login.email")}</Label>
               <Input
                 id="email"
                 type="text"
-                placeholder="seu@email.com"
+                placeholder={t("contact.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -86,12 +88,12 @@ export default function Login() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <Link 
                   to="/esqueci-senha" 
                   className="text-sm text-primary hover:underline"
                 >
-                  Esqueceu a senha?
+                  {t("login.forgotPassword")}
                 </Link>
               </div>
               <div className="relative">
@@ -123,7 +125,7 @@ export default function Login() {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Entrar
+                  {t("login.signIn")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
@@ -133,11 +135,11 @@ export default function Login() {
           {/* Divider */}
           <div className="flex items-center gap-4 mt-6">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-sm text-muted-foreground">ou</span>
+            <span className="text-sm text-muted-foreground">{t("login.or")}</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          {/* Demo access - registers a real user via gateway */}
+          {/* Demo access */}
           <Button
             type="button"
             variant="outline"
@@ -146,7 +148,6 @@ export default function Login() {
             onClick={async () => {
               setIsDemoLoading(true);
               try {
-                // Try to login first, if fails then register
                 try {
                   await login({ email: "frontend-demo@lovable.dev", password: "DemoPass2025!" });
                   navigate("/app");
@@ -175,8 +176,8 @@ export default function Login() {
               } catch (error) {
                 console.error("[Demo] Registration/login failed:", error);
                 toast({
-                  title: "Erro no acesso Demo",
-                  description: error instanceof Error ? error.message : "Tente novamente",
+                  title: t("login.demoErrorTitle"),
+                  description: error instanceof Error ? error.message : "Try again",
                   variant: "destructive",
                 });
               } finally {
@@ -187,15 +188,15 @@ export default function Login() {
             {isDemoLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              "Entrar como Demo"
+              t("login.demoAccess")
             )}
           </Button>
 
           {/* Sign up link */}
           <p className="text-center text-muted-foreground mt-6">
-            Não tem uma conta?{" "}
+            {t("login.noAccount")}{" "}
             <Link to="/cadastro" className="text-primary font-medium hover:underline">
-              Criar conta
+              {t("login.createAccount")}
             </Link>
           </p>
           </div>
@@ -208,10 +209,10 @@ export default function Login() {
             <img src={logoIcon} alt="DeFarm" className="h-14 w-14" />
           </div>
           <h2 className="text-3xl font-bold text-foreground mb-4">
-            Rastreabilidade do campo à mesa
+            {t("login.sideTitle")}
           </h2>
           <p className="text-lg text-muted-foreground">
-            Gerencie seus circuitos, tokenize itens e garanta compliance EUDR com a plataforma mais completa do Brasil.
+            {t("login.sideDescription")}
           </p>
         </div>
       </div>

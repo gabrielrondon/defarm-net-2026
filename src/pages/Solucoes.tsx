@@ -2,55 +2,20 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Scan, Shield, Coins, QrCode, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
-const solutions = [
-  {
-    icon: Scan,
-    title: "Rastreabilidade de Gado",
-    description: "Sistema completo de rastreamento individual de animais. Do nascimento ao abate, cada etapa é registrada de forma segura e imutável na blockchain.",
-    features: [
-      "Registro individual por animal",
-      "Histórico completo de movimentações",
-      "Dados de saúde e vacinação",
-      "Integração com sistemas existentes",
-    ],
-  },
-  {
-    icon: Shield,
-    title: "Compliance EUDR",
-    description: "Atenda às exigências do Regulamento de Desmatamento da União Europeia de forma automática. Relatórios e documentação prontos para exportação.",
-    features: [
-      "Due diligence automatizada",
-      "Geolocalização de propriedades",
-      "Relatórios para importadores",
-      "Certificação de origem",
-    ],
-  },
-  {
-    icon: Coins,
-    title: "Tokenização",
-    description: "Transforme seus ativos agrícolas em tokens digitais. Acesse novos mercados e possibilidades de financiamento através da tecnologia blockchain.",
-    features: [
-      "Tokens para cada lote",
-      "Marketplace integrado",
-      "Liquidez para produtores",
-      "Transparência total",
-    ],
-  },
-  {
-    icon: QrCode,
-    title: "Verificação por QR Code",
-    description: "Permita que consumidores finais verifiquem toda a origem do produto com um simples scan de QR Code no ponto de venda.",
-    features: [
-      "QR Code por produto",
-      "Página de verificação",
-      "Histórico completo",
-      "Compartilhamento em redes",
-    ],
-  },
-];
+const solutionIcons = [Scan, Shield, Coins, QrCode];
 
 const Solucoes = () => {
+  const { t } = useTranslation();
+
+  const solutions = [0, 1, 2, 3].map(i => ({
+    icon: solutionIcons[i],
+    title: t(`solutions.items.${i}.title`),
+    description: t(`solutions.items.${i}.description`),
+    features: (t(`solutions.items.${i}.features`, { returnObjects: true }) as string[]),
+  }));
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -60,10 +25,10 @@ const Solucoes = () => {
           <div className="section-container">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
-                Nossas <span className="highlight-text">Soluções</span>
+                {t("solutions.title")} <span className="highlight-text">{t("solutions.titleHighlight")}</span>
               </h1>
               <p className="text-xl text-muted-foreground">
-                Tecnologia de ponta para rastreabilidade agrícola completa
+                {t("solutions.subtitle")}
               </p>
             </div>
           </div>
@@ -75,7 +40,7 @@ const Solucoes = () => {
             <div className="space-y-16">
               {solutions.map((solution, index) => (
                 <div
-                  key={solution.title}
+                  key={index}
                   className={`flex flex-col lg:flex-row gap-12 items-center ${
                     index % 2 === 1 ? "lg:flex-row-reverse" : ""
                   }`}
@@ -102,7 +67,7 @@ const Solucoes = () => {
                       ))}
                     </ul>
                     <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold mt-4">
-                      Saiba mais
+                      {t("solutions.learnMore")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>

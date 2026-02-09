@@ -1,0 +1,271 @@
+{
+  "nav": {
+    "solutions": "Solutions",
+    "about": "About",
+    "contact": "Contact",
+    "requestAccess": "Request Access",
+    "back": "Back"
+  },
+  "platform": {
+    "rastreio": {
+      "label": "#1 Traceability Platform",
+      "shortLabel": "Trace",
+      "headline": "Turn traceability into",
+      "highlight": "liquidity",
+      "description": "We connect the entire supply chain with transparency, blockchain technology and EUDR compliance. From farm to fork.",
+      "cta": "Get Started",
+      "secondaryCta": "See how it works",
+      "stats": {
+        "0": { "value": "20,000+", "label": "Cattle traced" },
+        "1": { "value": "143", "label": "Active producers" },
+        "2": { "value": "98%", "label": "Satisfaction" }
+      },
+      "features": {
+        "0": "Immutable blockchain",
+        "1": "EUDR Compliance"
+      }
+    },
+    "financeiro": {
+      "label": "Finance",
+      "shortLabel": "Finance",
+      "headline": "Digital CPR with",
+      "highlight": "real guarantees",
+      "description": "Issue financial CPRs online and link traceable assets as collateral. Access better rates with partner banks.",
+      "cta": "Issue CPR",
+      "secondaryCta": "Simulate rates",
+      "stats": {
+        "0": { "value": "$10M+", "label": "CPRs issued" },
+        "1": { "value": "-2.5%", "label": "Avg rate vs market" },
+        "2": { "value": "24h", "label": "Fast approval" }
+      },
+      "features": {
+        "0": "Better rates",
+        "1": "Tokenized guarantees"
+      }
+    },
+    "developers": {
+      "label": "Developers",
+      "shortLabel": "Devs",
+      "headline": "Powerful APIs to",
+      "highlight": "integrate everything",
+      "description": "Complete documentation, SDKs in multiple languages and dedicated support. Build on DeFarm infrastructure.",
+      "cta": "Access Docs",
+      "stats": {
+        "0": { "value": "REST", "label": "Modern API" },
+        "1": { "value": "99.9%", "label": "Guaranteed uptime" },
+        "2": { "value": "5 min", "label": "To integrate" }
+      },
+      "features": {
+        "0": "Ready SDKs",
+        "1": "Complete docs"
+      }
+    }
+  },
+  "cta": {
+    "headline": "Ready to transform your supply chain?",
+    "description": "Join hundreds of producers already using DeFarm to ensure traceability and compliance.",
+    "primary": "Get Started",
+    "secondary": "Talk to an Expert"
+  },
+  "howItWorks": {
+    "title": "How it",
+    "titleHighlight": "works",
+    "subtitle": "Simple and efficient process to trace your entire production",
+    "steps": {
+      "0": { "title": "Animal Registration", "description": "Register each animal with complete origin, health and management data." },
+      "1": { "title": "Real-Time Tracking", "description": "Track all movement and animal history on the blockchain." },
+      "2": { "title": "Automatic Compliance", "description": "Generate EUDR compliance reports automatically and securely." },
+      "3": { "title": "QR Code Verification", "description": "Consumers access the full product origin with a simple scan." }
+    }
+  },
+  "benefits": {
+    "title": "Solutions for the entire",
+    "titleHighlight": "supply chain",
+    "subtitle": "Specific benefits for each ecosystem participant",
+    "producers": {
+      "title": "For Producers",
+      "description": "Value your production with origin certification. Access premium markets and better pricing.",
+      "benefits": ["Complete digital record", "Management history", "Automatic certificates", "Access to new markets"]
+    },
+    "processors": {
+      "title": "For Processors",
+      "description": "Ensure full compliance with regulations and end-to-end traceability.",
+      "benefits": ["EUDR Compliance", "Simplified due diligence", "Automatic reports", "System integration"]
+    },
+    "retailers": {
+      "title": "For Retailers",
+      "description": "Offer full transparency to consumers and differentiate your brand in the market.",
+      "benefits": ["QR Code for customers", "Origin seal", "Sustainable marketing", "Customer loyalty"]
+    },
+    "learnMore": "Learn more"
+  },
+  "footer": {
+    "description": "Leading platform in agricultural traceability. Connecting producers, processors and retailers with transparency and technology.",
+    "product": "Product",
+    "traceability": "Traceability",
+    "compliance": "EUDR Compliance",
+    "tokenization": "Tokenization",
+    "company": "Company",
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "rights": "© 2025 DeFarm. All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use"
+  },
+  "solutions": {
+    "title": "Our",
+    "titleHighlight": "Solutions",
+    "subtitle": "Cutting-edge technology for complete agricultural traceability",
+    "learnMore": "Learn more",
+    "items": {
+      "0": {
+        "title": "Cattle Traceability",
+        "description": "Complete individual animal tracking system. From birth to slaughter, every stage is recorded securely and immutably on the blockchain.",
+        "features": ["Individual animal registration", "Complete movement history", "Health and vaccination data", "Integration with existing systems"]
+      },
+      "1": {
+        "title": "EUDR Compliance",
+        "description": "Meet EU Deforestation Regulation requirements automatically. Reports and documentation ready for export.",
+        "features": ["Automated due diligence", "Property geolocation", "Reports for importers", "Origin certification"]
+      },
+      "2": {
+        "title": "Tokenization",
+        "description": "Transform your agricultural assets into digital tokens. Access new markets and financing opportunities through blockchain technology.",
+        "features": ["Tokens per batch", "Integrated marketplace", "Liquidity for producers", "Full transparency"]
+      },
+      "3": {
+        "title": "QR Code Verification",
+        "description": "Allow end consumers to verify the full origin of the product with a simple QR Code scan at the point of sale.",
+        "features": ["QR Code per product", "Verification page", "Complete history", "Social media sharing"]
+      }
+    }
+  },
+  "about": {
+    "title": "About",
+    "titleHighlight": "DeFarm",
+    "subtitle": "Transforming Brazilian agriculture with technology and transparency",
+    "story1": "DeFarm was born from the need to bring more transparency and trust to Brazil's agricultural supply chain. Founded in 2020 by blockchain technology and agribusiness experts, our mission is to connect every link in the chain with verifiable and immutable data.",
+    "story2": "We believe traceability is not just a regulatory requirement, but an opportunity to value Brazilian production in the global market. With DeFarm, producers can prove the quality and origin of their products, processors ensure full compliance, and consumers have access to the complete story of what they consume.",
+    "stats": {
+      "0": { "number": "2020", "label": "Founded" },
+      "1": { "number": "20,000+", "label": "Animals traced" },
+      "2": { "number": "143", "label": "Partner producers" },
+      "3": { "number": "15", "label": "States served" }
+    },
+    "valuesTitle": "Our",
+    "valuesHighlight": "Values",
+    "values": {
+      "0": { "title": "Mission", "description": "Revolutionize Brazilian agricultural traceability, ensuring transparency and trust across the entire supply chain." },
+      "1": { "title": "Purpose", "description": "Connect producers, industry and consumers through accessible technology and reliable data." },
+      "2": { "title": "Integrity", "description": "Immutable and verifiable data. Our blockchain platform ensures every piece of information is truthful." },
+      "3": { "title": "Collaboration", "description": "We work side by side with all chain participants to create solutions that work in practice." }
+    }
+  },
+  "contact": {
+    "title": "Get in",
+    "titleHighlight": "Touch",
+    "subtitle": "We're ready to help you transform your supply chain",
+    "formTitle": "Send your message",
+    "name": "Name",
+    "namePlaceholder": "Your full name",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "subject": "Subject",
+    "subjectPlaceholder": "What's the subject?",
+    "message": "Message",
+    "messagePlaceholder": "Write your message here...",
+    "send": "Send Message",
+    "infoTitle": "Contact Information",
+    "infoDescription": "Contact us through the channels below or fill out the form and we'll get back to you within 24 hours.",
+    "emailLabel": "Email",
+    "phoneLabel": "Phone",
+    "addressLabel": "Address"
+  },
+  "login": {
+    "welcome": "Welcome back",
+    "subtitle": "Sign in to access your traceability platform",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign In",
+    "or": "or",
+    "demoAccess": "Enter as Demo",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create account",
+    "sideTitle": "Traceability from farm to fork",
+    "sideDescription": "Manage your circuits, tokenize items and ensure EUDR compliance with the most complete platform in Brazil.",
+    "errorTitle": "Login error",
+    "errorDescription": "Invalid credentials",
+    "demoErrorTitle": "Demo access error"
+  },
+  "register": {
+    "title": "Create account",
+    "subtitle": "Fill in your details to start using the platform",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "John Doe",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "workspace": "Farm/company name (optional)",
+    "workspacePlaceholder": "Green Valley Farm",
+    "password": "Password",
+    "createAccount": "Create account",
+    "hasAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "sideTitle": "Join DeFarm",
+    "sideDescription": "Create your account and start tracing your supply chain with transparency and blockchain technology.",
+    "passwordReqs": {
+      "length": "At least 8 characters",
+      "uppercase": "One uppercase letter",
+      "lowercase": "One lowercase letter",
+      "number": "One number",
+      "special": "One special character"
+    },
+    "invalidPassword": "Invalid password",
+    "invalidPasswordDesc": "Password does not meet all requirements",
+    "errorTitle": "Account creation error",
+    "errorDescription": "Please try again later"
+  },
+  "comoFunciona": {
+    "steps": {
+      "0": { "title": "Register your Property", "subtitle": "Precise georeferencing", "description": "Delimit your rural property polygon with GPS coordinates." },
+      "1": { "title": "Tokenize your Items", "subtitle": "Unique blockchain identifier", "description": "Each animal or batch receives a DFID registered on immutable blockchain." },
+      "2": { "title": "Create Circuits", "subtitle": "Connect the supply chain", "description": "Circuits connect participants with controlled permissions." },
+      "3": { "title": "Share Verifications", "subtitle": "Full transparency", "description": "Generate verifiable links for buyers, auditors and consumers." },
+      "4": { "title": "Verifiable Checks", "subtitle": "Automatic compliance", "description": "All socio-environmental checks in one place." }
+    },
+    "stepOf": "Step {{current}} of {{total}}",
+    "back": "Back",
+    "next": "Next",
+    "accessPlatform": "Access Platform",
+    "polygonVerified": "Polygon verified",
+    "checks": {
+      "0": "Environmental Compliance",
+      "1": "Deforestation-Free",
+      "2": "Health Documentation",
+      "3": "EUDR Compliance"
+    }
+  },
+  "taxas": {
+    "title": "CPR Market Rates",
+    "description": "Updated CPR (Rural Product Certificate) market rates (January 2026)",
+    "types": {
+      "0": "Physical CPR - Grains",
+      "1": "Financial CPR - Soybean",
+      "2": "Financial CPR - Corn",
+      "3": "CPR Livestock - Fat Cattle"
+    },
+    "perYear": "p.a.",
+    "promo": "With DeFarm, you can issue CPRs with tokenized guarantees and get rates up to <strong>2.5% lower</strong> than market average.",
+    "accessSpace": "Access my Space",
+    "source": "Source: Secondary market and partner banks. Updated Jan/2026."
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Page not found",
+    "backHome": "Return to Home"
+  },
+  "languageToggle": {
+    "en": "EN",
+    "pt": "PT"
+  }
+}

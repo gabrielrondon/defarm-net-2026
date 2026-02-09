@@ -5,29 +5,32 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
-
-const contactInfo = [
-  {
-    icon: Mail,
-    title: "Email",
-    value: "contato@defarm.net",
-    href: "mailto:contato@defarm.net",
-  },
-  {
-    icon: Phone,
-    title: "Telefone",
-    value: "+55 (11) 99999-9999",
-    href: "tel:+5511999999999",
-  },
-  {
-    icon: MapPin,
-    title: "Endereço",
-    value: "São Paulo, SP - Brasil",
-    href: "#",
-  },
-];
+import { useTranslation } from "react-i18next";
 
 const Contato = () => {
+  const { t } = useTranslation();
+
+  const contactInfo = [
+    {
+      icon: Mail,
+      title: t("contact.emailLabel"),
+      value: "contato@defarm.net",
+      href: "mailto:contato@defarm.net",
+    },
+    {
+      icon: Phone,
+      title: t("contact.phoneLabel"),
+      value: "+55 (11) 99999-9999",
+      href: "tel:+5511999999999",
+    },
+    {
+      icon: MapPin,
+      title: t("contact.addressLabel"),
+      value: "São Paulo, SP - Brasil",
+      href: "#",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -37,10 +40,10 @@ const Contato = () => {
           <div className="section-container">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6">
-                Entre em <span className="highlight-text">Contato</span>
+                {t("contact.title")} <span className="highlight-text">{t("contact.titleHighlight")}</span>
               </h1>
               <p className="text-xl text-muted-foreground">
-                Estamos prontos para ajudar você a transformar sua cadeia produtiva
+                {t("contact.subtitle")}
               </p>
             </div>
           </div>
@@ -53,41 +56,41 @@ const Contato = () => {
               {/* Form */}
               <div className="bg-background border border-border rounded-2xl p-8">
                 <h2 className="text-2xl font-bold text-foreground mb-6">
-                  Envie sua mensagem
+                  {t("contact.formTitle")}
                 </h2>
                 <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nome</Label>
+                      <Label htmlFor="name">{t("contact.name")}</Label>
                       <Input
                         id="name"
-                        placeholder="Seu nome completo"
+                        placeholder={t("contact.namePlaceholder")}
                         className="border-border"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email">{t("contact.email")}</Label>
                       <Input
                         id="email"
                         type="email"
-                        placeholder="seu@email.com"
+                        placeholder={t("contact.emailPlaceholder")}
                         className="border-border"
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subject">Assunto</Label>
+                    <Label htmlFor="subject">{t("contact.subject")}</Label>
                     <Input
                       id="subject"
-                      placeholder="Qual o assunto?"
+                      placeholder={t("contact.subjectPlaceholder")}
                       className="border-border"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="message">Mensagem</Label>
+                    <Label htmlFor="message">{t("contact.message")}</Label>
                     <Textarea
                       id="message"
-                      placeholder="Escreva sua mensagem aqui..."
+                      placeholder={t("contact.messagePlaceholder")}
                       rows={6}
                       className="border-border resize-none"
                     />
@@ -96,7 +99,7 @@ const Contato = () => {
                     type="submit"
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6"
                   >
-                    Enviar Mensagem
+                    {t("contact.send")}
                     <Send className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
@@ -106,10 +109,10 @@ const Contato = () => {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground mb-4">
-                    Informações de Contato
+                    {t("contact.infoTitle")}
                   </h2>
                   <p className="text-muted-foreground">
-                    Entre em contato conosco através dos canais abaixo ou preencha o formulário que retornaremos em até 24 horas.
+                    {t("contact.infoDescription")}
                   </p>
                 </div>
 

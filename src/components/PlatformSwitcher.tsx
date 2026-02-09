@@ -13,108 +13,44 @@ import {
   Play
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { SimularTaxasDialog } from "./SimularTaxasDialog";
 import { ComoFuncionaDialog } from "./ComoFuncionaDialog";
 
 type Platform = "rastreio" | "financeiro" | "developers";
 
-interface PlatformData {
-  id: Platform;
-  icon: typeof Scan;
-  label: string;
-  shortLabel: string;
-  headline: string;
-  highlight: string;
-  headlineEnd?: string;
-  description: string;
-  cta: string;
-  ctaExternal?: string;
-  ctaHref?: string;
-  secondaryCta?: string;
-  secondaryAction?: "popup" | "link";
-  stats: { value: string; label: string }[];
-  features: { icon: typeof Shield; text: string }[];
-}
+const platformOrder: Platform[] = ["rastreio", "financeiro", "developers"];
 
-const platforms: Record<Platform, PlatformData> = {
-  rastreio: {
-    id: "rastreio",
-    icon: Scan,
-    label: "Plataforma #1 em Rastreabilidade",
-    shortLabel: "Rastreio",
-    headline: "A plataforma de",
-    highlight: "rastreabilidade agrícola",
-    headlineEnd: "mais completa do Brasil",
-    description: "Conectamos toda a cadeia produtiva com transparência, tecnologia blockchain e compliance EUDR. Do campo até a mesa do consumidor.",
-    cta: "Começar agora",
-    ctaHref: "/onboarding",
-    secondaryCta: "Ver como funciona",
-    secondaryAction: "popup",
-    stats: [
-      { value: "20.000+", label: "Gados rastreados" },
-      { value: "143", label: "Produtores ativos" },
-      { value: "98%", label: "Satisfação" },
-    ],
-    features: [
-      { icon: Shield, text: "Blockchain imutável" },
-      { icon: FileText, text: "Compliance EUDR" },
-    ],
-  },
-  financeiro: {
-    id: "financeiro",
-    icon: Landmark,
-    label: "Financeiro",
-    shortLabel: "Finance",
-    headline: "CPR Digital com",
-    highlight: "garantias reais",
-    description: "Emita CPRs financeiros online e vincule ativos rastreáveis como garantia. Acesse melhores taxas com bancos parceiros.",
-    cta: "Emitir CPR",
-    ctaExternal: "https://cpr.defarm.net",
-    secondaryCta: "Simular taxas",
-    secondaryAction: "popup",
-    stats: [
-      { value: "R$50M+", label: "Em CPRs emitidos" },
-      { value: "-2.5%", label: "Taxa média vs mercado" },
-      { value: "24h", label: "Aprovação rápida" },
-    ],
-    features: [
-      { icon: TrendingUp, text: "Melhores taxas" },
-      { icon: Shield, text: "Garantias tokenizadas" },
-    ],
-  },
-  developers: {
-    id: "developers",
-    icon: Code,
-    label: "Developers",
-    shortLabel: "Devs",
-    headline: "APIs poderosas para",
-    highlight: "integrar tudo",
-    description: "Documentação completa, SDKs em múltiplas linguagens e suporte dedicado. Construa sobre a infraestrutura DeFarm.",
-    cta: "Acessar Docs",
-    ctaExternal: "https://docs.defarm.net",
-    stats: [
-      { value: "REST", label: "API moderna" },
-      { value: "99.9%", label: "Uptime garantido" },
-      { value: "5 min", label: "Para integrar" },
-    ],
-    features: [
-      { icon: Code, text: "SDKs prontos" },
-      { icon: FileText, text: "Docs completos" },
-    ],
-  },
+const platformIcons: Record<Platform, typeof Scan> = {
+  rastreio: Scan,
+  financeiro: Landmark,
+  developers: Code,
 };
 
-const platformOrder: Platform[] = ["rastreio", "financeiro", "developers"];
+const platformFeatureIcons: Record<Platform, (typeof Shield)[]> = {
+  rastreio: [Shield, FileText],
+  financeiro: [TrendingUp, Shield],
+  developers: [Code, FileText],
+};
+
+const platformMeta: Record<Platform, { ctaExternal?: string; ctaHref?: string; secondaryAction?: "popup" | "link" }> = {
+  rastreio: { ctaHref: "/onboarding", secondaryAction: "popup" },
+  financeiro: { ctaExternal: "https://cpr.defarm.net", secondaryAction: "popup" },
+  developers: { ctaExternal: "https://docs.defarm.net" },
+};
 
 export function PlatformSwitcher() {
   const [activePlatform, setActivePlatform] = useState<Platform>("rastreio");
   const [showTaxasDialog, setShowTaxasDialog] = useState(false);
   const [showComoFuncionaDialog, setShowComoFuncionaDialog] = useState(false);
+  const { t } = useTranslation();
   
-  const active = platforms[activePlatform];
   const currentIndex = platformOrder.indexOf(activePlatform);
   const prevPlatform = platformOrder[(currentIndex - 1 + platformOrder.length) % platformOrder.length];
   const nextPlatform = platformOrder[(currentIndex + 1) % platformOrder.length];
+
+  const ActiveIcon = platformIcons[activePlatform];
+  const meta = platformMeta[activePlatform];
 
   const handleSecondaryClick = () => {
     if (activePlatform === "financeiro") {
@@ -123,6 +59,18 @@ export function PlatformSwitcher() {
       setShowComoFuncionaDialog(true);
     }
   };
+
+  const label = t(`platform.${activePlatform}.label`);
+  const headline = t(`platform.${activePlatform}.headline`);
+  const highlight = t(`platform.${activePlatform}.highlight`);
+  const description = t(`platform.${activePlatform}.description`);
+  const cta = t(`platform.${activePlatform}.cta`);
+  const secondaryCta = t(`platform.${activePlatform}.secondaryCta`, { defaultValue: "" });
+
+  const stats = [0, 1, 2].map(i => ({
+    value: t(`platform.${activePlatform}.stats.${i}.value`),
+    label: t(`platform.${activePlatform}.stats.${i}.label`),
+  }));
 
   return (
     <>
@@ -143,11 +91,11 @@ export function PlatformSwitcher() {
         >
           <div className="flex flex-col items-center gap-4 transition-all duration-500 group-hover:gap-6">
             {(() => {
-              const Icon = platforms[prevPlatform].icon;
+              const Icon = platformIcons[prevPlatform];
               return <Icon className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:h-14 group-hover:w-14 transition-all duration-500" />;
             })()}
             <span className="text-base font-bold text-muted-foreground group-hover:text-primary group-hover:text-xl transition-all duration-500 [writing-mode:vertical-lr] rotate-180 tracking-wide">
-              {platforms[prevPlatform].shortLabel}
+              {t(`platform.${prevPlatform}.shortLabel`)}
             </span>
           </div>
         </button>
@@ -167,11 +115,11 @@ export function PlatformSwitcher() {
         >
           <div className="flex flex-col items-center gap-4 transition-all duration-500 group-hover:gap-6">
             {(() => {
-              const Icon = platforms[nextPlatform].icon;
+              const Icon = platformIcons[nextPlatform];
               return <Icon className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:h-14 group-hover:w-14 transition-all duration-500" />;
             })()}
             <span className="text-base font-bold text-muted-foreground group-hover:text-primary group-hover:text-xl transition-all duration-500 [writing-mode:vertical-lr] tracking-wide">
-              {platforms[nextPlatform].shortLabel}
+              {t(`platform.${nextPlatform}.shortLabel`)}
             </span>
           </div>
         </button>
@@ -188,7 +136,7 @@ export function PlatformSwitcher() {
                   ? "w-8 bg-primary" 
                   : "bg-foreground/20 hover:bg-foreground/40"
               )}
-              title={platforms[platformId].shortLabel}
+              title={t(`platform.${platformId}.shortLabel`)}
             />
           ))}
         </div>
@@ -203,41 +151,40 @@ export function PlatformSwitcher() {
               {/* Platform Badge */}
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-8">
                 <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                <active.icon className="h-4 w-4" />
-                {active.label}
+                <ActiveIcon className="h-4 w-4" />
+                {label}
               </div>
 
               {/* Headline */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-                {active.headline}{" "}
-                <span className="highlight-text">{active.highlight}</span>
-                {active.headlineEnd && ` ${active.headlineEnd}`}
+                {headline}{" "}
+                <span className="highlight-text">{highlight}</span>
               </h1>
 
               {/* Description */}
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-                {active.description}
+                {description}
               </p>
 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-                {active.ctaExternal ? (
-                  <a href={active.ctaExternal} target="_blank" rel="noopener noreferrer">
+                {meta.ctaExternal ? (
+                  <a href={meta.ctaExternal} target="_blank" rel="noopener noreferrer">
                     <Button
                       size="lg"
                       className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 py-6 text-lg rounded-lg"
                     >
-                      {active.cta}
+                      {cta}
                       <ExternalLink className="ml-2 h-5 w-5" />
                     </Button>
                   </a>
-                ) : active.ctaHref ? (
-                  <Link to={active.ctaHref}>
+                ) : meta.ctaHref ? (
+                  <Link to={meta.ctaHref}>
                     <Button
                       size="lg"
                       className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 py-6 text-lg rounded-lg"
                     >
-                      {active.cta}
+                      {cta}
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
@@ -246,11 +193,11 @@ export function PlatformSwitcher() {
                     size="lg"
                     className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 py-6 text-lg rounded-lg"
                   >
-                    {active.cta}
+                    {cta}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 )}
-                {active.secondaryCta && (
+                {secondaryCta && (
                   <Button
                     variant="outline"
                     size="lg"
@@ -258,14 +205,14 @@ export function PlatformSwitcher() {
                     className="btn-offset font-semibold px-8 py-6 text-lg border-2 rounded-lg"
                   >
                     <Play className="mr-2 h-5 w-5" />
-                    {active.secondaryCta}
+                    {secondaryCta}
                   </Button>
                 )}
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-8 pt-10 border-t border-border max-w-2xl mx-auto">
-                {active.stats.map((stat, idx) => (
+                {stats.map((stat, idx) => (
                   <div key={idx} className="text-center">
                     <p className="text-3xl sm:text-4xl font-bold text-foreground">{stat.value}</p>
                     <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
