@@ -267,5 +267,86 @@
   "languageToggle": {
     "en": "EN",
     "pt": "PT"
+  },
+  "onboarding": {
+    "steps": {
+      "identify": "Identify",
+      "register": "Register",
+      "portfolio": "Portfolio",
+      "compliance": "Compliance",
+      "opportunities": "Opportunities"
+    },
+    "loginPrompt": "Already have an account?",
+    "loginPromptMobile": "Sign in",
+    "footer": "Your data is safe and will only be saved when you create an account",
+    "step1": {
+      "title": "What's your animal's number?",
+      "subtitle": "SISBOV, ear tag, batch, GTA... any identifier you already use",
+      "placeholder": "Type here...",
+      "detected": "Looks like a {{type}}",
+      "fakeGenerated": "Example number generated",
+      "generateFake": "Don't have a number? Generate example",
+      "continue": "Continue"
+    },
+    "step2": {
+      "registering": "Registering your animal...",
+      "registered": "Animal registered successfully!",
+      "secureRecord": "Secure Digital Record",
+      "dfidDescription": "This is the unique and immutable identifier of your animal on the DeFarm network",
+      "traceable": "Traceable",
+      "immutable": "Immutable",
+      "verifiable": "Verifiable",
+      "viewPortfolio": "View my portfolio"
+    },
+    "step3": {
+      "title": "Your asset portfolio",
+      "subtitle": "Add more animals or batches to create a complete portfolio",
+      "addPlaceholder": "Type the identifier...",
+      "addButton": "Add",
+      "generateExample": "Generate example",
+      "cancel": "Cancel",
+      "addMore": "Add another animal or batch",
+      "assetsSingular": "registered asset",
+      "assetsPlural": "registered assets",
+      "checkCompliance": "Check compliance"
+    },
+    "step4": {
+      "title": "Verifying your assets",
+      "subtitle": "Checking {{count}} item in real time",
+      "subtitlePlural": "Checking {{count}} items in real time",
+      "environmental": "Environmental Verification",
+      "environmentalDesc": "Area free of illegal deforestation",
+      "eudr": "EUDR Compliance",
+      "eudrDesc": "Eligible for European market",
+      "documentation": "Documentation",
+      "documentationDesc": "Basic records verified",
+      "allVerified": "All verified!",
+      "allVerifiedDesc": "Your assets are ready to access premium financial opportunities",
+      "viewOpportunities": "View opportunities"
+    },
+    "step5": {
+      "unlocked": "Unlocked",
+      "title": "Your opportunities",
+      "subtitle": "With {{count}} verified asset, you can access:",
+      "subtitlePlural": "With {{count}} verified assets, you can access:",
+      "cprTitle": "Digital CPR",
+      "cprDesc": "Issue a Rural Product Certificate with your assets as collateral",
+      "cprHighlight": "Rate from 1.2% p.m.",
+      "financeTitle": "Rural Financing",
+      "financeDesc": "Access credit with preferential rates using your portfolio",
+      "financeHighlight": "Up to $500k",
+      "premiumTitle": "Premium Market",
+      "premiumDesc": "Direct sales to premium slaughterhouses and exporters",
+      "premiumHighlight": "+15% on price",
+      "reqAssets": "Registered assets",
+      "reqCompliance": "Compliance verified",
+      "reqProperty": "Property data",
+      "reqHistory": "Production history",
+      "reqEudr": "EUDR compliant",
+      "reqCerts": "Extra certifications",
+      "readyTitle": "Ready to start?",
+      "readyDesc": "Create your account to save your portfolio and access all opportunities",
+      "savePortfolio": "Save my portfolio"
+    }
   }
 }

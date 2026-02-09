@@ -9,73 +9,75 @@ import {
   Lock,
   Sparkles
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface StepFinanceProps {
   itemCount: number;
   onSave: () => void;
 }
 
-const opportunities = [
-  {
-    id: "cpr",
-    icon: FileText,
-    title: "CPR Digital",
-    description: "Emita uma Cédula de Produto Rural com seus ativos como garantia",
-    requirements: [
-      { label: "Ativos registrados", met: true },
-      { label: "Compliance verificado", met: true },
-      { label: "Dados da propriedade", met: false },
-    ],
-    highlight: "Taxa a partir de 1.2% a.m.",
-    available: true,
-  },
-  {
-    id: "finance",
-    icon: Landmark,
-    title: "Financiamento Rural",
-    description: "Acesse crédito com taxas diferenciadas usando seu portfolio",
-    requirements: [
-      { label: "Ativos registrados", met: true },
-      { label: "Compliance verificado", met: true },
-      { label: "Histórico de produção", met: false },
-    ],
-    highlight: "Até R$ 500 mil",
-    available: true,
-  },
-  {
-    id: "premium",
-    icon: TrendingUp,
-    title: "Mercado Premium",
-    description: "Venda direta para frigoríficos e exportadores premium",
-    requirements: [
-      { label: "Ativos registrados", met: true },
-      { label: "EUDR compliant", met: true },
-      { label: "Certificações extras", met: false },
-    ],
-    highlight: "+15% no preço",
-    available: true,
-  },
-];
-
 export function StepFinance({ itemCount, onSave }: StepFinanceProps) {
+  const { t } = useTranslation();
+
+  const opportunities = [
+    {
+      id: "cpr",
+      icon: FileText,
+      title: t("onboarding.step5.cprTitle"),
+      description: t("onboarding.step5.cprDesc"),
+      requirements: [
+        { label: t("onboarding.step5.reqAssets"), met: true },
+        { label: t("onboarding.step5.reqCompliance"), met: true },
+        { label: t("onboarding.step5.reqProperty"), met: false },
+      ],
+      highlight: t("onboarding.step5.cprHighlight"),
+    },
+    {
+      id: "finance",
+      icon: Landmark,
+      title: t("onboarding.step5.financeTitle"),
+      description: t("onboarding.step5.financeDesc"),
+      requirements: [
+        { label: t("onboarding.step5.reqAssets"), met: true },
+        { label: t("onboarding.step5.reqCompliance"), met: true },
+        { label: t("onboarding.step5.reqHistory"), met: false },
+      ],
+      highlight: t("onboarding.step5.financeHighlight"),
+    },
+    {
+      id: "premium",
+      icon: TrendingUp,
+      title: t("onboarding.step5.premiumTitle"),
+      description: t("onboarding.step5.premiumDesc"),
+      requirements: [
+        { label: t("onboarding.step5.reqAssets"), met: true },
+        { label: t("onboarding.step5.reqEudr"), met: true },
+        { label: t("onboarding.step5.reqCerts"), met: false },
+      ],
+      highlight: t("onboarding.step5.premiumHighlight"),
+    },
+  ];
+
+  const subtitle = itemCount === 1
+    ? t("onboarding.step5.subtitle", { count: itemCount })
+    : t("onboarding.step5.subtitlePlural", { count: itemCount });
+
   return (
     <div className="flex-1 flex flex-col">
-      {/* Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
           <Sparkles className="w-4 h-4" />
-          Desbloqueado
+          {t("onboarding.step5.unlocked")}
         </div>
         
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-          Suas oportunidades
+          {t("onboarding.step5.title")}
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Com {itemCount} {itemCount === 1 ? "ativo verificado" : "ativos verificados"}, você pode acessar:
+          {subtitle}
         </p>
       </div>
 
-      {/* Opportunities */}
       <div className="flex-1 max-w-lg mx-auto w-full">
         <div className="space-y-4 mb-8">
           {opportunities.map((opp, index) => (
@@ -123,13 +125,12 @@ export function StepFinance({ itemCount, onSave }: StepFinanceProps) {
           ))}
         </div>
 
-        {/* CTA Card */}
         <Card className="p-6 bg-primary/5 border-primary/20 text-center">
           <h3 className="text-lg font-semibold text-foreground mb-2">
-            Pronto para começar?
+            {t("onboarding.step5.readyTitle")}
           </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Crie sua conta para salvar seu portfolio e acessar todas as oportunidades
+            {t("onboarding.step5.readyDesc")}
           </p>
           
           <Button
@@ -137,7 +138,7 @@ export function StepFinance({ itemCount, onSave }: StepFinanceProps) {
             onClick={onSave}
             className="px-8 py-6 text-lg font-semibold gap-2 w-full sm:w-auto"
           >
-            Salvar meu portfolio
+            {t("onboarding.step5.savePortfolio")}
             <ArrowRight className="w-5 h-5" />
           </Button>
         </Card>

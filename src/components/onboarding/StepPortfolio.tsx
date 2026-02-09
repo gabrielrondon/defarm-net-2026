@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Plus, Package, Tag, Shield, X } from "lucide-react";
 import { generateFakeId, generateDFID } from "@/lib/fake-id-generator";
+import { useTranslation } from "react-i18next";
 
 interface PortfolioItem {
   id: string;
@@ -18,6 +19,7 @@ interface StepPortfolioProps {
 }
 
 export function StepPortfolio({ items, onAddItem, onRemoveItem, onNext }: StepPortfolioProps) {
+  const { t } = useTranslation();
   const [isAdding, setIsAdding] = useState(false);
   const [newIdentifier, setNewIdentifier] = useState("");
 
@@ -45,21 +47,19 @@ export function StepPortfolio({ items, onAddItem, onRemoveItem, onNext }: StepPo
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Header */}
       <div className="text-center mb-8">
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
           <Package className="w-8 h-8 text-primary" />
         </div>
         
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-          Seu portfolio de ativos
+          {t("onboarding.step3.title")}
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Adicione mais animais ou lotes para criar um portfolio completo
+          {t("onboarding.step3.subtitle")}
         </p>
       </div>
 
-      {/* Portfolio Items */}
       <div className="flex-1 max-w-lg mx-auto w-full">
         <div className="space-y-3 mb-6">
           {items.map((item, index) => (
@@ -94,27 +94,26 @@ export function StepPortfolio({ items, onAddItem, onRemoveItem, onNext }: StepPo
           ))}
         </div>
 
-        {/* Add more section */}
         {isAdding ? (
           <Card className="p-4 border-dashed animate-in fade-in duration-200">
             <input
               type="text"
               value={newIdentifier}
               onChange={(e) => setNewIdentifier(e.target.value)}
-              placeholder="Digite o identificador..."
+              placeholder={t("onboarding.step3.addPlaceholder")}
               autoFocus
               className="w-full text-lg font-mono bg-transparent border-b border-border/50 pb-2 mb-4
                          focus:outline-none focus:border-primary placeholder:text-muted-foreground/30"
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAddAnother} disabled={!newIdentifier.trim()}>
-                Adicionar
+                {t("onboarding.step3.addButton")}
               </Button>
               <Button size="sm" variant="outline" onClick={handleGenerateAndAdd}>
-                Gerar exemplo
+                {t("onboarding.step3.generateExample")}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setIsAdding(false)}>
-                Cancelar
+                {t("onboarding.step3.cancel")}
               </Button>
             </div>
           </Card>
@@ -126,29 +125,27 @@ export function StepPortfolio({ items, onAddItem, onRemoveItem, onNext }: StepPo
                        hover:border-primary hover:text-primary transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Adicionar mais um animal ou lote
+            {t("onboarding.step3.addMore")}
           </button>
         )}
 
-        {/* Summary */}
         <div className="mt-8 p-4 bg-muted/50 rounded-lg text-center">
           <div className="text-3xl font-bold text-foreground mb-1">
             {items.length}
           </div>
           <div className="text-sm text-muted-foreground">
-            {items.length === 1 ? "ativo registrado" : "ativos registrados"}
+            {items.length === 1 ? t("onboarding.step3.assetsSingular") : t("onboarding.step3.assetsPlural")}
           </div>
         </div>
       </div>
 
-      {/* CTA */}
       <div className="mt-8 text-center">
         <Button
           size="lg"
           onClick={onNext}
           className="px-8 py-6 text-lg font-semibold gap-2"
         >
-          Verificar compliance
+          {t("onboarding.step3.checkCompliance")}
           <ArrowRight className="w-5 h-5" />
         </Button>
       </div>
