@@ -13,6 +13,8 @@ export default function ItemDetail() {
     queryKey: ["item", id],
     queryFn: () => getItem(id!),
     enabled: !!id,
+    retry: 1,
+    retryDelay: 1000,
   });
 
   // Fetch item events (now returns Event[] directly)
@@ -20,6 +22,8 @@ export default function ItemDetail() {
     queryKey: ["itemEvents", id],
     queryFn: () => getItemEvents(id!),
     enabled: !!id,
+    retry: 1,
+    retryDelay: 1000,
   });
 
   if (isLoadingItem) {

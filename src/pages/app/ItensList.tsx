@@ -266,7 +266,7 @@ export default function ItensList() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link to={`/app/itens/${item.dfid}`} className="flex items-center">
+                            <Link to={`/app/itens/${item.id}`} className="flex items-center">
                               <ExternalLink className="h-4 w-4 mr-2" />
                               Ver detalhes
                             </Link>
@@ -275,7 +275,7 @@ export default function ItensList() {
                             <GitBranch className="h-4 w-4 mr-2" />
                             Enviar para circuito
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/app/itens/${item.dfid}`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/app/itens/${item.id}`)}>
                             <Calendar className="h-4 w-4 mr-2" />
                             Ver eventos
                           </DropdownMenuItem>

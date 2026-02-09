@@ -426,7 +426,7 @@ export default function CircuitoDetail() {
                 <TableRow
                   key={item.id}
                   className="group cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/app/itens/${item.dfid}`)}
+                  onClick={() => navigate(`/app/itens/${item.id}`)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-3">
