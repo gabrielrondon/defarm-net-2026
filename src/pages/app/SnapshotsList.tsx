@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -81,6 +81,13 @@ export default function SnapshotsList() {
     queryFn: () => getCircuits(),
   });
 
+  // Auto-select first circuit when loaded
+  useEffect(() => {
+    if (circuits.length > 0 && !formCircuitId) {
+      setFormCircuitId(circuits[0].id);
+    }
+  }, [circuits]);
+
   const createMutation = useMutation({
     mutationFn: (data: Parameters<typeof createSnapshot>[0]) => createSnapshot(data),
     onSuccess: () => {
@@ -117,8 +124,8 @@ export default function SnapshotsList() {
   });
 
   const handleCreate = () => {
-    if (!formName.trim() || !user) return;
-    const circuitId = formCircuitId || (circuits.length > 0 ? circuits[0].id : undefined);
+    if (!formName.trim() || !user || !formCircuitId) return;
+    const circuitId = formCircuitId;
     createMutation.mutate({
       snapshot_name: formName.trim(),
       snapshot_type: formSnapshotType,
@@ -295,7 +302,7 @@ export default function SnapshotsList() {
               </Button>
               <Button
                 onClick={handleCreate}
-                disabled={!formName.trim() || createMutation.isPending}
+                disabled={!formName.trim() || !formCircuitId || createMutation.isPending}
               >
                 {createMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
