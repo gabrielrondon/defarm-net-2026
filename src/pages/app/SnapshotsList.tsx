@@ -47,6 +47,7 @@ import {
   createSnapshot,
   deleteSnapshot,
   archiveSnapshot,
+  getCircuits,
 } from "@/lib/defarm-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -64,6 +65,7 @@ export default function SnapshotsList() {
   const [formDescription, setFormDescription] = useState("");
   const [formResourceType, setFormResourceType] = useState("circuit");
   const [formSnapshotType, setFormSnapshotType] = useState("manual");
+  const [formCircuitId, setFormCircuitId] = useState("");
   const [merkleSnapshotId, setMerkleSnapshotId] = useState<string | null>(null);
   const [merkleSnapshotName, setMerkleSnapshotName] = useState("");
 
@@ -74,6 +76,11 @@ export default function SnapshotsList() {
     retryDelay: 1000,
   });
 
+  const { data: circuits = [] } = useQuery({
+    queryKey: ["circuits"],
+    queryFn: () => getCircuits(),
+  });
+
   const createMutation = useMutation({
     mutationFn: (data: Parameters<typeof createSnapshot>[0]) => createSnapshot(data),
     onSuccess: () => {
@@ -81,6 +88,7 @@ export default function SnapshotsList() {
       setCreateOpen(false);
       setFormName("");
       setFormDescription("");
+      setFormCircuitId("");
       toast({ title: "Snapshot criado", description: "O snapshot foi salvo com sucesso." });
     },
     onError: (err) => {
@@ -110,6 +118,7 @@ export default function SnapshotsList() {
 
   const handleCreate = () => {
     if (!formName.trim() || !user) return;
+    const circuitId = formCircuitId || (circuits.length > 0 ? circuits[0].id : undefined);
     createMutation.mutate({
       snapshot_name: formName.trim(),
       snapshot_type: formSnapshotType,
@@ -117,6 +126,8 @@ export default function SnapshotsList() {
       snapshot_data: {},
       created_by: user.id,
       description: formDescription.trim() || undefined,
+      circuit_id: circuitId,
+      resource_id: circuitId,
     });
   };
 
@@ -233,6 +244,21 @@ export default function SnapshotsList() {
                   onChange={(e) => setFormDescription(e.target.value)}
                   rows={3}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Circuito</Label>
+                <Select value={formCircuitId} onValueChange={setFormCircuitId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um circuito" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {circuits.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
