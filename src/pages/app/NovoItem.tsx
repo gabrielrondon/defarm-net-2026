@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,10 +19,11 @@ import {
   Wheat,
   MapPin,
   Calendar,
+  Network,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { createItem, CreateItemRequest } from "@/lib/defarm-api";
+import { createItem, getCircuits, CreateItemRequest } from "@/lib/defarm-api";
 
 const valueChainOptions = [
   { value: "bovino", label: "Bovino" },
@@ -49,10 +50,17 @@ export default function NovoItem() {
   const [country, setCountry] = useState("BR");
   const [year, setYear] = useState(new Date().getFullYear());
   
+  const [circuitId, setCircuitId] = useState("");
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const { data: circuits = [], isLoading: isLoadingCircuits } = useQuery({
+    queryKey: ["circuits"],
+    queryFn: () => getCircuits(),
+  });
 
   const createMutation = useMutation({
     mutationFn: (data: CreateItemRequest) => createItem(data),
@@ -80,6 +88,7 @@ export default function NovoItem() {
       value_chain: valueChain,
       country,
       year,
+      circuit_id: circuitId || null,
       owner_id: user?.id || null,
       user_id: user?.id || null,
     });
@@ -170,6 +179,28 @@ export default function NovoItem() {
                 max={2100}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="circuit_id" className="flex items-center gap-2">
+                <Network className="h-4 w-4 text-muted-foreground" />
+                Circuito
+              </Label>
+              <Select value={circuitId} onValueChange={setCircuitId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingCircuits ? "Carregando..." : "Selecione um circuito"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {circuits.map((circuit) => (
+                    <SelectItem key={circuit.id} value={circuit.id}>
+                      {circuit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Opcional. Associe o item a um circuito existente.
+              </p>
             </div>
           </div>
         </div>
