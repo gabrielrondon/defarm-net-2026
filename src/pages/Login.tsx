@@ -149,7 +149,7 @@ export default function Login() {
               setIsDemoLoading(true);
               try {
                 try {
-                  await login({ email: "frontend-demo@lovable.dev", password: "DemoPass2025!" });
+                  await login({ email: "demo@defarm.io", password: "DemoPass2025!" });
                   navigate("/app");
                   return;
                 } catch {
@@ -157,17 +157,17 @@ export default function Login() {
                 }
 
                 const response = await apiRegister({
-                  email: "frontend-demo@lovable.dev",
+                  email: "demo@defarm.io",
                   password: "DemoPass2025!",
-                  full_name: "Frontend Demo",
-                  workspace_slug: "lovable-demo",
-                  workspace_name: "Lovable Demo",
+                  full_name: "Demo User",
+                  workspace_slug: "demo-farm",
+                  workspace_name: "Demo Farm",
                 });
 
                 const userData = {
                   id: response.user_id || (response as any).user?.id || "demo-user",
-                  username: "frontend-demo",
-                  email: "frontend-demo@lovable.dev",
+                  username: "demo",
+                  email: "demo@defarm.io",
                   workspace_id: response.workspace_id || (response as any).user?.workspace_id || "demo",
                 };
 
