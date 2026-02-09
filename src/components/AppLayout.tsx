@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Shield,
   Camera,
-  TreePine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -33,7 +32,6 @@ const navItems: NavItem[] = [
   { icon: Activity, label: "Eventos", href: "/app/eventos" },
   { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
   { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
-  { icon: TreePine, label: "Merkle Trees", href: "/app/merkle" },
 ];
 
 interface AppLayoutProps {
