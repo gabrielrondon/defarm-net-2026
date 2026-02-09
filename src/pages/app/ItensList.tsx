@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Plus, 
   Search, 
@@ -13,6 +13,9 @@ import {
   XCircle,
   Loader2,
   RefreshCw,
+  GitBranch,
+  Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,15 +34,40 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { getItems } from "@/lib/defarm-api";
+import { getItems, updateItemStatus, Item } from "@/lib/defarm-api";
+import { PushToCircuitDialog } from "@/components/item-detail/PushToCircuitDialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ItensList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "deprecated">("all");
+  const [pushDialogItem, setPushDialogItem] = useState<Item | null>(null);
+
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: items = [], isLoading, error, refetch } = useQuery({
     queryKey: ["items"],
     queryFn: () => getItems(),
+  });
+
+  const depreciateMutation = useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      updateItemStatus(id, { status: "deprecated", user_id: user?.id || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      toast({ title: "Item depreciado", description: "O status foi atualizado." });
+    },
+    onError: (err) => {
+      toast({
+        title: "Erro ao depreciar",
+        description: err instanceof Error ? err.message : "Tente novamente",
+        variant: "destructive",
+      });
+    },
   });
 
   const filteredItems = items.filter((item) => {
@@ -243,9 +271,21 @@ export default function ItensList() {
                               Ver detalhes
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Enviar para circuito</DropdownMenuItem>
-                          <DropdownMenuItem>Adicionar evento</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Depreciar</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setPushDialogItem(item)}>
+                            <GitBranch className="h-4 w-4 mr-2" />
+                            Enviar para circuito
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/app/itens/${item.dfid}`)}>
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Ver eventos
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => depreciateMutation.mutate({ id: item.id })}
+                          >
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            Depreciar
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -272,6 +312,17 @@ export default function ItensList() {
           </div>
         )}
       </div>
+
+      {/* Push to Circuit Dialog */}
+      {pushDialogItem && (
+        <PushToCircuitDialog
+          item={pushDialogItem}
+          open={!!pushDialogItem}
+          onOpenChange={(open) => {
+            if (!open) setPushDialogItem(null);
+          }}
+        />
+      )}
     </div>
   );
 }

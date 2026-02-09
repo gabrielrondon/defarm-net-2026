@@ -66,7 +66,7 @@ export function PushToCircuitDialog({
   };
 
   // Filter active circuits only
-  const activeCircuits = circuits.filter((c) => c.status === "Active");
+  const activeCircuits = circuits.filter((c) => c.status?.toLowerCase() === "active");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
