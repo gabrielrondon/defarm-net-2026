@@ -70,7 +70,7 @@ export default function NovoItem() {
         title: "Item criado!",
         description: "O item foi cadastrado com sucesso.",
       });
-      navigate(`/app/itens/${item.dfid}`);
+      navigate(`/app/itens/${item.id}`);
     },
     onError: (error) => {
       toast({
