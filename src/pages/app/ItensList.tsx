@@ -195,7 +195,7 @@ export default function ItensList() {
                 const isTokenized = item.dfid?.startsWith("DFID-");
                 
                 return (
-                  <TableRow key={item.id} className="group">
+                  <TableRow key={item.id} className="group cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/app/itens/${item.id}`)}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className={cn(
