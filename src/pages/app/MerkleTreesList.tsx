@@ -49,6 +49,8 @@ export default function MerkleTreesList() {
   const { data: trees = [], isLoading, error, refetch } = useQuery({
     queryKey: ["merkle-trees"],
     queryFn: () => getMerkleTrees({ limit: 100 }),
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const verifyMutation = useMutation({
@@ -137,20 +139,26 @@ export default function MerkleTreesList() {
     );
   }
 
+  const isPermissionError = error && (error as any)?.status === 403;
+
   if (error) {
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
         <TreePine className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          Erro ao carregar árvores
+          {isPermissionError ? "Acesso restrito" : "Erro ao carregar árvores"}
         </h1>
         <p className="text-muted-foreground mb-6">
-          {error instanceof Error ? error.message : "Tente novamente mais tarde"}
+          {isPermissionError
+            ? "Sua conta não possui permissão para visualizar Árvores Merkle. Solicite acesso ao administrador do workspace."
+            : error instanceof Error ? error.message : "Tente novamente mais tarde"}
         </p>
-        <Button onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Tentar novamente
-        </Button>
+        {!isPermissionError && (
+          <Button onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+        )}
       </div>
     );
   }
