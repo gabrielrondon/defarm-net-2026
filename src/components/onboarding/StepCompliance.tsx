@@ -10,6 +10,7 @@ import {
   Loader2,
   AlertCircle 
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ComplianceChecks {
   environmental: boolean | null;
@@ -24,36 +25,13 @@ interface StepComplianceProps {
   onNext: () => void;
 }
 
-const checkConfig = [
-  {
-    key: "environmental" as const,
-    icon: Leaf,
-    label: "Verificação Ambiental",
-    description: "Área sem desmatamento ilegal",
-    delay: 500,
-  },
-  {
-    key: "eudr" as const,
-    icon: Globe,
-    label: "Conformidade EUDR",
-    description: "Elegível para mercado europeu",
-    delay: 1500,
-  },
-  {
-    key: "documentation" as const,
-    icon: FileCheck,
-    label: "Documentação",
-    description: "Registros básicos verificados",
-    delay: 2500,
-  },
-];
-
 export function StepCompliance({ 
   itemCount, 
   checks, 
   onChecksComplete, 
   onNext 
 }: StepComplianceProps) {
+  const { t } = useTranslation();
   const [currentChecks, setCurrentChecks] = useState<ComplianceChecks>({
     environmental: null,
     eudr: null,
@@ -61,14 +39,36 @@ export function StepCompliance({
   });
   const [isComplete, setIsComplete] = useState(false);
 
+  const checkConfig = [
+    {
+      key: "environmental" as const,
+      icon: Leaf,
+      label: t("onboarding.step4.environmental"),
+      description: t("onboarding.step4.environmentalDesc"),
+      delay: 500,
+    },
+    {
+      key: "eudr" as const,
+      icon: Globe,
+      label: t("onboarding.step4.eudr"),
+      description: t("onboarding.step4.eudrDesc"),
+      delay: 1500,
+    },
+    {
+      key: "documentation" as const,
+      icon: FileCheck,
+      label: t("onboarding.step4.documentation"),
+      description: t("onboarding.step4.documentationDesc"),
+      delay: 2500,
+    },
+  ];
+
   useEffect(() => {
-    // Simulate progressive checks
     checkConfig.forEach(({ key, delay }) => {
       setTimeout(() => {
         setCurrentChecks(prev => {
           const updated = { ...prev, [key]: true };
           
-          // Check if all are complete
           if (Object.values(updated).every(v => v === true)) {
             setTimeout(() => {
               setIsComplete(true);
@@ -92,19 +92,21 @@ export function StepCompliance({
     return <AlertCircle className="w-5 h-5 text-amber-500" />;
   };
 
+  const subtitle = itemCount === 1 
+    ? t("onboarding.step4.subtitle", { count: itemCount })
+    : t("onboarding.step4.subtitlePlural", { count: itemCount });
+
   return (
     <div className="flex-1 flex flex-col">
-      {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-          Verificando seus ativos
+          {t("onboarding.step4.title")}
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Checando {itemCount} {itemCount === 1 ? "item" : "itens"} em tempo real
+          {subtitle}
         </p>
       </div>
 
-      {/* Checks */}
       <div className="flex-1 max-w-lg mx-auto w-full">
         <div className="space-y-4 mb-8">
           {checkConfig.map(({ key, icon: Icon, label, description }) => (
@@ -140,21 +142,19 @@ export function StepCompliance({
           ))}
         </div>
 
-        {/* Result summary */}
         {isComplete && (
           <Card className="p-6 bg-green-500/5 border-green-500/30 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
             <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Tudo verificado!
+              {t("onboarding.step4.allVerified")}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Seus ativos estão prontos para acessar oportunidades financeiras premium
+              {t("onboarding.step4.allVerifiedDesc")}
             </p>
           </Card>
         )}
       </div>
 
-      {/* CTA */}
       <div className="mt-8 text-center">
         <Button
           size="lg"
@@ -162,7 +162,7 @@ export function StepCompliance({
           disabled={!isComplete}
           className="px-8 py-6 text-lg font-semibold gap-2"
         >
-          Ver oportunidades
+          {t("onboarding.step4.viewOpportunities")}
           <ArrowRight className="w-5 h-5" />
         </Button>
       </div>

@@ -267,5 +267,86 @@
   "languageToggle": {
     "en": "EN",
     "pt": "PT"
+  },
+  "onboarding": {
+    "steps": {
+      "identify": "Identificar",
+      "register": "Registrar",
+      "portfolio": "Portfolio",
+      "compliance": "Compliance",
+      "opportunities": "Oportunidades"
+    },
+    "loginPrompt": "Já tem conta?",
+    "loginPromptMobile": "Entrar",
+    "footer": "Seus dados estão seguros e só serão salvos quando você criar uma conta",
+    "step1": {
+      "title": "Qual o número do seu animal?",
+      "subtitle": "SISBOV, brinco, lote, GTA... qualquer identificador que você já usa",
+      "placeholder": "Digite aqui...",
+      "detected": "Parece ser um {{type}}",
+      "fakeGenerated": "Número de exemplo gerado",
+      "generateFake": "Não tenho um número? Gerar exemplo",
+      "continue": "Continuar"
+    },
+    "step2": {
+      "registering": "Registrando seu animal...",
+      "registered": "Animal registrado com sucesso!",
+      "secureRecord": "Registro Digital Seguro",
+      "dfidDescription": "Este é o identificador único e imutável do seu animal na rede DeFarm",
+      "traceable": "Rastreável",
+      "immutable": "Imutável",
+      "verifiable": "Verificável",
+      "viewPortfolio": "Ver meu portfolio"
+    },
+    "step3": {
+      "title": "Seu portfolio de ativos",
+      "subtitle": "Adicione mais animais ou lotes para criar um portfolio completo",
+      "addPlaceholder": "Digite o identificador...",
+      "addButton": "Adicionar",
+      "generateExample": "Gerar exemplo",
+      "cancel": "Cancelar",
+      "addMore": "Adicionar mais um animal ou lote",
+      "assetsSingular": "ativo registrado",
+      "assetsPlural": "ativos registrados",
+      "checkCompliance": "Verificar compliance"
+    },
+    "step4": {
+      "title": "Verificando seus ativos",
+      "subtitle": "Checando {{count}} item em tempo real",
+      "subtitlePlural": "Checando {{count}} itens em tempo real",
+      "environmental": "Verificação Ambiental",
+      "environmentalDesc": "Área sem desmatamento ilegal",
+      "eudr": "Conformidade EUDR",
+      "eudrDesc": "Elegível para mercado europeu",
+      "documentation": "Documentação",
+      "documentationDesc": "Registros básicos verificados",
+      "allVerified": "Tudo verificado!",
+      "allVerifiedDesc": "Seus ativos estão prontos para acessar oportunidades financeiras premium",
+      "viewOpportunities": "Ver oportunidades"
+    },
+    "step5": {
+      "unlocked": "Desbloqueado",
+      "title": "Suas oportunidades",
+      "subtitle": "Com {{count}} ativo verificado, você pode acessar:",
+      "subtitlePlural": "Com {{count}} ativos verificados, você pode acessar:",
+      "cprTitle": "CPR Digital",
+      "cprDesc": "Emita uma Cédula de Produto Rural com seus ativos como garantia",
+      "cprHighlight": "Taxa a partir de 1.2% a.m.",
+      "financeTitle": "Financiamento Rural",
+      "financeDesc": "Acesse crédito com taxas diferenciadas usando seu portfolio",
+      "financeHighlight": "Até R$ 500 mil",
+      "premiumTitle": "Mercado Premium",
+      "premiumDesc": "Venda direta para frigoríficos e exportadores premium",
+      "premiumHighlight": "+15% no preço",
+      "reqAssets": "Ativos registrados",
+      "reqCompliance": "Compliance verificado",
+      "reqProperty": "Dados da propriedade",
+      "reqHistory": "Histórico de produção",
+      "reqEudr": "EUDR compliant",
+      "reqCerts": "Certificações extras",
+      "readyTitle": "Pronto para começar?",
+      "readyDesc": "Crie sua conta para salvar seu portfolio e acessar todas as oportunidades",
+      "savePortfolio": "Salvar meu portfolio"
+    }
   }
 }

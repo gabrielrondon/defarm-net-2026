@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { LogIn } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
 
 interface OnboardingLayoutProps {
@@ -11,13 +12,7 @@ interface OnboardingLayoutProps {
   onStepClick?: (step: number) => void;
 }
 
-const stepLabels = [
-  "Identificar",
-  "Registrar",
-  "Portfolio",
-  "Compliance",
-  "Oportunidades",
-];
+const stepKeys = ["identify", "register", "portfolio", "compliance", "opportunities"];
 
 export function OnboardingLayout({ 
   children, 
@@ -25,11 +20,11 @@ export function OnboardingLayout({
   totalSteps,
   onStepClick 
 }: OnboardingLayoutProps) {
+  const { t } = useTranslation();
   const progressPercent = ((currentStep) / totalSteps) * 100;
 
   const handleStepClick = (stepIndex: number) => {
     const step = stepIndex + 1;
-    // Only allow clicking on completed steps or the current step
     if (step < currentStep && onStepClick) {
       onStepClick(step);
     }
@@ -52,8 +47,8 @@ export function OnboardingLayout({
           <Link to="/login">
             <Button variant="ghost" size="sm" className="gap-2">
               <LogIn className="h-4 w-4" />
-              <span className="hidden sm:inline">Já tem conta?</span>
-              <span className="sm:hidden">Entrar</span>
+              <span className="hidden sm:inline">{t("onboarding.loginPrompt")}</span>
+              <span className="sm:hidden">{t("onboarding.loginPromptMobile")}</span>
             </Button>
           </Link>
         </div>
@@ -63,7 +58,7 @@ export function OnboardingLayout({
       <div className="bg-muted/30 border-b border-border/30">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-3">
-            {stepLabels.map((label, index) => {
+            {stepKeys.map((key, index) => {
               const step = index + 1;
               const isCompleted = step < currentStep;
               const isCurrent = step === currentStep;
@@ -71,7 +66,7 @@ export function OnboardingLayout({
 
               return (
                 <button
-                  key={label}
+                  key={key}
                   onClick={() => handleStepClick(index)}
                   disabled={!isClickable}
                   className={`text-xs font-medium transition-all ${
@@ -82,7 +77,7 @@ export function OnboardingLayout({
                         : "text-muted-foreground cursor-default"
                   }`}
                 >
-                  <span className="hidden sm:inline">{label}</span>
+                  <span className="hidden sm:inline">{t(`onboarding.steps.${key}`)}</span>
                   <span className="sm:hidden">{step}</span>
                 </button>
               );
@@ -101,7 +96,7 @@ export function OnboardingLayout({
 
       {/* Footer hint */}
       <footer className="py-4 text-center text-xs text-muted-foreground border-t border-border/30">
-        <p>Seus dados estão seguros e só serão salvos quando você criar uma conta</p>
+        <p>{t("onboarding.footer")}</p>
       </footer>
     </div>
   );
