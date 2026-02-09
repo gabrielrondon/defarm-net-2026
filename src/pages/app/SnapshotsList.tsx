@@ -69,6 +69,8 @@ export default function SnapshotsList() {
   const { data: snapshots = [], isLoading, error, refetch } = useQuery({
     queryKey: ["snapshots"],
     queryFn: () => getSnapshots({ limit: 100 }),
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const createMutation = useMutation({
@@ -162,20 +164,26 @@ export default function SnapshotsList() {
     );
   }
 
+  const isPermissionError = error && (error as any)?.status === 403;
+
   if (error) {
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
         <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          Erro ao carregar snapshots
+          {isPermissionError ? "Acesso restrito" : "Erro ao carregar snapshots"}
         </h1>
         <p className="text-muted-foreground mb-6">
-          {error instanceof Error ? error.message : "Tente novamente mais tarde"}
+          {isPermissionError
+            ? "Sua conta não possui permissão para gerenciar Snapshots. Solicite acesso ao administrador do workspace."
+            : error instanceof Error ? error.message : "Tente novamente mais tarde"}
         </p>
-        <Button onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Tentar novamente
-        </Button>
+        {!isPermissionError && (
+          <Button onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
+        )}
       </div>
     );
   }
