@@ -423,7 +423,11 @@ export default function CircuitoDetail() {
             </TableHeader>
             <TableBody>
               {filteredItems.map((item) => (
-                <TableRow key={item.id} className="group">
+                <TableRow
+                  key={item.id}
+                  className="group cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/app/itens/${item.dfid}`)}
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -473,15 +477,7 @@ export default function CircuitoDetail() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Link to={`/app/itens/${item.dfid}`}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
                   </TableCell>
                 </TableRow>
               ))}
