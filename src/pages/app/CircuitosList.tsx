@@ -32,6 +32,8 @@ export default function CircuitosList() {
   const { data: circuits = [], isLoading, error, refetch } = useQuery({
     queryKey: ["circuits"],
     queryFn: () => getCircuits(),
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const filteredCircuits = circuits.filter((circuit) => {
