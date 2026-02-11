@@ -33,11 +33,12 @@ export function ItemHeader({ item }: ItemHeaderProps) {
   const [copied, setCopied] = useState(false);
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
 
-  const isTokenized = item?.dfid?.startsWith("DFID-");
+  const dfid = item?.dfid ?? "";
+  const isTokenized = dfid.startsWith("DFID-");
 
   const handleCopyDfid = () => {
-    if (item?.dfid) {
-      navigator.clipboard.writeText(item.dfid);
+    if (dfid) {
+      navigator.clipboard.writeText(dfid);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -71,7 +72,7 @@ export function ItemHeader({ item }: ItemHeaderProps) {
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-xl font-bold text-foreground font-mono">
-                  {item.dfid.length > 30 ? `${item.dfid.slice(0, 30)}...` : item.dfid}
+                  {dfid.length > 30 ? `${dfid.slice(0, 30)}...` : dfid}
                 </h1>
               </div>
               <div className="flex items-center gap-3 mb-2">
