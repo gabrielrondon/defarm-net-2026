@@ -164,9 +164,9 @@ export interface IndicatorHistoryResponse {
 
 // CPR
 export interface CPRCalculateRequest {
-  product: "soja" | "milho" | "cafe" | "algodao" | "boi";
-  quantity_tons: number;
-  price_per_ton: number;
+  product: string;
+  quantity: number;
+  expected_price: number;
   days_to_maturity: number;
   discount_rate: number;
 }
@@ -184,7 +184,7 @@ export interface CPRCalculateResponse {
 
 export interface CPRSimulateRequest {
   product: string;
-  quantity_tons: number;
+  quantity: number;
   current_price: number;
   expected_price: number;
   days_to_harvest: number;
@@ -208,8 +208,8 @@ export interface CPRSimulateResponse {
 export interface CPRCompareCreditRequest {
   cpr_input: {
     product: string;
-    quantity_tons: number;
-    price_per_ton: number;
+    quantity: number;
+    expected_price: number;
     days_to_maturity: number;
     discount_rate: number;
   };

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { Calculator, Wheat, Landmark } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,15 +57,20 @@ export default function FinanceSimulador() {
 
 function CPRSimulator() {
   const [form, setForm] = useState({
-    product: "soja" as const,
-    quantity_tons: 1000,
-    price_per_ton: 150,
+    product: "soja",
+    quantity: 1000,
+    expected_price: 150,
     days_to_maturity: 180,
     discount_rate: 12.5,
   });
 
+  const { toast } = useToast();
+
   const mutation = useMutation({
     mutationFn: () => calculateCPR(form),
+    onError: (err: any) => {
+      toast({ title: "Erro no cálculo", description: err?.message || "Falha ao calcular CPR", variant: "destructive" });
+    },
   });
 
   const result = mutation.data;
@@ -105,8 +111,8 @@ function CPRSimulator() {
               <Label>Quantidade (ton)</Label>
               <Input
                 type="number"
-                value={form.quantity_tons}
-                onChange={(e) => setForm((p) => ({ ...p, quantity_tons: Number(e.target.value) }))}
+                value={form.quantity}
+                onChange={(e) => setForm((p) => ({ ...p, quantity: Number(e.target.value) }))}
               />
             </div>
           </div>
@@ -115,8 +121,8 @@ function CPRSimulator() {
               <Label>Preço/ton (R$)</Label>
               <Input
                 type="number"
-                value={form.price_per_ton}
-                onChange={(e) => setForm((p) => ({ ...p, price_per_ton: Number(e.target.value) }))}
+                value={form.expected_price}
+                onChange={(e) => setForm((p) => ({ ...p, expected_price: Number(e.target.value) }))}
               />
             </div>
             <div className="space-y-2">
@@ -186,8 +192,8 @@ function CPRSimulator() {
 
 function AdvanceSimulator() {
   const [form, setForm] = useState({
-    product: "soja" as const,
-    quantity_tons: 1000,
+    product: "soja",
+    quantity: 1000,
     current_price: 140,
     expected_price: 150,
     days_to_harvest: 180,
@@ -229,8 +235,8 @@ function AdvanceSimulator() {
               <Label>Quantidade (ton)</Label>
               <Input
                 type="number"
-                value={form.quantity_tons}
-                onChange={(e) => setForm((p) => ({ ...p, quantity_tons: Number(e.target.value) }))}
+                value={form.quantity}
+                onChange={(e) => setForm((p) => ({ ...p, quantity: Number(e.target.value) }))}
               />
             </div>
             <div className="space-y-2">
