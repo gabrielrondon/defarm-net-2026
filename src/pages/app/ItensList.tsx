@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Plus, 
   Search, 
   Package, 
   MoreHorizontal,
+  Upload,
   QrCode,
   ExternalLink,
   Filter,
@@ -43,6 +45,7 @@ export default function ItensList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "deprecated">("all");
   const [pushDialogItem, setPushDialogItem] = useState<Item | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -123,12 +126,18 @@ export default function ItensList() {
             Gerencie seus itens rastreados e tokenizados
           </p>
         </div>
-        <Link to="/app/itens/novo">
-          <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Item
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar CSV/JSON
           </Button>
-        </Link>
+          <Link to="/app/itens/novo">
+            <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Item
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -323,6 +332,12 @@ export default function ItensList() {
           }}
         />
       )}
+
+      <BulkImportDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }
