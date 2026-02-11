@@ -135,19 +135,14 @@ export default function Configuracoes() {
               </div>
 
               <Button
-                onClick={handleSaveProfile}
-                disabled={isLoading}
-                className="btn-offset bg-primary hover:bg-primary text-primary-foreground"
+                disabled
+                className="btn-offset bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                title="Em breve"
               >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Salvar alterações
-                  </>
-                )}
+                <Save className="h-4 w-4 mr-2" />
+                Salvar alterações
               </Button>
+              <p className="text-xs text-muted-foreground italic">Funcionalidade em breve</p>
             </div>
           </div>
         );
@@ -176,15 +171,15 @@ export default function Configuracoes() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Membros</p>
+                    <p className="text-sm font-medium text-muted-foreground">Membros</p>
                     <p className="text-xs text-muted-foreground">
                       Gerencie os membros do seu workspace
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Gerenciar
+                  <Button variant="outline" size="sm" disabled>
+                    Em breve
                   </Button>
                 </div>
 
@@ -200,15 +195,15 @@ export default function Configuracoes() {
                   </Button>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Uso e limites</p>
+                    <p className="text-sm font-medium text-muted-foreground">Uso e limites</p>
                     <p className="text-xs text-muted-foreground">
                       Veja seu consumo de recursos
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Ver uso
+                  <Button variant="outline" size="sm" disabled>
+                    Em breve
                   </Button>
                 </div>
               </div>
@@ -226,55 +221,50 @@ export default function Configuracoes() {
               </p>
             </div>
 
-            <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="bg-background border border-border rounded-2xl p-6 space-y-4 opacity-50">
+              <p className="text-xs text-muted-foreground italic mb-2">Funcionalidade em breve</p>
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-muted-foreground">
                     Notificações por email
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Receba atualizações importantes no seu email
                   </p>
                 </div>
-                <Switch
-                  checked={emailNotifications}
-                  onCheckedChange={setEmailNotifications}
-                />
+                <Switch checked={emailNotifications} disabled />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Push notifications</p>
+                  <p className="text-sm font-medium text-muted-foreground">Push notifications</p>
                   <p className="text-xs text-muted-foreground">
                     Notificações no navegador
                   </p>
                 </div>
-                <Switch
-                  checked={pushNotifications}
-                  onCheckedChange={setPushNotifications}
-                />
+                <Switch checked={pushNotifications} disabled />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-muted-foreground">
                     Atualizações de circuitos
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Quando itens são adicionados ou removidos
                   </p>
                 </div>
-                <Switch checked={circuitUpdates} onCheckedChange={setCircuitUpdates} />
+                <Switch checked={circuitUpdates} disabled />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Alertas de itens</p>
+                  <p className="text-sm font-medium text-muted-foreground">Alertas de itens</p>
                   <p className="text-xs text-muted-foreground">
                     Quando itens são tokenizados ou deprecados
                   </p>
                 </div>
-                <Switch checked={itemAlerts} onCheckedChange={setItemAlerts} />
+                <Switch checked={itemAlerts} disabled />
               </div>
             </div>
           </div>
@@ -291,29 +281,29 @@ export default function Configuracoes() {
             </div>
 
             <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Alterar senha</p>
+                  <p className="text-sm font-medium text-muted-foreground">Alterar senha</p>
                   <p className="text-xs text-muted-foreground">
                     Atualize sua senha regularmente
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
-                  Alterar
+                <Button variant="outline" size="sm" disabled>
+                  Em breve
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-muted-foreground">
                     Autenticação em dois fatores
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Adicione uma camada extra de segurança
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
-                  Configurar
+                <Button variant="outline" size="sm" disabled>
+                  Em breve
                 </Button>
               </div>
 
