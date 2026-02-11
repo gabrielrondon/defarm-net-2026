@@ -12,6 +12,8 @@ import Onboarding from "./pages/Onboarding";
 import Solucoes from "./pages/Solucoes";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
+import Privacidade from "./pages/Privacidade";
+import Termos from "./pages/Termos";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import NotFound from "./pages/NotFound";
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/solucoes" element={<Solucoes />} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
+            <Route path="/privacidade" element={<Privacidade />} />
+            <Route path="/termos" element={<Termos />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
             

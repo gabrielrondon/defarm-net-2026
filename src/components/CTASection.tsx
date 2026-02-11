@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -15,21 +16,16 @@ export function CTASection() {
           <p className="text-xl text-primary-foreground/80 mb-8">
             {t("cta.description")}
           </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Button
-              size="lg"
-              className="btn-offset bg-background text-foreground hover:bg-background font-semibold px-8 py-6 text-lg rounded-lg"
-            >
-              {t("cta.primary")}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="btn-offset border-2 border-primary-foreground text-primary-foreground bg-transparent hover:bg-transparent font-semibold px-8 py-6 text-lg rounded-lg"
-            >
-              {t("cta.secondary")}
-            </Button>
+          <div className="flex justify-center">
+            <Link to="/onboarding">
+              <Button
+                size="lg"
+                className="btn-offset bg-background text-foreground hover:bg-background font-semibold px-8 py-6 text-lg rounded-lg"
+              >
+                {t("cta.primary")}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

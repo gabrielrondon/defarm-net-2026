@@ -3,7 +3,7 @@
     "solutions": "Soluções",
     "about": "Sobre",
     "contact": "Contato",
-    "requestAccess": "Solicitar Acesso",
+    "getStarted": "Começar Agora",
     "back": "Voltar"
   },
   "platform": {
@@ -64,8 +64,7 @@
   "cta": {
     "headline": "Pronto para transformar sua cadeia produtiva?",
     "description": "Junte-se a centenas de produtores que já estão usando a DeFarm para garantir rastreabilidade e compliance.",
-    "primary": "Começar Agora",
-    "secondary": "Falar com Especialista"
+    "primary": "Começar Agora"
   },
   "howItWorks": {
     "title": "Como",
@@ -108,9 +107,79 @@
     "company": "Empresa",
     "aboutUs": "Sobre Nós",
     "contact": "Contato",
-    "rights": "© 2025 DeFarm. Todos os direitos reservados.",
+    "rights": "© 2026 DeFarm. Todos os direitos reservados.",
     "privacy": "Política de Privacidade",
     "terms": "Termos de Uso"
+  },
+  "privacy": {
+    "lastUpdated": "Última atualização: Fevereiro de 2026",
+    "sections": {
+      "intro": {
+        "title": "Introdução",
+        "content": "A DeFarm (\"nós\", \"nosso\" ou \"nos\") está comprometida em proteger sua privacidade. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você utiliza nossa plataforma de rastreabilidade agrícola e serviços relacionados."
+      },
+      "dataCollected": {
+        "title": "Dados que Coletamos",
+        "content": "Coletamos informações que você fornece diretamente, como nome, endereço de email, nome da empresa/fazenda e dados de identificação animal. Também coletamos automaticamente dados de uso, informações do dispositivo, endereço IP e cookies para melhorar nossos serviços."
+      },
+      "usage": {
+        "title": "Como Usamos seus Dados",
+        "content": "Utilizamos seus dados para fornecer e manter nossos serviços de rastreabilidade, processar transações, enviar comunicações sobre sua conta, melhorar nossa plataforma, cumprir obrigações legais e gerar relatórios de compliance (como EUDR). Não vendemos seus dados pessoais a terceiros."
+      },
+      "sharing": {
+        "title": "Compartilhamento de Dados",
+        "content": "Podemos compartilhar seus dados com participantes da cadeia produtiva dentro dos seus circuitos (com seu consentimento), parceiros tecnológicos que auxiliam na operação da plataforma, autoridades regulatórias quando legalmente exigido, e parceiros financeiros para emissão de CPR e análise de crédito. Todos os parceiros são vinculados por acordos de confidencialidade."
+      },
+      "security": {
+        "title": "Segurança dos Dados",
+        "content": "Implementamos medidas de segurança padrão da indústria, incluindo criptografia, servidores seguros e registros imutáveis baseados em blockchain. Embora nenhum sistema seja 100% seguro, trabalhamos continuamente para proteger suas informações contra acesso não autorizado, alteração ou destruição."
+      },
+      "rights": {
+        "title": "Seus Direitos",
+        "content": "Nos termos da Lei Geral de Proteção de Dados (LGPD) e demais regulamentações aplicáveis, você tem direito de acessar, corrigir, excluir ou portar seus dados pessoais. Você também pode revogar o consentimento a qualquer momento. Para exercer esses direitos, entre em contato pelo email contact@defarm.net."
+      },
+      "contact": {
+        "title": "Contato",
+        "content": "Para dúvidas sobre esta Política de Privacidade, entre em contato pelo email contact@defarm.net ou em nosso endereço: Av. Afonso Pena, 4785, Sala 701, Santa Fé, 79.031-010 Campo Grande, Mato Grosso do Sul, Brasil."
+      }
+    }
+  },
+  "terms": {
+    "lastUpdated": "Última atualização: Fevereiro de 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Aceitação dos Termos",
+        "content": "Ao acessar ou utilizar a plataforma e os serviços da DeFarm, você concorda em estar vinculado a estes Termos de Uso. Caso não concorde, você não deve utilizar nossos serviços. Estes termos se aplicam a todos os usuários, incluindo produtores, frigoríficos, varejistas e desenvolvedores."
+      },
+      "services": {
+        "title": "Descrição dos Serviços",
+        "content": "A DeFarm fornece uma plataforma de rastreabilidade agrícola que inclui rastreamento e registro de animais, relatórios de compliance EUDR, tokenização de ativos, emissão de CPR digital e APIs para integração de sistemas. Os serviços podem ser atualizados ou modificados a qualquer momento com aviso prévio."
+      },
+      "accounts": {
+        "title": "Contas de Usuário",
+        "content": "Você é responsável por manter a confidencialidade das credenciais da sua conta e por todas as atividades realizadas sob ela. Você deve fornecer informações precisas e completas durante o cadastro. A DeFarm reserva-se o direito de suspender contas que violem estes termos."
+      },
+      "ip": {
+        "title": "Propriedade Intelectual",
+        "content": "Todo o conteúdo, software, algoritmos e tecnologia da plataforma DeFarm são protegidos por leis de propriedade intelectual. Você recebe uma licença limitada e não exclusiva para usar nossos serviços. Você não pode copiar, modificar, distribuir ou fazer engenharia reversa de qualquer parte da nossa plataforma sem consentimento por escrito."
+      },
+      "liability": {
+        "title": "Limitação de Responsabilidade",
+        "content": "A DeFarm fornece serviços \"como estão\" e não oferece garantias quanto à precisão ou completude dos dados de rastreabilidade inseridos pelos usuários. Não somos responsáveis por danos indiretos, incidentais ou consequenciais. Nossa responsabilidade total é limitada ao valor pago pelos serviços nos 12 meses anteriores à reclamação."
+      },
+      "termination": {
+        "title": "Rescisão",
+        "content": "Qualquer uma das partes pode rescindir o acordo a qualquer momento com 30 dias de aviso prévio por escrito. A DeFarm pode encerrar imediatamente o acesso em caso de violação dos termos. Após a rescisão, você pode solicitar a exportação dos seus dados em até 90 dias."
+      },
+      "law": {
+        "title": "Lei Aplicável",
+        "content": "Estes termos são regidos pelas leis da República Federativa do Brasil. Quaisquer disputas serão submetidas ao foro da comarca de Campo Grande, Mato Grosso do Sul, Brasil."
+      },
+      "contact": {
+        "title": "Contato",
+        "content": "Para dúvidas sobre estes Termos de Uso, entre em contato pelo email contact@defarm.net ou em nosso endereço: Av. Afonso Pena, 4785, Sala 701, Santa Fé, 79.031-010 Campo Grande, Mato Grosso do Sul, Brasil."
+      }
+    }
   },
   "solutions": {
     "title": "Nossas",
@@ -165,20 +234,9 @@
     "title": "Entre em",
     "titleHighlight": "Contato",
     "subtitle": "Estamos prontos para ajudar você a transformar sua cadeia produtiva",
-    "formTitle": "Envie sua mensagem",
-    "name": "Nome",
-    "namePlaceholder": "Seu nome completo",
-    "email": "Email",
-    "emailPlaceholder": "seu@email.com",
-    "subject": "Assunto",
-    "subjectPlaceholder": "Qual o assunto?",
-    "message": "Mensagem",
-    "messagePlaceholder": "Escreva sua mensagem aqui...",
-    "send": "Enviar Mensagem",
     "infoTitle": "Informações de Contato",
-    "infoDescription": "Entre em contato conosco através dos canais abaixo ou preencha o formulário que retornaremos em até 24 horas.",
+    "infoDescription": "Entre em contato conosco através dos canais abaixo que retornaremos em até 24 horas.",
     "emailLabel": "Email",
-    "phoneLabel": "Telefone",
     "addressLabel": "Endereço"
   },
   "login": {
@@ -316,7 +374,7 @@
       "subtitlePlural": "Checando {{count}} itens em tempo real",
       "environmental": "Verificação Ambiental",
       "environmentalDesc": "Área sem desmatamento ilegal",
-      "eudr": "Conformidade EUDR",
+      "eudr": "EUDR Compliance",
       "eudrDesc": "Elegível para mercado europeu",
       "documentation": "Documentação",
       "documentationDesc": "Registros básicos verificados",

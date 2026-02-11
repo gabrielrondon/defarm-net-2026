@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Linkedin, Twitter, Instagram } from "lucide-react";
+import { Linkedin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
 
@@ -32,14 +32,11 @@ export function Footer() {
               {t("footer.description")}
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-background/70 hover:text-primary transition-colors">
+              <a href="https://www.linkedin.com/company/106642089/" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-primary transition-colors">
                 <Linkedin className="h-5 w-5" />
               </a>
-              <a href="#" className="text-background/70 hover:text-primary transition-colors">
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-background/70 hover:text-primary transition-colors">
-                <Instagram className="h-5 w-5" />
+              <a href="https://x.com/DeFarm_Net" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-primary transition-colors">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               </a>
             </div>
           </div>
@@ -84,12 +81,12 @@ export function Footer() {
             {t("footer.rights")}
           </p>
           <div className="flex gap-6 text-sm">
-            <a href="#" className="text-background/70 hover:text-primary transition-colors">
+            <Link to="/privacidade" className="text-background/70 hover:text-primary transition-colors">
               {t("footer.privacy")}
-            </a>
-            <a href="#" className="text-background/70 hover:text-primary transition-colors">
+            </Link>
+            <Link to="/termos" className="text-background/70 hover:text-primary transition-colors">
               {t("footer.terms")}
-            </a>
+            </Link>
           </div>
         </div>
       </div>
