@@ -3,7 +3,7 @@
 // Uses VITE_API_BASE_URL env var with production fallback
 export const GATEWAY_BASE =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://gateway.defarm.net:8080";
+  "https://gateway.defarm.net";
 
 // Registry endpoints are prefixed with /api on the gateway
 export const REGISTRY_API_BASE = `${GATEWAY_BASE}/api`;
