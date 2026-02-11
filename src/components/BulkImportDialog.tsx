@@ -297,6 +297,12 @@ interface BulkImportDialogProps {
   onSuccess?: () => void;
 }
 
+interface PreviewData {
+  headers: string[];
+  rows: string[][];
+  preparedFile: File;
+}
+
 export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [circuitId, setCircuitId] = useState("");
@@ -304,6 +310,8 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
   const [receipt, setReceipt] = useState<IngestionReceipt | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [preview, setPreview] = useState<PreviewData | null>(null);
+  const [parsing, setParsing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: circuits = [] } = useQuery({
@@ -318,6 +326,8 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     setUploading(false);
     setReceipt(null);
     setError(null);
+    setPreview(null);
+    setParsing(false);
   }, []);
 
   const handleOpenChange = (v: boolean) => {
@@ -351,17 +361,35 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     }
   };
 
-  const handleUpload = async () => {
+  const handlePreview = async () => {
     if (!file || !circuitId) return;
-    setUploading(true);
+    setParsing(true);
     setError(null);
     try {
       const prepared = await fileToCsv(file);
-      const result = await bulkIngestItems(prepared, circuitId);
+      const text = await prepared.text();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      const parsedRows = lines.map(parseCsvLine);
+      const headers = parsedRows[0] || [];
+      const dataRows = parsedRows.slice(1);
+      setPreview({ headers, rows: dataRows, preparedFile: prepared });
+    } catch (err: any) {
+      setError(err?.message || "Erro ao processar arquivo.");
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!preview || !circuitId) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const result = await bulkIngestItems(preview.preparedFile, circuitId);
       setReceipt(result);
       onSuccess?.();
     } catch (err: any) {
-      setError(err?.message || "Erro ao importar arquivo. Verifique o formato e tente novamente.");
+      setError(err?.message || "Erro ao importar arquivo.");
     } finally {
       setUploading(false);
     }
@@ -369,7 +397,7 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-primary" />
@@ -413,9 +441,9 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
             </div>
 
             {receipt.summary.unclassified_fields.length > 0 && (
-              <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-sm">
+              <div className="p-3 rounded-lg bg-accent/50 border border-border text-sm">
                 <p className="font-medium text-foreground flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                   Campos não classificados
                 </p>
                 <p className="text-muted-foreground mt-1 font-mono text-xs">
@@ -430,6 +458,80 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
               </Button>
               <Button onClick={() => handleOpenChange(false)}>
                 Fechar
+              </Button>
+            </div>
+          </div>
+        ) : preview ? (
+          /* ===== Preview / Confirmation View ===== */
+          <div className="space-y-4 min-h-0 flex flex-col">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50 border border-border">
+              <FileText className="h-5 w-5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground text-sm">{file?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {preview.rows.length} {preview.rows.length === 1 ? "item" : "itens"} encontrados · {preview.headers.length} colunas
+                </p>
+              </div>
+            </div>
+
+            {/* Preview Table */}
+            <div className="border border-border rounded-lg overflow-auto max-h-[40vh] min-h-0">
+              <table className="w-full text-xs">
+                <thead className="bg-muted sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left font-medium text-muted-foreground border-b border-border w-8">#</th>
+                    {preview.headers.map((h, i) => (
+                      <th key={i} className="px-2 py-1.5 text-left font-medium text-muted-foreground border-b border-border whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.rows.slice(0, 50).map((row, ri) => (
+                    <tr key={ri} className="border-b border-border last:border-b-0 hover:bg-muted/50">
+                      <td className="px-2 py-1 text-muted-foreground">{ri + 1}</td>
+                      {preview.headers.map((_, ci) => (
+                        <td key={ci} className="px-2 py-1 text-foreground whitespace-nowrap max-w-[200px] truncate">
+                          {row[ci] || ""}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {preview.rows.length > 50 && (
+              <p className="text-xs text-muted-foreground text-center">
+                Mostrando 50 de {preview.rows.length} linhas
+              </p>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setPreview(null)}>
+                Voltar
+              </Button>
+              <Button onClick={handleConfirmUpload} disabled={uploading}>
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Confirmar Importação ({preview.rows.length} itens)
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -542,18 +644,18 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
                 Cancelar
               </Button>
               <Button
-                onClick={handleUpload}
-                disabled={!file || !circuitId || uploading}
+                onClick={handlePreview}
+                disabled={!file || !circuitId || parsing}
               >
-                {uploading ? (
+                {parsing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Importando...
+                    Processando...
                   </>
                 ) : (
                   <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Importar
+                    <FileText className="h-4 w-4 mr-2" />
+                    Visualizar dados
                   </>
                 )}
               </Button>
