@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Upload, FileText, Download, CheckCircle2, AlertTriangle, Loader2, X } from "lucide-react";
 import {
   Dialog,
@@ -57,6 +57,11 @@ function downloadTemplate(content: string, filename: string) {
 
 const DEFAULT_VALUE_CHAIN = "BEEF";
 const DEFAULT_COUNTRY = "BR";
+const PREVIEW_LIMIT = 50;
+const CANONICAL_TYPES = [
+  { label: "SISBOV", value: "sisbov" },
+  { label: "CPF", value: "cpf" },
+];
 
 const HEADER_ALIASES: Record<string, string> = {
   data_nasc: "data_nasc",
@@ -110,7 +115,7 @@ function dedupeHeaders(headers: string[]): string[] {
   });
 }
 
-function parseCsvLine(line: string): string[] {
+function parseCsvLine(line: string, delimiter: string): string[] {
   const fields: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -124,7 +129,7 @@ function parseCsvLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === "," && !inQuotes) {
+    } else if (char === delimiter && !inQuotes) {
       fields.push(current);
       current = "";
     } else {
@@ -174,6 +179,40 @@ function rowsToCsv(headers: string[], rows: string[][]): string {
   return lines.join("\n");
 }
 
+function detectDelimiter(lines: string[]): string {
+  const candidate = lines.find((line) => line.trim().length > 0) ?? "";
+  const counts = [
+    { d: ";", c: (candidate.match(/;/g) || []).length },
+    { d: ",", c: (candidate.match(/,/g) || []).length },
+    { d: "\t", c: (candidate.match(/\t/g) || []).length },
+  ];
+  counts.sort((a, b) => b.c - a.c);
+  return counts[0].c > 0 ? counts[0].d : ",";
+}
+
+function decodeTextFromArrayBuffer(buffer: ArrayBuffer): { text: string; binary: boolean } {
+  const bytes = new Uint8Array(buffer);
+  // Heuristic: if there are many null bytes, treat as binary Excel
+  const nullCount = bytes.reduce((acc, b) => (b === 0 ? acc + 1 : acc), 0);
+  if (nullCount > 0) {
+    return { text: "", binary: true };
+  }
+
+  const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+  if (utf8.includes("\uFFFD")) {
+    const latin = new TextDecoder("windows-1252", { fatal: false }).decode(buffer);
+    return { text: latin, binary: false };
+  }
+  return { text: utf8, binary: false };
+}
+
+function parseCsvText(text: string) {
+  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const delimiter = detectDelimiter(lines);
+  const rows = lines.map((line) => parseCsvLine(line, delimiter));
+  return { rows, delimiter };
+}
+
 function ensureDefaults(
   headers: string[],
   rows: string[][]
@@ -197,6 +236,24 @@ function ensureDefaults(
       return copy;
     });
   }
+  return { headers: updatedHeaders, rows };
+}
+
+function applyCanonicalOverride(
+  headers: string[],
+  rows: string[][],
+  canonicalColumn?: string,
+  canonicalType?: string
+): { headers: string[]; rows: string[][] } {
+  if (!canonicalColumn || !canonicalType) {
+    return { headers, rows };
+  }
+  const index = headers.indexOf(canonicalColumn);
+  if (index < 0) {
+    return { headers, rows };
+  }
+  const updatedHeaders = [...headers];
+  updatedHeaders[index] = canonicalType;
   return { headers: updatedHeaders, rows };
 }
 
@@ -249,7 +306,11 @@ function buildCsvFromObjects(objects: Array<Record<string, any>>): string {
   return rowsToCsv(headers, normalizedRows);
 }
 
-async function fileToCsv(file: File): Promise<File> {
+async function fileToCsv(
+  file: File,
+  canonicalColumn?: string,
+  canonicalType?: string
+): Promise<File> {
   const fileName = file.name.toLowerCase();
   const isJson = fileName.endsWith(".json");
   const isExcel = fileName.endsWith(".xls") || fileName.endsWith(".xlsx");
@@ -266,12 +327,21 @@ async function fileToCsv(file: File): Promise<File> {
       throw new Error("JSON inválido: informe um array de itens.");
     }
     const csv = buildCsvFromObjects(items);
-    return new File([csv], file.name.replace(/\.json$/i, ".csv"), { type: "text/csv" });
+    const { rows } = parseCsvText(csv);
+    const headers = rows[0] ?? [];
+    const dataRows = rows.slice(1);
+    const normalized = applyCanonicalOverride(headers, dataRows, canonicalColumn, canonicalType);
+    const finalCsv = rowsToCsv(normalized.headers, normalized.rows);
+    return new File([finalCsv], file.name.replace(/\.json$/i, ".csv"), { type: "text/csv" });
   }
 
-  const text = await file.text();
-  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  const rows = lines.map(parseCsvLine);
+  const buffer = await file.arrayBuffer();
+  const decoded = decodeTextFromArrayBuffer(buffer);
+  if (decoded.binary && isExcel) {
+    throw new Error("Planilha Excel binária detectada. Exporte para CSV e tente novamente.");
+  }
+  const text = decoded.text || new TextDecoder("utf-8").decode(buffer);
+  const { rows } = parseCsvText(text);
   const headerIndex = detectHeaderRow(rows);
   if (headerIndex < 0) {
     if (isExcel) {
@@ -287,8 +357,58 @@ async function fileToCsv(file: File): Promise<File> {
     .slice(headerIndex + 1)
     .filter((row) => row.some((cell) => cell.trim().length > 0));
   const { headers, rows: normalizedRows } = ensureDefaults(normalizedHeaders, dataRows);
-  const csv = rowsToCsv(headers, normalizedRows);
+  const canonicalized = applyCanonicalOverride(headers, normalizedRows, canonicalColumn, canonicalType);
+  const csv = rowsToCsv(canonicalized.headers, canonicalized.rows);
   return new File([csv], file.name.replace(/\.csv$/i, ".csv"), { type: "text/csv" });
+}
+
+async function buildPreview(file: File) {
+  const fileName = file.name.toLowerCase();
+  const isJson = fileName.endsWith(".json");
+  const isExcel = fileName.endsWith(".xls") || fileName.endsWith(".xlsx");
+
+  if (isJson) {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const items = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.items)
+      ? parsed.items
+      : [];
+    if (!items.length) {
+      throw new Error("JSON inválido: informe um array de itens.");
+    }
+    const csv = buildCsvFromObjects(items);
+    const { rows } = parseCsvText(csv);
+    const headerIndex = 0;
+    const headers = rows[headerIndex] ?? [];
+    const dataRows = rows.slice(headerIndex + 1);
+    return { headers, rows: dataRows, totalRows: dataRows.length };
+  }
+
+  const buffer = await file.arrayBuffer();
+  const decoded = decodeTextFromArrayBuffer(buffer);
+  if (decoded.binary && isExcel) {
+    throw new Error("Planilha Excel binária detectada. Exporte para CSV e tente novamente.");
+  }
+  const text = decoded.text || new TextDecoder("utf-8").decode(buffer);
+  const { rows } = parseCsvText(text);
+  const headerIndex = detectHeaderRow(rows);
+  if (headerIndex < 0) {
+    if (isExcel) {
+      throw new Error("Planilha Excel detectada. Por favor exporte para CSV e tente novamente.");
+    }
+    throw new Error("Não foi possível localizar o cabeçalho do CSV.");
+  }
+  const rawHeaders = rows[headerIndex];
+  const normalizedHeaders = dedupeHeaders(
+    rawHeaders.map((h, idx) => normalizeHeader(h, idx))
+  );
+  const dataRows = rows
+    .slice(headerIndex + 1)
+    .filter((row) => row.some((cell) => cell.trim().length > 0));
+  const { headers, rows: normalizedRows } = ensureDefaults(normalizedHeaders, dataRows);
+  return { headers, rows: normalizedRows, totalRows: normalizedRows.length };
 }
 
 interface BulkImportDialogProps {
@@ -309,8 +429,11 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
   const [uploading, setUploading] = useState(false);
   const [receipt, setReceipt] = useState<IngestionReceipt | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewData | null>(null);
+  const [canonicalColumn, setCanonicalColumn] = useState("");
+  const [canonicalType, setCanonicalType] = useState("");
+  const [dragOver, setDragOver] = useState(false);
   const [parsing, setParsing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -327,6 +450,9 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     setReceipt(null);
     setError(null);
     setPreview(null);
+    setPreviewError(null);
+    setCanonicalColumn("");
+    setCanonicalType("");
     setParsing(false);
   }, []);
 
@@ -365,16 +491,25 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     if (!file || !circuitId) return;
     setParsing(true);
     setError(null);
+    setPreviewError(null);
     try {
-      const prepared = await fileToCsv(file);
-      const text = await prepared.text();
-      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-      const parsedRows = lines.map(parseCsvLine);
-      const headers = parsedRows[0] || [];
-      const dataRows = parsedRows.slice(1);
-      setPreview({ headers, rows: dataRows, preparedFile: prepared });
+      const previewData = await buildPreview(file);
+      const headers = previewData.headers || [];
+      const headerSet = headers.map((h) => h.toLowerCase());
+      const sisbovIndex = headerSet.findIndex((h) => h.includes("sisbov") || h.includes("bnd"));
+      const cpfIndex = headerSet.findIndex((h) => h.includes("cpf"));
+      if (!canonicalColumn && !canonicalType) {
+        if (sisbovIndex >= 0) {
+          setCanonicalColumn(headers[sisbovIndex]);
+          setCanonicalType("sisbov");
+        } else if (cpfIndex >= 0) {
+          setCanonicalColumn(headers[cpfIndex]);
+          setCanonicalType("cpf");
+        }
+      }
+      setPreview(previewData);
     } catch (err: any) {
-      setError(err?.message || "Erro ao processar arquivo.");
+      setPreviewError(err?.message || "Erro ao processar arquivo.");
     } finally {
       setParsing(false);
     }
@@ -385,7 +520,19 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     setUploading(true);
     setError(null);
     try {
-      const result = await bulkIngestItems(preview.preparedFile, circuitId);
+      const canonicalized = applyCanonicalOverride(
+        preview.headers,
+        preview.rows,
+        canonicalColumn || undefined,
+        canonicalType || undefined
+      );
+      const csv = rowsToCsv(canonicalized.headers, canonicalized.rows);
+      const prepared = new File(
+        [csv],
+        (file?.name || "import.csv").replace(/\.(xls|xlsx|csv|json)$/i, ".csv"),
+        { type: "text/csv" }
+      );
+      const result = await bulkIngestItems(prepared, circuitId);
       setReceipt(result);
       onSuccess?.();
     } catch (err: any) {
@@ -404,7 +551,7 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
             Importar Itens em Massa
           </DialogTitle>
           <DialogDescription>
-            Faça upload de um arquivo CSV, JSON ou Excel para criar múltiplos itens de uma vez.
+            Faça upload de um arquivo CSV ou JSON. Planilhas Excel precisam ser exportadas para CSV.
           </DialogDescription>
         </DialogHeader>
 
@@ -474,21 +621,61 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
               </div>
             </div>
 
+            {/* Canonical Selection */}
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <p className="text-sm font-medium text-foreground">Identificador canônico</p>
+              <p className="text-xs text-muted-foreground">
+                Se o arquivo não tiver um identificador canônico reconhecido, selecione a coluna e o tipo.
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                <Select value={canonicalType} onValueChange={setCanonicalType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo canônico (ex: SISBOV)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CANONICAL_TYPES.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={canonicalColumn} onValueChange={setCanonicalColumn}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a coluna" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {preview.headers.map((h) => (
+                      <SelectItem key={h} value={h}>
+                        {h}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             {/* Preview Table */}
             <div className="border border-border rounded-lg overflow-auto max-h-[40vh] min-h-0">
               <table className="w-full text-xs">
                 <thead className="bg-muted sticky top-0">
                   <tr>
                     <th className="px-2 py-1.5 text-left font-medium text-muted-foreground border-b border-border w-8">#</th>
-                    {preview.headers.map((h, i) => (
-                      <th key={i} className="px-2 py-1.5 text-left font-medium text-muted-foreground border-b border-border whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
+                    {preview.headers.map((h, i) => {
+                      const displayHeader =
+                        canonicalColumn && canonicalType && h === canonicalColumn
+                          ? canonicalType
+                          : h;
+                      return (
+                        <th key={i} className="px-2 py-1.5 text-left font-medium text-muted-foreground border-b border-border whitespace-nowrap">
+                          {displayHeader}
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
-                  {preview.rows.slice(0, 50).map((row, ri) => (
+                  {preview.rows.slice(0, PREVIEW_LIMIT).map((row, ri) => (
                     <tr key={ri} className="border-b border-border last:border-b-0 hover:bg-muted/50">
                       <td className="px-2 py-1 text-muted-foreground">{ri + 1}</td>
                       {preview.headers.map((_, ci) => (
@@ -502,9 +689,9 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
               </table>
             </div>
 
-            {preview.rows.length > 50 && (
+            {preview.rows.length > PREVIEW_LIMIT && (
               <p className="text-xs text-muted-foreground text-center">
-                Mostrando 50 de {preview.rows.length} linhas
+                Mostrando {PREVIEW_LIMIT} de {preview.rows.length} linhas
               </p>
             )}
 
@@ -563,9 +750,9 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Circuito destino</label>
               <Select value={circuitId} onValueChange={setCircuitId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um circuito" />
-              </SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um circuito" />
+                </SelectTrigger>
                 <SelectContent>
                   {circuits.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
@@ -629,6 +816,14 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
                 </>
               )}
             </div>
+
+            {/* Preview Error */}
+            {previewError && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-sm text-yellow-700">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                {previewError}
+              </div>
+            )}
 
             {/* Error */}
             {error && (
