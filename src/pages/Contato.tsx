@@ -1,10 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Mail, MapPin, Send } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const Contato = () => {
@@ -14,8 +10,8 @@ const Contato = () => {
     {
       icon: Mail,
       title: t("contact.emailLabel"),
-      value: "contato@defarm.net",
-      href: "mailto:contato@defarm.net",
+      value: "contact@defarm.net",
+      href: "mailto:contact@defarm.net",
     },
     {
       icon: MapPin,
@@ -46,60 +42,7 @@ const Contato = () => {
         {/* Contact Section */}
         <section className="pb-20">
           <div className="section-container">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-              {/* Form */}
-              <div className="bg-background border border-border rounded-2xl p-8">
-                <h2 className="text-2xl font-bold text-foreground mb-6">
-                  {t("contact.formTitle")}
-                </h2>
-                <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">{t("contact.name")}</Label>
-                      <Input
-                        id="name"
-                        placeholder={t("contact.namePlaceholder")}
-                        className="border-border"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">{t("contact.email")}</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder={t("contact.emailPlaceholder")}
-                        className="border-border"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">{t("contact.subject")}</Label>
-                    <Input
-                      id="subject"
-                      placeholder={t("contact.subjectPlaceholder")}
-                      className="border-border"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="message">{t("contact.message")}</Label>
-                    <Textarea
-                      id="message"
-                      placeholder={t("contact.messagePlaceholder")}
-                      rows={6}
-                      className="border-border resize-none"
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6"
-                  >
-                    {t("contact.send")}
-                    <Send className="ml-2 h-4 w-4" />
-                  </Button>
-                </form>
-              </div>
-
-              {/* Contact Info */}
+            <div className="max-w-xl mx-auto">
               <div className="space-y-8">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground mb-4">
