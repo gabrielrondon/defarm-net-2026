@@ -937,6 +937,47 @@ components:
           type: integer
           format: int32
           nullable: true
+    CreateCanonicalIdentifierRequest:
+      description: Request payload to create a canonical identifier type.
+      type: object
+      required:
+      - value_chain
+      - identifier_type
+      properties:
+        value_chain:
+          type: string
+        identifier_type:
+          type: string
+    UpdateCanonicalIdentifierRequest:
+      description: Request payload to enable or disable a canonical identifier type.
+      type: object
+      required:
+      - is_active
+      properties:
+        is_active:
+          type: boolean
+    CanonicalIdentifierResponse:
+      description: Canonical identifier type configuration.
+      type: object
+      required:
+      - id
+      - value_chain
+      - identifier_type
+      - is_active
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        value_chain:
+          type: string
+        identifier_type:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
     CreateCircuitRequest:
       description: Request payload to create a new circuit. Requires name, circuit_type, and workspace_id.
       type: object
@@ -1016,6 +1057,11 @@ components:
         ip_address:
           type: string
           nullable: true
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentifierInput'
+          nullable: true
         metadata:
           nullable: true
         owner_id:
@@ -1031,6 +1077,34 @@ components:
         year:
           type: integer
           format: int32
+    IdentifierInput:
+      description: Identifier provided by client (canonical or contextual).
+      type: object
+      required:
+      - identifier_type
+      - value
+      properties:
+        identifier_type:
+          type: string
+        value:
+          type: string
+        is_canonical:
+          type: boolean
+          nullable: true
+    IdentifierResponse:
+      description: Identifier metadata stored for an item.
+      type: object
+      required:
+      - identifier_type
+      - value
+      - is_canonical
+      properties:
+        identifier_type:
+          type: string
+        value:
+          type: string
+        is_canonical:
+          type: boolean
     CreateMerkleTreeRequest:
       description: Request payload to create merkle tree for snapshot verification.
       type: object
@@ -1554,6 +1628,51 @@ components:
         year:
           type: integer
           format: int32
+    ItemDetailsResponse:
+      description: Item details with identifiers and events.
+      type: object
+      required:
+      - item
+      - identifiers
+      - events
+      properties:
+        item:
+          $ref: '#/components/schemas/ItemResponse'
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentifierResponse'
+        canonical_identifier:
+          $ref: '#/components/schemas/IdentifierResponse'
+          nullable: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+    CreateItemResponse:
+      description: Item creation response with identifiers, events, and deduplication status.
+      type: object
+      required:
+      - item
+      - identifiers
+      - events
+      - was_deduplicated
+      properties:
+        item:
+          $ref: '#/components/schemas/ItemResponse'
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentifierResponse'
+        canonical_identifier:
+          $ref: '#/components/schemas/IdentifierResponse'
+          nullable: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+        was_deduplicated:
+          type: boolean
     ListAuditLogsResponse:
       description: Paginated API response containing list of audit logs with hash chain integrity.
       type: object
@@ -3412,6 +3531,7 @@ paths:
         **What it does:**
         - Generates unique DFID for the item
         - Creates item record in specified circuit
+        - If a canonical identifier already exists, enriches the existing item
         - Sets up initial lifecycle stage
         - Creates audit trail entry
         - Validates DFID checksum (BLAKE3)
@@ -3421,6 +3541,7 @@ paths:
         - `country`: ISO 3166-1 alpha-2 country code
         - `circuit_id`: Target circuit UUID
         - `metadata`: Item-specific data (weight, breed, location, etc.)
+        - `identifiers` (optional): Canonical/contextual identifiers (SISBOV, CPF, chip, etc.)
 
         **Optional fields:**
         - `parent_dfid`: Parent item DFID (for derived items)
@@ -3437,7 +3558,7 @@ paths:
         - Workspace must have available DFID quota
 
         **After creation:**
-        1. Record lifecycle events via `POST /api/events`
+        1. System detects events from metadata and records them automatically
         2. Create snapshots via `POST /api/snapshots`
         3. Establish relationships (merge/split operations)
 
@@ -3462,12 +3583,15 @@ paths:
           "tags": ["cattle", "organic", "2025-batch"]
         }
 
-        Response:
+        Response (when created):
         {
-          "id": "item-uuid-...",
-          "dfid": "DFID-BEEF-BR-2025-000789-f4e1a2",
-          "status": "active",
-          ...
+          "item": {
+            "id": "item-uuid-...",
+            "dfid": "DFID-BEEF-BR-2025-000789-f4e1a2",
+            "status": "active"
+          },
+          "events": [],
+          "was_deduplicated": false
         }
         ```
       operationId: create_item
@@ -3478,12 +3602,18 @@ paths:
               $ref: '#/components/schemas/CreateItemRequest'
         required: true
       responses:
+        '200':
+          description: Item already existed and was enriched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateItemResponse'
         '201':
           description: Item created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ItemResponse'
+                $ref: '#/components/schemas/CreateItemResponse'
         '400':
           description: Invalid request
           content:
@@ -4007,6 +4137,89 @@ paths:
           description: Admin key required
         '404':
           description: API key not found
+        '500':
+          description: Internal server error
+  /api/admin/canonical-identifiers:
+    post:
+      tags:
+      - admin
+      summary: POST /admin/canonical-identifiers
+      description: Create or enable a canonical identifier type for a value chain
+      operationId: create_canonical_identifier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCanonicalIdentifierRequest'
+        required: true
+      responses:
+        '201':
+          description: Canonical identifier created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanonicalIdentifierResponse'
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/canonical-identifiers/value-chain/{value_chain}:
+    get:
+      tags:
+      - admin
+      summary: GET /admin/canonical-identifiers/value-chain/{value_chain}
+      description: List canonical identifier types for a value chain
+      operationId: list_canonical_identifiers
+      parameters:
+      - name: value_chain
+        in: path
+        description: Value chain code
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Canonical identifiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CanonicalIdentifierResponse'
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/canonical-identifiers/{id}:
+    patch:
+      tags:
+      - admin
+      summary: PATCH /admin/canonical-identifiers/{id}
+      description: Enable or disable a canonical identifier type
+      operationId: update_canonical_identifier
+      parameters:
+      - name: id
+        in: path
+        description: Canonical identifier ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCanonicalIdentifierRequest'
+        required: true
+      responses:
+        '200':
+          description: Canonical identifier updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CanonicalIdentifierResponse'
+        '403':
+          description: Admin key required
         '500':
           description: Internal server error
   /api/partner/api-keys:
@@ -5698,6 +5911,7 @@ paths:
         - DFID (unique identifier)
         - Status (pending, active, inactive, archived, local, merged, split)
         - Metadata (item-specific data)
+        - Identifiers (canonical + contextual)
         - Circuit ID and ownership
         - Lifecycle events (creation, updates, state changes)
         - Relationships (parent/child items)
@@ -5735,7 +5949,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ItemResponse'
+                $ref: '#/components/schemas/ItemDetailsResponse'
         '404':
           description: Item not found
           content:
