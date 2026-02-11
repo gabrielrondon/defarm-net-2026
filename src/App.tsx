@@ -31,6 +31,10 @@ import SnapshotsList from "./pages/app/SnapshotsList";
 import MerkleTreesList from "./pages/app/MerkleTreesList";
 import ApiKeys from "./pages/app/ApiKeys";
 import Configuracoes from "./pages/app/Configuracoes";
+import FinanceDashboard from "./pages/app/FinanceDashboard";
+import FinanceCreditLines from "./pages/app/FinanceCreditLines";
+import FinanceSimulador from "./pages/app/FinanceSimulador";
+import FinanceAnalise from "./pages/app/FinanceAnalise";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +67,11 @@ const App = () => (
             <Route path="/app/eventos" element={<AppLayout><EventosList /></AppLayout>} />
             <Route path="/app/auditoria" element={<AppLayout><AuditTrail /></AppLayout>} />
             <Route path="/app/snapshots" element={<AppLayout><SnapshotsList /></AppLayout>} />
+            
+            <Route path="/app/finance" element={<AppLayout><FinanceDashboard /></AppLayout>} />
+            <Route path="/app/finance/linhas-credito" element={<AppLayout><FinanceCreditLines /></AppLayout>} />
+            <Route path="/app/finance/simulador" element={<AppLayout><FinanceSimulador /></AppLayout>} />
+            <Route path="/app/finance/analise" element={<AppLayout><FinanceAnalise /></AppLayout>} />
             
             <Route path="/app/api-keys" element={<AppLayout><ApiKeys /></AppLayout>} />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />

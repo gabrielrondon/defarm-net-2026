@@ -1,0 +1,5645 @@
+openapi: 3.0.3
+
+info:
+  title: DeFarm Finance API
+  version: 1.0.0
+  description: |
+    # DeFarm Finance API - Agricultural Financing Platform
+
+    **Comprehensive API for agricultural financing in Brazil**
+
+    This API provides access to agricultural credit lines from multiple sources including:
+    - 🏦 **BCB SICOR** - Banco Central do Brasil agricultural credit data
+    - 🌾 **Pronaf** - Family farming financing program
+    - 🚜 **Pronamp** - Medium-scale producer financing
+    - 🏢 **Public and Private Banks** - Various financial institutions
+
+    ## Features
+
+    ### 1. Credit Line Discovery
+    - Search and filter agricultural credit lines
+    - Filter by program type, target audience, interest rates, regions, and activities
+    - Paginated results with comprehensive metadata
+
+    ### 2. Comparison & Eligibility
+    - Compare multiple credit lines side-by-side
+    - Check eligibility based on producer profile
+    - Get personalized recommendations
+
+    ### 3. Real-time Data
+    - Direct integration with BCB SICOR API
+    - Regularly updated credit line information
+    - Historical rate tracking
+
+    ## Authentication
+
+    ### Credit Lines API
+    Most credit line endpoints are publicly accessible with rate limiting.
+
+    ### Marketplace API
+    Marketplace endpoints require JWT Bearer token authentication. Obtain a token by:
+    1. Registering a new user via `/api/v1/marketplace/register`
+    2. Logging in via `/api/v1/marketplace/login`
+    3. Include the token in subsequent requests: `Authorization: Bearer <token>`
+
+    JWT tokens are valid for 24 hours and include user ID, email, and user type.
+
+    ## Rate Limiting
+
+    - **Public endpoints**: 60 requests/hour
+    - **Authenticated marketplace users**: Higher limits apply (specific to user type)
+
+    ## Cache Headers
+
+    Responses include cache headers:
+    - `X-Cache: HIT` or `MISS` - Indicates if response was served from cache
+    - Credit line listings are cached for 1 hour
+
+    ## Support
+
+    For questions or issues, contact: support@defarm.finance
+
+  contact:
+    name: DeFarm Support
+    email: support@defarm.finance
+    url: https://defarm.finance
+  license:
+    name: Proprietary
+    url: https://defarm.finance/terms
+
+servers:
+  - url: https://finance-go-production.up.railway.app
+    description: Production server
+  - url: http://localhost:3000
+    description: Local development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Credit Lines
+    description: |
+      Operations for discovering and managing agricultural credit lines.
+      Credit lines represent financing programs from various institutions.
+  - name: Institutions
+    description: Financial institutions offering credit lines
+  - name: Metadata
+    description: Reference data for filters and lookups
+  - name: Health
+    description: API health and status monitoring
+  - name: Marketplace - Authentication
+    description: |
+      User registration and authentication for the CPR marketplace.
+      Includes JWT token generation and profile management.
+  - name: Marketplace - Offers
+    description: |
+      CPR (Cédula de Produto Rural) offer creation and management.
+      Producers can create, publish, and manage their CPR offers.
+  - name: Marketplace - Bids
+    description: |
+      Bidding system for CPR offers.
+      Buyers and investors can place bids on published offers.
+  - name: Marketplace - Contracts
+    description: |
+      Contract generation and digital signature management.
+      Handles the complete contract lifecycle from creation to signing.
+  - name: Marketplace - Ratings
+    description: |
+      User rating and reputation system.
+      Build trust through transparent feedback after completed contracts.
+  - name: Financial Instruments - CPR
+    description: |
+      CPR (Cédula de Produto Rural) calculation and comparison tools.
+      Analyze CPR effectiveness for harvest financing and compare with traditional credit.
+  - name: Financial Instruments - LCA
+    description: |
+      LCA (Letra de Crédito do Agronegócio) investment analysis.
+      Calculate returns and browse available LCA offerings from major banks.
+  - name: Financial Instruments - Comparison
+    description: |
+      Universal comparison engine for all financial instruments.
+      Compare CPRs, LCAs, CRAs, and traditional credit lines with AI-powered recommendations.
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: |
+        Check API health status including database and Redis connectivity.
+        Use this endpoint for monitoring and uptime checks.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                    description: Overall service status
+                  database:
+                    type: string
+                    enum: [healthy, unhealthy]
+                    description: PostgreSQL connection status
+                  redis:
+                    type: string
+                    enum: [healthy, unhealthy]
+                    description: Redis connection status
+                  version:
+                    type: string
+                    description: API version number
+              example:
+                status: ok
+                database: healthy
+                redis: healthy
+                version: "1.0.0"
+
+  /api/v1/credit-lines:
+    get:
+      summary: List Credit Lines
+      description: |
+        Get a paginated list of agricultural credit lines with optional filters.
+
+        **Use Cases:**
+        - Browse all available financing options
+        - Filter by specific criteria (program type, rates, regions)
+        - Search for credit lines matching producer requirements
+
+        **Filtering:**
+        You can combine multiple filters. For example:
+        - `?target_audience=family_farmer&state=RS` - Family farmer programs in Rio Grande do Sul
+        - `?max_interest_rate=5&min_amount=100000` - Low-rate programs with minimum R$ 100k
+
+        **Sorting:**
+        - `rate_asc` - Lowest interest rate first
+        - `rate_desc` - Highest interest rate first
+        - `amount_asc` - Smallest amounts first
+        - `amount_desc` - Largest amounts first
+
+        **Caching:**
+        Results are cached for 1 hour. Use query parameter `_v` with a timestamp to bypass cache.
+      tags:
+        - Credit Lines
+      parameters:
+        - name: program_type
+          in: query
+          description: Type of financing program
+          schema:
+            type: string
+            enum:
+              - working_capital
+              - investment
+              - financing
+          example: investment
+        - name: target_audience
+          in: query
+          description: Target producer type
+          schema:
+            type: string
+            enum:
+              - family_farmer
+              - medium_producer
+              - large_producer
+          example: family_farmer
+        - name: min_amount
+          in: query
+          description: Minimum financing amount (in BRL)
+          schema:
+            type: number
+            format: float
+            minimum: 0
+          example: 100000
+        - name: max_amount
+          in: query
+          description: Maximum financing amount (in BRL)
+          schema:
+            type: number
+            format: float
+            minimum: 0
+          example: 500000
+        - name: max_interest_rate
+          in: query
+          description: Maximum interest rate (annual %)
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 100
+          example: 5.5
+        - name: state
+          in: query
+          description: Brazilian state code (UF)
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}$'
+          example: RS
+        - name: activity
+          in: query
+          description: Agricultural activity type
+          schema:
+            type: string
+          example: agriculture
+        - name: institution_type
+          in: query
+          description: Type of financial institution
+          schema:
+            type: string
+            enum:
+              - public_bank
+              - private_bank
+              - cooperative
+              - fintech
+              - government_program
+          example: government_program
+        - name: sort
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum:
+              - rate_asc
+              - rate_desc
+              - amount_asc
+              - amount_desc
+          example: rate_asc
+        - name: page
+          in: query
+          description: Page number (starts at 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Successful response with credit lines
+          headers:
+            X-Cache:
+              description: Cache status (HIT or MISS)
+              schema:
+                type: string
+            X-RateLimit-Limit:
+              description: Request limit per hour
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              description: Remaining requests in current window
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCreditLines'
+              example:
+                data:
+                  - id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    institution_id: "b5fe2215-7a49-40dc-bff8-771bf780e75e"
+                    name: "Pronaf Custeio"
+                    code: "PRONAF-CUSTEIO"
+                    program_type: "working_capital"
+                    target_audience: "family_farmer"
+                    max_amount: 250000
+                    currency: "BRL"
+                    interest_rate_min: 3.0
+                    interest_rate_max: 4.5
+                    grace_period_months: 6
+                    max_term_months: 24
+                    available_regions: ["RS", "SP", "MG"]
+                    data_source: "bcb_api"
+                    is_active: true
+                pagination:
+                  total: 9
+                  page: 1
+                  limit: 20
+                  total_pages: 1
+                  has_next: false
+                  has_prev: false
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/credit-lines/{id}:
+    get:
+      summary: Get Credit Line Details
+      description: |
+        Retrieve detailed information about a specific credit line by ID.
+
+        **Returns:**
+        - Complete credit line details
+        - Associated institution information
+        - All requirements and conditions
+      tags:
+        - Credit Lines
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Credit line UUID
+          schema:
+            type: string
+            format: uuid
+          example: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: Credit line details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditLine'
+        '404':
+          description: Credit line not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Credit line not found"
+
+  /api/v1/credit-lines/compare:
+    post:
+      summary: Compare Credit Lines
+      description: |
+        Compare multiple credit lines side-by-side with optional eligibility checking.
+
+        **Features:**
+        - Compare up to 5 credit lines simultaneously
+        - Optional user profile for eligibility analysis
+        - Detailed eligibility reasons for each credit line
+
+        **Eligibility Checks:**
+        When a user profile is provided, the API checks:
+        - Target audience match
+        - Revenue requirements (min/max)
+        - Geographic availability (state/region)
+        - Activity eligibility
+
+        **Use Cases:**
+        - Help producers choose the best financing option
+        - Understand why certain credit lines may not be available
+        - Compare rates and conditions side-by-side
+      tags:
+        - Credit Lines
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompareRequest'
+            example:
+              credit_line_ids:
+                - "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                - "a8a7fe68-3360-49e6-a82b-d652d79e7711"
+              user_profile:
+                producer_type: "family_farmer"
+                annual_revenue: 300000
+                state: "RS"
+                main_activities: ["agriculture", "livestock"]
+      responses:
+        '200':
+          description: Comparison results with eligibility
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditLineWithEligibility'
+              example:
+                - id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                  name: "Pronaf Custeio"
+                  program_type: "working_capital"
+                  interest_rate_min: 3.0
+                  interest_rate_max: 4.5
+                  max_amount: 250000
+                  eligibility:
+                    eligible: true
+                    reasons:
+                      - "All eligibility criteria met"
+                - id: "a8a7fe68-3360-49e6-a82b-d652d79e7711"
+                  name: "Pronaf Investimento"
+                  program_type: "investment"
+                  interest_rate_min: 3.5
+                  interest_rate_max: 5.5
+                  max_amount: 500000
+                  eligibility:
+                    eligible: false
+                    reasons:
+                      - "Annual revenue above maximum limit"
+        '400':
+          description: Invalid request (too many IDs, invalid format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Maximum 5 credit lines can be compared at once"
+
+  /api/v1/credit-lines/compare-analysis:
+    post:
+      summary: Compare Credit Lines with Enhanced Analysis
+      description: |
+        Compare multiple credit lines with detailed analysis, scoring, best match identification, and personalized recommendations.
+
+        **Enhanced Features:**
+        - Smart scoring system (0-200 points based on rates, terms, amounts)
+        - Best match identification with reasoning
+        - Comprehensive comparison summary with statistics
+        - Personalized recommendations based on user profile
+        - All standard eligibility checks
+
+        **Scoring Criteria (when user profile provided):**
+        - Interest rates (40 points max) - lower is better
+        - Maximum amount available (20 points max)
+        - Repayment term length (20 points max)
+        - Grace period (10 points max)
+        - No collateral requirement (10 points bonus)
+        - Eligibility (100 points base)
+
+        **Summary Statistics:**
+        - Total compared vs eligible count
+        - Lowest, highest, and average interest rates
+        - Largest max amount, smallest min amount
+        - Longest terms and grace periods
+
+        **Use Cases:**
+        - Get AI-powered recommendation for best credit line
+        - Understand market landscape with aggregate statistics
+        - Receive personalized advice based on your profile
+        - Make data-driven financing decisions
+      tags:
+        - Credit Lines
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompareRequest'
+            example:
+              credit_line_ids:
+                - "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                - "a8a7fe68-3360-49e6-a82b-d652d79e7711"
+                - "b2c4d7e9-1a3b-5c6d-7e8f-9a0b1c2d3e4f"
+              user_profile:
+                producer_type: "family_farmer"
+                annual_revenue: 300000
+                state: "RS"
+                main_activities: ["agriculture", "livestock"]
+      responses:
+        '200':
+          description: Enhanced comparison with analysis and recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credit_lines:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CreditLineWithEligibility'
+                  best_match:
+                    type: object
+                    nullable: true
+                    properties:
+                      credit_line_id:
+                        type: string
+                        format: uuid
+                      credit_line_name:
+                        type: string
+                      score:
+                        type: number
+                        description: Total score (0-200 points)
+                      reasons:
+                        type: array
+                        items:
+                          type: string
+                  summary:
+                    type: object
+                    properties:
+                      total_compared:
+                        type: integer
+                      eligible_count:
+                        type: integer
+                      lowest_rate:
+                        type: number
+                        description: Lowest minimum interest rate found
+                      highest_rate:
+                        type: number
+                        description: Highest minimum interest rate found
+                      average_rate:
+                        type: number
+                        description: Average minimum interest rate
+                      largest_max_amount:
+                        type: number
+                      smallest_min_amount:
+                        type: number
+                      longest_term_months:
+                        type: integer
+                      longest_grace_period_months:
+                        type: integer
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+                    description: Personalized recommendations based on analysis
+              example:
+                credit_lines:
+                  - id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    name: "Pronaf Custeio"
+                    program_type: "working_capital"
+                    interest_rate_min: 3.0
+                    interest_rate_max: 4.5
+                    max_amount: 250000
+                    max_term_months: 24
+                    eligibility:
+                      eligible: true
+                      reasons:
+                        - "All eligibility criteria met"
+                  - id: "a8a7fe68-3360-49e6-a82b-d652d79e7711"
+                    name: "Pronaf Investimento"
+                    program_type: "investment"
+                    interest_rate_min: 3.5
+                    interest_rate_max: 5.5
+                    max_amount: 500000
+                    max_term_months: 120
+                    grace_period_months: 36
+                    eligibility:
+                      eligible: true
+                      reasons:
+                        - "All eligibility criteria met"
+                best_match:
+                  credit_line_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                  credit_line_name: "Pronaf Custeio"
+                  score: 175
+                  reasons:
+                    - "Excellent interest rate (≤3%)"
+                    - "Good repayment term (2 years)"
+                summary:
+                  total_compared: 2
+                  eligible_count: 2
+                  lowest_rate: 3.0
+                  highest_rate: 3.5
+                  average_rate: 3.25
+                  largest_max_amount: 500000
+                  smallest_min_amount: 50000
+                  longest_term_months: 120
+                  longest_grace_period_months: 36
+                recommendations:
+                  - "Excellent rates available! The lowest rate is 3.00% per year - this is highly competitive for agricultural credit."
+                  - "You have both investment and working capital options available. Investment credit is better for long-term assets, while working capital suits operational expenses."
+                  - "Some credit lines offer grace periods of 12+ months, which can help with cash flow during the initial investment period."
+        '400':
+          description: Invalid request (too many IDs, invalid format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Maximum 5 credit lines can be compared at once"
+
+  /api/v1/credit-lines/{id}/rate-history:
+    get:
+      summary: Get Rate History for Credit Line
+      description: |
+        Retrieve historical interest rate changes for a specific credit line over time.
+
+        Track how rates have evolved and identify when rate changes occurred. Useful for understanding rate volatility and timing financing decisions.
+
+        **What You Get:**
+        - Complete historical record of all rate changes
+        - Effective date for each rate change
+        - Source of the rate update (sync, manual, API)
+        - Optional date range filtering
+
+        **Use Cases:**
+        - **Rate Trend Analysis**: See if rates are increasing, decreasing, or stable over time
+        - **Historical Context**: Understand past rate movements before making financing decisions
+        - **Timing Decisions**: Identify if current rates are historically high or low
+        - **Compliance & Audit**: Maintain records of when rates changed
+        - **Rate Forecasting**: Use historical patterns to anticipate future changes
+
+        **Frontend Implementation:**
+        - Display rate history timeline/chart
+        - Show rate change notifications
+        - Compare current vs historical rates
+        - Highlight significant rate movements
+      tags:
+        - Credit Lines
+        - Rate History
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Credit line UUID
+          schema:
+            type: string
+            format: uuid
+        - name: start_date
+          in: query
+          required: false
+          description: Filter history from this date (YYYY-MM-DD format)
+          schema:
+            type: string
+            format: date
+          example: "2025-01-01"
+        - name: end_date
+          in: query
+          required: false
+          description: Filter history until this date (YYYY-MM-DD format)
+          schema:
+            type: string
+            format: date
+          example: "2026-02-06"
+      responses:
+        '200':
+          description: Rate history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credit_line_id:
+                    type: string
+                    format: uuid
+                    description: ID of the credit line
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        credit_line_id:
+                          type: string
+                          format: uuid
+                        min_interest_rate:
+                          type: number
+                          format: float
+                          nullable: true
+                          description: Minimum interest rate (% per year)
+                        max_interest_rate:
+                          type: number
+                          format: float
+                          nullable: true
+                          description: Maximum interest rate (% per year)
+                        effective_date:
+                          type: string
+                          format: date
+                          description: Date when this rate became effective
+                        recorded_at:
+                          type: string
+                          format: date-time
+                          description: When this record was created in the system
+                        source:
+                          type: string
+                          description: Source of the rate update
+                          example: "sync"
+                        notes:
+                          type: string
+                          nullable: true
+                          description: Additional notes about this rate change
+                  total:
+                    type: integer
+                    description: Total number of historical entries returned
+              example:
+                credit_line_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                history:
+                  - id: "d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a"
+                    credit_line_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    min_interest_rate: 3.0
+                    max_interest_rate: 4.5
+                    effective_date: "2026-02-01"
+                    recorded_at: "2026-02-01T10:30:00Z"
+                    source: "sync"
+                    notes: null
+                  - id: "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b"
+                    credit_line_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    min_interest_rate: 2.5
+                    max_interest_rate: 4.0
+                    effective_date: "2025-12-01"
+                    recorded_at: "2025-12-01T08:15:00Z"
+                    source: "sync"
+                    notes: "Rate reduction for harvest season"
+                total: 2
+        '400':
+          description: Invalid credit line ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid credit line ID"
+        '500':
+          description: Failed to retrieve rate history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Failed to retrieve rate history"
+
+  /api/v1/credit-lines/{id}/rate-trend:
+    get:
+      summary: Get Rate Trend Analysis
+      description: |
+        Get statistical analysis of rate trends for a credit line over a specified period.
+
+        Provides comprehensive analytics including current rates, averages, extremes, trend direction, and percent change.
+
+        **Analytics Included:**
+        - **Current Rates**: Latest min/max interest rates
+        - **Statistical Summary**: Average, lowest, and highest rates over the period
+        - **Trend Direction**: "increasing", "decreasing", or "stable" (based on ±0.5% threshold)
+        - **Percent Change**: Overall rate change from start to end of period
+        - **Change Count**: Total number of rate changes recorded
+
+        **Trend Classification:**
+        - **Increasing**: Rates went up by more than 0.5%
+        - **Decreasing**: Rates went down by more than 0.5%
+        - **Stable**: Rate changes were within ±0.5%
+
+        **Use Cases:**
+        - **Quick Trend Overview**: Get instant insight into rate direction without analyzing raw data
+        - **Rate Volatility Assessment**: Understand how stable or variable rates have been
+        - **Decision Support**: Use trend data to time loan applications (apply when rates are decreasing)
+        - **Dashboard Widgets**: Display key metrics in frontend dashboards
+        - **Comparative Analysis**: Compare trend statistics across multiple credit lines
+
+        **Frontend Implementation:**
+        - Show trend direction with visual indicators (↑↓→ arrows, color coding)
+        - Display percent change with positive/negative styling
+        - Create summary cards with key statistics
+        - Build rate trend charts with min/max/average lines
+      tags:
+        - Credit Lines
+        - Rate History
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Credit line UUID
+          schema:
+            type: string
+            format: uuid
+        - name: months
+          in: query
+          required: false
+          description: Number of months to analyze (default 6, max 36)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 36
+            default: 6
+          example: 12
+      responses:
+        '200':
+          description: Rate trend analysis completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  credit_line_id:
+                    type: string
+                    format: uuid
+                  current_min_rate:
+                    type: number
+                    format: float
+                    nullable: true
+                    description: Current minimum interest rate (% per year)
+                  current_max_rate:
+                    type: number
+                    format: float
+                    nullable: true
+                    description: Current maximum interest rate (% per year)
+                  average_min_rate:
+                    type: number
+                    format: float
+                    description: Average minimum rate over the period
+                  average_max_rate:
+                    type: number
+                    format: float
+                    description: Average maximum rate over the period
+                  lowest_min_rate:
+                    type: number
+                    format: float
+                    description: Lowest minimum rate recorded in the period
+                  highest_max_rate:
+                    type: number
+                    format: float
+                    description: Highest maximum rate recorded in the period
+                  total_changes:
+                    type: integer
+                    description: Total number of rate changes in the period
+                  trend_direction:
+                    type: string
+                    enum: [increasing, decreasing, stable]
+                    description: Overall trend direction based on rate movement
+                  percent_change:
+                    type: number
+                    format: float
+                    description: Overall percentage change from first to last rate in period
+              example:
+                credit_line_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                current_min_rate: 3.0
+                current_max_rate: 4.5
+                average_min_rate: 2.8
+                average_max_rate: 4.2
+                lowest_min_rate: 2.5
+                highest_max_rate: 5.0
+                total_changes: 4
+                trend_direction: "increasing"
+                percent_change: 12.5
+        '400':
+          description: Invalid credit line ID or parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Failed to analyze rate trend
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "no rate history found"
+
+  /api/v1/credit-lines/rate-trends:
+    get:
+      summary: Compare Rate Trends Across Multiple Credit Lines
+      description: |
+        Compare historical rate evolution for multiple credit lines over the same time period.
+
+        Returns rate history for each credit line, enabling side-by-side comparison of how different programs' rates have changed over time.
+
+        **What You Get:**
+        - Rate history for each credit line in the comparison
+        - Same time period applied to all credit lines for fair comparison
+        - Complete chronological data sorted by date
+
+        **Use Cases:**
+        - **Cross-Program Comparison**: See which credit lines have had more stable rates
+        - **Rate Shopping**: Identify which programs have historically offered better rates
+        - **Volatility Analysis**: Compare rate stability across different institutions
+        - **Timing Strategies**: Find programs with seasonal rate patterns
+        - **Risk Assessment**: Evaluate rate change frequency and magnitude
+
+        **Frontend Implementation:**
+        - Create multi-line rate comparison charts
+        - Display rate volatility metrics for each program
+        - Show synchronized timelines for easy visual comparison
+        - Highlight divergence points where rates changed differently
+        - Build comparison tables with historical data
+      tags:
+        - Credit Lines
+        - Rate History
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Comma-separated list of credit line UUIDs to compare
+          schema:
+            type: string
+          example: "a1f3e781-7f36-49dc-986d-00eb4391bd08,a8a7fe68-3360-49e6-a82b-d652d79e7711"
+        - name: start_date
+          in: query
+          required: false
+          description: Start date for comparison period (YYYY-MM-DD). Default is 6 months ago.
+          schema:
+            type: string
+            format: date
+          example: "2025-08-01"
+        - name: end_date
+          in: query
+          required: false
+          description: End date for comparison period (YYYY-MM-DD). Default is today.
+          schema:
+            type: string
+            format: date
+          example: "2026-02-06"
+      responses:
+        '200':
+          description: Rate trend comparison completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  start_date:
+                    type: string
+                    format: date
+                    description: Start of comparison period
+                  end_date:
+                    type: string
+                    format: date
+                    description: End of comparison period
+                  comparison:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          credit_line_id:
+                            type: string
+                            format: uuid
+                          min_interest_rate:
+                            type: number
+                            nullable: true
+                          max_interest_rate:
+                            type: number
+                            nullable: true
+                          effective_date:
+                            type: string
+                            format: date
+                          recorded_at:
+                            type: string
+                            format: date-time
+                          source:
+                            type: string
+                          notes:
+                            type: string
+                            nullable: true
+              example:
+                start_date: "2025-08-01"
+                end_date: "2026-02-06"
+                comparison:
+                  "a1f3e781-7f36-49dc-986d-00eb4391bd08":
+                    - id: "d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a"
+                      credit_line_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                      min_interest_rate: 3.0
+                      max_interest_rate: 4.5
+                      effective_date: "2026-02-01"
+                      recorded_at: "2026-02-01T10:30:00Z"
+                      source: "sync"
+                      notes: null
+                    - id: "e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b"
+                      credit_line_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                      min_interest_rate: 2.5
+                      max_interest_rate: 4.0
+                      effective_date: "2025-12-01"
+                      recorded_at: "2025-12-01T08:15:00Z"
+                      source: "sync"
+                      notes: null
+                  "a8a7fe68-3360-49e6-a82b-d652d79e7711":
+                    - id: "f6a7b8c9-0d1e-2f3a-4b5c-6d7e8f9a0b1c"
+                      credit_line_id: "a8a7fe68-3360-49e6-a82b-d652d79e7711"
+                      min_interest_rate: 3.5
+                      max_interest_rate: 5.5
+                      effective_date: "2026-01-15"
+                      recorded_at: "2026-01-15T14:20:00Z"
+                      source: "sync"
+                      notes: null
+        '400':
+          description: Invalid request or no valid IDs provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "ids parameter is required"
+        '500':
+          description: Failed to compare rate trends
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/metadata/activities:
+    get:
+      summary: List Agricultural Activities
+      description: |
+        Get list of supported agricultural activities for filtering.
+
+        Use these values for the `activity` filter parameter.
+      tags:
+        - Metadata
+      responses:
+        '200':
+          description: List of activities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+              example:
+                data:
+                  - "agriculture"
+                  - "livestock"
+                  - "forestry"
+                  - "fishing"
+                  - "aquaculture"
+                  - "agroforestry"
+                  - "organic_farming"
+                  - "family_farming"
+
+  /api/v1/metadata/states:
+    get:
+      summary: List Brazilian States
+      description: |
+        Get list of Brazilian state codes (UF) supported by the API.
+
+        Use these values for the `state` filter parameter.
+      tags:
+        - Metadata
+      responses:
+        '200':
+          description: List of state codes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+                      pattern: '^[A-Z]{2}$'
+              example:
+                data:
+                  - "AC"
+                  - "AL"
+                  - "AM"
+                  - "BA"
+                  - "CE"
+                  - "DF"
+                  - "ES"
+                  - "GO"
+                  - "MA"
+                  - "MG"
+                  - "MS"
+                  - "MT"
+                  - "PA"
+                  - "PB"
+                  - "PE"
+                  - "PI"
+                  - "PR"
+                  - "RJ"
+                  - "RN"
+                  - "RO"
+                  - "RR"
+                  - "RS"
+                  - "SC"
+                  - "SE"
+                  - "SP"
+                  - "TO"
+
+  /api/v1/market-indicators/current:
+    get:
+      summary: Get Current Market Indicators
+      description: |
+        Retrieve latest values for all Brazilian market economic indicators tracked by the system.
+
+        Currently tracking three key indicators from Banco Central do Brasil (BCB):
+        - **CDI** (Certificado de Depósito Interbancário) - Interbank deposit rate
+        - **SELIC** (Sistema Especial de Liquidação e Custódia) - Base interest rate
+        - **IPCA** (Índice Nacional de Preços ao Consumidor Amplo) - Consumer price index
+
+        **What Are These Indicators?**
+        - **CDI**: Daily rate used as benchmark for investments and loans. Very close to SELIC.
+        - **SELIC**: Brazil's base interest rate, set by the Central Bank. Influences all other rates.
+        - **IPCA**: Official inflation measure. Used to calculate real returns and adjust credit rates.
+
+        **Use Cases:**
+        - **Rate Benchmarking**: Compare credit line rates against CDI/SELIC to assess competitiveness
+        - **Inflation Context**: Understand real cost of financing by comparing against IPCA
+        - **Dashboard Display**: Show current economic conditions to users
+        - **Rate Calculations**: Use CDI/SELIC for hybrid rate formulas (e.g., "CDI + 2%")
+        - **Decision Support**: Help users understand if now is a good time to borrow
+
+        **Frontend Implementation:**
+        - Display indicators in a dashboard widget
+        - Show rate changes with trend indicators
+        - Compare credit line rates vs market benchmarks
+        - Calculate real interest rates (nominal - IPCA)
+        - Highlight when credit rates are below market rates
+      tags:
+        - Market Indicators
+      responses:
+        '200':
+          description: Current market indicators retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  indicators:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        indicator_type:
+                          type: string
+                          description: Type of indicator
+                          example: "CDI"
+                        rate_value:
+                          type: number
+                          format: float
+                          description: Current rate value (percentage)
+                        reference_date:
+                          type: string
+                          format: date
+                          description: Date this value refers to
+                        recorded_at:
+                          type: string
+                          format: date-time
+                          description: When this value was recorded in the system
+                        source:
+                          type: string
+                          description: Data source
+                          example: "BCB API 4391"
+                  total:
+                    type: integer
+                    description: Number of indicators returned
+              example:
+                indicators:
+                  - indicator_type: "CDI"
+                    rate_value: 13.65
+                    reference_date: "2026-02-05"
+                    recorded_at: "2026-02-06T08:30:00Z"
+                    source: "BCB API 4391"
+                  - indicator_type: "SELIC"
+                    rate_value: 13.75
+                    reference_date: "2026-02-05"
+                    recorded_at: "2026-02-06T08:30:00Z"
+                    source: "BCB API 11"
+                  - indicator_type: "IPCA"
+                    rate_value: 4.83
+                    reference_date: "2026-01-31"
+                    recorded_at: "2026-02-06T08:30:00Z"
+                    source: "BCB API 433"
+                total: 3
+        '500':
+          description: Failed to retrieve current indicators
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Failed to retrieve current indicators"
+
+  /api/v1/market-indicators/{type}/history:
+    get:
+      summary: Get Market Indicator History
+      description: |
+        Retrieve historical values for a specific market indicator over time.
+
+        Track how key economic indicators have changed and analyze trends.
+
+        **Available Indicator Types:**
+        - **CDI**: Daily interbank deposit rate
+        - **SELIC**: Central Bank base rate (monthly data)
+        - **IPCA**: Consumer price index (monthly data)
+
+        **What You Get:**
+        - Complete historical series for the indicator
+        - Date range filtering
+        - Configurable result limit
+        - Source attribution for each data point
+
+        **Use Cases:**
+        - **Trend Analysis**: See if rates are increasing or decreasing over time
+        - **Historical Comparisons**: Compare current rates with past levels
+        - **Economic Context**: Understand broader economic trends affecting financing
+        - **Forecasting**: Use historical patterns to anticipate future changes
+        - **Charts & Visualizations**: Display indicator trends in frontend
+
+        **Data Frequency:**
+        - **CDI**: Daily updates (business days only)
+        - **SELIC**: Monthly updates (mid-month)
+        - **IPCA**: Monthly updates (around 10th of each month)
+
+        **Frontend Implementation:**
+        - Create time-series charts showing indicator evolution
+        - Display historical high/low values
+        - Compare multiple indicators on same chart
+        - Show correlation between indicators and credit rates
+        - Highlight significant changes or outliers
+      tags:
+        - Market Indicators
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Indicator type
+          schema:
+            type: string
+            enum: [CDI, SELIC, IPCA]
+          example: "CDI"
+        - name: start_date
+          in: query
+          required: false
+          description: Filter history from this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2025-01-01"
+        - name: end_date
+          in: query
+          required: false
+          description: Filter history until this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2026-02-06"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return (default 30)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 30
+          example: 90
+      responses:
+        '200':
+          description: Indicator history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  indicator_type:
+                    type: string
+                    description: Type of indicator
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        indicator_type:
+                          type: string
+                        rate_value:
+                          type: number
+                          format: float
+                        reference_date:
+                          type: string
+                          format: date
+                        recorded_at:
+                          type: string
+                          format: date-time
+                        source:
+                          type: string
+                        metadata:
+                          type: object
+                          nullable: true
+                          description: Additional data (monthly/yearly accumulation, etc.)
+                  total:
+                    type: integer
+                    description: Number of historical entries returned
+              example:
+                indicator_type: "CDI"
+                history:
+                  - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    indicator_type: "CDI"
+                    rate_value: 13.65
+                    reference_date: "2026-02-05"
+                    recorded_at: "2026-02-06T08:30:00Z"
+                    source: "BCB API 4391"
+                    metadata: null
+                  - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                    indicator_type: "CDI"
+                    rate_value: 13.64
+                    reference_date: "2026-02-04"
+                    recorded_at: "2026-02-05T08:30:00Z"
+                    source: "BCB API 4391"
+                    metadata: null
+                  - id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                    indicator_type: "CDI"
+                    rate_value: 13.63
+                    reference_date: "2026-02-03"
+                    recorded_at: "2026-02-04T08:30:00Z"
+                    source: "BCB API 4391"
+                    metadata: null
+                total: 3
+        '400':
+          description: Invalid indicator type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Indicator type is required"
+        '500':
+          description: Failed to retrieve indicator history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/cpr/calculate:
+    post:
+      summary: Calculate CPR Values
+      description: |
+        Calculate financial metrics for CPR (Cédula de Produto Rural) transactions.
+
+        **What is CPR?**
+        CPR is a Brazilian agricultural financing instrument where producers can sell their future harvest
+        at a discount to obtain immediate cash flow. There are two types:
+        - **CPR Física**: Physical delivery of agricultural product
+        - **CPR Financeira**: Cash settlement at maturity
+
+        **Calculation Features:**
+        - Present value calculation with discount rate
+        - Effective annual interest rate
+        - Total savings vs traditional credit
+        - Breakeven analysis
+        - Time value of money calculations
+
+        **Use Cases:**
+        - Determine fair CPR pricing
+        - Compare CPR discount vs bank interest rates
+        - Calculate financing costs for harvest operations
+        - Evaluate advance payment offers
+
+        **Formula:**
+        Present Value = Future Value / (1 + rate)^(days/360)
+      tags:
+        - Financial Instruments - CPR
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product
+                - quantity_tons
+                - price_per_ton
+                - days_to_maturity
+                - discount_rate
+              properties:
+                product:
+                  type: string
+                  enum: [soja, milho, cafe, algodao, boi]
+                  description: Agricultural product type
+                  example: "soja"
+                quantity_tons:
+                  type: number
+                  format: float
+                  description: Quantity in metric tons
+                  minimum: 0.01
+                  example: 1000.0
+                price_per_ton:
+                  type: number
+                  format: float
+                  description: Expected price per ton at maturity (BRL)
+                  minimum: 0.01
+                  example: 150.0
+                days_to_maturity:
+                  type: integer
+                  description: Days until harvest/maturity
+                  minimum: 1
+                  maximum: 1095
+                  example: 180
+                discount_rate:
+                  type: number
+                  format: float
+                  description: Annual discount rate (percentage)
+                  minimum: 0.01
+                  maximum: 100
+                  example: 12.5
+            example:
+              product: "soja"
+              quantity_tons: 1000.0
+              price_per_ton: 150.0
+              days_to_maturity: 180
+              discount_rate: 12.5
+      responses:
+        '200':
+          description: CPR calculation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  future_value:
+                    type: number
+                    format: float
+                    description: Total value at maturity
+                    example: 150000.00
+                  present_value:
+                    type: number
+                    format: float
+                    description: Present value with discount applied
+                    example: 141176.47
+                  discount_amount:
+                    type: number
+                    format: float
+                    description: Total discount amount
+                    example: 8823.53
+                  effective_rate:
+                    type: number
+                    format: float
+                    description: Effective annual rate
+                    example: 12.87
+                  daily_rate:
+                    type: number
+                    format: float
+                    description: Daily interest rate
+                    example: 0.0347
+                  savings_vs_credit:
+                    type: number
+                    format: float
+                    description: Savings if CPR rate is better than market rate
+                    example: 2500.00
+                  recommendation:
+                    type: string
+                    description: Human-readable recommendation
+                    example: "CPR is advantageous - effective rate of 12.87% is competitive"
+              example:
+                future_value: 150000.00
+                present_value: 141176.47
+                discount_amount: 8823.53
+                effective_rate: 12.87
+                daily_rate: 0.0347
+                savings_vs_credit: 2500.00
+                recommendation: "CPR is advantageous - effective rate of 12.87% is competitive"
+        '400':
+          description: Invalid input parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/cpr/list:
+    get:
+      summary: List Available CPRs
+      description: |
+        Browse available CPR offerings from producers in the marketplace.
+
+        **Returns:**
+        Sample and real CPR offerings including:
+        - Product type and quantity
+        - Pricing and discount rates
+        - Maturity dates
+        - Minimum investment amounts
+        - Producer information
+
+        **Filters:**
+        Filter by product type to find specific commodities.
+
+        **Use Cases:**
+        - Discover investment opportunities
+        - Compare CPR offers
+        - Research market pricing
+        - Find specific commodity CPRs
+      tags:
+        - Financial Instruments - CPR
+      security: []
+      parameters:
+        - name: product
+          in: query
+          description: Filter by product type
+          schema:
+            type: string
+            enum: [soja, milho, cafe, algodao, boi]
+          example: "soja"
+        - name: limit
+          in: query
+          description: Maximum number of results (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: List of available CPRs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    description: Total number of CPRs returned
+                  cprs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        product:
+                          type: string
+                        quantity_tons:
+                          type: number
+                        price_per_ton:
+                          type: number
+                        maturity_date:
+                          type: string
+                          format: date-time
+                        discount_rate:
+                          type: number
+                        min_investment:
+                          type: number
+              example:
+                total: 5
+                cprs:
+                  - id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    product: "soja"
+                    quantity_tons: 1000.0
+                    price_per_ton: 150.0
+                    maturity_date: "2025-04-15T00:00:00Z"
+                    discount_rate: 12.5
+                    min_investment: 10000.0
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/cpr/compare-credit:
+    post:
+      summary: Compare CPR vs Traditional Credit Lines
+      description: |
+        Compare CPR financing effectiveness against traditional agricultural credit lines.
+
+        **Comparison Includes:**
+        - Total cost comparison (CPR discount vs credit interest)
+        - Effective rates side-by-side
+        - Cash flow analysis
+        - Savings calculation
+        - Risk assessment
+
+        **Inputs Required:**
+        - CPR parameters (product, quantity, pricing, discount rate)
+        - Credit line IDs to compare against
+
+        **Use Cases:**
+        - Decide between CPR and bank credit
+        - Validate CPR pricing competitiveness
+        - Demonstrate cost advantages to producers
+        - Financial planning and optimization
+
+        **Analysis Features:**
+        - Considers grace periods from credit lines
+        - Accounts for different payment structures
+        - Highlights best financing option
+        - Provides actionable recommendations
+      tags:
+        - Financial Instruments - CPR
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpr_input
+                - credit_line_ids
+              properties:
+                cpr_input:
+                  type: object
+                  properties:
+                    product:
+                      type: string
+                    quantity_tons:
+                      type: number
+                    price_per_ton:
+                      type: number
+                    days_to_maturity:
+                      type: integer
+                    discount_rate:
+                      type: number
+                credit_line_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Array of credit line IDs to compare (max 5)
+                  maxItems: 5
+            example:
+              cpr_input:
+                product: "soja"
+                quantity_tons: 1000.0
+                price_per_ton: 150.0
+                days_to_maturity: 180
+                discount_rate: 12.5
+              credit_line_ids:
+                - "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                - "b2f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: Comparison results with recommendation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cpr_result:
+                    type: object
+                    description: CPR calculation details
+                  credit_lines:
+                    type: array
+                    description: Credit line comparisons
+                  best_option:
+                    type: string
+                    enum: [cpr, credit]
+                    description: Recommended financing option
+                  savings:
+                    type: number
+                    description: Potential savings with best option
+                  summary:
+                    type: string
+                    description: Human-readable comparison summary
+              example:
+                cpr_result:
+                  present_value: 141176.47
+                  effective_rate: 12.87
+                  discount_amount: 8823.53
+                credit_lines:
+                  - name: "Pronaf Custeio"
+                    interest_rate: 4.5
+                    total_cost: 3375.00
+                    effective_rate: 4.5
+                best_option: "credit"
+                savings: 5448.53
+                summary: "Traditional credit is more advantageous - 4.5% vs 12.87% effective rate"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/cpr/simulate-advance:
+    post:
+      summary: Simulate Harvest Advance Scenarios
+      description: |
+        Simulate multiple discount rate scenarios for CPR harvest advance planning.
+
+        **What This Does:**
+        Runs multiple "what-if" scenarios to help producers understand how different
+        discount rates affect their CPR financing costs and cash flow.
+
+        **Scenario Analysis:**
+        - Test multiple discount rates simultaneously
+        - Compare current vs expected harvest prices
+        - Calculate opportunity costs
+        - Evaluate price risk hedging
+
+        **Inputs:**
+        - Product and quantity
+        - Current market price
+        - Expected harvest price
+        - Days to harvest
+        - Array of discount rates to test
+
+        **Outputs:**
+        For each discount rate scenario:
+        - Present value received today
+        - Discount amount/cost
+        - Effective annual rate
+        - Profit/loss vs expected harvest value
+        - Risk-adjusted recommendation
+
+        **Use Cases:**
+        - Negotiate CPR discount rates
+        - Plan harvest financing strategy
+        - Hedge price volatility risk
+        - Evaluate advance payment offers from buyers
+      tags:
+        - Financial Instruments - CPR
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product
+                - quantity_tons
+                - current_price
+                - expected_price
+                - days_to_harvest
+                - discount_rates
+              properties:
+                product:
+                  type: string
+                  enum: [soja, milho, cafe, algodao, boi]
+                  example: "soja"
+                quantity_tons:
+                  type: number
+                  format: float
+                  example: 1000.0
+                current_price:
+                  type: number
+                  format: float
+                  description: Current market price per ton
+                  example: 140.0
+                expected_price:
+                  type: number
+                  format: float
+                  description: Expected price at harvest
+                  example: 150.0
+                days_to_harvest:
+                  type: integer
+                  example: 180
+                discount_rates:
+                  type: array
+                  items:
+                    type: number
+                    format: float
+                  description: Array of discount rates to simulate (%)
+                  minItems: 1
+                  maxItems: 10
+                  example: [10.0, 12.5, 15.0, 17.5, 20.0]
+            example:
+              product: "soja"
+              quantity_tons: 1000.0
+              current_price: 140.0
+              expected_price: 150.0
+              days_to_harvest: 180
+              discount_rates: [10.0, 12.5, 15.0, 17.5, 20.0]
+      responses:
+        '200':
+          description: Simulation results for all scenarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scenarios:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        discount_rate:
+                          type: number
+                        present_value:
+                          type: number
+                        discount_amount:
+                          type: number
+                        effective_rate:
+                          type: number
+                        vs_expected_harvest:
+                          type: number
+                          description: Difference vs expected harvest value
+                        recommendation:
+                          type: string
+                  total:
+                    type: integer
+              example:
+                scenarios:
+                  - discount_rate: 10.0
+                    present_value: 142857.14
+                    discount_amount: 7142.86
+                    effective_rate: 10.25
+                    vs_expected_harvest: -7142.86
+                    recommendation: "Good rate - only 10.25% effective cost"
+                  - discount_rate: 12.5
+                    present_value: 141176.47
+                    discount_amount: 8823.53
+                    effective_rate: 12.87
+                    vs_expected_harvest: -8823.53
+                    recommendation: "Moderate rate - 12.87% effective cost"
+                total: 5
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/lca/calculate:
+    post:
+      summary: Calculate LCA Investment Returns
+      description: |
+        Calculate gross and net returns for LCA (Letra de Crédito do Agronegócio) investments.
+
+        **What is LCA?**
+        LCA is a fixed-income investment instrument backed by agricultural credit operations.
+        Key features:
+        - **Tax-free** for individuals (IR exempt)
+        - Guaranteed by FGC (up to R$ 250,000 per institution)
+        - Minimum investment typically R$ 1,000 - R$ 30,000
+        - Fixed maturity (cannot withdraw early)
+
+        **LCA Types:**
+        - **Prefixada (Pre-fixed)**: Fixed annual rate
+        - **Pós-fixada (Post-fixed)**: Percentage of CDI
+        - **Híbrida (Hybrid)**: IPCA + fixed rate
+
+        **Calculation Features:**
+        - Gross return calculation
+        - Net return (after potential IR for legal entities)
+        - Effective annual rate
+        - Real return (inflation-adjusted for hybrid LCAs)
+        - Comparison with other fixed-income options
+
+        **Tax Treatment:**
+        - **Individuals**: 0% IR (tax exempt)
+        - **Companies**: Subject to progressive IR rates
+
+        **Use Cases:**
+        - Evaluate LCA investment opportunities
+        - Compare LCA vs CDB/Tesouro Direto
+        - Calculate portfolio returns
+        - Tax planning for investors
+      tags:
+        - Financial Instruments - LCA
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - investment_amount
+                - maturity_months
+                - interest_type
+              properties:
+                investment_amount:
+                  type: number
+                  format: float
+                  description: Investment amount in BRL
+                  minimum: 1000
+                  example: 50000.0
+                maturity_months:
+                  type: integer
+                  description: Maturity period in months
+                  minimum: 3
+                  maximum: 120
+                  example: 24
+                interest_type:
+                  type: string
+                  enum: [pre, pos, hybrid]
+                  description: |
+                    Interest type:
+                    - pre: Pre-fixed rate
+                    - pos: Post-fixed (% of CDI)
+                    - hybrid: IPCA + fixed rate
+                  example: "pos"
+                annual_rate:
+                  type: number
+                  format: float
+                  description: Annual rate for pre-fixed or hybrid fixed component
+                  example: 10.5
+                cdi_percentage:
+                  type: number
+                  format: float
+                  description: Percentage of CDI for post-fixed (e.g., 95 for 95% of CDI)
+                  minimum: 50
+                  maximum: 120
+                  example: 95.0
+                cdi_rate:
+                  type: number
+                  format: float
+                  description: Current CDI annual rate (required for pos type)
+                  example: 13.75
+                ipca_rate:
+                  type: number
+                  format: float
+                  description: IPCA rate for hybrid (optional, uses market if not provided)
+                  example: 4.5
+                is_legal_entity:
+                  type: boolean
+                  description: Whether investor is legal entity (affects IR calculation)
+                  default: false
+            example:
+              investment_amount: 50000.0
+              maturity_months: 24
+              interest_type: "pos"
+              cdi_percentage: 95.0
+              cdi_rate: 13.75
+              is_legal_entity: false
+      responses:
+        '200':
+          description: LCA investment calculation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  investment_amount:
+                    type: number
+                    example: 50000.0
+                  gross_return:
+                    type: number
+                    description: Gross return amount
+                    example: 12541.67
+                  net_return:
+                    type: number
+                    description: Net return after IR (if applicable)
+                    example: 12541.67
+                  final_amount:
+                    type: number
+                    description: Total amount at maturity
+                    example: 62541.67
+                  effective_rate:
+                    type: number
+                    description: Effective annual rate
+                    example: 13.06
+                  ir_amount:
+                    type: number
+                    description: Income tax amount (0 for individuals)
+                    example: 0.0
+                  recommendation:
+                    type: string
+                    example: "Excellent tax-free investment with 13.06% annual return"
+              example:
+                investment_amount: 50000.0
+                gross_return: 12541.67
+                net_return: 12541.67
+                final_amount: 62541.67
+                effective_rate: 13.06
+                ir_amount: 0.0
+                recommendation: "Excellent tax-free investment with 13.06% annual return"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/lca/list:
+    get:
+      summary: List Available LCAs
+      description: |
+        Browse available LCA offerings from major Brazilian banks.
+
+        **Data Source:**
+        Real LCA offerings from:
+        - Banco Santander
+        - Banco Itaú
+        - Banco Bradesco
+        - BTG Pactual
+
+        **Information Included:**
+        - Issuer bank
+        - Product name
+        - Minimum investment
+        - Interest type (pre/pos/hybrid)
+        - Rates (fixed or % of CDI)
+        - Maturity period
+        - Last updated timestamp
+
+        **Filters:**
+        - Maximum acceptable minimum investment
+        - Specific maturity period in months
+        - Limit results
+
+        **Use Cases:**
+        - Compare LCA offerings across banks
+        - Find LCAs within investment budget
+        - Research current market rates
+        - Identify best LCA opportunities
+
+        **Update Frequency:**
+        LCA data is synchronized daily via scraper service.
+      tags:
+        - Financial Instruments - LCA
+      security: []
+      parameters:
+        - name: min_investment
+          in: query
+          description: Filter by maximum acceptable minimum investment
+          schema:
+            type: number
+            format: float
+          example: 30000
+        - name: maturity_months
+          in: query
+          description: Filter by specific maturity period in months
+          schema:
+            type: integer
+          example: 24
+        - name: limit
+          in: query
+          description: Maximum number of results (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: List of available LCAs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  lcas:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        issuer:
+                          type: string
+                          description: Bank name
+                        product_name:
+                          type: string
+                        min_investment:
+                          type: number
+                        interest_type:
+                          type: string
+                          enum: [pre, pos, hybrid]
+                        annual_rate:
+                          type: number
+                          nullable: true
+                        index_type:
+                          type: string
+                          nullable: true
+                        index_percentage:
+                          type: number
+                          nullable: true
+                        maturity_months:
+                          type: integer
+                        last_updated:
+                          type: string
+                          format: date-time
+              example:
+                total: 14
+                lcas:
+                  - id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    issuer: "Banco Santander"
+                    product_name: "LCA Pós-Fixada 95% CDI"
+                    min_investment: 5000.0
+                    interest_type: "pos"
+                    index_type: "CDI"
+                    index_percentage: 95.0
+                    maturity_months: 24
+                    last_updated: "2026-02-06T10:00:00Z"
+                  - id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    issuer: "Banco Itaú"
+                    product_name: "LCA Prefixada 10.5% a.a."
+                    min_investment: 10000.0
+                    interest_type: "pre"
+                    annual_rate: 10.5
+                    maturity_months: 12
+                    last_updated: "2026-02-06T10:00:00Z"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/cra/list:
+    get:
+      summary: List Available CRAs
+      description: |
+        Browse available CRA (Certificado de Recebíveis do Agronegócio) offerings from securitization companies.
+
+        **Data Source:**
+        Real CRA offerings from:
+        - True Securitizadora
+        - Gaia Securitizadora
+        - Oliveira Trust Securitizadora
+        - RB Capital Securitizadora
+
+        **Information Included:**
+        - Securitizer company
+        - Series identification
+        - Product name
+        - Minimum investment
+        - Interest type (pre/pos/hybrid)
+        - Rates (fixed, CDI-based, or IPCA-indexed)
+        - Maturity period
+        - Risk rating
+        - Underlying agricultural assets
+        - Last updated timestamp
+
+        **Filters:**
+        - Maximum acceptable minimum investment
+        - Specific maturity period in months
+        - Limit results
+
+        **Key Features:**
+        - Tax-exempt for individual investors
+        - Backed by agricultural receivables
+        - Higher yields than LCAs
+        - Risk ratings from AAA to A+
+
+        **Use Cases:**
+        - Compare CRA offerings across securitizers
+        - Find CRAs within investment budget
+        - Research current agricultural credit market rates
+        - Identify high-yield agricultural investment opportunities
+
+        **Update Frequency:**
+        CRA data is synchronized weekly via scraper service.
+      tags:
+        - Financial Instruments - CRA
+      security: []
+      parameters:
+        - name: min_investment
+          in: query
+          description: Filter by maximum acceptable minimum investment
+          schema:
+            type: number
+            format: float
+          example: 50000
+        - name: maturity_months
+          in: query
+          description: Filter by specific maturity period in months
+          schema:
+            type: integer
+          example: 36
+        - name: limit
+          in: query
+          description: Maximum number of results (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: List of available CRAs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  cras:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        securitizer:
+                          type: string
+                          description: Securitization company name
+                        series:
+                          type: string
+                          description: CRA series identifier
+                        product_name:
+                          type: string
+                        min_investment:
+                          type: number
+                        interest_type:
+                          type: string
+                          enum: [pre, pos, hybrid]
+                        interest_rate:
+                          type: number
+                          nullable: true
+                          description: Annual fixed rate (for pre-fixed)
+                        index_type:
+                          type: string
+                          nullable: true
+                          description: Index type (CDI, IPCA)
+                        index_percentage:
+                          type: number
+                          nullable: true
+                          description: Percentage of index
+                        index_spread:
+                          type: number
+                          nullable: true
+                          description: Spread over index (in percentage points)
+                        maturity_months:
+                          type: integer
+                        risk_rating:
+                          type: string
+                          description: Credit risk rating
+                        is_tax_exempt:
+                          type: boolean
+                        underlying_asset:
+                          type: string
+                          nullable: true
+                          description: Description of underlying agricultural receivables
+                        last_updated:
+                          type: string
+                          format: date-time
+              example:
+                total: 10
+                cras:
+                  - id: "c7f3e781-7f36-49dc-986d-00eb4391bd08"
+                    securitizer: "True Securitizadora"
+                    series: "TRUE-CRA-2024-01"
+                    product_name: "CRA Agro - IPCA + 7.5% a.a."
+                    min_investment: 25000.0
+                    interest_type: "hybrid"
+                    index_type: "IPCA"
+                    index_spread: 7.5
+                    maturity_months: 48
+                    risk_rating: "AA"
+                    is_tax_exempt: true
+                    underlying_asset: "Recebíveis de produtores de soja e milho"
+                    last_updated: "2026-02-06T10:00:00Z"
+                  - id: "d7f3e781-7f36-49dc-986d-00eb4391bd08"
+                    securitizer: "Oliveira Trust Securitizadora"
+                    series: "OT-CRA-2024-02"
+                    product_name: "CRA Agro - Prefixado 14.0% a.a."
+                    min_investment: 50000.0
+                    interest_type: "pre"
+                    interest_rate: 14.0
+                    maturity_months: 36
+                    risk_rating: "AA+"
+                    is_tax_exempt: true
+                    underlying_asset: "Recebíveis de exportação de commodities agrícolas"
+                    last_updated: "2026-02-06T10:00:00Z"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/compare-all:
+    post:
+      summary: Compare All Financial Instruments
+      description: |
+        Universal comparison of CPR, LCA, CRA, and traditional credit lines.
+
+        **Comprehensive Analysis:**
+        This endpoint provides a holistic view of all financing and investment options
+        available to agricultural producers, comparing:
+        - **CPRs**: Harvest financing instruments
+        - **LCAs**: Agricultural investment products
+        - **CRAs**: Agricultural receivables certificates
+        - **Credit Lines**: Traditional bank financing
+
+        **Comparison Metrics:**
+        - Effective rates (normalized for comparison)
+        - Total costs/returns
+        - Risk assessment
+        - Liquidity analysis
+        - Tax implications
+        - Suitability score for user profile
+
+        **User Profile Considerations:**
+        - Producer type (family/medium/large)
+        - Revenue level
+        - Investment capacity
+        - Risk tolerance
+        - Financing needs vs investment goals
+
+        **Smart Scoring:**
+        Each instrument receives a score based on:
+        - Cost-effectiveness
+        - Profile matching
+        - Risk-adjusted returns
+        - Practical feasibility
+
+        **Output:**
+        - Side-by-side comparison table
+        - Best match for financing needs
+        - Best match for investment goals
+        - Detailed pros/cons for each option
+        - Actionable recommendations
+
+        **Use Cases:**
+        - Financial planning for harvest cycle
+        - Optimize financing costs
+        - Maximize investment returns
+        - Compare all options in one place
+        - Make data-driven financial decisions
+      tags:
+        - Financial Instruments - Comparison
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - profile
+                - amount
+                - months
+                - cdi_rate
+              properties:
+                profile:
+                  type: object
+                  description: User financial profile
+                  properties:
+                    user_type:
+                      type: string
+                      enum: [producer, investor, both]
+                    annual_revenue:
+                      type: number
+                    investment_capacity:
+                      type: number
+                    risk_tolerance:
+                      type: string
+                      enum: [low, medium, high]
+                amount:
+                  type: number
+                  format: float
+                  description: Amount to finance/invest (BRL)
+                  example: 100000.0
+                months:
+                  type: integer
+                  description: Time horizon in months
+                  example: 12
+                cdi_rate:
+                  type: number
+                  format: float
+                  description: Current CDI rate (for calculations)
+                  example: 13.75
+            example:
+              profile:
+                user_type: "producer"
+                annual_revenue: 500000.0
+                investment_capacity: 50000.0
+                risk_tolerance: "medium"
+              amount: 100000.0
+              months: 12
+              cdi_rate: 13.75
+      responses:
+        '200':
+          description: Comprehensive comparison results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instruments:
+                    type: array
+                    description: All compared instruments with scores
+                  best_for_financing:
+                    type: object
+                    description: Best option for financing needs
+                  best_for_investment:
+                    type: object
+                    description: Best option for investment goals
+                  summary:
+                    type: object
+                    description: Aggregate statistics and insights
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+                    description: Personalized recommendations
+              example:
+                instruments:
+                  - type: "credit_line"
+                    name: "Pronaf Custeio"
+                    rate: 4.5
+                    total_cost: 2250.0
+                    score: 95
+                  - type: "lca"
+                    name: "LCA Pós 95% CDI"
+                    rate: 13.06
+                    total_return: 6530.0
+                    score: 88
+                best_for_financing:
+                  name: "Pronaf Custeio"
+                  reason: "Lowest rate with government subsidy"
+                best_for_investment:
+                  name: "LCA Pós 95% CDI"
+                  reason: "Tax-free returns with high liquidity"
+                summary:
+                  total_compared: 15
+                  lowest_financing_rate: 4.5
+                  highest_investment_return: 13.06
+                recommendations:
+                  - "For financing: Use Pronaf Custeio for lowest cost"
+                  - "For investment: Diversify between LCA and CRA"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/recommendations:
+    post:
+      summary: Get Personalized Recommendations
+      description: |
+        AI-powered financial instrument recommendations based on user profile.
+
+        **Intelligence Engine:**
+        Uses rule-based AI to analyze:
+        - User financial profile and needs
+        - Current market conditions
+        - Historical performance data
+        - Risk-return optimization
+
+        **Profile Analysis:**
+        - Producer type and scale
+        - Revenue patterns
+        - Investment capacity
+        - Risk tolerance
+        - Geographic location
+        - Main products/activities
+
+        **Recommendation Categories:**
+        1. **Financing Recommendations**: Best credit/CPR options for operations
+        2. **Investment Recommendations**: Best LCA/CRA for surplus capital
+        3. **Hedging Recommendations**: Risk mitigation strategies
+        4. **Tax Optimization**: Tax-efficient instrument selection
+
+        **Each Recommendation Includes:**
+        - Instrument name and type
+        - Why it matches the profile
+        - Expected costs/returns
+        - Risk assessment
+        - Action steps
+        - Priority ranking
+
+        **Personalization Factors:**
+        - Family farmer → Pronaf credit lines, conservative LCAs
+        - Medium producer → Mix of credit and CPR, moderate-risk investments
+        - Large producer → Sophisticated instruments, aggressive optimization
+        - High risk tolerance → Pre-fixed LCAs, longer-term CRAs
+        - Low risk tolerance → CDI-linked products, shorter maturities
+
+        **Use Cases:**
+        - Onboarding new users
+        - Annual financial planning
+        - Optimize financing structure
+        - Build investment portfolio
+        - Compare personalized vs generic options
+      tags:
+        - Financial Instruments - Comparison
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_type
+                - annual_revenue
+              properties:
+                user_type:
+                  type: string
+                  enum: [family_farmer, medium_producer, large_producer, investor]
+                  example: "medium_producer"
+                annual_revenue:
+                  type: number
+                  format: float
+                  example: 500000.0
+                investment_capacity:
+                  type: number
+                  format: float
+                  nullable: true
+                  example: 50000.0
+                risk_tolerance:
+                  type: string
+                  enum: [low, medium, high]
+                  default: "medium"
+                  example: "medium"
+                state:
+                  type: string
+                  pattern: '^[A-Z]{2}$'
+                  nullable: true
+                  example: "RS"
+                main_products:
+                  type: array
+                  items:
+                    type: string
+                  nullable: true
+                  example: ["soja", "milho"]
+                needs:
+                  type: array
+                  items:
+                    type: string
+                    enum: [working_capital, investment, harvest_advance, cash_reserve]
+                  nullable: true
+                  example: ["working_capital", "cash_reserve"]
+            example:
+              user_type: "medium_producer"
+              annual_revenue: 500000.0
+              investment_capacity: 50000.0
+              risk_tolerance: "medium"
+              state: "RS"
+              main_products: ["soja", "milho"]
+              needs: ["working_capital", "cash_reserve"]
+      responses:
+        '200':
+          description: Personalized recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    type: object
+                    description: Echo of submitted profile
+                  recommendations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        category:
+                          type: string
+                          enum: [financing, investment, hedging, tax_optimization]
+                        instrument_type:
+                          type: string
+                        instrument_name:
+                          type: string
+                        why:
+                          type: string
+                          description: Explanation for recommendation
+                        expected_rate:
+                          type: number
+                        risk_level:
+                          type: string
+                          enum: [low, medium, high]
+                        priority:
+                          type: integer
+                          description: Priority ranking (1 = highest)
+                        action_steps:
+                          type: array
+                          items:
+                            type: string
+                  total:
+                    type: integer
+              example:
+                profile:
+                  user_type: "medium_producer"
+                  annual_revenue: 500000.0
+                  risk_tolerance: "medium"
+                recommendations:
+                  - category: "financing"
+                    instrument_type: "credit_line"
+                    instrument_name: "Pronamp Custeio"
+                    why: "Perfect match for medium producers - subsidized 5.5% rate for R$ 500k revenue bracket"
+                    expected_rate: 5.5
+                    risk_level: "low"
+                    priority: 1
+                    action_steps:
+                      - "Check eligibility with your bank"
+                      - "Prepare DAP (Declaração de Aptidão ao Pronamp)"
+                      - "Submit application before planting season"
+                  - category: "investment"
+                    instrument_type: "lca"
+                    instrument_name: "LCA Pós-Fixada 95% CDI - 24 meses"
+                    why: "Tax-free investment matching your R$ 50k capacity with moderate risk"
+                    expected_rate: 13.06
+                    risk_level: "medium"
+                    priority: 2
+                    action_steps:
+                      - "Compare offerings from top 3 banks"
+                      - "Verify FGC coverage"
+                      - "Allocate 40% of cash reserves for diversification"
+                total: 5
+        '400':
+          description: Invalid profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/register:
+    post:
+      summary: Register New User
+      description: |
+        Create a new marketplace user account.
+
+        **User Types:**
+        - `producer`: Agricultural producers who create CPR offers
+        - `buyer`: Companies that purchase CPRs
+        - `investor`: Individuals/institutions that invest in CPRs
+        - `admin`: Platform administrators
+
+        **Response:**
+        Returns a JWT token valid for 24 hours and complete user profile.
+
+        **Validation:**
+        - Email must be unique and valid format
+        - Password minimum 8 characters
+        - Document (CPF/CNPJ) must be valid Brazilian format
+        - Phone number optional but recommended
+
+        **Post-Registration:**
+        - User starts with `pending` verification status
+        - Trust score initialized to 0.00
+        - Account is active immediately for browsing
+        - Submit documents for verification to create offers/bids
+      tags:
+        - Marketplace - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: "producer@fazenda.com"
+              password: "securepassword123"
+              user_type: "producer"
+              full_name: "João Silva"
+              document: "123.456.789-00"
+              phone: "+5511999999999"
+      responses:
+        '201':
+          description: User created successfully with JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                user:
+                  id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                  email: "producer@fazenda.com"
+                  user_type: "producer"
+                  full_name: "João Silva"
+                  document: "123.456.***-**"
+                  phone: "+5511999999999"
+                  verification_status: "pending"
+                  trust_score: 0.00
+                  is_active: true
+                  created_at: "2026-02-06T10:00:00Z"
+        '400':
+          description: Invalid request or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Email already registered"
+
+  /api/v1/marketplace/login:
+    post:
+      summary: User Login
+      description: |
+        Authenticate and obtain a JWT token for marketplace access.
+
+        **Token Details:**
+        - Valid for 24 hours
+        - Contains: user_id, email, user_type
+        - Algorithm: HS256
+        - Include in subsequent requests via Authorization header
+
+        **Usage:**
+        ```
+        Authorization: Bearer <your_token_here>
+        ```
+
+        **Security:**
+        - Passwords are hashed with bcrypt
+        - Failed login attempts are logged
+        - No account lockout (future enhancement)
+      tags:
+        - Marketplace - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "producer@fazenda.com"
+              password: "securepassword123"
+      responses:
+        '200':
+          description: Login successful with JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                user:
+                  id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                  email: "producer@fazenda.com"
+                  user_type: "producer"
+                  full_name: "João Silva"
+                  verification_status: "verified"
+                  trust_score: 4.5
+                  is_active: true
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid email or password"
+
+  /api/v1/marketplace/auth/profile:
+    get:
+      summary: Get My Profile
+      description: |
+        Retrieve the authenticated user's complete profile.
+
+        **Includes:**
+        - Personal information (name, email, phone)
+        - Verification status and trust score
+        - Producer-specific data (farm size, products, revenue)
+        - Account activity status
+
+        **Privacy:**
+        - Document number is partially masked (e.g., 123.456.***-**)
+        - Full document only visible to user themselves
+
+        **Use Cases:**
+        - Display user dashboard
+        - Pre-fill profile edit forms
+        - Show verification status
+        - Display trust score/reputation
+      tags:
+        - Marketplace - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceUser'
+              example:
+                id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                email: "producer@fazenda.com"
+                user_type: "producer"
+                full_name: "João Silva"
+                document: "123.456.***-**"
+                phone: "+5511999999999"
+                verification_status: "verified"
+                trust_score: 4.5
+                is_active: true
+                farm_size_hectares: 500.00
+                main_products: ["soja", "milho"]
+                annual_revenue: 2000000.00
+                created_at: "2026-01-15T08:00:00Z"
+                updated_at: "2026-02-05T14:30:00Z"
+        '401':
+          description: Unauthorized - invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Unauthorized"
+
+    put:
+      summary: Update My Profile
+      description: |
+        Update the authenticated user's profile information.
+
+        **Updatable Fields:**
+        - phone: Phone number
+        - farm_size_hectares: Farm size for producers
+        - main_products: Array of main agricultural products
+        - annual_revenue: Annual revenue amount
+        - company_name: Company name for buyers/investors
+        - investment_capacity: Investment capacity for investors
+
+        **Non-Updatable Fields:**
+        - email (contact support to change)
+        - user_type (fixed at registration)
+        - document (contact support to change)
+        - verification_status (admin-only)
+        - trust_score (calculated automatically)
+
+        **Validation:**
+        - Only provided fields are updated (partial updates supported)
+        - Invalid field names are ignored
+        - Type validation applies to all fields
+      tags:
+        - Marketplace - Authentication
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  description: Phone number with country code
+                  example: "+5511988888888"
+                farm_size_hectares:
+                  type: number
+                  format: float
+                  description: Farm size in hectares (producers only)
+                  example: 500.00
+                main_products:
+                  type: array
+                  items:
+                    type: string
+                  description: Main agricultural products
+                  example: ["soja", "milho", "trigo"]
+                annual_revenue:
+                  type: number
+                  format: float
+                  description: Annual revenue in BRL
+                  example: 2000000.00
+                company_name:
+                  type: string
+                  description: Company name (buyers/investors)
+                  example: "Agro Investments SA"
+                investment_capacity:
+                  type: number
+                  format: float
+                  description: Investment capacity in BRL (investors)
+                  example: 5000000.00
+            example:
+              phone: "+5511988888888"
+              farm_size_hectares: 600.00
+              main_products: ["soja", "milho"]
+              annual_revenue: 2500000.00
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Profile updated successfully"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/users/{userId}:
+    get:
+      summary: Get User Public Profile
+      description: |
+        Retrieve public profile information for any user.
+
+        **Public Information:**
+        - Full name
+        - User type (producer/buyer/investor)
+        - Verification status
+        - Trust score and rating
+        - General business information (if applicable)
+
+        **Hidden Information:**
+        - Email address
+        - Phone number
+        - Document number
+        - Detailed financial information
+        - Private profile fields
+
+        **Use Cases:**
+        - View seller/buyer reputation before bidding
+        - Research potential trading partners
+        - Verify user credentials
+        - Display user cards in marketplace
+      tags:
+        - Marketplace - Authentication
+      security: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User UUID
+          schema:
+            type: string
+            format: uuid
+          example: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: Public user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  full_name:
+                    type: string
+                  user_type:
+                    type: string
+                    enum: [producer, buyer, investor, admin]
+                  verification_status:
+                    type: string
+                    enum: [pending, verified, rejected]
+                  trust_score:
+                    type: number
+                    format: float
+                  created_at:
+                    type: string
+                    format: date-time
+              example:
+                id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                full_name: "João Silva"
+                user_type: "producer"
+                verification_status: "verified"
+                trust_score: 4.5
+                created_at: "2026-01-15T08:00:00Z"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "User not found"
+
+  /api/v1/marketplace/offers:
+    get:
+      summary: List CPR Offers
+      description: |
+        Browse available CPR offers in the marketplace with filtering and pagination.
+
+        **Filters:**
+        - `status`: Filter by offer status (published, active, filled, etc.)
+        - `product`: Filter by agricultural product (soja, milho, café, etc.)
+        - `cpr_type`: Filter by CPR type (fisica, financeira)
+        - `min_price`: Minimum price per unit
+        - `max_price`: Maximum price per unit
+
+        **Offer Lifecycle:**
+        1. `draft` - Created but not published
+        2. `published` - Live and accepting bids
+        3. `active` - Has active bids
+        4. `partially_filled` - Some bids accepted (if partial fill enabled)
+        5. `filled` - Fully allocated
+        6. `cancelled` - Cancelled by producer
+        7. `expired` - Past expiration date
+
+        **Public Access:**
+        This endpoint does not require authentication - anyone can browse offers.
+
+        **Sorting:**
+        Results are ordered by publication date (newest first).
+      tags:
+        - Marketplace - Offers
+      security: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by offer status
+          schema:
+            type: string
+            enum: [draft, published, active, partially_filled, filled, cancelled, expired]
+          example: "published"
+        - name: product
+          in: query
+          description: Filter by product type
+          schema:
+            type: string
+          example: "soja"
+        - name: limit
+          in: query
+          description: Items per page (default 20, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+      responses:
+        '200':
+          description: List of CPR offers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CPROffer'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+              example:
+                data:
+                  - id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    producer_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    cpr_type: "financeira"
+                    product: "soja"
+                    quantity: 1000.00
+                    unit: "ton"
+                    price_per_unit: 120.00
+                    total_value: 120000.00
+                    maturity_date: "2025-03-15T00:00:00Z"
+                    minimum_investment: 10000.00
+                    status: "published"
+                    title: "CPR Soja - Safra 2024/2025"
+                    description: "CPR financeira de soja de alta qualidade"
+                    published_at: "2026-02-06T10:00:00Z"
+                limit: 20
+                offset: 0
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create CPR Offer
+      description: |
+        Create a new CPR offer (producers only).
+
+        **Authorization:**
+        Only users with `user_type: producer` can create offers.
+
+        **CPR Types:**
+        - `fisica`: Physical delivery CPR - requires actual product delivery
+        - `financeira`: Financial CPR - settled in cash at maturity
+
+        **Required Fields:**
+        - cpr_type: Type of CPR (fisica/financeira)
+        - product: Agricultural product name
+        - quantity: Amount to be sold
+        - unit: Measurement unit (ton, kg, sacks)
+        - price_per_unit: Price per unit in BRL
+        - total_value: Total value of the CPR
+        - issue_date: Date of CPR issuance
+        - maturity_date: CPR maturity/settlement date
+        - minimum_investment: Minimum bid amount
+        - title: Offer title for marketplace listing
+        - description: Detailed offer description
+
+        **Optional Fields:**
+        - maximum_investment: Maximum bid amount
+        - discount_rate: Discount rate percentage
+        - allows_partial_fill: Whether to accept multiple bids
+        - tags: Array of searchable tags
+
+        **Initial Status:**
+        Offers are created with `draft` status. Use the publish endpoint to make them visible.
+
+        **Validation:**
+        - maturity_date must be in the future
+        - total_value should equal quantity × price_per_unit
+        - minimum_investment must be ≤ total_value
+      tags:
+        - Marketplace - Offers
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCPROfferRequest'
+            example:
+              cpr_type: "financeira"
+              product: "soja"
+              quantity: 1000.00
+              unit: "ton"
+              price_per_unit: 120.00
+              total_value: 120000.00
+              issue_date: "2026-02-06T00:00:00Z"
+              maturity_date: "2025-03-15T00:00:00Z"
+              discount_rate: 7.5
+              minimum_investment: 10000.00
+              maximum_investment: 50000.00
+              allows_partial_fill: true
+              title: "CPR Soja - Safra 2024/2025"
+              description: "CPR financeira de soja de alta qualidade da região Sul"
+              tags: ["soja", "safra-2025", "gmo-free"]
+      responses:
+        '201':
+          description: Offer created successfully (draft status)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPROffer'
+              example:
+                id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                producer_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                status: "draft"
+                cpr_type: "financeira"
+                product: "soja"
+                quantity: 1000.00
+                total_value: 120000.00
+                created_at: "2026-02-06T10:00:00Z"
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Only producers can create offers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Only producers can create offers"
+
+  /api/v1/marketplace/offers/{offerId}:
+    get:
+      summary: Get Single Offer
+      description: |
+        Retrieve detailed information about a specific CPR offer.
+
+        **Returns:**
+        - Complete offer details
+        - Producer information (public profile)
+        - Current bid statistics (if available)
+        - Offer status and availability
+
+        **Public Access:**
+        No authentication required - anyone can view published offers.
+
+        **Use Cases:**
+        - Display offer details page
+        - Prepare bid submission
+        - Research market prices
+        - Verify offer authenticity
+      tags:
+        - Marketplace - Offers
+      security: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          description: Offer UUID
+          schema:
+            type: string
+            format: uuid
+          example: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: Offer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPROffer'
+              example:
+                id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                producer_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                cpr_type: "financeira"
+                product: "soja"
+                quantity: 1000.00
+                unit: "ton"
+                price_per_unit: 120.00
+                total_value: 120000.00
+                maturity_date: "2025-03-15T00:00:00Z"
+                minimum_investment: 10000.00
+                maximum_investment: 50000.00
+                allows_partial_fill: true
+                status: "published"
+                title: "CPR Soja - Safra 2024/2025"
+                description: "CPR financeira de soja de alta qualidade"
+                tags: ["soja", "safra-2025", "gmo-free"]
+                published_at: "2026-02-06T10:00:00Z"
+        '404':
+          description: Offer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Offer not found"
+
+  /api/v1/marketplace/offers/{offerId}/publish:
+    post:
+      summary: Publish Draft Offer
+      description: |
+        Publish a draft offer to make it visible in the marketplace.
+
+        **Authorization:**
+        Only the offer creator (producer) can publish their own offers.
+
+        **Requirements:**
+        - Offer must be in `draft` status
+        - All required fields must be complete
+        - User must be verified (future enhancement)
+
+        **After Publishing:**
+        - Offer becomes visible in marketplace listings
+        - Buyers/investors can submit bids
+        - Offer status changes to `published`
+        - published_at timestamp is set
+
+        **Validation:**
+        - Maturity date must still be in the future
+        - All mandatory offer fields present
+        - Producer account is active
+      tags:
+        - Marketplace - Offers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          description: Offer UUID to publish
+          schema:
+            type: string
+            format: uuid
+          example: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: Offer published successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Offer published successfully"
+        '400':
+          description: Cannot publish (validation failed or not in draft status)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Offer is not in draft status"
+        '403':
+          description: Not authorized (not the offer creator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Only the offer creator can publish it"
+        '404':
+          description: Offer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/offers/{offerId}/bids:
+    get:
+      summary: List Bids for Offer
+      description: |
+        Get all bids submitted for a specific offer (producer only).
+
+        **Authorization:**
+        Only the offer creator can view all bids on their offer.
+
+        **Returns:**
+        - All bids (pending, accepted, rejected)
+        - Bidder information (public profiles)
+        - Bid amounts and terms
+        - Bid timestamps and status
+
+        **Use Cases:**
+        - Review incoming bids as producer
+        - Compare bid offers
+        - Track bid history
+        - Prepare bid acceptance decision
+
+        **Bid Visibility:**
+        Bidders can only see their own bids via their contracts/profile.
+      tags:
+        - Marketplace - Offers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          description: Offer UUID
+          schema:
+            type: string
+            format: uuid
+          example: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: List of bids for the offer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CPRBid'
+              example:
+                data:
+                  - id: "c1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    offer_id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    bidder_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    bid_amount: 25000.00
+                    status: "pending"
+                    payment_terms: "50% na assinatura, 50% em 30 dias"
+                    delivery_terms: "Entrega em armazém próprio"
+                    created_at: "2026-02-06T11:00:00Z"
+        '403':
+          description: Not authorized (not the offer creator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Offer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/bids:
+    post:
+      summary: Create Bid on Offer
+      description: |
+        Submit a bid on a published CPR offer (buyers and investors only).
+
+        **Authorization:**
+        Only users with `user_type: buyer` or `investor` can create bids.
+
+        **Requirements:**
+        - Offer must be `published` or `active` status
+        - Bid amount must be ≥ minimum_investment
+        - Bid amount must be ≤ maximum_investment (if set)
+        - Bid amount must be ≤ total_value
+        - User cannot bid on their own offers
+
+        **Bid Amount Validation:**
+        - If `allows_partial_fill = false`: bid_amount must equal total_value
+        - If `allows_partial_fill = true`: bid_amount can be any valid amount
+
+        **After Submission:**
+        - Bid status is `pending`
+        - Producer is notified (future enhancement)
+        - Offer status may change to `active` if first bid
+        - Bid is visible only to bidder and offer creator
+
+        **Optional Fields:**
+        - payment_terms: Custom payment terms proposal
+        - delivery_terms: Custom delivery terms (for physical CPRs)
+        - notes: Additional notes for the producer
+      tags:
+        - Marketplace - Bids
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCPRBidRequest'
+            example:
+              offer_id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+              bid_amount: 25000.00
+              payment_terms: "Pagamento à vista na assinatura do contrato"
+              delivery_terms: "Entrega FOB em armazém credenciado"
+              notes: "Interessado em parceria de longo prazo"
+      responses:
+        '201':
+          description: Bid created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPRBid'
+              example:
+                id: "c1f3e781-7f36-49dc-986d-00eb4391bd08"
+                offer_id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                bidder_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                bid_amount: 25000.00
+                status: "pending"
+                payment_terms: "Pagamento à vista na assinatura"
+                created_at: "2026-02-06T11:00:00Z"
+        '400':
+          description: Invalid bid (amount, offer status, or validation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Bid amount is below minimum investment"
+        '403':
+          description: Only buyers and investors can create bids
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Only buyers and investors can create bids"
+        '404':
+          description: Offer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/bids/{bidId}/accept:
+    post:
+      summary: Accept Bid and Create Contract
+      description: |
+        Accept a bid and automatically generate a contract (producer only).
+
+        **Authorization:**
+        Only the offer creator (producer) can accept bids on their offers.
+
+        **Process:**
+        1. Validates bid is `pending` status
+        2. Validates producer owns the offer
+        3. Creates a new contract in `pending_signature` status
+        4. Updates bid status to `accepted`
+        5. Updates offer status (to `filled` or `partially_filled`)
+        6. Notifies both parties (future enhancement)
+
+        **Contract Creation:**
+        A CPRContract is automatically generated containing:
+        - Producer and buyer IDs
+        - Bid amount as total_value
+        - Product, quantity, and delivery terms
+        - Signature fields for both parties
+        - Settlement and payment terms
+
+        **Partial Fills:**
+        - If `allows_partial_fill = true`: offer can accept multiple bids
+        - If `allows_partial_fill = false`: first accepted bid fills the offer
+
+        **Next Steps:**
+        Both parties must sign the contract via `/contracts/{contractId}/sign`.
+      tags:
+        - Marketplace - Bids
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: bidId
+          in: path
+          required: true
+          description: Bid UUID to accept
+          schema:
+            type: string
+            format: uuid
+          example: "c1f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: Bid accepted and contract created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPRContract'
+              example:
+                id: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+                offer_id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                bid_id: "c1f3e781-7f36-49dc-986d-00eb4391bd08"
+                producer_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                buyer_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                status: "pending_signature"
+                total_value: 25000.00
+                product: "soja"
+                quantity: 208.33
+                payment_terms: "Pagamento à vista"
+                producer_signed: false
+                buyer_signed: false
+                created_at: "2026-02-06T12:00:00Z"
+        '400':
+          description: Cannot accept bid (validation failed or wrong status)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Bid is not in pending status"
+        '403':
+          description: Not authorized (not the offer creator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Bid not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/contracts:
+    get:
+      summary: List My Contracts
+      description: |
+        Get all contracts where the authenticated user is a party.
+
+        **Returns:**
+        - Contracts where user is producer
+        - Contracts where user is buyer
+        - All contract statuses (pending, signed, active, completed)
+
+        **Contract Information:**
+        - Parties involved (producer and buyer)
+        - Product and quantity details
+        - Total value and payment terms
+        - Signature status for both parties
+        - Delivery and settlement information
+        - Completion percentage (for active contracts)
+
+        **Use Cases:**
+        - View active obligations
+        - Track contract history
+        - Monitor signature status
+        - Review terms before signing
+        - Check completion progress
+      tags:
+        - Marketplace - Contracts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of user's contracts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CPRContract'
+              example:
+                data:
+                  - id: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    producer_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    buyer_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    product: "soja"
+                    quantity: 208.33
+                    total_value: 25000.00
+                    status: "active"
+                    producer_signed: true
+                    buyer_signed: true
+                    completion_percentage: 50.00
+                    created_at: "2026-02-06T12:00:00Z"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/contracts/{contractId}:
+    get:
+      summary: Get Contract Details
+      description: |
+        Retrieve detailed information about a specific contract.
+
+        **Authorization:**
+        Only contract parties (producer or buyer) can view the contract.
+
+        **Returns:**
+        - Complete contract details
+        - Both parties' information
+        - Signature status and hashes
+        - Payment and delivery terms
+        - Settlement details
+        - Contract document URL (if available)
+
+        **Use Cases:**
+        - Review contract before signing
+        - Verify contract terms
+        - Track delivery progress
+        - Download contract document
+        - Prepare for settlement
+      tags:
+        - Marketplace - Contracts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contractId
+          in: path
+          required: true
+          description: Contract UUID
+          schema:
+            type: string
+            format: uuid
+          example: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+      responses:
+        '200':
+          description: Contract details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPRContract'
+              example:
+                id: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+                offer_id: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+                bid_id: "c1f3e781-7f36-49dc-986d-00eb4391bd08"
+                producer_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                buyer_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                status: "signed"
+                total_value: 25000.00
+                product: "soja"
+                quantity: 208.33
+                unit: "ton"
+                settlement_date: "2025-03-15T00:00:00Z"
+                payment_terms: "Pagamento à vista"
+                delivery_location: "Armazém credenciado"
+                producer_signed: true
+                buyer_signed: true
+                producer_signature_hash: "sha256abc..."
+                buyer_signature_hash: "sha256def..."
+                created_at: "2026-02-06T12:00:00Z"
+                signed_at: "2026-02-06T14:30:00Z"
+        '403':
+          description: Not authorized (not a contract party)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Unauthorized"
+        '404':
+          description: Contract not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/contracts/{contractId}/sign:
+    post:
+      summary: Sign Contract
+      description: |
+        Digitally sign a contract (both producer and buyer must sign).
+
+        **Authorization:**
+        Only contract parties (producer or buyer) can sign their side.
+
+        **Requirements:**
+        - Contract must be in signable status
+        - User must be a party to the contract
+        - User has not already signed
+        - Valid signature hash must be provided
+
+        **Signature Hash:**
+        Client should generate a cryptographic signature (e.g., SHA-256) of:
+        - Contract terms
+        - User identity
+        - Timestamp
+        This proves intent to be bound by the contract terms.
+
+        **Process:**
+        1. Validates user is a contract party
+        2. Checks user hasn't already signed
+        3. Stores signature hash
+        4. Updates signature timestamp
+        5. If both parties signed: status → `signed`
+        6. If only one party signed: status → `partially_signed`
+
+        **After Full Signing:**
+        - Contract becomes legally binding (subject to platform terms)
+        - Contract status changes to `active`
+        - Delivery/settlement process can begin
+        - Both parties can leave ratings after completion
+      tags:
+        - Marketplace - Contracts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contractId
+          in: path
+          required: true
+          description: Contract UUID to sign
+          schema:
+            type: string
+            format: uuid
+          example: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - signature_hash
+              properties:
+                signature_hash:
+                  type: string
+                  description: Cryptographic signature hash (SHA-256 recommended)
+                  example: "sha256:abc123def456..."
+            example:
+              signature_hash: "sha256:abc123def456789..."
+      responses:
+        '200':
+          description: Contract signed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Contract signed successfully"
+        '400':
+          description: Cannot sign (already signed, wrong status, or validation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "You have already signed this contract"
+        '403':
+          description: Not authorized (not a contract party)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Contract not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/ratings:
+    post:
+      summary: Create Rating for User
+      description: |
+        Leave a rating and review for another user after completing a contract.
+
+        **Authorization:**
+        Must have completed a contract with the rated user.
+
+        **Requirements:**
+        - Must specify valid contract_id
+        - Contract must be `completed` status
+        - User must be a party to the contract
+        - Cannot rate yourself
+        - Can only rate once per contract
+
+        **Rating Scale:**
+        - Overall rating: 0.0 to 5.0 (decimal precision)
+        - Sub-ratings (optional): 0.0 to 5.0 each
+          - communication_rating
+          - reliability_rating
+          - quality_rating
+
+        **Privacy:**
+        - is_public: true → visible on user's public profile
+        - is_public: false → counted in trust score but not displayed
+
+        **Trust Score Update:**
+        After creating a rating, the rated user's trust_score is automatically recalculated as the average of all their received ratings.
+
+        **Use Cases:**
+        - Build reputation system
+        - Help other users make informed decisions
+        - Provide feedback to trading partners
+        - Improve platform trust and transparency
+      tags:
+        - Marketplace - Ratings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRatingRequest'
+            example:
+              contract_id: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+              rating: 4.5
+              review: "Excelente parceiro comercial. Cumpriu todos os prazos e a qualidade do produto foi excepcional."
+              communication_rating: 5.0
+              reliability_rating: 4.0
+              quality_rating: 5.0
+              is_public: true
+      responses:
+        '201':
+          description: Rating created successfully and trust score updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRating'
+              example:
+                id: "f1f3e781-7f36-49dc-986d-00eb4391bd08"
+                contract_id: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+                rater_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                rated_user_id: "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+                rating: 4.5
+                review: "Excelente parceiro comercial..."
+                communication_rating: 5.0
+                reliability_rating: 4.0
+                quality_rating: 5.0
+                is_public: true
+                created_at: "2026-02-07T10:00:00Z"
+        '400':
+          description: Invalid request (contract not completed, already rated, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Contract is not completed yet"
+        '403':
+          description: Not authorized (not a contract party)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Contract not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/notifications:
+    get:
+      summary: Get User Notifications
+      description: |
+        Retrieve notifications for the authenticated user with optional filtering and pagination.
+
+        **What Are Notifications?**
+        Notifications keep you informed about important marketplace events:
+        - **Bid Events**: New bids on your offers, bid acceptances/rejections
+        - **Contract Events**: Contract creation, signatures, execution
+        - **Rating Events**: New ratings received from trading partners
+
+        **Filtering:**
+        - Use `unread_only=true` to see only unread notifications
+        - Default shows all notifications (read and unread)
+
+        **Pagination:**
+        - `limit`: Max results per page (default 20, max 100)
+        - `offset`: Skip N results for pagination
+
+        **Notification Details:**
+        Each notification includes:
+        - Type and timestamp
+        - Title and message
+        - Related entity info (offer, bid, contract, rating)
+        - Read status
+
+        **Use Cases:**
+        - **Notification Center**: Display all user notifications in a dropdown/page
+        - **Activity Feed**: Show recent marketplace activity
+        - **Unread Badge**: Filter unread to show notification count badge
+        - **Event Tracking**: Monitor all interactions with your offers/bids
+
+        **Frontend Implementation:**
+        - Build notification dropdown/panel
+        - Show unread badge with count
+        - Mark as read when user clicks
+        - Group by date/type for better UX
+        - Link to related entities (offers, contracts, etc.)
+      tags:
+        - Marketplace - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unread_only
+          in: query
+          required: false
+          description: Show only unread notifications
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of notifications to return (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          description: Number of notifications to skip for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        user_id:
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                          enum: [bid_received, bid_accepted, bid_rejected, offer_published, contract_created, contract_signed, contract_executed, rating_received]
+                          description: Type of notification event
+                        title:
+                          type: string
+                          description: Notification title
+                        message:
+                          type: string
+                          description: Detailed notification message
+                        is_read:
+                          type: boolean
+                          description: Whether notification has been read
+                        created_at:
+                          type: string
+                          format: date-time
+                          description: When notification was created
+                        read_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          description: When notification was read
+                        offer_product_name:
+                          type: string
+                          nullable: true
+                          description: Product name from related offer
+                        bid_amount:
+                          type: number
+                          nullable: true
+                          description: Amount from related bid
+                        contract_status:
+                          type: string
+                          nullable: true
+                          description: Status of related contract
+                        rating_score:
+                          type: integer
+                          nullable: true
+                          description: Score from related rating
+                  total:
+                    type: integer
+                    description: Total number of notifications matching filter
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+              example:
+                notifications:
+                  - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    user_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    type: "bid_received"
+                    title: "Nova Proposta Recebida"
+                    message: "Você recebeu uma nova proposta de R$ 50000.00 para seu produto Soja"
+                    is_read: false
+                    created_at: "2026-02-07T10:30:00Z"
+                    read_at: null
+                    offer_product_name: "Soja"
+                    bid_amount: 50000.0
+                    contract_status: null
+                    rating_score: null
+                  - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                    user_id: "d1f3e781-7f36-49dc-986d-00eb4391bd08"
+                    type: "contract_signed"
+                    title: "Contrato Assinado"
+                    message: "Buyer assinou o contrato para Soja. Aguardando sua assinatura."
+                    is_read: true
+                    created_at: "2026-02-06T15:20:00Z"
+                    read_at: "2026-02-06T16:00:00Z"
+                    offer_product_name: null
+                    bid_amount: null
+                    contract_status: "pending_signature"
+                    rating_score: null
+                total: 15
+                limit: 20
+                offset: 0
+        '500':
+          description: Failed to retrieve notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/notifications/unread-count:
+    get:
+      summary: Get Unread Notification Count
+      description: |
+        Get the count of unread notifications for the authenticated user.
+
+        **Use Cases:**
+        - **Notification Badge**: Display unread count in a badge/bubble
+        - **Real-time Updates**: Poll this endpoint to show updated count
+        - **Quick Check**: Fast way to check if user has new notifications
+
+        **Performance:**
+        - Optimized query using database view
+        - Returns immediately (no pagination needed)
+        - Lightweight response (just a number)
+
+        **Frontend Implementation:**
+        - Display badge on notification icon
+        - Poll every 30-60 seconds for updates
+        - Update badge when user reads notifications
+        - Show "0" or hide badge when no unread notifications
+      tags:
+        - Marketplace - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Unread count retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread_count:
+                    type: integer
+                    description: Number of unread notifications
+              example:
+                unread_count: 5
+        '500':
+          description: Failed to retrieve unread count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/notifications/{id}/read:
+    post:
+      summary: Mark Notification as Read
+      description: |
+        Mark a specific notification as read for the authenticated user.
+
+        **What Happens:**
+        - Notification `is_read` set to `true`
+        - `read_at` timestamp recorded
+        - Unread count decremented
+
+        **Idempotent:**
+        - Safe to call multiple times
+        - Returns error if notification already read or doesn't exist
+
+        **Use Cases:**
+        - **Click Handler**: Mark as read when user clicks notification
+        - **Detailed View**: Mark as read when notification detail is viewed
+        - **Automatic Marking**: Mark as read when related entity is accessed
+
+        **Frontend Implementation:**
+        - Call when user clicks on notification
+        - Update UI immediately (optimistic update)
+        - Decrement unread badge count
+        - Change visual style (e.g., remove highlight, change font weight)
+      tags:
+        - Marketplace - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Notification UUID to mark as read
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Notification marked as read"
+        '400':
+          description: Invalid notification ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Notification not found or already read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/notifications/read-all:
+    post:
+      summary: Mark All Notifications as Read
+      description: |
+        Mark all unread notifications as read for the authenticated user.
+
+        **What Happens:**
+        - All unread notifications set to `is_read = true`
+        - `read_at` timestamp recorded for each
+        - Unread count resets to 0
+
+        **Batch Operation:**
+        - Single database query updates all unread notifications
+        - Efficient even with many notifications
+
+        **Use Cases:**
+        - **"Mark All Read" Button**: Bulk action in notification center
+        - **Clear Badge**: Quick way to clear notification badge
+        - **Archive All**: Treat all notifications as seen
+
+        **Frontend Implementation:**
+        - Add "Mark all as read" button in notification panel
+        - Show confirmation dialog (optional)
+        - Clear all visual unread indicators
+        - Reset badge count to 0
+        - Refresh notification list to show updated read status
+      tags:
+        - Marketplace - Notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "All notifications marked as read"
+        '500':
+          description: Failed to mark all notifications as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/marketplace/notifications/{id}:
+    delete:
+      summary: Delete Notification
+      description: |
+        Permanently delete a specific notification for the authenticated user.
+
+        **What Happens:**
+        - Notification removed from database
+        - Cannot be recovered after deletion
+        - If unread, decrements unread count
+
+        **Authorization:**
+        - Can only delete your own notifications
+        - Returns 404 if notification doesn't exist or belongs to another user
+
+        **Use Cases:**
+        - **Dismiss Notification**: Allow users to remove unwanted notifications
+        - **Clean Up**: Remove old or irrelevant notifications
+        - **Privacy**: Let users control their notification history
+
+        **Frontend Implementation:**
+        - Add delete/dismiss button on each notification
+        - Show confirmation dialog before deleting
+        - Remove from UI immediately (optimistic delete)
+        - Update unread count if notification was unread
+        - Handle 404 gracefully (notification may have been deleted already)
+      tags:
+        - Marketplace - Notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Notification UUID to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Notification deleted"
+        '400':
+          description: Invalid notification ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/admin/sync-market-indicators:
+    post:
+      summary: Sync Market Indicators from BCB API
+      description: |
+        Manually trigger synchronization of market indicators from Banco Central do Brasil (BCB) API.
+
+        Fetches latest values for CDI, SELIC, and IPCA indicators and stores them in the database.
+
+        **What This Does:**
+        - Fetches latest CDI from BCB series 4391
+        - Fetches latest SELIC from BCB series 11
+        - Fetches latest IPCA from BCB series 433
+        - Updates database with new values (uses upsert to prevent duplicates)
+        - Returns success/error status
+
+        **BCB Data Sources:**
+        - **CDI** (Series 4391): Daily interbank deposit certificate rate
+        - **SELIC** (Series 11): Special System for Settlement and Custody rate
+        - **IPCA** (Series 433): Extended National Consumer Price Index
+
+        **Use Cases:**
+        - **Manual Updates**: Force immediate refresh of market data
+        - **Testing**: Verify BCB API integration is working
+        - **Data Recovery**: Re-sync if scheduled job failed
+        - **On-Demand Refresh**: Update data before generating reports
+        - **Admin Operations**: Ensure latest data before important decisions
+
+        **Note:** This endpoint is typically called by scheduled jobs, but can be triggered manually when needed.
+
+        **Frontend Implementation:**
+        - Add "Sync Market Data" button in admin panel
+        - Show last sync timestamp
+        - Display sync status (success/error)
+        - Add loading indicator during sync operation
+      tags:
+        - Admin
+        - Market Indicators
+      responses:
+        '200':
+          description: Market indicators synced successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Market indicators synced successfully"
+              example:
+                message: "Market indicators synced successfully"
+        '500':
+          description: Failed to sync market indicators
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message with details about which indicators failed
+              example:
+                error: "errors fetching indicators: [CDI: failed to fetch CDI: connection timeout]"
+
+  /api/v1/admin/sync-itau:
+    post:
+      summary: Sync Itaú credit lines
+      description: |
+        Trigger synchronization of Itaú Unibanco credit line programs.
+
+        Creates 5 credit line programs including PRONAF, PRONAMP, MODERFROTA, and ABC+.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Itaú data sync started"
+                  status:
+                    type: string
+                    example: "processing"
+
+  /api/v1/admin/sync-santander:
+    post:
+      summary: Sync Santander credit lines
+      description: |
+        Trigger synchronization of Santander credit line programs.
+
+        Creates 5 credit line programs including PRONAF, PRONAMP, MODERFROTA, and ABC+.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Santander data sync started"
+                  status:
+                    type: string
+                    example: "processing"
+
+  /api/v1/admin/sync-lca:
+    post:
+      summary: Sync LCA instruments
+      description: |
+        Trigger synchronization of LCA (Letra de Crédito do Agronegócio) instruments.
+
+        Syncs 200+ LCA offerings from various financial institutions.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "LCA data sync started"
+                  status:
+                    type: string
+                    example: "processing"
+
+  /api/v1/admin/sync-cra:
+    post:
+      summary: Sync CRA instruments
+      description: |
+        Trigger synchronization of CRA (Certificado de Recebíveis do Agronegócio) instruments.
+
+        Syncs 200+ CRA offerings from various financial institutions.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "CRA data sync started"
+                  status:
+                    type: string
+                    example: "processing"
+
+  /api/v1/admin/sync-bcb:
+    post:
+      summary: Sync BCB SICOR data
+      description: |
+        Trigger synchronization from Banco Central do Brasil SICOR API.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+
+  /api/v1/admin/sync-bndes:
+    post:
+      summary: Sync BNDES programs
+      description: |
+        Trigger synchronization of BNDES credit programs.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+
+  /api/v1/admin/sync-bb:
+    post:
+      summary: Sync Banco do Brasil programs
+      description: |
+        Trigger synchronization of Banco do Brasil credit programs.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+
+  /api/v1/admin/sync-caixa:
+    post:
+      summary: Sync Caixa programs
+      description: |
+        Trigger synchronization of Caixa Econômica Federal credit programs.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync started successfully
+
+  /api/v1/admin/sync-all:
+    post:
+      summary: Sync all credit sources
+      description: |
+        Trigger synchronization from all credit line sources simultaneously.
+
+        Syncs: BCB, BNDES, BB, Caixa, Santander, and Itaú.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: All syncs started successfully
+
+  /api/v1/admin/sync-all-instruments:
+    post:
+      summary: Sync all financial instruments
+      description: |
+        Trigger synchronization of all financial instruments (LCA and CRA).
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: All instrument syncs started successfully
+
+  /api/v1/admin/sync-status:
+    get:
+      summary: Get sync job status
+      description: |
+        Retrieve status of recent data synchronization jobs.
+
+        Returns the last 10 sync jobs with their status, records processed, and error messages.
+
+        **Note**: This endpoint should be protected with admin authentication in production.
+      tags:
+        - Admin
+      responses:
+        '200':
+          description: Sync status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        source_name:
+                          type: string
+                          example: "itau_programs"
+                        status:
+                          type: string
+                          enum: [pending, running, success, failed, completed]
+                          example: "completed"
+                        records_processed:
+                          type: integer
+                          example: 5
+                        records_created:
+                          type: integer
+                          example: 5
+                        records_updated:
+                          type: integer
+                          example: 0
+                        error_message:
+                          type: string
+                          example: ""
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT authentication for marketplace endpoints.
+
+        To obtain a token:
+        1. Register via POST /api/v1/marketplace/register
+        2. Login via POST /api/v1/marketplace/login
+        3. Use the returned token in subsequent requests
+
+        Token format: `Authorization: Bearer <your_jwt_token>`
+
+        Token contains: user_id, email, user_type
+        Valid for: 24 hours
+
+  schemas:
+    # ========== MARKETPLACE SCHEMAS ==========
+
+    MarketplaceUser:
+      type: object
+      description: Marketplace user account (producer, buyer, investor, or admin)
+      required:
+        - id
+        - email
+        - user_type
+        - verification_status
+        - trust_score
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User email address (unique)
+        user_type:
+          type: string
+          enum: [producer, buyer, investor, admin]
+          description: |
+            User role in the marketplace:
+            - `producer`: Creates and sells CPR offers
+            - `buyer`: Purchases CPRs for commercial use
+            - `investor`: Invests in CPRs for returns
+            - `admin`: Platform administrator
+        full_name:
+          type: string
+          description: User's full legal name
+          example: "João Silva"
+        document:
+          type: string
+          description: CPF or CNPJ (partially masked for privacy)
+          example: "123.456.***-**"
+        phone:
+          type: string
+          nullable: true
+          description: Phone number with country code
+          example: "+5511999999999"
+        verification_status:
+          type: string
+          enum: [pending, verified, rejected]
+          description: |
+            Account verification status:
+            - `pending`: Registration complete, verification pending
+            - `verified`: Documents verified, full access granted
+            - `rejected`: Verification failed
+        trust_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          description: Average rating from completed contracts (0.00 to 5.00)
+          example: 4.5
+        is_active:
+          type: boolean
+          description: Whether account is active
+        farm_size_hectares:
+          type: number
+          format: float
+          nullable: true
+          description: Farm size in hectares (producers only)
+          example: 500.00
+        main_products:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Main agricultural products (producers)
+          example: ["soja", "milho"]
+        annual_revenue:
+          type: number
+          format: float
+          nullable: true
+          description: Annual revenue in BRL (producers)
+          example: 2000000.00
+        company_name:
+          type: string
+          nullable: true
+          description: Company name (buyers/investors)
+        investment_capacity:
+          type: number
+          format: float
+          nullable: true
+          description: Investment capacity in BRL (investors)
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last profile update timestamp
+
+    RegisterRequest:
+      type: object
+      description: User registration request payload
+      required:
+        - email
+        - password
+        - user_type
+        - full_name
+        - document
+      properties:
+        email:
+          type: string
+          format: email
+          description: Valid email address (must be unique)
+          example: "producer@fazenda.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Password (minimum 8 characters, will be hashed with bcrypt)
+          example: "securepassword123"
+        user_type:
+          type: string
+          enum: [producer, buyer, investor]
+          description: Type of marketplace user
+          example: "producer"
+        full_name:
+          type: string
+          description: User's full legal name
+          example: "João Silva"
+        document:
+          type: string
+          description: CPF (individual) or CNPJ (company) in Brazilian format
+          example: "123.456.789-00"
+        phone:
+          type: string
+          nullable: true
+          description: Phone number with country code (optional but recommended)
+          example: "+5511999999999"
+
+    LoginRequest:
+      type: object
+      description: User login request payload
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Registered email address
+          example: "producer@fazenda.com"
+        password:
+          type: string
+          format: password
+          description: Account password
+          example: "securepassword123"
+
+    AuthResponse:
+      type: object
+      description: Authentication response with JWT token and user profile
+      required:
+        - token
+        - user
+      properties:
+        token:
+          type: string
+          description: JWT Bearer token (valid for 24 hours)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYTFmM2U3ODEtN2YzNi00OWRjLTk4NmQtMDBlYjQzOTFiZDA4IiwiZW1haWwiOiJwcm9kdWNlckBmYXplbmRhLmNvbSIsInVzZXJfdHlwZSI6InByb2R1Y2VyIiwiZXhwIjoxNzM4OTI3MjAwfQ..."
+        user:
+          $ref: '#/components/schemas/MarketplaceUser'
+
+    CPROffer:
+      type: object
+      description: CPR (Cédula de Produto Rural) offer in the marketplace
+      required:
+        - id
+        - producer_id
+        - cpr_type
+        - product
+        - quantity
+        - unit
+        - price_per_unit
+        - total_value
+        - issue_date
+        - maturity_date
+        - minimum_investment
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique offer identifier
+        producer_id:
+          type: string
+          format: uuid
+          description: ID of the producer who created this offer
+        cpr_type:
+          type: string
+          enum: [fisica, financeira]
+          description: |
+            Type of CPR:
+            - `fisica`: Physical delivery CPR (requires actual product delivery)
+            - `financeira`: Financial CPR (cash settlement at maturity)
+          example: "financeira"
+        product:
+          type: string
+          description: Agricultural product being offered
+          example: "soja"
+        quantity:
+          type: number
+          format: float
+          description: Quantity of product
+          example: 1000.00
+        unit:
+          type: string
+          description: Unit of measurement (ton, kg, sacks, etc.)
+          example: "ton"
+        price_per_unit:
+          type: number
+          format: float
+          description: Price per unit in BRL
+          example: 120.00
+        total_value:
+          type: number
+          format: float
+          description: Total value of the CPR (quantity × price_per_unit)
+          example: 120000.00
+        issue_date:
+          type: string
+          format: date-time
+          description: CPR issuance date
+        maturity_date:
+          type: string
+          format: date-time
+          description: CPR maturity/settlement date
+        discount_rate:
+          type: number
+          format: float
+          nullable: true
+          description: Discount rate percentage (if applicable)
+          example: 7.5
+        minimum_investment:
+          type: number
+          format: float
+          description: Minimum bid amount accepted
+          example: 10000.00
+        maximum_investment:
+          type: number
+          format: float
+          nullable: true
+          description: Maximum bid amount accepted
+          example: 50000.00
+        allows_partial_fill:
+          type: boolean
+          description: Whether the offer accepts multiple bids (true) or single bid (false)
+          default: false
+        status:
+          type: string
+          enum: [draft, published, active, partially_filled, filled, cancelled, expired]
+          description: |
+            Offer lifecycle status:
+            - `draft`: Created but not published
+            - `published`: Live and accepting bids
+            - `active`: Has active bids
+            - `partially_filled`: Some bids accepted (partial fill enabled)
+            - `filled`: Fully allocated
+            - `cancelled`: Cancelled by producer
+            - `expired`: Past expiration date
+        title:
+          type: string
+          description: Offer title for marketplace listing
+          example: "CPR Soja - Safra 2024/2025"
+        description:
+          type: string
+          nullable: true
+          description: Detailed offer description
+          example: "CPR financeira de soja de alta qualidade da região Sul"
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Searchable tags
+          example: ["soja", "safra-2025", "gmo-free"]
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the offer was published
+        created_at:
+          type: string
+          format: date-time
+          description: Offer creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    CreateCPROfferRequest:
+      type: object
+      description: Request payload for creating a new CPR offer
+      required:
+        - cpr_type
+        - product
+        - quantity
+        - unit
+        - price_per_unit
+        - total_value
+        - issue_date
+        - maturity_date
+        - minimum_investment
+        - title
+        - description
+      properties:
+        cpr_type:
+          type: string
+          enum: [fisica, financeira]
+          example: "financeira"
+        product:
+          type: string
+          example: "soja"
+        quantity:
+          type: number
+          format: float
+          example: 1000.00
+        unit:
+          type: string
+          example: "ton"
+        price_per_unit:
+          type: number
+          format: float
+          example: 120.00
+        total_value:
+          type: number
+          format: float
+          example: 120000.00
+        issue_date:
+          type: string
+          format: date-time
+          example: "2026-02-06T00:00:00Z"
+        maturity_date:
+          type: string
+          format: date-time
+          example: "2025-03-15T00:00:00Z"
+        discount_rate:
+          type: number
+          format: float
+          nullable: true
+          example: 7.5
+        minimum_investment:
+          type: number
+          format: float
+          example: 10000.00
+        maximum_investment:
+          type: number
+          format: float
+          nullable: true
+          example: 50000.00
+        allows_partial_fill:
+          type: boolean
+          default: false
+        title:
+          type: string
+          example: "CPR Soja - Safra 2024/2025"
+        description:
+          type: string
+          example: "CPR financeira de soja de alta qualidade"
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+          example: ["soja", "safra-2025"]
+
+    CPRBid:
+      type: object
+      description: Bid on a CPR offer
+      required:
+        - id
+        - offer_id
+        - bidder_id
+        - bid_amount
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique bid identifier
+        offer_id:
+          type: string
+          format: uuid
+          description: ID of the offer being bid on
+        bidder_id:
+          type: string
+          format: uuid
+          description: ID of the user placing the bid (buyer or investor)
+        bid_amount:
+          type: number
+          format: float
+          description: Bid amount in BRL
+          example: 25000.00
+        status:
+          type: string
+          enum: [pending, accepted, rejected, cancelled, expired]
+          description: |
+            Bid status:
+            - `pending`: Awaiting producer decision
+            - `accepted`: Accepted by producer, contract created
+            - `rejected`: Rejected by producer
+            - `cancelled`: Cancelled by bidder
+            - `expired`: Past expiration time
+        payment_terms:
+          type: string
+          nullable: true
+          description: Proposed payment terms
+          example: "50% na assinatura, 50% em 30 dias"
+        delivery_terms:
+          type: string
+          nullable: true
+          description: Proposed delivery terms (for physical CPRs)
+          example: "Entrega em armazém próprio"
+        notes:
+          type: string
+          nullable: true
+          description: Additional notes from bidder
+        created_at:
+          type: string
+          format: date-time
+          description: Bid creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last update timestamp
+
+    CreateCPRBidRequest:
+      type: object
+      description: Request payload for creating a bid
+      required:
+        - offer_id
+        - bid_amount
+      properties:
+        offer_id:
+          type: string
+          format: uuid
+          description: ID of the offer to bid on
+          example: "b1f3e781-7f36-49dc-986d-00eb4391bd08"
+        bid_amount:
+          type: number
+          format: float
+          description: Bid amount in BRL
+          example: 25000.00
+        payment_terms:
+          type: string
+          nullable: true
+          example: "Pagamento à vista"
+        delivery_terms:
+          type: string
+          nullable: true
+          example: "Entrega FOB"
+        notes:
+          type: string
+          nullable: true
+
+    CPRContract:
+      type: object
+      description: Contract generated from accepted bid
+      required:
+        - id
+        - offer_id
+        - bid_id
+        - producer_id
+        - buyer_id
+        - status
+        - total_value
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique contract identifier
+        offer_id:
+          type: string
+          format: uuid
+          description: Original offer ID
+        bid_id:
+          type: string
+          format: uuid
+          description: Accepted bid ID
+        producer_id:
+          type: string
+          format: uuid
+          description: Producer party ID
+        buyer_id:
+          type: string
+          format: uuid
+          description: Buyer/investor party ID
+        status:
+          type: string
+          enum: [pending_signature, partially_signed, signed, active, in_delivery, completed, cancelled, disputed]
+          description: |
+            Contract lifecycle status:
+            - `pending_signature`: Created, awaiting signatures
+            - `partially_signed`: One party has signed
+            - `signed`: Both parties signed (becomes active)
+            - `active`: Contract is active and being executed
+            - `in_delivery`: Delivery/settlement in progress
+            - `completed`: Successfully completed
+            - `cancelled`: Contract cancelled
+            - `disputed`: Under dispute resolution
+        total_value:
+          type: number
+          format: float
+          description: Contract total value in BRL
+          example: 25000.00
+        product:
+          type: string
+          nullable: true
+          description: Product being transacted
+          example: "soja"
+        quantity:
+          type: number
+          format: float
+          nullable: true
+          description: Product quantity
+          example: 208.33
+        unit:
+          type: string
+          nullable: true
+          description: Unit of measurement
+          example: "ton"
+        settlement_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: Settlement/maturity date
+        payment_terms:
+          type: string
+          nullable: true
+          description: Agreed payment terms
+        delivery_location:
+          type: string
+          nullable: true
+          description: Delivery location (for physical CPRs)
+        producer_signed:
+          type: boolean
+          description: Whether producer has signed
+          default: false
+        buyer_signed:
+          type: boolean
+          description: Whether buyer has signed
+          default: false
+        producer_signature_hash:
+          type: string
+          nullable: true
+          description: Producer's cryptographic signature hash
+        buyer_signature_hash:
+          type: string
+          nullable: true
+          description: Buyer's cryptographic signature hash
+        producer_signed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When producer signed
+        buyer_signed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When buyer signed
+        signed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When both parties completed signing
+        completion_percentage:
+          type: number
+          format: float
+          nullable: true
+          description: Contract completion percentage (0-100)
+          example: 50.00
+        contract_document_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to contract PDF document (if generated)
+        created_at:
+          type: string
+          format: date-time
+          description: Contract creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last update timestamp
+
+    UserRating:
+      type: object
+      description: Rating/review from one user to another after contract completion
+      required:
+        - id
+        - contract_id
+        - rater_id
+        - rated_user_id
+        - rating
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique rating identifier
+        contract_id:
+          type: string
+          format: uuid
+          description: Contract this rating is based on
+        rater_id:
+          type: string
+          format: uuid
+          description: User who created the rating
+        rated_user_id:
+          type: string
+          format: uuid
+          description: User being rated
+        rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          description: Overall rating (0.0 to 5.0)
+          example: 4.5
+        review:
+          type: string
+          nullable: true
+          description: Written review text
+          example: "Excelente parceiro comercial"
+        communication_rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          nullable: true
+          description: Communication quality rating
+          example: 5.0
+        reliability_rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          nullable: true
+          description: Reliability/punctuality rating
+          example: 4.0
+        quality_rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          nullable: true
+          description: Product/service quality rating
+          example: 5.0
+        is_public:
+          type: boolean
+          description: Whether rating is publicly visible on user profile
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          description: Rating creation timestamp
+
+    CreateUserRatingRequest:
+      type: object
+      description: Request payload for creating a user rating
+      required:
+        - contract_id
+        - rating
+      properties:
+        contract_id:
+          type: string
+          format: uuid
+          example: "e1f3e781-7f36-49dc-986d-00eb4391bd08"
+        rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          example: 4.5
+        review:
+          type: string
+          nullable: true
+          example: "Excelente parceiro comercial"
+        communication_rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          nullable: true
+          example: 5.0
+        reliability_rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          nullable: true
+          example: 4.0
+        quality_rating:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 5.0
+          nullable: true
+          example: 5.0
+        is_public:
+          type: boolean
+          default: true
+
+    # ========== CREDIT LINE SCHEMAS ==========
+
+    CreditLine:
+      type: object
+      description: Agricultural credit line financing program
+      required:
+        - id
+        - institution_id
+        - name
+        - currency
+        - data_source
+        - is_active
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the credit line
+        institution_id:
+          type: string
+          format: uuid
+          description: ID of the financial institution offering this credit line
+        name:
+          type: string
+          description: Credit line name/title
+          example: "Pronaf Custeio"
+        code:
+          type: string
+          nullable: true
+          description: Official program code (e.g., MCR 10-4)
+          example: "PRONAF-CUSTEIO"
+        program_type:
+          type: string
+          nullable: true
+          enum:
+            - working_capital
+            - investment
+            - financing
+          description: |
+            Type of financing:
+            - `working_capital`: Short-term operational expenses (custeio)
+            - `investment`: Long-term investments in equipment, infrastructure
+            - `financing`: General financing or commercialization
+        description:
+          type: string
+          nullable: true
+          description: Detailed description of the credit line and its purpose
+        target_audience:
+          type: string
+          nullable: true
+          enum:
+            - family_farmer
+            - medium_producer
+            - large_producer
+          description: |
+            Target producer profile:
+            - `family_farmer`: Family farming (agricultura familiar)
+            - `medium_producer`: Medium-scale producers
+            - `large_producer`: Large-scale agribusiness
+        min_amount:
+          type: number
+          format: float
+          nullable: true
+          description: Minimum financing amount (in currency)
+          example: 10000
+        max_amount:
+          type: number
+          format: float
+          nullable: true
+          description: Maximum financing amount (in currency)
+          example: 500000
+        currency:
+          type: string
+          description: Currency code (ISO 4217)
+          default: "BRL"
+          example: "BRL"
+        interest_rate_min:
+          type: number
+          format: float
+          nullable: true
+          description: Minimum annual interest rate (percentage)
+          minimum: 0
+          maximum: 100
+          example: 3.0
+        interest_rate_max:
+          type: number
+          format: float
+          nullable: true
+          description: Maximum annual interest rate (percentage)
+          minimum: 0
+          maximum: 100
+          example: 5.5
+        interest_rate_type:
+          type: string
+          nullable: true
+          enum:
+            - fixed
+            - variable
+            - indexed
+          description: Type of interest rate calculation
+        grace_period_months:
+          type: integer
+          nullable: true
+          description: Grace period before payment starts (in months)
+          minimum: 0
+          example: 12
+        max_term_months:
+          type: integer
+          nullable: true
+          description: Maximum financing term/duration (in months)
+          minimum: 0
+          example: 120
+        minimum_revenue:
+          type: number
+          format: float
+          nullable: true
+          description: Minimum annual revenue requirement (in currency)
+        maximum_revenue:
+          type: number
+          format: float
+          nullable: true
+          description: Maximum annual revenue limit (in currency)
+        requires_collateral:
+          type: boolean
+          nullable: true
+          description: Whether collateral is required
+        collateral_types:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Types of accepted collateral
+        requires_environmental_license:
+          type: boolean
+          nullable: true
+          description: Whether environmental license is required
+        eligible_activities:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: List of eligible agricultural activities
+          example: ["agriculture", "livestock"]
+        available_regions:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: |
+            State codes (UF) where this credit line is available.
+            May contain "all" for nationwide programs.
+          example: ["RS", "SC", "PR"]
+        available_municipalities:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Specific municipalities (IBGE codes) where available
+        source_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Original source URL for this credit line information
+        data_source:
+          type: string
+          description: |
+            Source of data:
+            - `bcb_api`: Banco Central do Brasil API
+            - `bndes_api`: BNDES API
+            - `web_scraping`: Scraped from institution website
+            - `manual`: Manually entered
+          enum:
+            - bcb_api
+            - bndes_api
+            - web_scraping
+            - manual
+          example: "bcb_api"
+        last_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last time this information was verified/updated
+        is_active:
+          type: boolean
+          description: Whether this credit line is currently active and accepting applications
+        created_at:
+          type: string
+          format: date-time
+          description: When this record was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When this record was last updated
+
+    PaginatedCreditLines:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditLine'
+          description: Array of credit lines for current page
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginationMetadata:
+      type: object
+      required:
+        - total
+        - page
+        - limit
+        - total_pages
+        - has_next
+        - has_prev
+      properties:
+        total:
+          type: integer
+          description: Total number of items across all pages
+          example: 45
+        page:
+          type: integer
+          description: Current page number (1-indexed)
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 20
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 3
+        has_next:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        has_prev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
+
+    CompareRequest:
+      type: object
+      required:
+        - credit_line_ids
+      properties:
+        credit_line_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          maxItems: 5
+          description: Array of credit line IDs to compare (max 5)
+          example:
+            - "a1f3e781-7f36-49dc-986d-00eb4391bd08"
+            - "a8a7fe68-3360-49e6-a82b-d652d79e7711"
+        user_profile:
+          $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      required:
+        - producer_type
+        - annual_revenue
+        - state
+      properties:
+        producer_type:
+          type: string
+          enum:
+            - family_farmer
+            - medium_producer
+            - large_producer
+          description: Type of producer
+          example: "family_farmer"
+        annual_revenue:
+          type: number
+          format: float
+          description: Annual revenue in BRL
+          minimum: 0
+          example: 300000
+        state:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: Brazilian state code (UF)
+          example: "RS"
+        main_activities:
+          type: array
+          items:
+            type: string
+          description: Primary agricultural activities
+          example: ["agriculture", "livestock"]
+
+    CreditLineWithEligibility:
+      allOf:
+        - $ref: '#/components/schemas/CreditLine'
+        - type: object
+          required:
+            - eligibility
+          properties:
+            eligibility:
+              $ref: '#/components/schemas/EligibilityResult'
+
+    EligibilityResult:
+      type: object
+      required:
+        - eligible
+        - reasons
+      properties:
+        eligible:
+          type: boolean
+          description: Whether the user is eligible for this credit line
+          example: true
+        reasons:
+          type: array
+          items:
+            type: string
+          description: |
+            List of reasons for eligibility decision.
+            If eligible, contains confirmation message.
+            If not eligible, contains specific reasons why not.
+          example:
+            - "All eligibility criteria met"
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Invalid credit line ID"

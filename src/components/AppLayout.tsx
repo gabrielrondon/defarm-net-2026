@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Shield,
   Camera,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { icon: Activity, label: "Eventos", href: "/app/eventos" },
   { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
   { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
+  { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
 ];
 
 interface AppLayoutProps {
