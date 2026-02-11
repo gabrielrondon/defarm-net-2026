@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Settings,
   User,
   Building2,
@@ -15,9 +21,14 @@ import {
   Save,
   Loader2,
   ArrowLeft,
+  Monitor,
+  Smartphone,
+  Globe,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getActiveSessions } from "@/lib/api/sessions";
+import type { UserSession } from "@/lib/api/types";
 
 type SettingsTab = "perfil" | "workspace" | "notificacoes" | "seguranca";
 
@@ -61,6 +72,45 @@ export default function Configuracoes() {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [circuitUpdates, setCircuitUpdates] = useState(true);
   const [itemAlerts, setItemAlerts] = useState(true);
+
+  // Sessions state
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  const handleViewSessions = async () => {
+    if (!user?.id) return;
+    setSessionsLoading(true);
+    try {
+      const data = await getActiveSessions(user.id);
+      setSessions(data);
+      setSessionsOpen(true);
+    } catch (err) {
+      toast({
+        title: "Erro ao carregar sessões",
+        description: "Não foi possível buscar as sessões ativas.",
+        variant: "destructive",
+      });
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const parseUserAgent = (ua?: string | null) => {
+    if (!ua) return "Dispositivo desconhecido";
+    if (ua.includes("Chrome")) return "Google Chrome";
+    if (ua.includes("Firefox")) return "Firefox";
+    if (ua.includes("Safari")) return "Safari";
+    if (ua.includes("Edge")) return "Microsoft Edge";
+    return ua.slice(0, 40);
+  };
+
+  const getDeviceIcon = (ua?: string | null) => {
+    if (!ua) return <Globe className="h-4 w-4 text-muted-foreground" />;
+    if (ua.includes("Mobile") || ua.includes("Android") || ua.includes("iPhone"))
+      return <Smartphone className="h-4 w-4 text-muted-foreground" />;
+    return <Monitor className="h-4 w-4 text-muted-foreground" />;
+  };
 
   const handleSaveProfile = async () => {
     setIsLoading(true);
@@ -314,28 +364,69 @@ export default function Configuracoes() {
                     Veja onde sua conta está conectada
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
-                  Ver sessões
+                <Button variant="outline" size="sm" onClick={handleViewSessions}>
+                  {sessionsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Ver sessões"}
                 </Button>
               </div>
             </div>
 
-            <div className="bg-destructive/5 border border-destructive/20 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-2">Zona de perigo</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Ações irreversíveis para sua conta
-              </p>
-              <div className="flex gap-4">
-                <Button
-                  variant="outline"
-                  className="text-destructive border-destructive/50 hover:bg-destructive/10"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sair da conta
-                </Button>
-              </div>
+            {/* Logout - simple, no drama */}
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair da conta
+              </Button>
             </div>
+
+            {/* Sessions Dialog */}
+            <Dialog open={sessionsOpen} onOpenChange={setSessionsOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Sessões ativas</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {sessions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhuma sessão encontrada
+                    </p>
+                  ) : (
+                    sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg border",
+                          session.is_active ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30"
+                        )}
+                      >
+                        <div className="mt-0.5">
+                          {getDeviceIcon(session.user_agent)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {parseUserAgent(session.user_agent)}
+                          </p>
+                          {session.ip_address && (
+                            <p className="text-xs text-muted-foreground">IP: {session.ip_address}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Último acesso: {new Date(session.last_activity_at).toLocaleString("pt-BR")}
+                          </p>
+                          {session.is_active && (
+                            <span className="inline-block mt-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                              Sessão atual
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         );
 
