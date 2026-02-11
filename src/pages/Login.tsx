@@ -78,7 +78,7 @@ export default function Login() {
               <Input
                 id="email"
                 type="text"
-                placeholder={t("contact.emailPlaceholder")}
+                placeholder={t("register.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
