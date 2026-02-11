@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mail, Phone, MapPin, Send } from "lucide-react";
+import { Mail, MapPin, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const Contato = () => {
@@ -18,15 +18,9 @@ const Contato = () => {
       href: "mailto:contato@defarm.net",
     },
     {
-      icon: Phone,
-      title: t("contact.phoneLabel"),
-      value: "+55 (11) 99999-9999",
-      href: "tel:+5511999999999",
-    },
-    {
       icon: MapPin,
       title: t("contact.addressLabel"),
-      value: "São Paulo, SP - Brasil",
+      value: "Av. Afonso Pena, 4785, Sala 701, Santa Fé\n79.031-010 Campo Grande, Mato Grosso do Sul\nBrazil",
       href: "#",
     },
   ];
@@ -130,15 +124,10 @@ const Contato = () => {
                         <h3 className="font-semibold text-foreground">
                           {info.title}
                         </h3>
-                        <p className="text-muted-foreground">{info.value}</p>
+                        <p className="text-muted-foreground whitespace-pre-line">{info.value}</p>
                       </div>
                     </a>
                   ))}
-                </div>
-
-                {/* Map placeholder */}
-                <div className="aspect-video bg-gradient-to-br from-primary/5 to-primary/20 rounded-2xl flex items-center justify-center">
-                  <MapPin className="h-16 w-16 text-primary/30" />
                 </div>
               </div>
             </div>
