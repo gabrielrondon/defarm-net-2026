@@ -507,7 +507,7 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
           setCanonicalType("cpf");
         }
       }
-      setPreview(previewData);
+      setPreview({ ...previewData, preparedFile: file });
     } catch (err: any) {
       setPreviewError(err?.message || "Erro ao processar arquivo.");
     } finally {

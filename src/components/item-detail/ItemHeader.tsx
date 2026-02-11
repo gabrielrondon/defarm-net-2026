@@ -10,7 +10,6 @@ import {
   GitBranch,
   Tag,
   MoreHorizontal,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +22,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Item } from "@/lib/defarm-api";
 import { PushToCircuitDialog } from "./PushToCircuitDialog";
+import { EditMetadataDialog } from "./EditMetadataDialog";
+import { DeprecateItemDialog } from "./DeprecateItemDialog";
 
 interface ItemHeaderProps {
   item: Item;
@@ -32,7 +33,8 @@ export function ItemHeader({ item }: ItemHeaderProps) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
-
+  const [isEditMetadataOpen, setIsEditMetadataOpen] = useState(false);
+  const [isDeprecateOpen, setIsDeprecateOpen] = useState(false);
   const dfid = item?.dfid ?? "";
   const isTokenized = dfid.startsWith("DFID-");
 
@@ -138,16 +140,15 @@ export function ItemHeader({ item }: ItemHeaderProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar evento
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsEditMetadataOpen(true)}>
                   <Tag className="h-4 w-4 mr-2" />
-                  Editar identificadores
+                  Editar metadados
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => setIsDeprecateOpen(true)}
+                >
                   Depreciar item
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -160,6 +161,16 @@ export function ItemHeader({ item }: ItemHeaderProps) {
         item={item}
         open={isPushDialogOpen}
         onOpenChange={setIsPushDialogOpen}
+      />
+      <EditMetadataDialog
+        item={item}
+        open={isEditMetadataOpen}
+        onOpenChange={setIsEditMetadataOpen}
+      />
+      <DeprecateItemDialog
+        item={item}
+        open={isDeprecateOpen}
+        onOpenChange={setIsDeprecateOpen}
       />
     </>
   );
