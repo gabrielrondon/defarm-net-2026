@@ -7,8 +7,9 @@ interface ItemIdentifiersProps {
 }
 
 export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
-  const metadata = item.metadata || {};
+  const metadata = item?.metadata || {};
   const metadataEntries = Object.entries(metadata);
+  const itemId = item?.id ?? "";
 
   return (
     <div className="lg:col-span-1 space-y-6">
@@ -33,7 +34,7 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
-              {item.value_chain || "-"}
+              {item?.value_chain || "-"}
             </p>
           </div>
 
@@ -45,7 +46,7 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
-              {item.country || "-"}
+              {item?.country || "-"}
             </p>
           </div>
 
@@ -57,7 +58,7 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
-              {item.year || "-"}
+              {item?.year || "-"}
             </p>
           </div>
         </div>
@@ -70,16 +71,16 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Criado em</span>
             <span className="text-foreground">
-              {formatTime(item.registered_at)}
+              {formatTime(item?.registered_at || item?.created_at)}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Última atualização</span>
             <span className="text-foreground">
-              {formatTime(item.updated_at)}
+              {formatTime(item?.last_updated_at || item?.updated_at)}
             </span>
           </div>
-          {item.circuit_id && (
+          {item?.circuit_id && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Circuito</span>
               <span className="text-foreground font-mono text-xs">
@@ -92,9 +93,9 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">ID</span>
             <span className="text-foreground font-mono text-xs">
-              {(item.id || "").length > 15
-                ? `${(item.id || "").slice(0, 15)}...`
-                : item.id || "-"}
+              {itemId.length > 15
+                ? `${itemId.slice(0, 15)}...`
+                : itemId || "-"}
             </span>
           </div>
         </div>
