@@ -3,6 +3,9 @@
 
 export const CHECK_BASE = "https://defarm-check-api-production.up.railway.app";
 
+// API Key for Check API - read from env or fallback
+const CHECK_API_KEY = import.meta.env.VITE_DEFARM_CHECK_API_KEY || "";
+
 export class CheckApiError extends Error {
   constructor(
     public status: number,
@@ -22,6 +25,11 @@ export async function checkRequest<T>(
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> || {}),
   };
+
+  // Add API Key if available
+  if (CHECK_API_KEY) {
+    headers["X-API-Key"] = CHECK_API_KEY;
+  }
 
   const url = `${CHECK_BASE}${endpoint}`;
   console.log(`[DeFarm Check] ${options.method || "GET"} ${url}`);
