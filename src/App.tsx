@@ -35,6 +35,7 @@ import FinanceDashboard from "./pages/app/FinanceDashboard";
 import FinanceCreditLines from "./pages/app/FinanceCreditLines";
 import FinanceSimulador from "./pages/app/FinanceSimulador";
 import FinanceAnalise from "./pages/app/FinanceAnalise";
+import ComplianceCheck from "./pages/app/ComplianceCheck";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,8 @@ const App = () => (
             <Route path="/app/finance/linhas-credito" element={<AppLayout><FinanceCreditLines /></AppLayout>} />
             <Route path="/app/finance/simulador" element={<AppLayout><FinanceSimulador /></AppLayout>} />
             <Route path="/app/finance/analise" element={<AppLayout><FinanceAnalise /></AppLayout>} />
+            
+            <Route path="/app/compliance" element={<AppLayout><ComplianceCheck /></AppLayout>} />
             
             <Route path="/app/api-keys" element={<AppLayout><ApiKeys /></AppLayout>} />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
