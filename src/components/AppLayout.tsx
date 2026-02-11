@@ -15,6 +15,7 @@ import {
   Shield,
   Camera,
   Landmark,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
   { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
   { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
+  { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance" },
 ];
 
 interface AppLayoutProps {
