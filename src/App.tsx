@@ -37,7 +37,7 @@ import FinanceSimulador from "./pages/app/FinanceSimulador";
 import FinanceAnalise from "./pages/app/FinanceAnalise";
 import ComplianceCheck from "./pages/app/ComplianceCheck";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient(); // init
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
