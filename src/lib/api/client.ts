@@ -1,7 +1,7 @@
 // DeFarm API Client - via Gateway
 // All frontend requests go through the API Gateway
 // Uses VITE_API_BASE_URL env var with production fallback
-const GATEWAY_BASE =
+export const GATEWAY_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   "https://gateway-service-production-f54d.up.railway.app";
 
@@ -96,10 +96,15 @@ export async function registryRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getAccessToken();
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> || {}),
   };
+  if (isFormData) {
+    delete headers["Content-Type"];
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;

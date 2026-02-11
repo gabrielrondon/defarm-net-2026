@@ -38,7 +38,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   full_name: string;
-  workspace_slug: string;
+  workspace_slug?: string;
   workspace_name?: string;
 }
 

@@ -65,13 +65,18 @@ export async function pushItemToCircuit(
   circuitId: string,
   itemId: string
 ): Promise<Item> {
+  // Note: circuit_id is immutable on items; this only tags metadata.
   return updateItem(itemId, { metadata: { circuit_id: circuitId } });
 }
 
 // Bulk import (CSV or JSON)
-export async function bulkIngestItems(file: File): Promise<IngestionReceipt> {
+export async function bulkIngestItems(
+  file: File,
+  circuitId: string
+): Promise<IngestionReceipt> {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("circuit_id", circuitId);
 
   // Don't set Content-Type header - browser will set it with boundary for multipart
   return registryRequest<IngestionReceipt>("/items/bulk", {
