@@ -240,7 +240,7 @@ export default function Configuracoes() {
                       Chaves de acesso para integração
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => navigate("/app/api-keys")}>
                     Ver chaves
                   </Button>
                 </div>

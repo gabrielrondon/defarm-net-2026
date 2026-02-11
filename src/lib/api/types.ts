@@ -618,6 +618,44 @@ export interface CreateApiKeyResponse {
   expires_at?: string | null;
 }
 
+// --- Partner API Keys ---
+
+export interface PartnerApiKeyResponse {
+  id: string;
+  key_name: string;
+  circuit_id: string;
+  is_active: boolean;
+  created_at: string;
+  api_key?: string | null;
+  description?: string | null;
+  rate_limit_per_minute?: number | null;
+  rate_limit_per_day?: number | null;
+  last_used_at?: string | null;
+  expires_at?: string | null;
+}
+
+export interface CreatePartnerApiKeyRequest {
+  key_name: string;
+  circuit_id: string;
+  description?: string | null;
+  expires_in_days?: number | null;
+}
+
+export interface CreatePartnerApiKeyResponse {
+  key: PartnerApiKeyResponse;
+  message: string;
+}
+
+export interface ApiKeyMetricsResponse {
+  api_key_id: string;
+  requests_total: number;
+  requests_last_24h: number;
+  errors_last_24h: number;
+  last_used_at?: string | null;
+  rate_limit_per_minute?: number | null;
+  rate_limit_per_day?: number | null;
+}
+
 // --- Health ---
 
 export interface HealthResponse {
