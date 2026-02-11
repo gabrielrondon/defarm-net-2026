@@ -18,8 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { calculateCPR, simulateHarvestAdvance, calculateLCA } from "@/lib/finance-api";
 import type { CPRCalculateResponse, CPRSimulateResponse, LCACalculateResponse } from "@/lib/finance-api";
 
-const formatBRL = (val: number) =>
-  val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const formatBRL = (val: number | undefined) =>
+  (val ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default function FinanceSimulador() {
   return (
