@@ -33,9 +33,9 @@ const platformFeatureIcons: Record<Platform, (typeof Shield)[]> = {
   developers: [Code, FileText],
 };
 
-const platformMeta: Record<Platform, { ctaExternal?: string; ctaHref?: string; secondaryAction?: "popup" | "link" }> = {
+const platformMeta: Record<Platform, { ctaExternal?: string; ctaHref?: string; ctaDisabled?: boolean; secondaryAction?: "popup" | "link" }> = {
   rastreio: { ctaHref: "/onboarding", secondaryAction: "popup" },
-  financeiro: { ctaExternal: "https://cpr.defarm.net", secondaryAction: "popup" },
+  financeiro: { ctaDisabled: true, secondaryAction: "popup" },
   developers: { ctaExternal: "https://docs.defarm.net" },
 };
 
@@ -170,7 +170,21 @@ export function PlatformSwitcher() {
 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-                {meta.ctaExternal ? (
+                {meta.ctaDisabled ? (
+                  <div className="relative">
+                    <Button
+                      size="lg"
+                      disabled
+                      className="bg-muted text-muted-foreground font-semibold px-8 py-6 text-lg rounded-lg cursor-not-allowed"
+                    >
+                      {cta}
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                    <span className="absolute -top-3 -right-3 bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full border border-primary/20">
+                      Em breve
+                    </span>
+                  </div>
+                ) : meta.ctaExternal ? (
                   <a href={meta.ctaExternal} target="_blank" rel="noopener noreferrer">
                     <Button
                       size="lg"

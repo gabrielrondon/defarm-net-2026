@@ -132,66 +132,6 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 mt-6">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-sm text-muted-foreground">{t("login.or")}</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Demo access */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-12 mt-4 font-semibold"
-            disabled={isDemoLoading}
-            onClick={async () => {
-              setIsDemoLoading(true);
-              try {
-                try {
-                  await login({ email: "demo@defarm.io", password: "DemoPass2025!" });
-                  navigate("/app");
-                  return;
-                } catch {
-                  // Login failed, try register
-                }
-
-                const response = await apiRegister({
-                  email: "demo@defarm.io",
-                  password: "DemoPass2025!",
-                  full_name: "Demo User",
-                  workspace_slug: "demo-farm",
-                  workspace_name: "Demo Farm",
-                });
-
-                const userData = {
-                  id: response.user_id || (response as any).user?.id || "demo-user",
-                  username: "demo",
-                  email: "demo@defarm.io",
-                  workspace_id: response.workspace_id || (response as any).user?.workspace_id || "demo",
-                };
-
-                storeAuth(response.access_token, userData, response.refresh_token);
-                window.location.href = "/app";
-              } catch (error) {
-                console.error("[Demo] Registration/login failed:", error);
-                toast({
-                  title: t("login.demoErrorTitle"),
-                  description: error instanceof Error ? error.message : "Try again",
-                  variant: "destructive",
-                });
-              } finally {
-                setIsDemoLoading(false);
-              }
-            }}
-          >
-            {isDemoLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              t("login.demoAccess")
-            )}
-          </Button>
-
           {/* Sign up link */}
           <p className="text-center text-muted-foreground mt-6">
             {t("login.noAccount")}{" "}
