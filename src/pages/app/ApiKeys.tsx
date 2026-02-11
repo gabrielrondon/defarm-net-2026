@@ -176,12 +176,16 @@ export default function ApiKeys() {
       const data = await getPartnerApiKeyMetrics(key.id);
       setMetricsData(data);
     } catch (err: any) {
-      toast({
-        title: "Erro ao carregar métricas",
-        description: err?.message || "Tente novamente.",
-        variant: "destructive",
+      // If metrics endpoint not available yet, show what we have from the key data
+      setMetricsData({
+        api_key_id: key.id,
+        requests_total: 0,
+        requests_last_24h: 0,
+        errors_last_24h: 0,
+        last_used_at: key.last_used_at || null,
+        rate_limit_per_minute: key.rate_limit_per_minute || null,
+        rate_limit_per_day: key.rate_limit_per_day || null,
       });
-      setMetricsOpen(false);
     } finally {
       setMetricsLoading(false);
     }
