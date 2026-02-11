@@ -1,12 +1,10 @@
 // DeFarm Check API Client (Compliance)
-// Proxied through the Gateway for secure API key handling
-// The Gateway adds the X-API-Key server-side
+// Separate service - calls Check API directly (CORS enabled)
 
-import { GATEWAY_BASE } from "@/lib/api/client";
-import { getAccessToken } from "@/lib/api/client";
+export const CHECK_BASE = "https://defarm-check-api-production.up.railway.app";
 
-// Check API routes through the Gateway at /api/check
-export const CHECK_API_BASE = `${GATEWAY_BASE}/api/check`;
+// API Key read from env var
+const CHECK_API_KEY = import.meta.env.VITE_DEFARM_CHECK_API_KEY || "";
 
 export class CheckApiError extends Error {
   constructor(
@@ -23,17 +21,16 @@ export async function checkRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getAccessToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> || {}),
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (CHECK_API_KEY) {
+    headers["X-API-Key"] = CHECK_API_KEY;
   }
 
-  const url = `${CHECK_API_BASE}${endpoint}`;
+  const url = `${CHECK_BASE}${endpoint}`;
   console.log(`[DeFarm Check] ${options.method || "GET"} ${url}`);
 
   try {
