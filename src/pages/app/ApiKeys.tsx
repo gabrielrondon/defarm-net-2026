@@ -123,14 +123,17 @@ export default function ApiKeys() {
         description: newKeyDescription || undefined,
         expires_in_days: newKeyExpiry ? parseInt(newKeyExpiry) : undefined,
       });
-      setRevealedKey(result.key.api_key || null);
+      // Handle different response shapes from backend
+      const apiKey = result?.key?.api_key || (result as any)?.api_key || null;
+      setRevealedKey(apiKey);
       setCreateOpen(false);
       setNewKeyName("");
       setNewKeyDescription("");
       setNewKeyExpiry("");
+      setNewKeyCircuit("");
       toast({
         title: "API Key criada",
-        description: result.message,
+        description: result?.message || "Chave criada com sucesso.",
       });
       fetchData();
     } catch (err: any) {
