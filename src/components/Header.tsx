@@ -45,9 +45,11 @@ export function Header() {
         {/* CTA + Language */}
         <div className="hidden md:flex items-center gap-3">
           <LanguageToggle />
-          <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-6 rounded-lg">
-            {t("nav.requestAccess")}
-          </Button>
+          <Link to="/onboarding">
+            <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-6 rounded-lg">
+              {t("nav.getStarted")}
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -83,9 +85,11 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-              {t("nav.requestAccess")}
-            </Button>
+            <Link to="/onboarding" onClick={() => setMobileMenuOpen(false)}>
+              <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
+                {t("nav.getStarted")}
+              </Button>
+            </Link>
           </div>
         </div>
       )}

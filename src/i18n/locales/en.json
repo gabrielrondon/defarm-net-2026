@@ -3,7 +3,7 @@
     "solutions": "Solutions",
     "about": "About",
     "contact": "Contact",
-    "requestAccess": "Request Access",
+    "getStarted": "Get Started",
     "back": "Back"
   },
   "platform": {
@@ -64,8 +64,7 @@
   "cta": {
     "headline": "Ready to transform your supply chain?",
     "description": "Join hundreds of producers already using DeFarm to ensure traceability and compliance.",
-    "primary": "Get Started",
-    "secondary": "Talk to an Expert"
+    "primary": "Get Started"
   },
   "howItWorks": {
     "title": "How it",
@@ -108,9 +107,79 @@
     "company": "Company",
     "aboutUs": "About Us",
     "contact": "Contact",
-    "rights": "© 2025 DeFarm. All rights reserved.",
+    "rights": "© 2026 DeFarm. All rights reserved.",
     "privacy": "Privacy Policy",
     "terms": "Terms of Use"
+  },
+  "privacy": {
+    "lastUpdated": "Last updated: February 2026",
+    "sections": {
+      "intro": {
+        "title": "Introduction",
+        "content": "DeFarm (\"we\", \"our\", or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our agricultural traceability platform and related services."
+      },
+      "dataCollected": {
+        "title": "Data We Collect",
+        "content": "We collect information you provide directly, such as name, email address, company/farm name, and animal identification data. We also automatically collect usage data, device information, IP address, and cookies to improve our services."
+      },
+      "usage": {
+        "title": "How We Use Your Data",
+        "content": "We use your data to provide and maintain our traceability services, process transactions, send communications about your account, improve our platform, comply with legal obligations, and generate compliance reports (such as EUDR). We do not sell your personal data to third parties."
+      },
+      "sharing": {
+        "title": "Data Sharing",
+        "content": "We may share your data with supply chain participants within your circuits (with your consent), technology partners who assist in operating our platform, regulatory authorities when legally required, and financial partners for CPR issuance and credit analysis. All partners are bound by confidentiality agreements."
+      },
+      "security": {
+        "title": "Data Security",
+        "content": "We implement industry-standard security measures including encryption, secure servers, and blockchain-based immutable records. While no system is 100% secure, we continuously work to protect your information against unauthorized access, alteration, or destruction."
+      },
+      "rights": {
+        "title": "Your Rights",
+        "content": "Under the Brazilian General Data Protection Law (LGPD) and other applicable regulations, you have the right to access, correct, delete, or port your personal data. You may also revoke consent at any time. To exercise these rights, contact us at contact@defarm.net."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions about this Privacy Policy, contact us at contact@defarm.net or at our address: Av. Afonso Pena, 4785, Sala 701, Santa Fé, 79.031-010 Campo Grande, Mato Grosso do Sul, Brazil."
+      }
+    }
+  },
+  "terms": {
+    "lastUpdated": "Last updated: February 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "content": "By accessing or using DeFarm's platform and services, you agree to be bound by these Terms of Use. If you do not agree, you should not use our services. These terms apply to all users, including producers, processors, retailers, and developers."
+      },
+      "services": {
+        "title": "Services Description",
+        "content": "DeFarm provides an agricultural traceability platform that includes animal tracking and registration, EUDR compliance reporting, asset tokenization, digital CPR issuance, and APIs for system integration. Services may be updated or modified at any time with prior notice."
+      },
+      "accounts": {
+        "title": "User Accounts",
+        "content": "You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account. You must provide accurate and complete information during registration. DeFarm reserves the right to suspend accounts that violate these terms."
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "content": "All content, software, algorithms, and technology on the DeFarm platform are protected by intellectual property laws. You are granted a limited, non-exclusive license to use our services. You may not copy, modify, distribute, or reverse-engineer any part of our platform without written consent."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "content": "DeFarm provides services \"as is\" and makes no warranties regarding accuracy or completeness of traceability data entered by users. We are not liable for indirect, incidental, or consequential damages. Our total liability is limited to the amount paid for services in the 12 months preceding the claim."
+      },
+      "termination": {
+        "title": "Termination",
+        "content": "Either party may terminate the agreement at any time with 30 days' written notice. DeFarm may immediately terminate access in case of terms violation. Upon termination, you may request export of your data within 90 days."
+      },
+      "law": {
+        "title": "Governing Law",
+        "content": "These terms are governed by the laws of the Federative Republic of Brazil. Any disputes shall be submitted to the courts of Campo Grande, Mato Grosso do Sul, Brazil."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions about these Terms of Use, contact us at contact@defarm.net or at our address: Av. Afonso Pena, 4785, Sala 701, Santa Fé, 79.031-010 Campo Grande, Mato Grosso do Sul, Brazil."
+      }
+    }
   },
   "solutions": {
     "title": "Our",
@@ -165,20 +234,9 @@
     "title": "Get in",
     "titleHighlight": "Touch",
     "subtitle": "We're ready to help you transform your supply chain",
-    "formTitle": "Send your message",
-    "name": "Name",
-    "namePlaceholder": "Your full name",
-    "email": "Email",
-    "emailPlaceholder": "your@email.com",
-    "subject": "Subject",
-    "subjectPlaceholder": "What's the subject?",
-    "message": "Message",
-    "messagePlaceholder": "Write your message here...",
-    "send": "Send Message",
     "infoTitle": "Contact Information",
-    "infoDescription": "Contact us through the channels below or fill out the form and we'll get back to you within 24 hours.",
+    "infoDescription": "Contact us through the channels below and we'll get back to you within 24 hours.",
     "emailLabel": "Email",
-    "phoneLabel": "Phone",
     "addressLabel": "Address"
   },
   "login": {
