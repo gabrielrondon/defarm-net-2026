@@ -1,14 +1,41 @@
 import { registryRequest, buildQueryString } from "./client";
-import type { JoinRequest, ListJoinRequestsResponse, CreateJoinRequestRequest, UpdateJoinRequestRequest } from "./types";
+import type {
+  JoinRequest,
+  CreateJoinRequestRequest,
+  ReviewJoinRequestInput,
+  PublicCircuitsResponse,
+  PublicCircuitPortfolio,
+} from "./types";
 
 // Public endpoints (no auth required for discovery)
-export async function getPublicCircuits(): Promise<any[]> {
-  const response = await registryRequest<{ circuits: any[] }>("/circuits/public");
-  return response.circuits;
+export async function getPublicCircuits(params?: {
+  search?: string;
+  circuit_type?: string;
+  featured?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<PublicCircuitsResponse> {
+  return registryRequest<PublicCircuitsResponse>(
+    `/circuits/public${buildQueryString(params as Record<string, any>)}`
+  );
 }
 
-export async function getPublicCircuit(id: string): Promise<any> {
-  return registryRequest<any>(`/circuits/${id}/public`);
+export async function getPublicCircuit(id: string): Promise<PublicCircuitPortfolio> {
+  return registryRequest<PublicCircuitPortfolio>(`/circuits/${id}/public`);
+}
+
+// Public item endpoints (no auth required)
+export async function getPublicItem(dfid: string): Promise<any> {
+  return registryRequest<any>(`/items/${dfid}/public`);
+}
+
+export async function getPublicItemEvents(
+  dfid: string,
+  params?: { event_type?: string; limit?: number; offset?: number }
+): Promise<any[]> {
+  return registryRequest<any[]>(
+    `/items/${dfid}/events/public${buildQueryString(params as Record<string, any>)}`
+  );
 }
 
 // Join Requests (JWT required)
@@ -28,17 +55,16 @@ export async function getJoinRequests(
   status?: string
 ): Promise<JoinRequest[]> {
   const qs = status ? buildQueryString({ status }) : "";
-  const response = await registryRequest<ListJoinRequestsResponse>(
+  return registryRequest<JoinRequest[]>(
     `/circuits/${circuitId}/join-requests${qs}`
   );
-  return response.requests;
 }
 
 // Admin: approve/reject join request
-export async function updateJoinRequest(
+export async function reviewJoinRequest(
   circuitId: string,
   requestId: string,
-  data: UpdateJoinRequestRequest
+  data: ReviewJoinRequestInput
 ): Promise<JoinRequest> {
   return registryRequest<JoinRequest>(
     `/circuits/${circuitId}/join-requests/${requestId}`,
@@ -47,4 +73,14 @@ export async function updateJoinRequest(
       body: JSON.stringify(data),
     }
   );
+}
+
+// Remove item from circuit (N:N)
+export async function removeItemFromCircuit(
+  circuitId: string,
+  itemId: string
+): Promise<void> {
+  await registryRequest(`/circuits/${circuitId}/items/${itemId}`, {
+    method: "DELETE",
+  });
 }

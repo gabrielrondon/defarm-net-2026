@@ -1,51 +1,16 @@
 openapi: 3.0.3
 info:
   title: DeFarm API Gateway
-  description: '**Single entry point for all DeFarm services**
-
-
-    The Gateway provides:
-
-    - JWT-based authentication
-
-    - Request routing to backend services
-
-    - User context injection
-
-    - Rate limiting
-
-
-    ## Authentication
-
-
-    Most endpoints require a JWT token in the Authorization header:
-
-    ```
-
-    Authorization: Bearer <access_token>
-
-    ```
-
-
-    ### Getting Started
-
-
-    1. **Register**: POST `/auth/register`
-
-    2. **Login**: POST `/auth/login` → Returns `access_token` and `refresh_token`
-
-    3. **Use token**: Add `Authorization: Bearer <access_token>` to all `/api/*` requests
-
-    4. **Refresh**: POST `/auth/refresh` with `refresh_token` when access token expires
-
-
-    ### Token Lifetimes
-
-    - **Access Token**: 15 minutes
-
-    - **Refresh Token**: 30 days
-
-    '
+  description: "**Single entry point for all DeFarm services**\n\nThe Gateway provides:\n\
+    - JWT-based authentication\n- Request routing to backend services\n- User context\
+    \ injection\n- Rate limiting\n\n## Authentication\n\nMost endpoints require a\
+    \ JWT token in the Authorization header:\n```\nAuthorization: Bearer <access_token>\n\
+    ```\n\n### Getting Started\n\n1. **Register**: POST `/auth/register`\n2. **Login**:\
+    \ POST `/auth/login` \u2192 Returns `access_token` and `refresh_token`\n3. **Use\
+    \ token**: Add `Authorization: Bearer <access_token>` to all `/api/*` requests\n\
+    4. **Refresh**: POST `/auth/refresh` with `refresh_token` when access token expires\n\
+    \n### Token Lifetimes\n- **Access Token**: 15 minutes\n- **Refresh Token**: 30\
+    \ days\n"
   version: 1.0.0
   contact:
     name: DeFarm Support
@@ -92,6 +57,8 @@ tags:
   description: Point-in-time snapshots with restore capabilities
 - name: merkle
   description: Merkle tree construction and cryptographic verification
+- name: compliance
+  description: Compliance checks proxy endpoints
 components:
   securitySchemes:
     bearerAuth:
@@ -239,13 +206,6 @@ components:
           - event
           - item
           - mixed
-          enum:
-          - snapshot
-          - circuit
-          - audit
-          - event
-          - item
-          - mixed
     ActivitySummary:
       description: Aggregated summary of activities by type and resource for reporting.
       type: object
@@ -279,7 +239,8 @@ components:
           format: uuid
           nullable: true
     AddMemberRequest:
-      description: Request payload to add a new member to a circuit. Requires user_id and role.
+      description: Request payload to add a new member to a circuit. Requires user_id
+        and role.
       type: object
       required:
       - user_id
@@ -302,7 +263,8 @@ components:
           type: string
           format: uuid
     ApplyRetentionResponse:
-      description: API response confirming retention policy application with affected snapshots count.
+      description: API response confirming retention policy application with affected
+        snapshots count.
       type: object
       required:
       - policy_id
@@ -316,7 +278,8 @@ components:
           format: int64
           minimum: 0
     AuditLog:
-      description: Immutable audit log entry with hash chain linkage for tamper-proof record keeping.
+      description: Immutable audit log entry with hash chain linkage for tamper-proof
+        record keeping.
       type: object
       required:
       - id
@@ -363,7 +326,8 @@ components:
           format: uuid
           nullable: true
     AuditLogResponse:
-      description: API response containing audit log details including actor, action, old/new values, and hash chain.
+      description: API response containing audit log details including actor, action,
+        old/new values, and hash chain.
       type: object
       required:
       - id
@@ -410,9 +374,13 @@ components:
           format: uuid
           nullable: true
     Circuit:
-      description: |
-        Multi-tenant data repository that serves as the primary permission boundary in DeFarm.
-        Circuits isolate data by organization/workspace and provide RBAC access control for items, events, and audit logs.
+      description: 'Multi-tenant data repository that serves as the primary permission
+        boundary in DeFarm.
+
+        Circuits isolate data by organization/workspace and provide RBAC access control
+        for items, events, and audit logs.
+
+        '
       type: object
       required:
       - id
@@ -502,21 +470,6 @@ components:
         status:
           type: string
           enum:
-          - pending
-          - active
-          - inactive
-          - archived
-          - local
-          - merged
-          - split
-          - local
-          - merged
-          - split
-          enum:
-          - active
-          - inactive
-          - archived
-          enum:
           - active
           - inactive
           - archived
@@ -579,11 +532,6 @@ components:
           type: string
           enum:
           - pending
-          - active
-          - inactive
-          - archived
-          enum:
-          - pending
           - processing
           - completed
           - failed
@@ -594,7 +542,8 @@ components:
           type: string
           format: uuid
     CircuitMemberResponse:
-      description: API response containing circuit member details including user info, role, and permissions.
+      description: API response containing circuit member details including user info,
+        role, and permissions.
       type: object
       required:
       - circuit_id
@@ -620,7 +569,8 @@ components:
           type: string
           format: uuid
     CircuitResponse:
-      description: API response containing full circuit details with metadata, members count, and permissions.
+      description: API response containing full circuit details with metadata, members
+        count, and permissions.
       type: object
       required:
       - id
@@ -675,6 +625,272 @@ components:
           - private
           - restricted
           - public
+    CircuitJoinRequest:
+      description: Join request from a user wanting to join a public circuit
+      type: object
+      required:
+      - id
+      - circuit_id
+      - user_id
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        circuit_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+          description: Request status
+        message:
+          type: string
+          nullable: true
+          description: User's message explaining why they want to join
+        user_metadata:
+          type: object
+          nullable: true
+          description: Additional user information (company, location, etc.)
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: Admin/owner who reviewed the request
+        rejection_reason:
+          type: string
+          nullable: true
+          description: Reason for rejection (if rejected)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateJoinRequestPayload:
+      description: Payload to create a join request for a public circuit
+      type: object
+      properties:
+        message:
+          type: string
+          description: Message explaining why you want to join
+          example: Sou produtor de soja em Dourados/MS e gostaria de participar
+        user_metadata:
+          type: object
+          description: Additional information about you
+          example:
+            company: "Fazenda S\xE3o Jo\xE3o"
+            location: Dourados, MS
+    ReviewJoinRequestInput:
+      description: Payload to approve or reject a join request
+      type: object
+      required:
+      - action
+      properties:
+        action:
+          type: string
+          enum:
+          - approve
+          - reject
+          description: Action to take on the request
+        role:
+          type: string
+          description: Role to assign if approving (e.g., "member", "viewer")
+          example: member
+        rejection_reason:
+          type: string
+          description: Reason for rejection (required if action is "reject")
+          example: Circuit is currently full
+    PublicCircuitInfo:
+      description: Public information about a circuit for discovery
+      type: object
+      required:
+      - id
+      - name
+      - circuit_type
+      - visibility
+      - member_count
+      - item_count
+      - featured
+      - searchable
+      - discovery_enabled
+      - allow_join_requests
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        circuit_type:
+          type: string
+          enum:
+          - producer
+          - processor
+          - distributor
+          - marketplace
+        visibility:
+          type: string
+          enum:
+          - public
+        public_slug:
+          type: string
+          nullable: true
+          description: Human-readable slug for public URL
+          example: produtores-soja-sp
+        public_banner_url:
+          type: string
+          nullable: true
+          description: Banner image URL
+        public_logo_url:
+          type: string
+          nullable: true
+          description: Logo URL
+        member_count:
+          type: integer
+          format: int64
+          description: Number of active members
+        item_count:
+          type: integer
+          format: int64
+          description: Number of items in circuit
+        featured:
+          type: boolean
+          description: Whether circuit is featured in discovery
+        searchable:
+          type: boolean
+          description: Whether circuit appears in search results
+        discovery_enabled:
+          type: boolean
+          description: Whether circuit is discoverable publicly
+        allow_join_requests:
+          type: boolean
+          description: Whether circuit accepts join requests
+        created_at:
+          type: string
+          format: date-time
+    CircuitStats:
+      description: Statistics about a circuit's activity and items
+      type: object
+      required:
+      - total_items
+      - active_items
+      - value_chains
+      - countries
+      - recent_activity_count
+      properties:
+        total_items:
+          type: integer
+          format: int64
+        active_items:
+          type: integer
+          format: int64
+        value_chains:
+          type: array
+          items:
+            type: string
+          description: List of value chains in this circuit
+          example:
+          - SOY
+          - CORN
+        countries:
+          type: array
+          items:
+            type: string
+          description: List of countries represented
+          example:
+          - BR
+          - US
+        recent_activity_count:
+          type: integer
+          format: int64
+          description: Number of items added in last 7 days
+    ItemSummary:
+      description: Summary of an item for display in public portfolios
+      type: object
+      required:
+      - id
+      - dfid
+      - value_chain
+      - country
+      - year
+      - status
+      - registered_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        dfid:
+          type: string
+          example: DFID-SOY-BR-2025-000123-a3f2c1
+        value_chain:
+          type: string
+        country:
+          type: string
+        year:
+          type: integer
+        status:
+          type: string
+        registered_at:
+          type: string
+          format: date-time
+    PublicCircuitPortfolio:
+      description: Public portfolio of a circuit including stats and recent items
+      type: object
+      required:
+      - circuit
+      - stats
+      - recent_items
+      properties:
+        circuit:
+          $ref: '#/components/schemas/PublicCircuitInfo'
+        stats:
+          $ref: '#/components/schemas/CircuitStats'
+        recent_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemSummary'
+          description: Most recent items (up to 10)
+    PublicCircuitsResponse:
+      description: Response containing list of public circuits with pagination
+      type: object
+      required:
+      - circuits
+      - total
+      - limit
+      - offset
+      properties:
+        circuits:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicCircuitInfo'
+        total:
+          type: integer
+          format: int64
+          description: Total number of public circuits matching filters
+        limit:
+          type: integer
+          format: int64
+          description: Results limit used
+        offset:
+          type: integer
+          format: int64
+          description: Results offset used
     ComparisonResponse:
       description: Result of comparing two resources (snapshots, items, etc.).
       type: object
@@ -688,21 +904,6 @@ components:
       properties:
         comparison_type:
           type: string
-          enum:
-          - forward
-          - backward
-          - merge_conflict
-          - validation
-          enum:
-          - forward
-          - backward
-          - merge_conflict
-          - validation
-          enum:
-          - forward
-          - backward
-          - merge_conflict
-          - validation
           enum:
           - forward
           - backward
@@ -979,7 +1180,8 @@ components:
           type: string
           format: date-time
     CreateCircuitRequest:
-      description: Request payload to create a new circuit. Requires name, circuit_type, and workspace_id.
+      description: Request payload to create a new circuit. Requires name, circuit_type,
+        and workspace_id.
       type: object
       required:
       - name
@@ -1041,7 +1243,14 @@ components:
           type: string
           format: uuid
     CreateItemRequest:
-      description: Request payload to create a new item with automatic DFID generation. Requires value_chain, country, and circuit_id.
+      description: 'Request payload to create a new item with automatic DFID generation.
+
+
+        **Many-to-Many Architecture**: `circuit_id` represents the first circuit to
+        add this item (becomes ''owner'').
+
+        Items are global entities identified by DFID and can exist in multiple circuits
+        simultaneously.'
       type: object
       required:
       - value_chain
@@ -1052,6 +1261,7 @@ components:
         circuit_id:
           type: string
           format: uuid
+          description: First circuit to add this item (will have role='owner')
         country:
           type: string
         ip_address:
@@ -1063,10 +1273,6 @@ components:
             $ref: '#/components/schemas/IdentifierInput'
           nullable: true
         metadata:
-          nullable: true
-        owner_id:
-          type: string
-          format: uuid
           nullable: true
         user_id:
           type: string
@@ -1140,12 +1346,6 @@ components:
           - audit_batch
           - event_batch
           - item_batch
-          enum:
-          - snapshot
-          - circuit
-          - audit_batch
-          - event_batch
-          - item_batch
     CreateRestorationRequest:
       description: Request payload to restore data from snapshot.
       type: object
@@ -1174,7 +1374,8 @@ components:
           format: uuid
           nullable: true
     CreateSnapshotRequest:
-      description: Request payload to create a new snapshot. Requires resource_type and resource_id.
+      description: Request payload to create a new snapshot. Requires resource_type
+        and resource_id.
       type: object
       required:
       - snapshot_type
@@ -1211,7 +1412,8 @@ components:
         snapshot_type:
           type: string
     CreateWebhookInput:
-      description: Request payload to create a new webhook. Requires URL and event types.
+      description: Request payload to create a new webhook. Requires URL and event
+        types.
       type: object
       required:
       - circuit_id
@@ -1258,7 +1460,8 @@ components:
         message:
           type: string
     Event:
-      description: Represents a lifecycle event for an item (created, updated, transferred, certified, etc.).
+      description: Represents a lifecycle event for an item (created, updated, transferred,
+        certified, etc.).
       type: object
       required:
       - id
@@ -1334,7 +1537,8 @@ components:
         visible_to_roles:
           nullable: true
     EventResponse:
-      description: API response containing full event details including type, timestamp, actor, and metadata.
+      description: API response containing full event details including type, timestamp,
+        actor, and metadata.
       type: object
       required:
       - id
@@ -1440,9 +1644,8 @@ components:
           format: int64
           minimum: 0
     IngestionReceipt:
-      description: Receipt for bulk ingestion operation with success/failure counts.
-      type: object
       description: Receipt returned after ingestion completes
+      type: object
       required:
       - receipt_id
       - status
@@ -1516,7 +1719,15 @@ components:
             type: string
           description: CSV fields that were not recognized
     Item:
-      description: Represents a physical or digital asset in the supply chain, uniquely identified by a DFID.
+      description: 'Represents a physical or digital asset in the supply chain, uniquely
+        identified by a DFID.
+
+
+        **Many-to-Many Architecture**: Items are global entities that can exist in
+        multiple circuits.
+
+        Circuit associations are managed via the circuit_items junction table, not
+        as properties on the item.'
       type: object
       required:
       - id
@@ -1533,10 +1744,6 @@ components:
         archived_at:
           type: string
           format: date-time
-          nullable: true
-        circuit_id:
-          type: string
-          format: uuid
           nullable: true
         country:
           type: string
@@ -1560,10 +1767,6 @@ components:
           nullable: true
         metadata:
           nullable: true
-        owner_id:
-          type: string
-          format: uuid
-          nullable: true
         registered_at:
           type: string
           format: date-time
@@ -1581,7 +1784,13 @@ components:
           type: integer
           format: int32
     ItemResponse:
-      description: API response containing full item details including DFID, status, metadata, and relationships.
+      description: 'API response containing full item details including DFID, status,
+        metadata, and relationships.
+
+
+        **Many-to-Many Architecture**: Items are global entities identified by DFID.
+
+        To see which circuits an item belongs to, use the circuits relationship endpoint.'
       type: object
       required:
       - id
@@ -1593,22 +1802,15 @@ components:
       - registered_at
       - updated_at
       properties:
-        circuit_id:
-          type: string
-          format: uuid
-          nullable: true
         country:
           type: string
         dfid:
           type: string
+          example: DFID-BEEF-BR-2025-000123-a3f2c1
         id:
           type: string
           format: uuid
         metadata:
-          nullable: true
-        owner_id:
-          type: string
-          format: uuid
           nullable: true
         registered_at:
           type: string
@@ -1650,7 +1852,8 @@ components:
           items:
             $ref: '#/components/schemas/Event'
     CreateItemResponse:
-      description: Item creation response with identifiers, events, and deduplication status.
+      description: Item creation response with identifiers, events, and deduplication
+        status.
       type: object
       required:
       - item
@@ -1674,7 +1877,8 @@ components:
         was_deduplicated:
           type: boolean
     ListAuditLogsResponse:
-      description: Paginated API response containing list of audit logs with hash chain integrity.
+      description: Paginated API response containing list of audit logs with hash
+        chain integrity.
       type: object
       required:
       - logs
@@ -1702,7 +1906,8 @@ components:
           type: integer
           minimum: 0
     ListEventsResponse:
-      description: Paginated API response containing list of lifecycle events with filters.
+      description: Paginated API response containing list of lifecycle events with
+        filters.
       type: object
       required:
       - events
@@ -1716,7 +1921,8 @@ components:
           items:
             $ref: '#/components/schemas/EventResponse'
     ListItemsResponse:
-      description: Paginated API response containing list of items with DFIDs and metadata.
+      description: Paginated API response containing list of items with DFIDs and
+        metadata.
       type: object
       required:
       - items
@@ -1730,7 +1936,8 @@ components:
           items:
             $ref: '#/components/schemas/ItemResponse'
     ListMembersResponse:
-      description: API response containing list of circuit members with roles and permissions.
+      description: API response containing list of circuit members with roles and
+        permissions.
       type: object
       required:
       - members
@@ -1744,7 +1951,8 @@ components:
           items:
             $ref: '#/components/schemas/CircuitMemberResponse'
     ListMerkleTreesResponse:
-      description: Paginated API response containing list of merkle trees with root hashes.
+      description: Paginated API response containing list of merkle trees with root
+        hashes.
       type: object
       required:
       - trees
@@ -1772,7 +1980,8 @@ components:
           items:
             $ref: '#/components/schemas/SnapshotResponse'
     MergeItemsRequest:
-      description: Request payload to merge two items. Requires secondary_dfid and merge strategy.
+      description: Request payload to merge two items. Requires secondary_dfid and
+        merge strategy.
       type: object
       required:
       - secondary_dfid
@@ -1834,7 +2043,8 @@ components:
           type: string
           format: date-time
     MerkleNode:
-      description: Node in the merkle tree representing hashed data with left/right children.
+      description: Node in the merkle tree representing hashed data with left/right
+        children.
       type: object
       required:
       - id
@@ -1918,7 +2128,8 @@ components:
           format: date-time
           nullable: true
     MerkleTree:
-      description: Cryptographic data structure using BLAKE3 hashing for snapshot integrity verification.
+      description: Cryptographic data structure using BLAKE3 hashing for snapshot
+        integrity verification.
       type: object
       required:
       - id
@@ -1982,7 +2193,8 @@ components:
           type: string
           format: date-time
     MerkleTreeResponse:
-      description: API response containing merkle tree details including root hash and leaf count.
+      description: API response containing merkle tree details including root hash
+        and leaf count.
       type: object
       required:
       - id
@@ -2205,7 +2417,8 @@ components:
           format: uuid
           nullable: true
     RetentionPolicyResponse:
-      description: API response containing retention policy details and affected snapshots count.
+      description: API response containing retention policy details and affected snapshots
+        count.
       type: object
       required:
       - id
@@ -2246,7 +2459,8 @@ components:
           type: string
           format: date-time
     Snapshot:
-      description: Point-in-time capture of item or circuit state for versioning and rollback.
+      description: Point-in-time capture of item or circuit state for versioning and
+        rollback.
       type: object
       required:
       - id
@@ -2301,7 +2515,8 @@ components:
         snapshot_type:
           type: string
     SnapshotComparison:
-      description: Comparison result between two snapshots showing differences and changes.
+      description: Comparison result between two snapshots showing differences and
+        changes.
       type: object
       required:
       - id
@@ -2329,7 +2544,8 @@ components:
         summary:
           nullable: true
     SnapshotResponse:
-      description: API response containing snapshot details including data, merkle root, and retention policy.
+      description: API response containing snapshot details including data, merkle
+        root, and retention policy.
       type: object
       required:
       - id
@@ -2428,7 +2644,8 @@ components:
           format: uuid
           nullable: true
     SnapshotRetentionPolicy:
-      description: Policy defining how long snapshots are retained before automatic deletion.
+      description: Policy defining how long snapshots are retained before automatic
+        deletion.
       type: object
       required:
       - id
@@ -2469,7 +2686,8 @@ components:
           type: string
           format: date-time
     SplitItemRequest:
-      description: Request payload to split an item into two. Creates new item with new DFID.
+      description: Request payload to split an item into two. Creates new item with
+        new DFID.
       type: object
       required:
       - value_chain
@@ -2495,7 +2713,8 @@ components:
           format: int32
           description: Year for the new item
     SplitItemResponse:
-      description: API response containing original DFID and new DFID after split operation.
+      description: API response containing original DFID and new DFID after split
+        operation.
       type: object
       required:
       - source_item
@@ -2519,7 +2738,8 @@ components:
       - Producer
       - Unknown
     UnmergeItemRequest:
-      description: Request payload to restore a previously merged item. Reverses merge operation.
+      description: Request payload to restore a previously merged item. Reverses merge
+        operation.
       type: object
       properties:
         user_id:
@@ -2540,7 +2760,8 @@ components:
         restored_item:
           $ref: '#/components/schemas/Item'
     UpdateCircuitRequest:
-      description: Request payload to update circuit details. Allows changing name, description, metadata, and status.
+      description: Request payload to update circuit details. Allows changing name,
+        description, metadata, and status.
       type: object
       properties:
         description:
@@ -2567,7 +2788,8 @@ components:
           type: string
           nullable: true
     UpdateEventStatusRequest:
-      description: Request payload to update event processing status (pending, processing, completed, failed).
+      description: Request payload to update event processing status (pending, processing,
+        completed, failed).
       type: object
       required:
       - status
@@ -2582,7 +2804,8 @@ components:
           - completed
           - failed
     UpdateItemRequest:
-      description: Request payload to update item metadata, tags, and status. DFID and circuit_id are immutable.
+      description: Request payload to update item metadata, tags, and status. DFID
+        and circuit_id are immutable.
       type: object
       required:
       - metadata
@@ -2596,7 +2819,8 @@ components:
           format: uuid
           nullable: true
     UpdateItemStatusRequest:
-      description: Request payload to update item lifecycle status (pending, active, inactive, archived).
+      description: Request payload to update item lifecycle status (pending, active,
+        inactive, archived).
       type: object
       required:
       - status
@@ -2616,7 +2840,8 @@ components:
           format: uuid
           nullable: true
     UpdateMemberRequest:
-      description: Request payload to update a member's role or custom permissions in a circuit.
+      description: Request payload to update a member's role or custom permissions
+        in a circuit.
       type: object
       properties:
         permissions:
@@ -2640,7 +2865,8 @@ components:
         status:
           type: string
     UpdateWebhookInput:
-      description: Request payload to update webhook configuration including URL, events, and retry settings.
+      description: Request payload to update webhook configuration including URL,
+        events, and retry settings.
       type: object
       properties:
         events:
@@ -2797,7 +3023,8 @@ components:
         url:
           type: string
     WebhookDelivery:
-      description: Record of webhook delivery attempt including status, response, and retry count.
+      description: Record of webhook delivery attempt including status, response,
+        and retry count.
       type: object
       required:
       - id
@@ -2849,7 +3076,8 @@ components:
           type: string
           format: uuid
     WebhookRetryConfig:
-      description: Retry configuration for failed webhook deliveries (max attempts, backoff strategy).
+      description: Retry configuration for failed webhook deliveries (max attempts,
+        backoff strategy).
       type: object
       required:
       - max_retries
@@ -2862,7 +3090,8 @@ components:
           type: integer
           format: int32
     WebhookStats:
-      description: Statistics for webhook deliveries including success rate and failure count.
+      description: Statistics for webhook deliveries including success rate and failure
+        count.
       type: object
       required:
       - webhook_id
@@ -2931,39 +3160,17 @@ paths:
       tags:
       - Authentication
       summary: Register a new user
-      description: |
-        Create a new user account in the DeFarm platform.
-
-        **What it does:**
-        - Creates a new user with email/password credentials
-        - Automatically creates a default workspace for the user
-        - Assigns the user as workspace owner
-        - Generates initial authentication tokens
-
-        **Requirements:**
-        - Valid email address (must be unique)
-        - Strong password (minimum 8 characters)
-        - Full name for identification
-
-        **Response:**
-        - User profile with workspace information
-        - Access token (JWT, expires in 15 minutes)
-        - Refresh token (expires in 30 days)
-
-        **Use cases:**
-        - New farmer/organization onboarding
-        - Team member registration
-        - API client setup
-
-        **Example:**
-        ```json
-        POST /auth/register
-        {
-          "email": "farmer@example.com",
-          "password": "SecurePass123!",
-          "full_name": "João Silva"
-        }
-        ```
+      description: "Create a new user account in the DeFarm platform.\n\n**What it\
+        \ does:**\n- Creates a new user with email/password credentials\n- Automatically\
+        \ creates a default workspace for the user\n- Assigns the user as workspace\
+        \ owner\n- Generates initial authentication tokens\n\n**Requirements:**\n\
+        - Valid email address (must be unique)\n- Strong password (minimum 8 characters)\n\
+        - Full name for identification\n\n**Response:**\n- User profile with workspace\
+        \ information\n- Access token (JWT, expires in 15 minutes)\n- Refresh token\
+        \ (expires in 30 days)\n\n**Use cases:**\n- New farmer/organization onboarding\n\
+        - Team member registration\n- API client setup\n\n**Example:**\n```json\n\
+        POST /auth/register\n{\n  \"email\": \"farmer@example.com\",\n  \"password\"\
+        : \"SecurePass123!\",\n  \"full_name\": \"Jo\xE3o Silva\"\n}\n```\n"
       requestBody:
         required: true
         content:
@@ -3023,52 +3230,23 @@ paths:
       tags:
       - Authentication
       summary: Login with email and password
-      description: |
-        Authenticate with email and password to obtain JWT tokens.
-
-        **What it does:**
-        - Validates credentials against database
-        - Generates fresh access and refresh tokens
-        - Returns user profile and workspace information
-        - Tracks login session for activity monitoring
-
-        **Token Lifetimes:**
-        - **Access Token**: 15 minutes (use for API requests)
-        - **Refresh Token**: 30 days (use to get new access tokens)
-
-        **Security:**
-        - Passwords are hashed with bcrypt
-        - Failed login attempts are rate-limited
-        - Tokens are signed with HS256 (configurable to RS256)
-
-        **Response includes:**
-        - User ID, email, full name, avatar
-        - Workspace ID, name, slug, tier, and user's role
-        - Both access and refresh tokens
-
-        **Example:**
-        ```json
-        POST /auth/login
-        {
-          "email": "farmer@example.com",
-          "password": "SecurePass123!"
-        }
-
-        Response:
-        {
-          "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-          "refresh_token": "28214fc8c04cba687dc7...",
-          "token_type": "Bearer",
-          "expires_in": 900,
-          "user": {
-            "id": "40a66997-b090-...",
-            "email": "farmer@example.com",
-            "workspace": { ... }
-          }
-        }
-        ```
-
-        **Next step:** Add `Authorization: Bearer <access_token>` header to all `/api/*` requests
+      description: "Authenticate with email and password to obtain JWT tokens.\n\n\
+        **What it does:**\n- Validates credentials against database\n- Generates fresh\
+        \ access and refresh tokens\n- Returns user profile and workspace information\n\
+        - Tracks login session for activity monitoring\n\n**Token Lifetimes:**\n-\
+        \ **Access Token**: 15 minutes (use for API requests)\n- **Refresh Token**:\
+        \ 30 days (use to get new access tokens)\n\n**Security:**\n- Passwords are\
+        \ hashed with bcrypt\n- Failed login attempts are rate-limited\n- Tokens are\
+        \ signed with HS256 (configurable to RS256)\n\n**Response includes:**\n- User\
+        \ ID, email, full name, avatar\n- Workspace ID, name, slug, tier, and user's\
+        \ role\n- Both access and refresh tokens\n\n**Example:**\n```json\nPOST /auth/login\n\
+        {\n  \"email\": \"farmer@example.com\",\n  \"password\": \"SecurePass123!\"\
+        \n}\n\nResponse:\n{\n  \"access_token\": \"eyJ0eXAiOiJKV1QiLCJhbGc...\",\n\
+        \  \"refresh_token\": \"28214fc8c04cba687dc7...\",\n  \"token_type\": \"Bearer\"\
+        ,\n  \"expires_in\": 900,\n  \"user\": {\n    \"id\": \"40a66997-b090-...\"\
+        ,\n    \"email\": \"farmer@example.com\",\n    \"workspace\": { ... }\n  }\n\
+        }\n```\n\n**Next step:** Add `Authorization: Bearer <access_token>` header\
+        \ to all `/api/*` requests\n"
       requestBody:
         required: true
         content:
@@ -3105,43 +3283,21 @@ paths:
       tags:
       - Authentication
       summary: Refresh access token
-      description: |
-        Exchange a refresh token for a new access token.
-
-        **When to use:**
-        - Access token expired (returns 401 Unauthorized)
-        - Before token expires (proactive refresh)
-        - On app startup if refresh token is still valid
-
-        **How it works:**
-        1. Send refresh token in request body
-        2. Backend validates refresh token signature and expiration
-        3. If valid, generates new access token (15 min lifetime)
-        4. Optionally rotates refresh token for enhanced security
-
-        **Best practices:**
-        - Store refresh token securely (httpOnly cookie or encrypted storage)
-        - Never send refresh token to third parties
-        - Refresh proactively before access token expires
-        - Handle 401 errors by attempting refresh before re-login
-
-        **Example:**
-        ```json
-        POST /auth/refresh
-        {
-          "refresh_token": "28214fc8c04cba687dc778e6d8a1e8e2..."
-        }
-
-        Response:
-        {
-          "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-          "expires_in": 900
-        }
-        ```
-
-        **Error handling:**
-        - 401: Refresh token expired → redirect to login
-        - 400: Invalid token format → redirect to login
+      description: "Exchange a refresh token for a new access token.\n\n**When to\
+        \ use:**\n- Access token expired (returns 401 Unauthorized)\n- Before token\
+        \ expires (proactive refresh)\n- On app startup if refresh token is still\
+        \ valid\n\n**How it works:**\n1. Send refresh token in request body\n2. Backend\
+        \ validates refresh token signature and expiration\n3. If valid, generates\
+        \ new access token (15 min lifetime)\n4. Optionally rotates refresh token\
+        \ for enhanced security\n\n**Best practices:**\n- Store refresh token securely\
+        \ (httpOnly cookie or encrypted storage)\n- Never send refresh token to third\
+        \ parties\n- Refresh proactively before access token expires\n- Handle 401\
+        \ errors by attempting refresh before re-login\n\n**Example:**\n```json\n\
+        POST /auth/refresh\n{\n  \"refresh_token\": \"28214fc8c04cba687dc778e6d8a1e8e2...\"\
+        \n}\n\nResponse:\n{\n  \"access_token\": \"eyJ0eXAiOiJKV1QiLCJhbGc...\",\n\
+        \  \"expires_in\": 900\n}\n```\n\n**Error handling:**\n- 401: Refresh token\
+        \ expired \u2192 redirect to login\n- 400: Invalid token format \u2192 redirect\
+        \ to login\n"
       requestBody:
         required: true
         content:
@@ -3172,33 +3328,54 @@ paths:
       tags:
       - Authentication
       summary: Logout (revoke refresh token)
-      description: |
-        Invalidate current session and revoke tokens.
+      description: 'Invalidate current session and revoke tokens.
+
 
         **What it does:**
+
         - Marks refresh token as revoked in database
+
         - Ends current user session
+
         - Tracks logout event in activity log
+
         - Clears any server-side session data
 
+
         **Client responsibilities:**
+
         - Delete stored tokens from local storage
+
         - Clear any cached user data
+
         - Redirect to login page
+
         - Remove Authorization headers from future requests
 
+
         **Security notes:**
+
         - Access tokens remain valid until expiration (15 min)
+
         - Refresh token is immediately revoked and cannot be used
+
         - Use this for explicit user logout or security incidents
 
+
         **Example:**
+
         ```json
+
         POST /auth/logout
+
         Authorization: Bearer <access_token>
+
         ```
 
+
         **Response:** 204 No Content (success)
+
+        '
       security:
       - bearerAuth: []
       requestBody:
@@ -3226,41 +3403,70 @@ paths:
       tags:
       - circuits
       summary: GET /circuits?name=...&owner_id=...
-      description: |
-        List circuits (permission-based data repositories) with optional filters.
+      description: 'List circuits (permission-based data repositories) with optional
+        filters.
+
 
         **What is a Circuit:**
+
         A circuit is a multi-tenant data repository that isolates data by organization/workspace.
-        It serves as the primary permission boundary in DeFarm's RBAC system.
+
+        It serves as the primary permission boundary in DeFarm''s RBAC system.
+
 
         **What it does:**
+
         - Lists all circuits the authenticated user has access to
+
         - Supports filtering by owner, organization, type, and status
+
         - Returns paginated results (limit/offset)
+
         - Includes circuit metadata, member count, and permissions
 
+
         **RBAC Requirements:**
+
         - User must have `read_circuits` permission in at least one circuit
+
         - Only returns circuits where user is a member
+
         - Circuit owners see all fields, members see limited fields
 
+
         **Common filters:**
+
         - `owner_id`: Filter by circuit owner UUID
+
         - `organization_id`: Filter by organization
+
         - `circuit_type`: Filter by type (private, shared, public, enterprise)
+
         - `status`: Filter by status (active, inactive, archived)
+
         - `limit/offset`: Pagination (default: 50 per page)
 
+
         **Use cases:**
-        - Dashboard: List user's accessible circuits
+
+        - Dashboard: List user''s accessible circuits
+
         - Admin panel: Organization-wide circuit management
+
         - API integration: Discover available data repositories
 
+
         **Example:**
+
         ```
+
         GET /api/circuits?organization_id=abc123&status=active&limit=20
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: list_circuits
       parameters:
       - name: owner_id
@@ -3326,58 +3532,27 @@ paths:
       tags:
       - circuits
       summary: POST /circuits
-      description: |
-        Create a new circuit (permission-based data repository).
-
-        **What it does:**
-        - Creates a new multi-tenant data isolation boundary
-        - Automatically assigns creator as circuit owner
-        - Sets up default RBAC permissions
-        - Generates unique circuit ID
-        - Creates audit trail for circuit creation
-
-        **Required fields:**
-        - `name`: Human-readable circuit name (unique within workspace)
-        - `circuit_type`: Type of circuit (private, shared, public, enterprise)
-        - `visibility`: Circuit visibility (private, restricted, public)
-        - `owner_id`: Owner user UUID
-
-        **Optional fields:**
-        - `description`: Circuit purpose and context
-        - `metadata`: Custom JSON metadata (tags, categories, etc.)
-        - `settings`: Circuit-specific configuration
-
-        **RBAC:**
-        - User must be workspace owner or admin
-        - Creator automatically becomes circuit owner with full permissions
-        - Circuit owner can then invite members with specific roles
-
-        **After creation:**
-        1. Add members via `POST /api/circuits/{id}/members`
-        2. Create items within circuit via `POST /api/items`
-        3. Track events via `POST /api/events`
-
-        **Use cases:**
-        - New private or shared circuit onboarding
-        - Public/enterprise circuit setup
-        - Project-specific data isolation
-
-        **Example:**
-        ```json
-        POST /api/circuits
-        {
-          "name": "Fazenda São José - Soja 2025",
-          "circuit_type": "private",
-          "visibility": "private",
-          "owner_id": "abc-123-...",
-          "description": "Safra de soja 2025 da Fazenda São José",
-          "metadata": {
-            "crop": "soy",
-            "season": "2025",
-            "area_hectares": 500
-          }
-        }
-        ```
+      description: "Create a new circuit (permission-based data repository).\n\n**What\
+        \ it does:**\n- Creates a new multi-tenant data isolation boundary\n- Automatically\
+        \ assigns creator as circuit owner\n- Sets up default RBAC permissions\n-\
+        \ Generates unique circuit ID\n- Creates audit trail for circuit creation\n\
+        \n**Required fields:**\n- `name`: Human-readable circuit name (unique within\
+        \ workspace)\n- `circuit_type`: Type of circuit (private, shared, public,\
+        \ enterprise)\n- `visibility`: Circuit visibility (private, restricted, public)\n\
+        - `owner_id`: Owner user UUID\n\n**Optional fields:**\n- `description`: Circuit\
+        \ purpose and context\n- `metadata`: Custom JSON metadata (tags, categories,\
+        \ etc.)\n- `settings`: Circuit-specific configuration\n\n**RBAC:**\n- User\
+        \ must be workspace owner or admin\n- Creator automatically becomes circuit\
+        \ owner with full permissions\n- Circuit owner can then invite members with\
+        \ specific roles\n\n**After creation:**\n1. Add members via `POST /api/circuits/{id}/members`\n\
+        2. Create items within circuit via `POST /api/items`\n3. Track events via\
+        \ `POST /api/events`\n\n**Use cases:**\n- New private or shared circuit onboarding\n\
+        - Public/enterprise circuit setup\n- Project-specific data isolation\n\n**Example:**\n\
+        ```json\nPOST /api/circuits\n{\n  \"name\": \"Fazenda S\xE3o Jos\xE9 - Soja\
+        \ 2025\",\n  \"circuit_type\": \"private\",\n  \"visibility\": \"private\"\
+        ,\n  \"owner_id\": \"abc-123-...\",\n  \"description\": \"Safra de soja 2025\
+        \ da Fazenda S\xE3o Jos\xE9\",\n  \"metadata\": {\n    \"crop\": \"soy\",\n\
+        \    \"season\": \"2025\",\n    \"area_hectares\": 500\n  }\n}\n```\n"
       operationId: create_circuit
       requestBody:
         content:
@@ -3409,44 +3584,76 @@ paths:
       tags:
       - items
       summary: GET /items?dfid=...&value_chain=...
-      description: |
-        List items (physical/digital assets) with optional filters.
+      description: 'List items (physical/digital assets) with optional filters.
+
 
         **What is an Item:**
-        An item represents a physical or digital asset in the supply chain, uniquely identified by a DFID.
-        Items can be farm products, livestock, equipment, land parcels, or any trackable entity.
+
+        An item represents a physical or digital asset in the supply chain, uniquely
+        identified by a DFID.
+
+        Items can be farm products, livestock, equipment, land parcels, or any trackable
+        entity.
+
 
         **What it returns:**
+
         - List of items with DFID, status, metadata
+
         - Owner and circuit information
+
         - Current lifecycle stage
+
         - Relationship graph (parent/child items)
+
         - Pagination metadata
 
+
         **RBAC Requirements:**
+
         - User must have `read_items` permission in the circuit
+
         - Only returns items from circuits where user is a member
+
         - Filters automatically apply circuit boundaries
 
+
         **Common filters:**
+
         - `value_chain`: Filter by value chain (BEEF, SOY, CORN, etc.)
+
         - `country`: ISO 3166-1 alpha-2 country code (BR, US, etc.)
+
         - `year`: Item creation year
-        - `status`: Item status (pending, active, inactive, archived, local, merged, split)
-        - `circuit_id`: Filter by specific circuit
-        - `owner_id`: Filter by item owner
+
+        - `status`: Item status (pending, active, inactive, archived, local, merged,
+        split)
+
+        - `circuit_id`: Filter by specific circuit (via many-to-many JOIN)
+
         - `limit/offset`: Pagination (default: 50 per page)
 
+
         **Use cases:**
+
         - Dashboard: View all items in a circuit
+
         - Search: Find items by DFID or metadata
+
         - Reporting: Filter items by value chain, year, status
 
+
         **Example:**
+
         ```
+
         GET /api/items?value_chain=BEEF&country=BR&year=2025&status=active&limit=20
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: list_items
       parameters:
       - name: value_chain
@@ -3475,13 +3682,6 @@ paths:
           type: string
           nullable: true
       - name: circuit_id
-        in: query
-        required: false
-        schema:
-          type: string
-          format: uuid
-          nullable: true
-      - name: owner_id
         in: query
         required: false
         schema:
@@ -3525,75 +3725,33 @@ paths:
       tags:
       - items
       summary: POST /items
-      description: |
-        Create a new item with automatic DFID generation.
-
-        **What it does:**
-        - Generates unique DFID for the item
-        - Creates item record in specified circuit
-        - If a canonical identifier already exists, enriches the existing item
-        - Sets up initial lifecycle stage
-        - Creates audit trail entry
-        - Validates DFID checksum (BLAKE3)
-
-        **Required fields:**
-        - `value_chain`: Value chain code (BEEF, SOY, CORN, etc.)
-        - `country`: ISO 3166-1 alpha-2 country code
-        - `circuit_id`: Target circuit UUID
-        - `metadata`: Item-specific data (weight, breed, location, etc.)
-        - `identifiers` (optional): Canonical/contextual identifiers (SISBOV, CPF, chip, etc.)
-
-        **Optional fields:**
-        - `parent_dfid`: Parent item DFID (for derived items)
-        - `status`: Initial status (default: 'active')
-        - `tags`: Searchable tags for categorization
-
-        **DFID Format:**
-        Generated DFID follows: `DFID-{VC}-{CC}-{YYYY}-{NNNNNN}-{CS}`
-        - Example: `DFID-BEEF-BR-2025-000123-a3f2c1`
-
-        **RBAC Requirements:**
-        - User must have `create_items` permission in the circuit
-        - Circuit must be active (not archived)
-        - Workspace must have available DFID quota
-
-        **After creation:**
-        1. System detects events from metadata and records them automatically
-        2. Create snapshots via `POST /api/snapshots`
-        3. Establish relationships (merge/split operations)
-
-        **Use cases:**
-        - Register new farm product (batch of soybeans)
-        - Add livestock to tracking system
-        - Create land parcel record
-
-        **Example:**
-        ```json
-        POST /api/items
-        {
-          "value_chain": "BEEF",
-          "country": "BR",
-          "circuit_id": "abc-123-...",
-          "metadata": {
-            "breed": "Nelore",
-            "weight_kg": 450,
-            "birth_date": "2024-01-15",
-            "farm_name": "Fazenda São José"
-          },
-          "tags": ["cattle", "organic", "2025-batch"]
-        }
-
-        Response (when created):
-        {
-          "item": {
-            "id": "item-uuid-...",
-            "dfid": "DFID-BEEF-BR-2025-000789-f4e1a2",
-            "status": "active"
-          },
-          "events": [],
-          "was_deduplicated": false
-        }
-        ```
+      description: "Create a new item with automatic DFID generation.\n\n**What it\
+        \ does:**\n- Generates unique DFID for the item\n- Creates item record in\
+        \ specified circuit\n- If a canonical identifier already exists, enriches\
+        \ the existing item\n- Sets up initial lifecycle stage\n- Creates audit trail\
+        \ entry\n- Validates DFID checksum (BLAKE3)\n\n**Required fields:**\n- `value_chain`:\
+        \ Value chain code (BEEF, SOY, CORN, etc.)\n- `country`: ISO 3166-1 alpha-2\
+        \ country code\n- `circuit_id`: Target circuit UUID\n- `metadata`: Item-specific\
+        \ data (weight, breed, location, etc.)\n- `identifiers` (optional): Canonical/contextual\
+        \ identifiers (SISBOV, CPF, chip, etc.)\n\n**Optional fields:**\n- `parent_dfid`:\
+        \ Parent item DFID (for derived items)\n- `status`: Initial status (default:\
+        \ 'active')\n- `tags`: Searchable tags for categorization\n\n**DFID Format:**\n\
+        Generated DFID follows: `DFID-{VC}-{CC}-{YYYY}-{NNNNNN}-{CS}`\n- Example:\
+        \ `DFID-BEEF-BR-2025-000123-a3f2c1`\n\n**RBAC Requirements:**\n- User must\
+        \ have `create_items` permission in the circuit\n- Circuit must be active\
+        \ (not archived)\n- Workspace must have available DFID quota\n\n**After creation:**\n\
+        1. System detects events from metadata and records them automatically\n2.\
+        \ Create snapshots via `POST /api/snapshots`\n3. Establish relationships (merge/split\
+        \ operations)\n\n**Use cases:**\n- Register new farm product (batch of soybeans)\n\
+        - Add livestock to tracking system\n- Create land parcel record\n\n**Example:**\n\
+        ```json\nPOST /api/items\n{\n  \"value_chain\": \"BEEF\",\n  \"country\":\
+        \ \"BR\",\n  \"circuit_id\": \"abc-123-...\",\n  \"metadata\": {\n    \"breed\"\
+        : \"Nelore\",\n    \"weight_kg\": 450,\n    \"birth_date\": \"2024-01-15\"\
+        ,\n    \"farm_name\": \"Fazenda S\xE3o Jos\xE9\"\n  },\n  \"tags\": [\"cattle\"\
+        , \"organic\", \"2025-batch\"]\n}\n\nResponse (when created):\n{\n  \"item\"\
+        : {\n    \"id\": \"item-uuid-...\",\n    \"dfid\": \"DFID-BEEF-BR-2025-000789-f4e1a2\"\
+        ,\n    \"status\": \"active\"\n  },\n  \"events\": [],\n  \"was_deduplicated\"\
+        : false\n}\n```\n"
       operationId: create_item
       requestBody:
         content:
@@ -4067,11 +4225,8 @@ paths:
       tags:
       - admin
       summary: POST /admin/api-keys
-      description: 'Create a new API key for circuit access
-
-
-        **⚠️ SECURITY**: The API key is only returned once and cannot be retrieved
-        later!'
+      description: "Create a new API key for circuit access\n\n**\u26A0\uFE0F SECURITY**:\
+        \ The API key is only returned once and cannot be retrieved later!"
       operationId: create_api_key
       requestBody:
         content:
@@ -4227,10 +4382,10 @@ paths:
       tags:
       - partner-api-keys
       summary: POST /api/partner/api-keys
-      description: |-
-        Create a new API key for your circuit.
+      description: 'Create a new API key for your circuit.
 
-        The API key is only shown once at creation time.
+
+        The API key is only shown once at creation time.'
       operationId: create_partner_api_key
       requestBody:
         content:
@@ -4341,47 +4496,83 @@ paths:
       tags:
       - audit
       summary: GET /audit?user_id=...&action=...
-      description: |
-        List immutable audit logs with optional filters.
+      description: 'List immutable audit logs with optional filters.
+
 
         **What is the Audit System:**
-        DeFarm uses a hash-chained audit trail to provide tamper-proof records of all operations.
-        Each audit log entry is cryptographically linked to the previous entry, making it impossible
+
+        DeFarm uses a hash-chained audit trail to provide tamper-proof records of
+        all operations.
+
+        Each audit log entry is cryptographically linked to the previous entry, making
+        it impossible
+
         to modify or delete past records without detection.
 
+
         **What it returns:**
+
         - Audit log entries with timestamps
+
         - Actor (user) who performed the action
+
         - Action type (CREATE, UPDATE, DELETE, etc.)
+
         - Resource affected (item, circuit, member, etc.)
+
         - Old and new values (for updates)
+
         - Hash chain linkage (previous_hash, current_hash)
+
         - Circuit context
 
+
         **RBAC Requirements:**
+
         - User must be a member of the circuit (any role)
+
         - Only returns audit logs from circuits where user has access
+
         - System-level audits visible only to workspace admins
 
+
         **Common filters:**
+
         - `user_id`: Filter by actor who performed actions
+
         - `action`: Filter by action type (CREATE, UPDATE, DELETE, etc.)
+
         - `resource_type`: Filter by resource (item, circuit, member, event, etc.)
+
         - `resource_id`: Filter by specific resource UUID
+
         - `circuit_id`: Filter by circuit
+
         - `limit/offset`: Pagination (default: 50 per page)
 
+
         **Use cases:**
+
         - Compliance and regulatory reporting
+
         - Security investigation and forensics
+
         - Data lineage and provenance tracking
+
         - Verify data integrity
 
+
         **Example:**
+
         ```
+
         GET /api/audit?action=UPDATE&resource_type=item&circuit_id=abc-123&limit=20
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: list_audit_logs
       parameters:
       - name: user_id
@@ -4455,65 +4646,28 @@ paths:
       tags:
       - audit
       summary: GET /audit/verify?limit=...
-      description: |
-        Verify cryptographic hash chain integrity of audit logs.
-
-        **What it does:**
-        - Validates hash chain linkage between audit log entries
-        - Detects any tampering or data corruption
-        - Reports broken links and inconsistencies
-        - Verifies each entry's hash against computed hash
-
-        **How hash chain works:**
-        ```
-        Entry 1: hash = BLAKE3(timestamp + action + data + "genesis")
-        Entry 2: hash = BLAKE3(timestamp + action + data + Entry1.hash)
-        Entry 3: hash = BLAKE3(timestamp + action + data + Entry2.hash)
-        ...
-        ```
-
-        **RBAC Requirements:**
-        - User must have `read_audit` permission
-        - Only verifies audit logs from accessible circuits
-        - System-level verification requires admin privileges
-
-        **Verification process:**
-        1. Fetches audit log entries (most recent N or all)
-        2. Recomputes hash for each entry
-        3. Compares computed hash with stored hash
-        4. Validates linkage (entry.previous_hash == previous_entry.hash)
-        5. Reports any mismatches or gaps
-
-        **Query parameters:**
-        - `limit`: Maximum number of logs to verify (default: all accessible)
-
-        **Response includes:**
-        - Total logs verified
-        - Verification status (valid, invalid, partial)
-        - List of broken links (if any)
-        - First and last verified entry
-        - Verification timestamp
-
-        **Use cases:**
-        - Compliance audit requirements
-        - Detect data tampering attempts
-        - Verify system integrity
-        - Forensic investigation
-
-        **Example:**
-        ```
-        GET /api/audit/verify?limit=1000
-        Authorization: Bearer <access_token>
-
-        Response:
-        {
-          "status": "valid",
-          "total_verified": 1000,
-          "broken_links": [],
-          "first_entry": "2025-01-01T00:00:00Z",
-          "last_entry": "2025-02-08T15:30:00Z"
-        }
-        ```
+      description: "Verify cryptographic hash chain integrity of audit logs.\n\n**What\
+        \ it does:**\n- Validates hash chain linkage between audit log entries\n-\
+        \ Detects any tampering or data corruption\n- Reports broken links and inconsistencies\n\
+        - Verifies each entry's hash against computed hash\n\n**How hash chain works:**\n\
+        ```\nEntry 1: hash = BLAKE3(timestamp + action + data + \"genesis\")\nEntry\
+        \ 2: hash = BLAKE3(timestamp + action + data + Entry1.hash)\nEntry 3: hash\
+        \ = BLAKE3(timestamp + action + data + Entry2.hash)\n...\n```\n\n**RBAC Requirements:**\n\
+        - User must have `read_audit` permission\n- Only verifies audit logs from\
+        \ accessible circuits\n- System-level verification requires admin privileges\n\
+        \n**Verification process:**\n1. Fetches audit log entries (most recent N or\
+        \ all)\n2. Recomputes hash for each entry\n3. Compares computed hash with\
+        \ stored hash\n4. Validates linkage (entry.previous_hash == previous_entry.hash)\n\
+        5. Reports any mismatches or gaps\n\n**Query parameters:**\n- `limit`: Maximum\
+        \ number of logs to verify (default: all accessible)\n\n**Response includes:**\n\
+        - Total logs verified\n- Verification status (valid, invalid, partial)\n-\
+        \ List of broken links (if any)\n- First and last verified entry\n- Verification\
+        \ timestamp\n\n**Use cases:**\n- Compliance audit requirements\n- Detect data\
+        \ tampering attempts\n- Verify system integrity\n- Forensic investigation\n\
+        \n**Example:**\n```\nGET /api/audit/verify?limit=1000\nAuthorization: Bearer\
+        \ <access_token>\n\nResponse:\n{\n  \"status\": \"valid\",\n  \"total_verified\"\
+        : 1000,\n  \"broken_links\": [],\n  \"first_entry\": \"2025-01-01T00:00:00Z\"\
+        ,\n  \"last_entry\": \"2025-02-08T15:30:00Z\"\n}\n```\n"
       operationId: verify_hash_chain
       parameters:
       - name: limit
@@ -4542,50 +4696,25 @@ paths:
       tags:
       - audit
       summary: GET /audit/:id
-      description: |
-        Retrieve detailed information about a specific audit log entry.
-
-        **What it returns:**
-        - Audit log UUID and timestamp
-        - Actor (user) who performed the action
-        - Action type (CREATE, UPDATE, DELETE, etc.)
-        - Resource type and ID (item, circuit, member, etc.)
-        - Old and new values (for updates)
-        - Context and metadata
-        - Hash chain information:
-          - `current_hash`: BLAKE3 hash of this entry
-          - `previous_hash`: Hash of previous entry (linkage)
-        - Circuit context
-
-        **RBAC Requirements:**
-        - User must have `read_audit` permission
-        - User must be a member of the circuit where audit log belongs
-        - Returns 403 if user lacks access
-
-        **Audit log fields:**
-        - `id`: UUID of audit log entry
-        - `timestamp`: When action occurred (UTC)
-        - `user_id`: Actor who performed action
-        - `action`: Action type (CREATE, UPDATE, DELETE, etc.)
-        - `resource_type`: Type of resource (item, circuit, etc.)
-        - `resource_id`: UUID of affected resource
-        - `old_value`: State before action (JSON)
-        - `new_value`: State after action (JSON)
-        - `metadata`: Additional context
-        - `current_hash`: BLAKE3 hash for integrity
-        - `previous_hash`: Link to previous entry
-
-        **Use cases:**
-        - Audit log detail page
-        - Investigate specific data change
-        - Verify hash chain linkage
-        - Forensic analysis
-
-        **Example:**
-        ```
-        GET /api/audit/550e8400-e29b-41d4-a716-446655440000
-        Authorization: Bearer <access_token>
-        ```
+      description: "Retrieve detailed information about a specific audit log entry.\n\
+        \n**What it returns:**\n- Audit log UUID and timestamp\n- Actor (user) who\
+        \ performed the action\n- Action type (CREATE, UPDATE, DELETE, etc.)\n- Resource\
+        \ type and ID (item, circuit, member, etc.)\n- Old and new values (for updates)\n\
+        - Context and metadata\n- Hash chain information:\n  - `current_hash`: BLAKE3\
+        \ hash of this entry\n  - `previous_hash`: Hash of previous entry (linkage)\n\
+        - Circuit context\n\n**RBAC Requirements:**\n- User must have `read_audit`\
+        \ permission\n- User must be a member of the circuit where audit log belongs\n\
+        - Returns 403 if user lacks access\n\n**Audit log fields:**\n- `id`: UUID\
+        \ of audit log entry\n- `timestamp`: When action occurred (UTC)\n- `user_id`:\
+        \ Actor who performed action\n- `action`: Action type (CREATE, UPDATE, DELETE,\
+        \ etc.)\n- `resource_type`: Type of resource (item, circuit, etc.)\n- `resource_id`:\
+        \ UUID of affected resource\n- `old_value`: State before action (JSON)\n-\
+        \ `new_value`: State after action (JSON)\n- `metadata`: Additional context\n\
+        - `current_hash`: BLAKE3 hash for integrity\n- `previous_hash`: Link to previous\
+        \ entry\n\n**Use cases:**\n- Audit log detail page\n- Investigate specific\
+        \ data change\n- Verify hash chain linkage\n- Forensic analysis\n\n**Example:**\n\
+        ```\nGET /api/audit/550e8400-e29b-41d4-a716-446655440000\nAuthorization: Bearer\
+        \ <access_token>\n```\n"
       operationId: get_audit_log
       parameters:
       - name: id
@@ -4625,36 +4754,60 @@ paths:
       tags:
       - circuits
       summary: GET /circuits/:id
-      description: |
-        Retrieve detailed information about a specific circuit.
+      description: 'Retrieve detailed information about a specific circuit.
+
 
         **What it returns:**
+
         - Circuit metadata (name, type, description, status)
+
         - Owner and organization information
+
         - Member count and your role/permissions
+
         - Circuit settings and configuration
+
         - Creation and update timestamps
 
+
         **RBAC Requirements:**
+
         - User must be a member of the circuit (any role)
+
         - Requires `read_circuits` permission
+
         - Different roles see different levels of detail
 
+
         **Visibility by role:**
+
         - **Owner/Admin**: Full details including all metadata and settings
+
         - **Editor/Member**: Basic info and operational fields
+
         - **Viewer**: Read-only fields only
 
+
         **Use cases:**
+
         - Circuit dashboard page
+
         - Permission checks before operations
+
         - Audit trail and compliance reports
 
+
         **Example:**
+
         ```
+
         GET /api/circuits/abc-123-def-456
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: get_circuit
       parameters:
       - name: id
@@ -4687,50 +4840,22 @@ paths:
       tags:
       - circuits
       summary: PUT /circuits/:id
-      description: |
-        Update circuit details and configuration.
-
-        **What you can update:**
-        - Circuit name (must remain unique within workspace)
-        - Description and metadata
-        - Circuit type (with restrictions)
-        - Settings and configuration
-        - Status (active → archived, etc.)
-
-        **RBAC Requirements:**
-        - User must have `admin` permission in the circuit
-        - Only circuit owners/admins can update
-        - Some fields require owner-level access
-
-        **Restricted fields:**
-        - `workspace_id`: Cannot be changed (permanent association)
-        - `created_at`: Immutable timestamp
-        - `owner_id`: Use transfer ownership endpoint instead
-
-        **Audit trail:**
-        - All updates are logged in audit trail
-        - Includes actor, timestamp, old/new values
-        - Immutable record for compliance
-
-        **Use cases:**
-        - Update circuit metadata as project evolves
-        - Archive completed supply chains
-        - Adjust settings and configuration
-
-        **Example:**
-        ```json
-        PUT /api/circuits/abc-123-def-456
-        {
-          "name": "Fazenda São José - Soja 2025 (Atualizado)",
-          "description": "Safra expandida com área adicional",
-          "metadata": {
-            "crop": "soy",
-            "season": "2025",
-            "area_hectares": 750
-          },
-          "status": "active"
-        }
-        ```
+      description: "Update circuit details and configuration.\n\n**What you can update:**\n\
+        - Circuit name (must remain unique within workspace)\n- Description and metadata\n\
+        - Circuit type (with restrictions)\n- Settings and configuration\n- Status\
+        \ (active \u2192 archived, etc.)\n\n**RBAC Requirements:**\n- User must have\
+        \ `admin` permission in the circuit\n- Only circuit owners/admins can update\n\
+        - Some fields require owner-level access\n\n**Restricted fields:**\n- `workspace_id`:\
+        \ Cannot be changed (permanent association)\n- `created_at`: Immutable timestamp\n\
+        - `owner_id`: Use transfer ownership endpoint instead\n\n**Audit trail:**\n\
+        - All updates are logged in audit trail\n- Includes actor, timestamp, old/new\
+        \ values\n- Immutable record for compliance\n\n**Use cases:**\n- Update circuit\
+        \ metadata as project evolves\n- Archive completed supply chains\n- Adjust\
+        \ settings and configuration\n\n**Example:**\n```json\nPUT /api/circuits/abc-123-def-456\n\
+        {\n  \"name\": \"Fazenda S\xE3o Jos\xE9 - Soja 2025 (Atualizado)\",\n  \"\
+        description\": \"Safra expandida com \xE1rea adicional\",\n  \"metadata\"\
+        : {\n    \"crop\": \"soy\",\n    \"season\": \"2025\",\n    \"area_hectares\"\
+        : 750\n  },\n  \"status\": \"active\"\n}\n```\n"
       operationId: update_circuit
       parameters:
       - name: id
@@ -4775,46 +4900,78 @@ paths:
       tags:
       - circuits
       summary: DELETE /circuits/:id
-      description: |
-        Soft delete a circuit (archive it, but preserve data).
+      description: 'Soft delete a circuit (archive it, but preserve data).
+
 
         **What it does:**
-        - Marks circuit as archived (status = 'archived')
+
+        - Marks circuit as archived (status = ''archived'')
+
         - Preserves all data for audit/compliance
+
         - Removes from active circuit lists
+
         - Maintains data integrity for related items/events
+
         - Creates audit log entry
 
+
         **RBAC Requirements:**
+
         - User must be circuit owner
+
         - Requires workspace owner approval for production circuits
+
         - Cannot delete circuits with active workflows
 
+
         **Data preservation:**
+
         - Circuit data remains in database
+
         - Items within circuit are preserved
+
         - Audit trail remains accessible
+
         - Can be restored by system admin
 
+
         **Cascade behavior:**
+
         - Does NOT delete items (items remain accessible)
+
         - Does NOT delete events or audit logs
+
         - Member access is revoked immediately
+
         - Webhooks are disabled
 
+
         **Use cases:**
+
         - Decommission completed supply chains
+
         - Remove test/demo circuits
+
         - Compliance with data retention policies
 
+
         **Important:**
+
         This is a soft delete. For hard delete (permanent data removal), contact support.
 
+
         **Example:**
+
         ```
+
         DELETE /api/circuits/abc-123-def-456
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: delete_circuit
       parameters:
       - name: id
@@ -4844,39 +5001,66 @@ paths:
       tags:
       - circuits
       summary: GET /circuits/:id/members
-      description: |
-        List all members of a circuit with their roles and permissions.
+      description: 'List all members of a circuit with their roles and permissions.
+
 
         **What it returns:**
+
         For each member:
+
         - User ID, email, name, avatar
+
         - Role (owner, admin, editor, member, viewer)
+
         - Permissions object (read, write, admin, manage_members, etc.)
+
         - Custom permissions (if overriding role defaults)
+
         - Join date and last activity
 
+
         **RBAC Requirements:**
+
         - User must be a member of the circuit
+
         - All members can see member list (transparency)
+
         - Permission details visible only to admins
 
+
         **Member roles:**
+
         - **Owner**: Full control, cannot be removed, typically 1 per circuit
+
         - **Admin**: Can manage members and settings
+
         - **Editor**: Can create/edit items and events
+
         - **Member**: Can create items within scope
+
         - **Viewer**: Read-only access
 
+
         **Use cases:**
+
         - Member management dashboard
+
         - Permission audit and compliance
+
         - Team collaboration views
 
+
         **Example:**
+
         ```
+
         GET /api/circuits/abc-123-def-456/members
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: list_members
       parameters:
       - name: id
@@ -4909,49 +5093,23 @@ paths:
       tags:
       - circuits
       summary: POST /circuits/:id/members
-      description: |
-        Add a new member to a circuit with specified role and permissions.
-
-        **What it does:**
-        - Adds user to circuit with specified role
-        - Grants standard permissions for that role
-        - Optionally sets custom permissions
-        - Creates audit log entry
-        - Sends notification to added user
-
-        **Required fields:**
-        - `user_id`: UUID of user to add (must exist in workspace)
-        - `role`: One of: owner, admin, editor, member, viewer
-
-        **Optional fields:**
-        - `custom_permissions`: Override standard role permissions
-        - `notify`: Send invitation email (default: true)
-
-        **RBAC Requirements:**
-        - User must have `manage_members` permission
-        - Only admins/owners can add members
-        - Cannot add duplicate members (409 Conflict)
-
-        **Standard permissions by role:**
-        - **Admin**: Full permissions except ownership transfer
-        - **Editor**: Create/edit items, create events, read all
-        - **Member**: Create items, read circuits/items
-        - **Viewer**: Read-only access to circuits and items
-
-        **Use cases:**
-        - Onboard new team members
-        - Grant external auditors view access
-        - Add suppliers/farmers to supply chain
-
-        **Example:**
-        ```json
-        POST /api/circuits/abc-123-def-456/members
-        {
-          "user_id": "user-uuid-123",
-          "role": "editor",
-          "notify": true
-        }
-        ```
+      description: "Add a new member to a circuit with specified role and permissions.\n\
+        \n**What it does:**\n- Adds user to circuit with specified role\n- Grants\
+        \ standard permissions for that role\n- Optionally sets custom permissions\n\
+        - Creates audit log entry\n- Sends notification to added user\n\n**Required\
+        \ fields:**\n- `user_id`: UUID of user to add (must exist in workspace)\n\
+        - `role`: One of: owner, admin, editor, member, viewer\n\n**Optional fields:**\n\
+        - `custom_permissions`: Override standard role permissions\n- `notify`: Send\
+        \ invitation email (default: true)\n\n**RBAC Requirements:**\n- User must\
+        \ have `manage_members` permission\n- Only admins/owners can add members\n\
+        - Cannot add duplicate members (409 Conflict)\n\n**Standard permissions by\
+        \ role:**\n- **Admin**: Full permissions except ownership transfer\n- **Editor**:\
+        \ Create/edit items, create events, read all\n- **Member**: Create items,\
+        \ read circuits/items\n- **Viewer**: Read-only access to circuits and items\n\
+        \n**Use cases:**\n- Onboard new team members\n- Grant external auditors view\
+        \ access\n- Add suppliers/farmers to supply chain\n\n**Example:**\n```json\n\
+        POST /api/circuits/abc-123-def-456/members\n{\n  \"user_id\": \"user-uuid-123\"\
+        ,\n  \"role\": \"editor\",\n  \"notify\": true\n}\n```\n"
       operationId: add_member
       parameters:
       - name: id
@@ -5003,32 +5161,53 @@ paths:
       tags:
       - circuits
       summary: GET /circuits/:id/members/:user_id
-      description: |
-        Get detailed information about a specific circuit member.
+      description: 'Get detailed information about a specific circuit member.
+
 
         **What it returns:**
+
         - User profile (ID, email, name, avatar)
+
         - Current role in the circuit
+
         - Standard permissions from role
+
         - Custom permissions (if any overrides exist)
+
         - Join date and activity timestamps
+
         - Invitation details (invited_by, accepted_at)
 
+
         **RBAC Requirements:**
+
         - User must be a member of the circuit
+
         - All members can view other member details
+
         - Custom permissions visible only to admins
 
+
         **Use cases:**
+
         - Member profile page
+
         - Permission verification before operations
+
         - Activity tracking and auditing
 
+
         **Example:**
+
         ```
+
         GET /api/circuits/abc-123/members/user-456
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: get_member
       parameters:
       - name: id
@@ -5068,48 +5247,21 @@ paths:
       tags:
       - circuits
       summary: PUT /circuits/:id/members/:user_id
-      description: |
-        Update a circuit member's role or permissions.
-
-        **What you can update:**
-        - Role (promote/demote between roles)
-        - Custom permissions (override role defaults)
-        - Member status (active, suspended)
-
-        **RBAC Requirements:**
-        - User must have `manage_members` permission
-        - Only admins/owners can update members
-        - Cannot demote circuit owner
-        - Cannot modify your own permissions
-
-        **Role changes:**
-        - Viewer → Member → Editor → Admin → Owner
-        - Role change updates standard permissions automatically
-        - Custom permissions are preserved unless explicitly cleared
-
-        **Permission overrides:**
-        - Can grant/revoke specific permissions
-        - Custom permissions take precedence over role defaults
-        - Use carefully - prefer standard roles for clarity
-
-        **Audit trail:**
-        - All permission changes are logged
-        - Includes actor, timestamp, old/new values
-        - Visible in audit log
-
-        **Use cases:**
-        - Promote trusted members to admin
-        - Grant temporary elevated access
-        - Revoke specific permissions without changing role
-
-        **Example:**
-        ```json
-        PUT /api/circuits/abc-123/members/user-456
-        {
-          "role": "admin",
-          "custom_permissions": null
-        }
-        ```
+      description: "Update a circuit member's role or permissions.\n\n**What you can\
+        \ update:**\n- Role (promote/demote between roles)\n- Custom permissions (override\
+        \ role defaults)\n- Member status (active, suspended)\n\n**RBAC Requirements:**\n\
+        - User must have `manage_members` permission\n- Only admins/owners can update\
+        \ members\n- Cannot demote circuit owner\n- Cannot modify your own permissions\n\
+        \n**Role changes:**\n- Viewer \u2192 Member \u2192 Editor \u2192 Admin \u2192\
+        \ Owner\n- Role change updates standard permissions automatically\n- Custom\
+        \ permissions are preserved unless explicitly cleared\n\n**Permission overrides:**\n\
+        - Can grant/revoke specific permissions\n- Custom permissions take precedence\
+        \ over role defaults\n- Use carefully - prefer standard roles for clarity\n\
+        \n**Audit trail:**\n- All permission changes are logged\n- Includes actor,\
+        \ timestamp, old/new values\n- Visible in audit log\n\n**Use cases:**\n- Promote\
+        \ trusted members to admin\n- Grant temporary elevated access\n- Revoke specific\
+        \ permissions without changing role\n\n**Example:**\n```json\nPUT /api/circuits/abc-123/members/user-456\n\
+        {\n  \"role\": \"admin\",\n  \"custom_permissions\": null\n}\n```\n"
       operationId: update_member
       parameters:
       - name: id
@@ -5161,47 +5313,80 @@ paths:
       tags:
       - circuits
       summary: DELETE /circuits/:id/members/:user_id
-      description: |
-        Remove a member from a circuit (revoke all access).
+      description: 'Remove a member from a circuit (revoke all access).
+
 
         **What it does:**
+
         - Immediately revokes all circuit access
+
         - Removes user from circuit member list
-        - Preserves audit trail of member's past actions
+
+        - Preserves audit trail of member''s past actions
+
         - Creates audit log entry for removal
+
         - Sends notification to removed user
 
+
         **RBAC Requirements:**
+
         - User must have `manage_members` permission
+
         - Only admins/owners can remove members
+
         - Cannot remove circuit owner
+
         - Cannot remove yourself (use leave endpoint)
 
+
         **Data preservation:**
-        - Member's past actions remain in audit trail
+
+        - Member''s past actions remain in audit trail
+
         - Items created by member are NOT deleted
+
         - Events created by member are preserved
+
         - Attribution remains for compliance
 
+
         **Cascade behavior:**
+
         - Access revoked immediately (active sessions invalidated)
+
         - Member cannot access circuit via API or UI
+
         - Pending invitations are cancelled
+
         - Webhooks for this user are disabled
 
+
         **Use cases:**
+
         - Remove team members who left organization
+
         - Revoke access after contract ends
+
         - Remove users who violated policies
 
+
         **Query parameters:**
+
         - `removed_by`: UUID of user performing removal (for audit)
 
+
         **Example:**
+
         ```
+
         DELETE /api/circuits/abc-123/members/user-456?removed_by=admin-789
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: remove_member
       parameters:
       - name: id
@@ -5241,58 +5426,717 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/circuits/{id}/items/{item_id}:
+    delete:
+      tags:
+      - circuits
+      summary: DELETE /circuits/:id/items/:item_id - Remove item from circuit
+      description: |
+        **Protected endpoint** - Requires JWT authentication + `delete_items` permission.
+
+        Removes the association between an item and a circuit **without deleting the item**.
+
+        **What happens:**
+        - Item removed from circuit (circuit_items junction table entry deleted)
+        - Item continues to exist globally with its DFID
+        - Item remains in other circuits (if multi-circuit item)
+        - Item metadata unchanged
+
+        **Use cases:**
+        - Remove incorrectly added item
+        - Clean up old/inactive items from circuit
+        - Reorganize circuit membership
+
+        **Example:**
+        ```
+        DELETE /api/circuits/550e8400-e29b-41d4-a716-446655440000/items/123e4567-e89b-12d3-a456-426614174000
+        Authorization: Bearer <access_token>
+        ```
+
+        **Note:** Requires owner or admin role in the circuit.
+      operationId: remove_item_from_circuit
+      parameters:
+      - name: id
+        in: path
+        description: Circuit UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: item_id
+        in: path
+        description: Item UUID to remove
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Item removed from circuit successfully (no content)
+        '401':
+          description: Unauthorized - JWT required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - requires delete_items permission (owner/admin only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Item not found or not in circuit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearer_auth: []
+  /api/circuits/public:
+    get:
+      tags:
+      - circuits
+      summary: GET /circuits/public - List public circuits for discovery
+      description: '**Public endpoint** - No authentication required.
+
+
+        Discover public circuits available for joining.
+
+
+        **Use cases:**
+
+        - Browse available circuits in your region/industry
+
+        - Search for circuits by name or type
+
+        - View featured circuits
+
+
+        **Example:**
+
+        ```
+
+        GET /api/circuits/public?search=soja&circuit_type=producer&featured=true
+
+        ```
+
+        '
+      operationId: list_public_circuits
+      parameters:
+      - name: search
+        in: query
+        description: Search by circuit name or description
+        required: false
+        schema:
+          type: string
+      - name: circuit_type
+        in: query
+        description: Filter by circuit type
+        required: false
+        schema:
+          type: string
+          enum:
+          - producer
+          - processor
+          - distributor
+          - marketplace
+      - name: featured
+        in: query
+        description: Show only featured circuits
+        required: false
+        schema:
+          type: boolean
+      - name: limit
+        in: query
+        description: Maximum results (max 100)
+        required: false
+        schema:
+          type: integer
+          default: 50
+          maximum: 100
+      - name: offset
+        in: query
+        description: Pagination offset
+        required: false
+        schema:
+          type: integer
+          default: 0
+      responses:
+        '200':
+          description: List of public circuits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicCircuitsResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/circuits/{id}/public:
+    get:
+      tags:
+      - circuits
+      summary: GET /circuits/:id/public - Public circuit portfolio
+      description: '**Public endpoint** - No authentication required.
+
+
+        View a circuit''s public portfolio including stats, recent items, and info.
+
+
+        **What it returns:**
+
+        - Circuit name, description, banner, logo
+
+        - Member and item counts
+
+        - Statistics (value chains, countries, recent activity)
+
+        - Recent items (last 10 DFIDs)
+
+
+        **Use cases:**
+
+        - Share circuit portfolio via public URL
+
+        - Showcase circuit activity to potential members
+
+        - Public transparency for supply chain
+
+
+        **Example:**
+
+        ```
+
+        GET /api/circuits/550e8400-e29b-41d4-a716-446655440000/public
+
+        ```
+
+        '
+      operationId: get_public_portfolio
+      parameters:
+      - name: id
+        in: path
+        description: Circuit UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Circuit public portfolio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicCircuitPortfolio'
+        '404':
+          description: Circuit not found or not public
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/circuits/{id}/join-requests:
+    post:
+      tags:
+      - circuits
+      summary: POST /circuits/:id/join-requests - Request to join circuit
+      description: "**Protected endpoint** - Requires JWT authentication.\n\nSubmit\
+        \ a request to join a public circuit. The circuit admins will review and approve/reject.\n\
+        \n**Requirements:**\n- Circuit must be public\n- Circuit must allow join requests\n\
+        - User must not already be a member\n- User cannot have a pending request\n\
+        \n**Example:**\n```json\nPOST /api/circuits/550e8400-e29b-41d4-a716-446655440000/join-requests\n\
+        Authorization: Bearer <access_token>\n\n{\n  \"message\": \"Sou produtor de\
+        \ soja em Dourados/MS e gostaria de participar\",\n  \"user_metadata\": {\n\
+        \    \"company\": \"Fazenda S\xE3o Jo\xE3o\",\n    \"location\": \"Dourados,\
+        \ MS\"\n  }\n}\n```\n"
+      operationId: create_join_request
+      parameters:
+      - name: id
+        in: path
+        description: Circuit UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJoinRequestPayload'
+      responses:
+        '201':
+          description: Join request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitJoinRequest'
+        '400':
+          description: Invalid request or circuit not accepting requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - JWT required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User already member or has pending request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearer_auth: []
+    get:
+      tags:
+      - circuits
+      summary: GET /circuits/:id/join-requests - List join requests (admin)
+      description: '**Protected endpoint** - Requires JWT authentication + `manage_members`
+        permission.
+
+
+        List all join requests for a circuit. Only circuit owners/admins can access.
+
+
+        **Example:**
+
+        ```
+
+        GET /api/circuits/550e8400-e29b-41d4-a716-446655440000/join-requests?status=pending
+
+        Authorization: Bearer <access_token>
+
+        ```
+
+        '
+      operationId: list_join_requests
+      parameters:
+      - name: id
+        in: path
+        description: Circuit UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: status
+        in: query
+        description: Filter by status
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+      responses:
+        '200':
+          description: List of join requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CircuitJoinRequest'
+        '401':
+          description: Unauthorized - JWT required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - requires manage_members permission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearer_auth: []
+  /api/circuits/{id}/join-requests/{request_id}:
+    put:
+      tags:
+      - circuits
+      summary: PUT /circuits/:id/join-requests/:request_id - Review request (admin)
+      description: "**Protected endpoint** - Requires JWT authentication + `manage_members`\
+        \ permission.\n\nApprove or reject a join request. If approved, user is automatically\
+        \ added as circuit member.\n\n**What happens on approval:**\n- Request status\
+        \ \u2192 `approved`\n- User added to `circuit_members` with specified role\n\
+        - User receives notification (future)\n\n**What happens on rejection:**\n\
+        - Request status \u2192 `rejected`\n- Optional rejection reason recorded\n\
+        - User receives notification (future)\n\n**Example (approve):**\n```json\n\
+        PUT /api/circuits/550e8400.../join-requests/abc-123...\nAuthorization: Bearer\
+        \ <access_token>\n\n{\n  \"action\": \"approve\",\n  \"role\": \"member\"\n\
+        }\n```\n\n**Example (reject):**\n```json\nPUT /api/circuits/550e8400.../join-requests/abc-123...\n\
+        Authorization: Bearer <access_token>\n\n{\n  \"action\": \"reject\",\n  \"\
+        rejection_reason\": \"Circuit is full\"\n}\n```\n"
+      operationId: review_join_request
+      parameters:
+      - name: id
+        in: path
+        description: Circuit UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: request_id
+        in: path
+        description: Join request UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewJoinRequestInput'
+      responses:
+        '200':
+          description: Join request reviewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitJoinRequest'
+        '400':
+          description: Invalid action or request already reviewed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - JWT required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - requires manage_members permission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Join request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearer_auth: []
+  /api/items/{dfid}/public:
+    get:
+      tags:
+      - items
+      summary: GET /items/:dfid/public - Public item details
+      description: |
+        **Public endpoint** - No authentication required.
+
+        View item details for items that belong to public circuits.
+
+        **What it returns:**
+        - Item DFID, value chain, country, year
+        - Metadata (breed, weight, etc.)
+        - Status (active, sold, etc.)
+        - Created/updated timestamps
+
+        **Use cases:**
+        - Share item information via public URL
+        - Display item details on public circuit portfolio
+        - External verification of item data
+
+        **Example:**
+        ```
+        GET /api/items/DFID-BEEF-BR-2025-000123-a3f2c1/public
+        ```
+
+        **Note:** Only returns items from public circuits. Private circuit items return 404.
+      operationId: get_item_public
+      parameters:
+      - name: dfid
+        in: path
+        description: Item DFID
+        required: true
+        schema:
+          type: string
+          example: DFID-BEEF-BR-2025-000123-a3f2c1
+      responses:
+        '200':
+          description: Public item details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  dfid:
+                    type: string
+                    example: DFID-BEEF-BR-2025-000123-a3f2c1
+                  value_chain:
+                    type: string
+                    example: BEEF
+                  country:
+                    type: string
+                    example: BR
+                  year:
+                    type: integer
+                    example: 2025
+                  status:
+                    type: string
+                    example: active
+                  metadata:
+                    type: object
+                    example:
+                      breed: Nelore
+                      weight_kg: 450
+                      birth_date: "2023-01-15"
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: Item not found or not in any public circuit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/items/{dfid}/events/public:
+    get:
+      tags:
+      - items
+      summary: GET /items/:dfid/events/public - Public item events
+      description: |
+        **Public endpoint** - No authentication required.
+
+        View events for an item that belong to public circuits.
+
+        **What it returns:**
+        - Event type (weight_measurement, location_change, etc.)
+        - Timestamp
+        - Event metadata/payload
+        - Circuit context (only from public circuits)
+
+        **Use cases:**
+        - Display item history on public pages
+        - Transparency for supply chain tracking
+        - External audit trail
+
+        **Example:**
+        ```
+        GET /api/items/DFID-BEEF-BR-2025-000123-a3f2c1/events/public?limit=10
+        ```
+
+        **Note:** Only returns events from public circuits. Private circuit events are filtered out.
+      operationId: get_item_events_public
+      parameters:
+      - name: dfid
+        in: path
+        description: Item DFID
+        required: true
+        schema:
+          type: string
+          example: DFID-BEEF-BR-2025-000123-a3f2c1
+      - name: event_type
+        in: query
+        description: Filter by event type
+        required: false
+        schema:
+          type: string
+          example: weight_measurement
+      - name: limit
+        in: query
+        description: Limit number of results (default 50, max 100)
+        required: false
+        schema:
+          type: integer
+          default: 50
+          maximum: 100
+      - name: offset
+        in: query
+        description: Offset for pagination
+        required: false
+        schema:
+          type: integer
+          default: 0
+      responses:
+        '200':
+          description: List of public events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    event_type:
+                      type: string
+                      example: weight_measurement
+                    item_id:
+                      type: string
+                      format: uuid
+                    circuit_id:
+                      type: string
+                      format: uuid
+                    payload:
+                      type: object
+                      example:
+                        weight_kg: 450
+                        date: "2025-02-12"
+                    created_at:
+                      type: string
+                      format: date-time
+        '404':
+          description: Item not found or not in any public circuit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/events:
     get:
       tags:
       - events
       summary: GET /events?event_type=...&circuit_id=...
-      description: |
-        List lifecycle events for items with optional filters.
+      description: 'List lifecycle events for items with optional filters.
+
 
         **What is an Event:**
-        Events capture state changes and actions in the item lifecycle (created, updated, transferred, certified, etc.).
+
+        Events capture state changes and actions in the item lifecycle (created, updated,
+        transferred, certified, etc.).
+
         They provide an immutable audit trail of all operations on items.
 
+
         **What it returns:**
+
         - Event type and timestamp
+
         - Associated item (DFID and UUID)
+
         - Circuit and user who triggered event
+
         - Event-specific metadata
+
         - Processing status (pending, completed, failed)
 
+
         **RBAC Requirements:**
+
         - User must have `read_events` permission in the circuit
+
         - Only returns events from circuits where user is a member
+
         - Filters automatically apply circuit boundaries
 
+
         **Common event types:**
+
         - `item_created`: Item registered in system
+
         - `item_updated`: Metadata changed
+
         - `item_transferred`: Ownership or custody changed
+
         - `item_certified`: Quality certification recorded
+
         - `item_merged`: Item merged with another
+
         - `item_split`: Item divided into multiple items
+
         - `snapshot_created`: Data snapshot created
 
+
         **Common filters:**
+
         - `event_type`: Filter by specific event type
+
         - `source_type`: Filter by source (item, circuit, user, system)
+
         - `circuit_id`: Events in specific circuit
+
         - `item_id`: Events for specific item
+
         - `user_id`: Events triggered by specific user
+
         - `status`: Processing status (pending, completed, failed)
+
         - `limit/offset`: Pagination (default: 50 per page)
 
+
         **Use cases:**
+
         - Audit trail and compliance reporting
+
         - Track item lifecycle from creation to disposal
+
         - Investigate data changes and anomalies
 
+
         **Example:**
+
         ```
+
         GET /api/events?event_type=item_transferred&circuit_id=abc-123&limit=20
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: list_events
       parameters:
       - name: event_type
@@ -5372,40 +6216,68 @@ paths:
       tags:
       - events
       summary: GET /events/:id
-      description: |
-        Retrieve detailed information about a specific lifecycle event.
+      description: 'Retrieve detailed information about a specific lifecycle event.
+
 
         **What it returns:**
+
         - Event UUID and timestamp
+
         - Event type and source type
+
         - Associated item (DFID, UUID, name)
+
         - Circuit and user who triggered event
+
         - Full event payload/metadata
+
         - Processing status and error details (if failed)
+
         - Audit trail information
 
+
         **RBAC Requirements:**
+
         - User must have `read_events` permission in the circuit
+
         - User must be a member of the circuit where event occurred
 
+
         **Event metadata includes:**
+
         - Old and new values (for update events)
+
         - Actor information (who performed the action)
+
         - Context and reason (if provided)
+
         - Validation results
+
         - Related events (parent/child operations)
 
+
         **Use cases:**
+
         - Event detail page
+
         - Investigate failed processing
+
         - Audit trail analysis
+
         - Compliance verification
 
+
         **Example:**
+
         ```
+
         GET /api/events/550e8400-e29b-41d4-a716-446655440000
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: get_event
       parameters:
       - name: id
@@ -5439,53 +6311,23 @@ paths:
       tags:
       - events
       summary: PUT /events/:id/status
-      description: |
-        Update event processing status (typically for async workflows).
-
-        **What it does:**
-        - Updates event processing status
-        - Records processing results or errors
-        - Triggers downstream workflows
-        - Updates audit trail
-
-        **Valid status transitions:**
-        - `pending` → `processing`: Event being processed
-        - `pending` → `failed`: Failure before processing completes
-        - `processing` → `completed`: Successfully completed
-        - `processing` → `failed`: Processing error occurred
-
-        **RBAC Requirements:**
-        - User must have `manage_events` permission (admin only)
-        - Typically used by system/worker processes
-        - Not commonly used by end users
-
-        **Request body includes:**
-        - `status`: New status value
-        - `error_message`: Error details (if failed)
-        - `processed_at`: Timestamp (optional)
-
-        **Use cases:**
-        - Async event processing workflows
-        - Webhook delivery status updates
-        - External integration callbacks
-        - Retry failed operations
-
-        **Example:**
-        ```json
-        PUT /api/events/550e8400-e29b-41d4-a716-446655440000/status
-        {
-          "status": "completed",
-          "processed_at": "2025-02-08T15:30:00Z"
-        }
-        ```
-
-        **Error example:**
-        ```json
-        {
-          "status": "failed",
-          "error_message": "External API timeout after 30s"
-        }
-        ```
+      description: "Update event processing status (typically for async workflows).\n\
+        \n**What it does:**\n- Updates event processing status\n- Records processing\
+        \ results or errors\n- Triggers downstream workflows\n- Updates audit trail\n\
+        \n**Valid status transitions:**\n- `pending` \u2192 `processing`: Event being\
+        \ processed\n- `pending` \u2192 `failed`: Failure before processing completes\n\
+        - `processing` \u2192 `completed`: Successfully completed\n- `processing`\
+        \ \u2192 `failed`: Processing error occurred\n\n**RBAC Requirements:**\n-\
+        \ User must have `manage_events` permission (admin only)\n- Typically used\
+        \ by system/worker processes\n- Not commonly used by end users\n\n**Request\
+        \ body includes:**\n- `status`: New status value\n- `error_message`: Error\
+        \ details (if failed)\n- `processed_at`: Timestamp (optional)\n\n**Use cases:**\n\
+        - Async event processing workflows\n- Webhook delivery status updates\n- External\
+        \ integration callbacks\n- Retry failed operations\n\n**Example:**\n```json\n\
+        PUT /api/events/550e8400-e29b-41d4-a716-446655440000/status\n{\n  \"status\"\
+        : \"completed\",\n  \"processed_at\": \"2025-02-08T15:30:00Z\"\n}\n```\n\n\
+        **Error example:**\n```json\n{\n  \"status\": \"failed\",\n  \"error_message\"\
+        : \"External API timeout after 30s\"\n}\n```\n"
       operationId: update_event_status
       parameters:
       - name: id
@@ -5527,45 +6369,77 @@ paths:
       tags:
       - items
       summary: Bulk ingest items from CSV file
-      description: |
-        Create multiple items at once from CSV file upload.
+      description: 'Create multiple items at once from CSV file upload.
+
 
         **What it does:**
+
         - Parses CSV file with item data
+
         - Generates DFID for each item automatically
+
         - Creates all items in a single transaction
+
         - Validates data and enforces schema
+
         - Returns detailed receipt with success/failure counts
 
+
         **CSV Format:**
+
         - Required multipart fields: `file` (CSV) and `circuit_id` (UUID)
+
         - Required CSV columns: value_chain, country
+
         - Optional columns: metadata.*, tags, status
+
         - Header row must match expected field names
+
         - UTF-8 encoding required
 
+
         **RBAC Requirements:**
+
         - User must have `create_items` permission in target circuit(s)
+
         - All items must belong to circuits where user is a member
+
         - Workspace must have sufficient DFID quota
 
+
         **Processing:**
+
         - Validates all rows before inserting any
+
         - Atomic transaction (all succeed or all fail)
+
         - Returns detailed error report for failed rows
+
         - Generates audit trail for bulk operation
 
+
         **Use cases:**
+
         - Migrate items from legacy system
+
         - Import harvest/production data
+
         - Bulk onboarding for large farms
 
+
         **Example CSV:**
+
         ```csv
+
         value_chain,country,circuit_id,metadata.breed,metadata.weight_kg
+
         BEEF,BR,abc-123,Nelore,450
+
         BEEF,BR,abc-123,Angus,520
+
         ```
+
+        '
       operationId: bulk_ingest
       requestBody:
         required: true
@@ -5603,47 +6477,24 @@ paths:
       tags:
       - workflows
       summary: POST /items/{dfid}/merge
-      description: |
-        Merge two items together (deduplication or consolidation).
-
-        **What it does:**
-        - Combines two items into one (primary remains, secondary archived)
-        - Merges metadata based on strategy (append, override, keep_primary)
-        - Preserves audit trail for both items
-        - Updates relationships (parent/child items)
-        - Creates "merged" event in lifecycle
-
-        **Merge strategies:**
-        - `append`: Concatenate arrays, keep all fields
-        - `override`: Secondary values override primary
-        - `keep_primary`: Keep primary values, discard secondary
-        - `custom`: Provide field-by-field merge rules
-
-        **RBAC Requirements:**
-        - User must have `update_items` permission in both circuits
-        - Items must be in same workspace (cross-workspace not allowed)
-        - Cannot merge already-merged items
-
-        **What happens to secondary item:**
-        - Status changed to 'merged'
-        - DFID preserved for audit trail
-        - Relationship created: secondary → merged_into → primary
-        - Data remains accessible (read-only)
-
-        **Use cases:**
-        - Deduplicate accidentally created items
-        - Consolidate batches from same source
-        - Combine split shipments
-
-        **Example:**
-        ```json
-        POST /api/items/DFID-BEEF-BR-2025-000123-abc/merge
-        {
-          "secondary_dfid": "DFID-BEEF-BR-2025-000456-def",
-          "strategy": "append",
-          "user_id": "550e8400-e29b-41d4-a716-446655440000"
-        }
-        ```
+      description: "Merge two items together (deduplication or consolidation).\n\n\
+        **What it does:**\n- Combines two items into one (primary remains, secondary\
+        \ archived)\n- Merges metadata based on strategy (append, override, keep_primary)\n\
+        - Preserves audit trail for both items\n- Updates relationships (parent/child\
+        \ items)\n- Creates \"merged\" event in lifecycle\n\n**Merge strategies:**\n\
+        - `append`: Concatenate arrays, keep all fields\n- `override`: Secondary values\
+        \ override primary\n- `keep_primary`: Keep primary values, discard secondary\n\
+        - `custom`: Provide field-by-field merge rules\n\n**RBAC Requirements:**\n\
+        - User must have `update_items` permission in both circuits\n- Items must\
+        \ be in same workspace (cross-workspace not allowed)\n- Cannot merge already-merged\
+        \ items\n\n**What happens to secondary item:**\n- Status changed to 'merged'\n\
+        - DFID preserved for audit trail\n- Relationship created: secondary \u2192\
+        \ merged_into \u2192 primary\n- Data remains accessible (read-only)\n\n**Use\
+        \ cases:**\n- Deduplicate accidentally created items\n- Consolidate batches\
+        \ from same source\n- Combine split shipments\n\n**Example:**\n```json\nPOST\
+        \ /api/items/DFID-BEEF-BR-2025-000123-abc/merge\n{\n  \"secondary_dfid\":\
+        \ \"DFID-BEEF-BR-2025-000456-def\",\n  \"strategy\": \"append\",\n  \"user_id\"\
+        : \"550e8400-e29b-41d4-a716-446655440000\"\n}\n```\n"
       operationId: merge_items
       parameters:
       - name: dfid
@@ -5676,48 +6527,23 @@ paths:
       tags:
       - workflows
       summary: GET /items/{dfid}/relationships
-      description: |
-        Get all relationships for an item (parent/child, merges, splits).
-
-        **What it returns:**
-        - Parent items (source/origin)
-        - Child items (derived products)
-        - Merged items (consolidated duplicates)
-        - Split items (divided portions)
-        - Related items (linked for traceability)
-
-        **Relationship types:**
-        - `parent_of`: This item is source for child items
-        - `child_of`: This item derived from parent
-        - `merged_into`: This item was merged into another
-        - `split_from`: This item was split from source
-        - `related_to`: Linked for traceability (e.g., same batch)
-
-        **RBAC Requirements:**
-        - User must have `read_items` permission
-        - Only returns relationships where user has access to both items
-        - Relationships cross circuit boundaries (within workspace)
-
-        **Use cases:**
-        - Build supply chain graph/tree
-        - Trace item origins and destinations
-        - Audit data integrity and lineage
-
-        **Example response:**
-        ```json
-        [
-          {
-            "relationship_type": "child_of",
-            "related_dfid": "DFID-BEEF-BR-2025-000123-abc",
-            "created_at": "2025-02-08T10:30:00Z"
-          },
-          {
-            "relationship_type": "split_from",
-            "related_dfid": "DFID-BEEF-BR-2025-000456-def",
-            "created_at": "2025-02-10T14:22:00Z"
-          }
-        ]
-        ```
+      description: "Get all relationships for an item (parent/child, merges, splits).\n\
+        \n**What it returns:**\n- Parent items (source/origin)\n- Child items (derived\
+        \ products)\n- Merged items (consolidated duplicates)\n- Split items (divided\
+        \ portions)\n- Related items (linked for traceability)\n\n**Relationship types:**\n\
+        - `parent_of`: This item is source for child items\n- `child_of`: This item\
+        \ derived from parent\n- `merged_into`: This item was merged into another\n\
+        - `split_from`: This item was split from source\n- `related_to`: Linked for\
+        \ traceability (e.g., same batch)\n\n**RBAC Requirements:**\n- User must have\
+        \ `read_items` permission\n- Only returns relationships where user has access\
+        \ to both items\n- Relationships cross circuit boundaries (within workspace)\n\
+        \n**Use cases:**\n- Build supply chain graph/tree\n- Trace item origins and\
+        \ destinations\n- Audit data integrity and lineage\n\n**Example response:**\n\
+        ```json\n[\n  {\n    \"relationship_type\": \"child_of\",\n    \"related_dfid\"\
+        : \"DFID-BEEF-BR-2025-000123-abc\",\n    \"created_at\": \"2025-02-08T10:30:00Z\"\
+        \n  },\n  {\n    \"relationship_type\": \"split_from\",\n    \"related_dfid\"\
+        : \"DFID-BEEF-BR-2025-000456-def\",\n    \"created_at\": \"2025-02-10T14:22:00Z\"\
+        \n  }\n]\n```\n"
       operationId: get_item_relationships
       parameters:
       - name: dfid
@@ -5744,58 +6570,26 @@ paths:
       tags:
       - workflows
       summary: POST /items/{dfid}/split
-      description: |
-        Split an item into two separate items (division/transfer).
-
-        **What it does:**
-        - Creates new item with new DFID
-        - Both items remain active (original + new)
-        - Establishes parent-child relationship
-        - Updates metadata based on split parameters
-        - Creates "split" event in lifecycle
-
-        **Required fields:**
-        - `value_chain`: Value chain for new item (typically same as original)
-        - `country`: Country code for new item
-        - `year`: Year for DFID generation
-        - `metadata`: Metadata for new item
-
-        **RBAC Requirements:**
-        - User must have `update_items` permission in source circuit
-        - User must have `create_items` permission in target circuit
-        - Items can be split across circuits (within same workspace)
-
-        **Use cases:**
-        - Divide batch for different buyers
-        - Transfer portion to another farm
-        - Separate products from same source
-
-        **What happens:**
-        - Original item status remains 'active'
-        - New item created with `split_from` relationship
-        - Metadata copied to new item (can be overridden)
-        - Audit trail records split operation
-
-        **Example:**
-        ```json
-        POST /api/items/DFID-BEEF-BR-2025-000123-abc/split
-        {
-          "value_chain": "BEEF",
-          "country": "BR",
-          "year": 2025,
-          "metadata": {
-            "note": "Split for transfer to Buyer X",
-            "weight_kg": 225
-          },
-          "user_id": "550e8400-e29b-41d4-a716-446655440000"
-        }
-
-        Response:
-        {
-          "original_dfid": "DFID-BEEF-BR-2025-000123-abc",
-          "new_dfid": "DFID-BEEF-BR-2025-000789-xyz"
-        }
-        ```
+      description: "Split an item into two separate items (division/transfer).\n\n\
+        **What it does:**\n- Creates new item with new DFID\n- Both items remain active\
+        \ (original + new)\n- Establishes parent-child relationship\n- Updates metadata\
+        \ based on split parameters\n- Creates \"split\" event in lifecycle\n\n**Required\
+        \ fields:**\n- `value_chain`: Value chain for new item (typically same as\
+        \ original)\n- `country`: Country code for new item\n- `year`: Year for DFID\
+        \ generation\n- `metadata`: Metadata for new item\n\n**RBAC Requirements:**\n\
+        - User must have `update_items` permission in source circuit\n- User must\
+        \ have `create_items` permission in target circuit\n- Items can be split across\
+        \ circuits (within same workspace)\n\n**Use cases:**\n- Divide batch for different\
+        \ buyers\n- Transfer portion to another farm\n- Separate products from same\
+        \ source\n\n**What happens:**\n- Original item status remains 'active'\n-\
+        \ New item created with `split_from` relationship\n- Metadata copied to new\
+        \ item (can be overridden)\n- Audit trail records split operation\n\n**Example:**\n\
+        ```json\nPOST /api/items/DFID-BEEF-BR-2025-000123-abc/split\n{\n  \"value_chain\"\
+        : \"BEEF\",\n  \"country\": \"BR\",\n  \"year\": 2025,\n  \"metadata\": {\n\
+        \    \"note\": \"Split for transfer to Buyer X\",\n    \"weight_kg\": 225\n\
+        \  },\n  \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}\n\nResponse:\n\
+        {\n  \"original_dfid\": \"DFID-BEEF-BR-2025-000123-abc\",\n  \"new_dfid\"\
+        : \"DFID-BEEF-BR-2025-000789-xyz\"\n}\n```\n"
       operationId: split_item
       parameters:
       - name: dfid
@@ -5828,50 +6622,22 @@ paths:
       tags:
       - workflows
       summary: POST /items/{dfid}/unmerge
-      description: |
-        Unmerge a previously merged item (restore both original items).
-
-        **What it does:**
-        - Restores secondary item to 'active' status
-        - Removes 'merged_into' relationship
-        - Reverts metadata changes from merge
-        - Creates "unmerged" event in lifecycle
-        - Preserves audit trail of original merge
-
-        **RBAC Requirements:**
-        - User must have `update_items` permission in both circuits
-        - Only merged items can be unmerged (status = 'merged')
-        - Cannot unmerge if primary item was subsequently merged/archived
-
-        **What gets restored:**
-        - Secondary item status: merged → active
-        - Secondary item metadata (pre-merge snapshot)
-        - Independent access to both items
-
-        **When unmerge is blocked:**
-        - Primary item was archived
-        - Primary item was merged into another
-        - More than 90 days elapsed since merge (configurable)
-
-        **Use cases:**
-        - Undo accidental merge
-        - Restore items mistakenly deduplicated
-        - Correct data entry errors
-
-        **Example:**
-        ```json
-        POST /api/items/DFID-BEEF-BR-2025-000456-def/unmerge
-        {
-          "user_id": "550e8400-e29b-41d4-a716-446655440000"
-        }
-
-        Response:
-        {
-          "primary_dfid": "DFID-BEEF-BR-2025-000123-abc",
-          "restored_dfid": "DFID-BEEF-BR-2025-000456-def",
-          "status": "unmerged"
-        }
-        ```
+      description: "Unmerge a previously merged item (restore both original items).\n\
+        \n**What it does:**\n- Restores secondary item to 'active' status\n- Removes\
+        \ 'merged_into' relationship\n- Reverts metadata changes from merge\n- Creates\
+        \ \"unmerged\" event in lifecycle\n- Preserves audit trail of original merge\n\
+        \n**RBAC Requirements:**\n- User must have `update_items` permission in both\
+        \ circuits\n- Only merged items can be unmerged (status = 'merged')\n- Cannot\
+        \ unmerge if primary item was subsequently merged/archived\n\n**What gets\
+        \ restored:**\n- Secondary item status: merged \u2192 active\n- Secondary\
+        \ item metadata (pre-merge snapshot)\n- Independent access to both items\n\
+        \n**When unmerge is blocked:**\n- Primary item was archived\n- Primary item\
+        \ was merged into another\n- More than 90 days elapsed since merge (configurable)\n\
+        \n**Use cases:**\n- Undo accidental merge\n- Restore items mistakenly deduplicated\n\
+        - Correct data entry errors\n\n**Example:**\n```json\nPOST /api/items/DFID-BEEF-BR-2025-000456-def/unmerge\n\
+        {\n  \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}\n\nResponse:\n\
+        {\n  \"primary_dfid\": \"DFID-BEEF-BR-2025-000123-abc\",\n  \"restored_dfid\"\
+        : \"DFID-BEEF-BR-2025-000456-def\",\n  \"status\": \"unmerged\"\n}\n```\n"
       operationId: unmerge_item
       parameters:
       - name: dfid
@@ -5904,36 +6670,60 @@ paths:
       tags:
       - items
       summary: GET /items/:id
-      description: |
-        Retrieve detailed information about a specific item by UUID.
+      description: 'Retrieve detailed information about a specific item by UUID.
+
 
         **What it returns:**
+
         - DFID (unique identifier)
+
         - Status (pending, active, inactive, archived, local, merged, split)
+
         - Metadata (item-specific data)
+
         - Identifiers (canonical + contextual)
+
         - Circuit ID and ownership
+
         - Lifecycle events (creation, updates, state changes)
+
         - Relationships (parent/child items)
 
+
         **RBAC Requirements:**
+
         - User must have `read_items` permission in the circuit
-        - User must be a member of the item's circuit
+
+        - User must be a member of the item''s circuit
+
 
         **Note:**
+
         This endpoint uses UUID (internal database ID), not DFID.
+
         To query by DFID, use `GET /api/items?dfid=DFID-...` instead.
 
+
         **Use cases:**
+
         - Item detail page
+
         - Verify item existence before operations
+
         - Audit trail review
 
+
         **Example:**
+
         ```
+
         GET /api/items/550e8400-e29b-41d4-a716-446655440000
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: get_item
       parameters:
       - name: id
@@ -5966,47 +6756,21 @@ paths:
       tags:
       - items
       summary: PUT /items/:id
-      description: |
-        Update item metadata and properties.
-
-        **What you can update:**
-        - Metadata fields (weight, location, notes, etc.)
-        - Tags for categorization
-        - Status (active, archived, etc.)
-        - Custom properties
-
-        **Immutable fields:**
-        - `dfid`: Cannot be changed (permanent identifier)
-        - `circuit_id`: Cannot be moved between circuits
-        - `created_at`: Immutable timestamp
-        - Value chain, country, year (embedded in DFID)
-
-        **RBAC Requirements:**
-        - User must have `update_items` permission in the circuit
-        - Only item owner or circuit admin can update
-
-        **Audit trail:**
-        - All updates are logged with old/new values
-        - Tracks actor, timestamp, and change reason
-        - Immutable record for compliance
-
-        **Use cases:**
-        - Update item properties as data becomes available
-        - Correct data entry errors
-        - Add notes and observations
-
-        **Example:**
-        ```json
-        PUT /api/items/550e8400-e29b-41d4-a716-446655440000
-        {
-          "metadata": {
-            "weight_kg": 475,
-            "location": "Warehouse B",
-            "quality_grade": "A"
-          },
-          "tags": ["certified", "organic", "2025-Q1"]
-        }
-        ```
+      description: "Update item metadata and properties.\n\n**What you can update:**\n\
+        - Metadata fields (weight, location, notes, etc.)\n- Tags for categorization\n\
+        - Status (active, archived, etc.)\n- Custom properties\n\n**Immutable fields:**\n\
+        - `dfid`: Cannot be changed (permanent identifier)\n- `circuit_id`: Cannot\
+        \ be moved between circuits\n- `created_at`: Immutable timestamp\n- Value\
+        \ chain, country, year (embedded in DFID)\n\n**RBAC Requirements:**\n- User\
+        \ must have `update_items` permission in the circuit\n- Only item owner or\
+        \ circuit admin can update\n\n**Audit trail:**\n- All updates are logged with\
+        \ old/new values\n- Tracks actor, timestamp, and change reason\n- Immutable\
+        \ record for compliance\n\n**Use cases:**\n- Update item properties as data\
+        \ becomes available\n- Correct data entry errors\n- Add notes and observations\n\
+        \n**Example:**\n```json\nPUT /api/items/550e8400-e29b-41d4-a716-446655440000\n\
+        {\n  \"metadata\": {\n    \"weight_kg\": 475,\n    \"location\": \"Warehouse\
+        \ B\",\n    \"quality_grade\": \"A\"\n  },\n  \"tags\": [\"certified\", \"\
+        organic\", \"2025-Q1\"]\n}\n```\n"
       operationId: update_item
       parameters:
       - name: id
@@ -6051,52 +6815,89 @@ paths:
       tags:
       - items
       summary: DELETE /items/:id
-      description: |
-        Soft delete an item (archive it, but preserve data).
+      description: 'Soft delete an item (archive it, but preserve data).
+
 
         **What it does:**
-        - Changes item status to 'archived'
+
+        - Changes item status to ''archived''
+
         - Preserves all data for audit/compliance
+
         - Removes from active item lists
+
         - Maintains DFID and relationships
+
         - Creates audit log entry
 
+
         **RBAC Requirements:**
+
         - User must have `delete_items` permission in the circuit
+
         - Only item owner or circuit admin can delete
+
         - Cannot delete items with active dependencies
 
+
         **Data preservation:**
+
         - Item data remains in database
+
         - DFID remains valid and cannot be reused
+
         - Audit trail remains accessible
+
         - Relationships are preserved
+
         - Can be restored by system admin
 
+
         **Cascade behavior:**
+
         - Child items are NOT deleted (remain active)
+
         - Events remain accessible
+
         - Snapshots remain accessible
+
         - Merkle tree verification still works
 
+
         **When deletion is blocked:**
+
         - Item has active child items that depend on it
+
         - Item is referenced in active workflows
+
         - Circuit is archived
 
+
         **Use cases:**
+
         - Remove test/demo data
+
         - Decommission deprecated items
+
         - Compliance with data retention policies
 
+
         **Important:**
+
         This is a soft delete. For hard delete (permanent removal), contact support.
 
+
         **Example:**
+
         ```
+
         DELETE /api/items/550e8400-e29b-41d4-a716-446655440000?user_id=admin-uuid
+
         Authorization: Bearer <access_token>
+
         ```
+
+        '
       operationId: delete_item
       parameters:
       - name: id
@@ -7042,27 +7843,14 @@ paths:
       tags:
       - snapshots
       summary: POST /snapshots/:id/restore - Restore from snapshot (CRITICAL OPERATION)
-      description: 'Initiate a restoration operation to rollback to a previous snapshot
-        state.
-
-
-        **⚠️ WARNING**: This operation will modify current circuit/item state.
-
-
-        **Process**: Auto-creates pre-restore snapshot → Validates integrity → Applies
-        changes → Tracks status
-
-
-        **Restoration Types**: full (complete replacement), partial (selective), merge
-        (combine with current)
-
-
-        **Safety Features**: Pre-restore backup, rollback on failure, integrity verification,
-        async processing
-
-
-        **Permissions Required**: `ManageSnapshots` permission in the snapshot''s
-        circuit'
+      description: "Initiate a restoration operation to rollback to a previous snapshot\
+        \ state.\n\n**\u26A0\uFE0F WARNING**: This operation will modify current circuit/item\
+        \ state.\n\n**Process**: Auto-creates pre-restore snapshot \u2192 Validates\
+        \ integrity \u2192 Applies changes \u2192 Tracks status\n\n**Restoration Types**:\
+        \ full (complete replacement), partial (selective), merge (combine with current)\n\
+        \n**Safety Features**: Pre-restore backup, rollback on failure, integrity\
+        \ verification, async processing\n\n**Permissions Required**: `ManageSnapshots`\
+        \ permission in the snapshot's circuit"
       operationId: create_restoration
       parameters:
       - name: id
@@ -7326,3 +8114,68 @@ paths:
           description: Webhook not found
         '500':
           description: Internal server error
+  /api/compliance/check:
+    post:
+      tags:
+      - compliance
+      summary: Submit a compliance check
+      operationId: submitComplianceCheck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Compliance check accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+  /api/compliance/checks/{id}:
+    get:
+      tags:
+      - compliance
+      summary: Get compliance check status by ID
+      operationId: getComplianceCheck
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Compliance check status
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+  /api/compliance/sources:
+    get:
+      tags:
+      - compliance
+      summary: List compliance data sources
+      operationId: listComplianceSources
+      responses:
+        '200':
+          description: Sources list
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          description: Unauthorized

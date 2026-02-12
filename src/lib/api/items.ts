@@ -3,6 +3,8 @@ import type {
   Item,
   ListItemsResponse,
   CreateItemRequest,
+  CreateItemResponse,
+  ItemDetailsResponse,
   UpdateItemRequest,
   UpdateItemStatusRequest,
   ItemFilters,
@@ -22,15 +24,35 @@ export async function getItems(params?: ItemFilters): Promise<Item[]> {
   return response.items;
 }
 
-export async function getItem(id: string): Promise<Item> {
-  return registryRequest<Item>(`/items/${id}`);
+export async function getItem(id: string): Promise<ItemDetailsResponse> {
+  const response = await registryRequest<any>(`/items/${id}`);
+  // Handle both new format (ItemDetailsResponse) and legacy flat format
+  if (response.item) {
+    return response as ItemDetailsResponse;
+  }
+  // Legacy: flat item response - wrap it
+  return {
+    item: response as Item,
+    identifiers: [],
+    events: [],
+  };
 }
 
-export async function createItem(data: CreateItemRequest): Promise<Item> {
-  return registryRequest<Item>("/items", {
+export async function createItem(data: CreateItemRequest): Promise<CreateItemResponse> {
+  const response = await registryRequest<any>("/items", {
     method: "POST",
     body: JSON.stringify(data),
   });
+  // Handle both new CreateItemResponse and legacy Item
+  if (response.item) {
+    return response as CreateItemResponse;
+  }
+  return {
+    item: response as Item,
+    identifiers: [],
+    events: [],
+    was_deduplicated: false,
+  };
 }
 
 export async function updateItem(id: string, data: UpdateItemRequest): Promise<Item> {

@@ -8,14 +8,12 @@ import {
   XCircle,
   Clock,
   Loader2,
-  GitBranch,
   Users,
-  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { getCircuit, getJoinRequests, updateJoinRequest } from "@/lib/defarm-api";
+import { getCircuit, getJoinRequests, reviewJoinRequest } from "@/lib/defarm-api";
 import type { JoinRequest } from "@/lib/api/types";
 
 const statusConfig: Record<string, { label: string; icon: typeof Clock; className: string }> = {
@@ -44,14 +42,17 @@ export default function JoinRequestsAdmin() {
   });
 
   const decideMutation = useMutation({
-    mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
-      updateJoinRequest(id!, requestId, { status }),
-    onSuccess: (_, { status }) => {
+    mutationFn: ({ requestId, action }: { requestId: string; action: 'approve' | 'reject' }) =>
+      reviewJoinRequest(id!, requestId, {
+        action,
+        role: action === 'approve' ? 'member' : undefined,
+      }),
+    onSuccess: (_, { action }) => {
       queryClient.invalidateQueries({ queryKey: ["joinRequests", id] });
       toast({
-        title: status === "approved" ? "Solicitação aprovada!" : "Solicitação rejeitada",
+        title: action === "approve" ? "Solicitação aprovada!" : "Solicitação rejeitada",
         description:
-          status === "approved"
+          action === "approve"
             ? "O usuário foi adicionado ao circuito."
             : "A solicitação foi rejeitada.",
       });
@@ -126,8 +127,8 @@ export default function JoinRequestsAdmin() {
                     <Users className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">
-                      {req.user_id}
+                    <p className="font-medium text-foreground text-sm font-mono">
+                      {req.user_id.slice(0, 8)}...
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Solicitado em{" "}
@@ -140,6 +141,20 @@ export default function JoinRequestsAdmin() {
                     {req.message && (
                       <p className="text-sm text-muted-foreground mt-1 italic">
                         "{req.message}"
+                      </p>
+                    )}
+                    {req.user_metadata && Object.keys(req.user_metadata).length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {Object.entries(req.user_metadata).map(([k, v]) => (
+                          <span key={k} className="text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                            {k}: {String(v)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {req.rejection_reason && (
+                      <p className="text-xs text-destructive mt-1">
+                        Motivo: {req.rejection_reason}
                       </p>
                     )}
                   </div>
@@ -161,7 +176,7 @@ export default function JoinRequestsAdmin() {
                       <Button
                         size="sm"
                         onClick={() =>
-                          decideMutation.mutate({ requestId: req.id, status: "approved" })
+                          decideMutation.mutate({ requestId: req.id, action: "approve" })
                         }
                         disabled={decideMutation.isPending}
                         className="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -173,7 +188,7 @@ export default function JoinRequestsAdmin() {
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          decideMutation.mutate({ requestId: req.id, status: "rejected" })
+                          decideMutation.mutate({ requestId: req.id, action: "reject" })
                         }
                         disabled={decideMutation.isPending}
                       >

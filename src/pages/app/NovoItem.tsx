@@ -64,13 +64,15 @@ export default function NovoItem() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateItemRequest) => createItem(data),
-    onSuccess: (item) => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
       toast({
-        title: "Item criado!",
-        description: "O item foi cadastrado com sucesso.",
+        title: response.was_deduplicated ? "Item enriquecido!" : "Item criado!",
+        description: response.was_deduplicated
+          ? "Um item existente foi enriquecido com os novos dados."
+          : "O item foi cadastrado com sucesso.",
       });
-      navigate(`/app/itens/${item.id}`);
+      navigate(`/app/itens/${response.item.id}`);
     },
     onError: (error) => {
       toast({

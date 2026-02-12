@@ -34,8 +34,36 @@ export interface CreateItemRequest {
   year: number;
   circuit_id?: string | null;
   metadata?: Record<string, unknown> | null;
+  identifiers?: IdentifierInput[] | null;
   user_id?: string | null;
   ip_address?: string | null;
+}
+
+export interface IdentifierInput {
+  identifier_type: string;
+  value: string;
+  is_canonical?: boolean | null;
+}
+
+export interface IdentifierResponse {
+  identifier_type: string;
+  value: string;
+  is_canonical: boolean;
+}
+
+export interface ItemDetailsResponse {
+  item: Item;
+  identifiers: IdentifierResponse[];
+  canonical_identifier?: IdentifierResponse | null;
+  events: Event[];
+}
+
+export interface CreateItemResponse {
+  item: Item;
+  identifiers: IdentifierResponse[];
+  canonical_identifier?: IdentifierResponse | null;
+  events: Event[];
+  was_deduplicated: boolean;
 }
 
 export interface UpdateItemRequest {
@@ -739,10 +767,12 @@ export interface JoinRequest {
   id: string;
   circuit_id: string;
   user_id: string;
-  status: string;
+  status: 'pending' | 'approved' | 'rejected';
   message?: string | null;
-  decided_by?: string | null;
-  decided_at?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  rejection_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -754,9 +784,73 @@ export interface ListJoinRequestsResponse {
 
 export interface CreateJoinRequestRequest {
   message?: string | null;
+  user_metadata?: Record<string, unknown> | null;
 }
 
-export interface UpdateJoinRequestRequest {
+export interface ReviewJoinRequestInput {
+  action: 'approve' | 'reject';
+  role?: string;
+  rejection_reason?: string;
+}
+
+// --- Public Circuit Types ---
+
+export interface PublicCircuitInfo {
+  id: string;
+  name: string;
+  circuit_type: string;
+  visibility: string;
+  member_count: number;
+  item_count: number;
+  featured: boolean;
+  searchable: boolean;
+  discovery_enabled: boolean;
+  allow_join_requests: boolean;
+  created_at: string;
+  description?: string | null;
+  public_slug?: string | null;
+  public_banner_url?: string | null;
+  public_logo_url?: string | null;
+}
+
+export interface CircuitStats {
+  total_items: number;
+  active_items: number;
+  value_chains: string[];
+  countries: string[];
+  recent_activity_count: number;
+}
+
+export interface ItemSummary {
+  id: string;
+  dfid: string;
+  value_chain: string;
+  country: string;
+  year: number;
   status: string;
-  decided_by?: string | null;
+  registered_at: string;
+}
+
+export interface PublicCircuitPortfolio {
+  circuit: PublicCircuitInfo;
+  stats: CircuitStats;
+  recent_items: ItemSummary[];
+}
+
+export interface PublicCircuitsResponse {
+  circuits: PublicCircuitInfo[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+// --- Item Relationships ---
+
+export interface ItemRelationshipRecord {
+  id: string;
+  primary_item_id: string;
+  related_item_id: string;
+  relationship_type: 'duplicate' | 'derived' | 'related';
+  confidence_score?: number | null;
+  created_at: string;
 }

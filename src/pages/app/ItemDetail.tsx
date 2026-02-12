@@ -9,13 +9,15 @@ export default function ItemDetail() {
   const { id } = useParams<{ id: string }>();
 
   // Fetch item details
-  const { data: item, isLoading: isLoadingItem, error: itemError } = useQuery({
+  const { data: itemDetails, isLoading: isLoadingItem, error: itemError } = useQuery({
     queryKey: ["item", id],
     queryFn: () => getItem(id!),
     enabled: !!id,
     retry: 1,
     retryDelay: 1000,
   });
+
+  const item = itemDetails?.item;
 
   // Fetch item events (now returns Event[] directly)
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
