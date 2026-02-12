@@ -80,16 +80,6 @@ export function ItemIdentifiers({ item }: ItemIdentifiersProps) {
               {formatTime(item?.last_updated_at || item?.updated_at)}
             </span>
           </div>
-          {item?.circuit_id && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Circuito</span>
-              <span className="text-foreground font-mono text-xs">
-                {item.circuit_id.length > 15
-                  ? `${item.circuit_id.slice(0, 15)}...`
-                  : item.circuit_id}
-              </span>
-            </div>
-          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">ID</span>
             <span className="text-foreground font-mono text-xs">

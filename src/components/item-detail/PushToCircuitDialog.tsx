@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { getCircuits, pushItemToCircuit, Item } from "@/lib/defarm-api";
+import { getCircuits, updateItem, Item } from "@/lib/defarm-api";
 
 interface PushToCircuitDialogProps {
   item: Item;
@@ -39,7 +39,7 @@ export function PushToCircuitDialog({
   // Push mutation
   const pushMutation = useMutation({
     mutationFn: ({ circuitId, itemId }: { circuitId: string; itemId: string }) =>
-      pushItemToCircuit(circuitId, itemId),
+      updateItem(itemId, { metadata: { circuit_id: circuitId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["itemEvents", item.dfid] });
       queryClient.invalidateQueries({ queryKey: ["item", item.dfid] });

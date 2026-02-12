@@ -89,7 +89,6 @@ export default function NovoItem() {
       country,
       year,
       circuit_id: circuitId || null,
-      owner_id: user?.id || null,
       user_id: user?.id || null,
     });
   };
