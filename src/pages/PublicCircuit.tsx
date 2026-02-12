@@ -12,10 +12,15 @@ import {
   ArrowLeft,
   UserPlus,
   CheckCircle2,
+  BarChart3,
+  MapPin,
+  Layers,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicCircuit, createJoinRequest } from "@/lib/defarm-api";
+import type { PublicCircuitPortfolio, ItemSummary } from "@/lib/api/types";
 import { useAuth } from "@/contexts/AuthContext";
 import logoIcon from "@/assets/logo-icon.png";
 import { useState } from "react";
@@ -26,7 +31,7 @@ export default function PublicCircuit() {
   const { isAuthenticated } = useAuth();
   const [joinSent, setJoinSent] = useState(false);
 
-  const { data: circuit, isLoading, error } = useQuery({
+  const { data: portfolio, isLoading, error } = useQuery({
     queryKey: ["publicCircuit", id],
     queryFn: () => getPublicCircuit(id!),
     enabled: !!id,
@@ -62,7 +67,7 @@ export default function PublicCircuit() {
     );
   }
 
-  if (error || !circuit) {
+  if (error || !portfolio) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -81,6 +86,10 @@ export default function PublicCircuit() {
       </div>
     );
   }
+
+  const circuit = portfolio.circuit;
+  const stats = portfolio.stats;
+  const recentItems = portfolio.recent_items;
 
   return (
     <div className="min-h-screen bg-background">
@@ -135,7 +144,7 @@ export default function PublicCircuit() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">{circuit.name}</h1>
               <p className="text-muted-foreground mt-1">
-                {circuit.public_description || circuit.description || "Sem descrição"}
+                {circuit.description || "Sem descrição"}
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-3">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
@@ -146,20 +155,22 @@ export default function PublicCircuit() {
                   <Package className="h-3 w-3" />
                   {circuit.circuit_type || "Standard"}
                 </span>
-                {circuit.view_count !== undefined && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Eye className="h-3 w-3" />
-                    {circuit.view_count} visualizações
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  {circuit.member_count} membros
+                </span>
               </div>
             </div>
           </div>
 
           {/* Join button */}
           <div className="flex-shrink-0">
-            {joinSent ? (
-              <Button disabled className="btn-offset bg-primary hover:bg-primary text-primary-foreground">
+            {!circuit.allow_join_requests ? (
+              <Button disabled variant="outline">
+                Não aceita solicitações
+              </Button>
+            ) : joinSent ? (
+              <Button disabled className="bg-primary hover:bg-primary text-primary-foreground">
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Solicitação enviada
               </Button>
@@ -167,7 +178,7 @@ export default function PublicCircuit() {
               <Button
                 onClick={() => joinMutation.mutate()}
                 disabled={joinMutation.isPending}
-                className="btn-offset bg-primary hover:bg-primary text-primary-foreground"
+                className="bg-primary hover:bg-primary text-primary-foreground"
               >
                 {joinMutation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -178,7 +189,7 @@ export default function PublicCircuit() {
               </Button>
             ) : (
               <Link to="/login">
-                <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground">
+                <Button className="bg-primary hover:bg-primary text-primary-foreground">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Entrar para solicitar
                 </Button>
@@ -187,59 +198,100 @@ export default function PublicCircuit() {
           </div>
         </div>
 
-        {/* Info cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {circuit.public_website && (
-            <a
-              href={circuit.public_website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-background border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/50 transition-colors"
-            >
-              <ExternalLink className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Website</p>
-                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                  {circuit.public_website}
-                </p>
-              </div>
-            </a>
-          )}
-          {circuit.public_contact_email && (
-            <a
-              href={`mailto:${circuit.public_contact_email}`}
-              className="bg-background border border-border rounded-xl p-4 flex items-center gap-3 hover:border-primary/50 transition-colors"
-            >
-              <Mail className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Contato</p>
-                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                  {circuit.public_contact_email}
-                </p>
-              </div>
-            </a>
-          )}
-          <div className="bg-background border border-border rounded-xl p-4 flex items-center gap-3">
-            <Users className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Circuito aberto</p>
-              <p className="text-xs text-muted-foreground">Aceita solicitações de entrada</p>
-            </div>
+        {/* Stats cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-background border border-border rounded-xl p-4 text-center">
+            <Package className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-bold text-foreground">{stats.total_items}</p>
+            <p className="text-xs text-muted-foreground">Itens totais</p>
+          </div>
+          <div className="bg-background border border-border rounded-xl p-4 text-center">
+            <CheckCircle2 className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-bold text-foreground">{stats.active_items}</p>
+            <p className="text-xs text-muted-foreground">Itens ativos</p>
+          </div>
+          <div className="bg-background border border-border rounded-xl p-4 text-center">
+            <Layers className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-bold text-foreground">{stats.value_chains.length}</p>
+            <p className="text-xs text-muted-foreground">Cadeias de valor</p>
+          </div>
+          <div className="bg-background border border-border rounded-xl p-4 text-center">
+            <Activity className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-bold text-foreground">{stats.recent_activity_count}</p>
+            <p className="text-xs text-muted-foreground">Atividade (7d)</p>
           </div>
         </div>
 
-        {/* Metadata / extra info */}
-        {circuit.metadata && Object.keys(circuit.metadata).length > 0 && (
+        {/* Value chains & countries */}
+        {(stats.value_chains.length > 0 || stats.countries.length > 0) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {stats.value_chains.length > 0 && (
+              <div className="bg-background border border-border rounded-xl p-4">
+                <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  Cadeias de Valor
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {stats.value_chains.map((vc) => (
+                    <span
+                      key={vc}
+                      className="px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary"
+                    >
+                      {vc}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {stats.countries.length > 0 && (
+              <div className="bg-background border border-border rounded-xl p-4">
+                <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Países
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {stats.countries.map((c) => (
+                    <span
+                      key={c}
+                      className="px-2 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground"
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Recent items */}
+        {recentItems.length > 0 && (
           <div className="bg-background border border-border rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Informações adicionais</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(circuit.metadata).map(([key, value]) => (
-                <div key={key} className="flex justify-between py-2 border-b border-border last:border-0">
-                  <span className="text-sm text-muted-foreground capitalize">
-                    {key.replace(/_/g, " ")}
-                  </span>
-                  <span className="text-sm font-medium text-foreground">
-                    {String(value)}
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              Itens Recentes
+            </h2>
+            <div className="space-y-2">
+              {recentItems.map((item: ItemSummary) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between py-3 border-b border-border last:border-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Package className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-mono font-medium text-foreground">
+                        {item.dfid.length > 35 ? `${item.dfid.slice(0, 35)}...` : item.dfid}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.value_chain} · {item.country} · {item.year}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                    {item.status}
                   </span>
                 </div>
               ))}

@@ -11,24 +11,23 @@ import {
   Loader2,
   ArrowRight,
   Compass,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getPublicCircuits } from "@/lib/defarm-api";
+import type { PublicCircuitInfo } from "@/lib/api/types";
 
 export default function CircuitDiscovery() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: circuits = [], isLoading, error } = useQuery({
-    queryKey: ["publicCircuits"],
-    queryFn: () => getPublicCircuits(),
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["publicCircuits", searchQuery],
+    queryFn: () => getPublicCircuits({ search: searchQuery || undefined }),
     retry: 1,
   });
 
-  const filtered = circuits.filter((c: any) =>
-    (c.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.description || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const circuits = data?.circuits ?? [];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -69,9 +68,9 @@ export default function CircuitDiscovery() {
             {error instanceof Error ? error.message : "Tente novamente mais tarde"}
           </p>
         </div>
-      ) : filtered.length > 0 ? (
+      ) : circuits.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((circuit: any) => (
+          {circuits.map((circuit: PublicCircuitInfo) => (
             <div
               key={circuit.id}
               className="bg-background border border-border rounded-2xl p-6 hover:border-primary/50 transition-colors group"
@@ -88,33 +87,39 @@ export default function CircuitDiscovery() {
                     <GitBranch className="h-6 w-6 text-primary" />
                   )}
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                  <Globe className="h-3 w-3" />
-                  Público
-                </span>
+                <div className="flex items-center gap-2">
+                  {circuit.featured && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600">
+                      <Star className="h-3 w-3" />
+                      Destaque
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    <Globe className="h-3 w-3" />
+                    Público
+                  </span>
+                </div>
               </div>
 
               <h3 className="text-lg font-semibold text-foreground mb-1 line-clamp-1">
                 {circuit.name}
               </h3>
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {circuit.public_description || circuit.description || "Sem descrição"}
+                {circuit.description || "Sem descrição"}
               </p>
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                {circuit.view_count !== undefined && (
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
-                    {circuit.view_count} views
-                  </span>
-                )}
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {circuit.member_count} membros
+                </span>
                 <span className="flex items-center gap-1">
                   <Package className="h-4 w-4" />
-                  {circuit.circuit_type || "Standard"}
+                  {circuit.item_count} itens
                 </span>
               </div>
 
-              <Link to={`/c/${circuit.slug || circuit.id}`}>
+              <Link to={`/c/${circuit.public_slug || circuit.id}`}>
                 <Button
                   variant="outline"
                   className="w-full group-hover:border-primary group-hover:text-primary"
@@ -138,6 +143,12 @@ export default function CircuitDiscovery() {
               : "Circuitos públicos aparecerão aqui quando disponíveis"}
           </p>
         </div>
+      )}
+
+      {data && data.total > 0 && (
+        <p className="text-sm text-muted-foreground text-center">
+          Mostrando {circuits.length} de {data.total} circuitos públicos
+        </p>
       )}
     </div>
   );
