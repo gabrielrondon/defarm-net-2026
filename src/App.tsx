@@ -38,6 +38,9 @@ import FinanceCreditLines from "./pages/app/FinanceCreditLines";
 import FinanceSimulador from "./pages/app/FinanceSimulador";
 import FinanceAnalise from "./pages/app/FinanceAnalise";
 import ComplianceCheck from "./pages/app/ComplianceCheck";
+import CircuitDiscovery from "./pages/app/CircuitDiscovery";
+import JoinRequestsAdmin from "./pages/app/JoinRequestsAdmin";
+import PublicCircuit from "./pages/PublicCircuit";
 
 const queryClient = new QueryClient(); // init
 
@@ -57,15 +60,18 @@ const App = () => (
             <Route path="/contato" element={<Contato />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/termos" element={<Termos />} />
+            <Route path="/c/:id" element={<PublicCircuit />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
             
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
+            <Route path="/app/descobrir" element={<AppLayout><CircuitDiscovery /></AppLayout>} />
             <Route path="/app/circuitos" element={<AppLayout><CircuitosList /></AppLayout>} />
             <Route path="/app/circuitos/novo" element={<AppLayout><NovoCircuito /></AppLayout>} />
             <Route path="/app/circuitos/:id" element={<AppLayout><CircuitoDetail /></AppLayout>} />
             <Route path="/app/circuitos/:id/editar" element={<AppLayout><EditarCircuito /></AppLayout>} />
+            <Route path="/app/circuitos/:id/solicitacoes" element={<AppLayout><JoinRequestsAdmin /></AppLayout>} />
             <Route path="/app/itens" element={<AppLayout><ItensList /></AppLayout>} />
             <Route path="/app/itens/novo" element={<AppLayout><NovoItem /></AppLayout>} />
             <Route path="/app/itens/:id" element={<AppLayout><ItemDetail /></AppLayout>} />

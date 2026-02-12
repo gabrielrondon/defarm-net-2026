@@ -20,6 +20,7 @@ import {
   XCircle,
   Shield,
   Trash2,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -320,6 +321,12 @@ export default function CircuitoDetail() {
                 <DropdownMenuItem onClick={() => setIsMembersDialogOpen(true)}>
                   <Users className="h-4 w-4 mr-2" />
                   Gerenciar membros
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={`/app/circuitos/${id}/solicitacoes`} className="flex items-center">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Solicitações de entrada
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
