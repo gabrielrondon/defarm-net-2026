@@ -52,7 +52,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   getCircuit, 
   getCircuitItems, 
-  pushItemToCircuit,
+  updateItem,
   getItems,
   Item, 
 } from "@/lib/defarm-api";
@@ -93,7 +93,7 @@ export default function CircuitoDetail() {
   // Push item mutation
   const pushMutation = useMutation({
     mutationFn: ({ circuitId, itemId }: { circuitId: string; itemId: string }) =>
-      pushItemToCircuit(circuitId, itemId),
+      updateItem(itemId, { metadata: { circuit_id: circuitId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuitItems", id] });
       toast({

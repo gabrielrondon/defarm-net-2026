@@ -60,14 +60,6 @@ export async function getCircuitItems(circuitId: string): Promise<Item[]> {
   return getItems({ circuit_id: circuitId });
 }
 
-// Convenience: associate an item with a circuit
-export async function pushItemToCircuit(
-  circuitId: string,
-  itemId: string
-): Promise<Item> {
-  // Note: circuit_id is immutable on items; this only tags metadata.
-  return updateItem(itemId, { metadata: { circuit_id: circuitId } });
-}
 
 // Bulk import (CSV or JSON)
 export async function bulkIngestItems(

@@ -16,9 +16,7 @@ export interface Item {
   last_updated_at: string;
   created_at: string;
   updated_at: string;
-  circuit_id?: string | null;
   metadata?: Record<string, unknown> | null;
-  owner_id?: string | null;
   local_id?: string | null;
   merged_into?: string | null;
   split_from?: string | null;
@@ -36,7 +34,6 @@ export interface CreateItemRequest {
   year: number;
   circuit_id?: string | null;
   metadata?: Record<string, unknown> | null;
-  owner_id?: string | null;
   user_id?: string | null;
   ip_address?: string | null;
 }
@@ -681,7 +678,6 @@ export interface ItemFilters {
   year?: number;
   status?: string;
   circuit_id?: string;
-  owner_id?: string;
   limit?: number;
   offset?: number;
 }
