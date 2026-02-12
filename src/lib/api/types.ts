@@ -732,3 +732,31 @@ export interface MerkleTreeFilters {
   limit?: number;
   offset?: number;
 }
+
+// --- Join Requests ---
+
+export interface JoinRequest {
+  id: string;
+  circuit_id: string;
+  user_id: string;
+  status: string;
+  message?: string | null;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListJoinRequestsResponse {
+  requests: JoinRequest[];
+  count: number;
+}
+
+export interface CreateJoinRequestRequest {
+  message?: string | null;
+}
+
+export interface UpdateJoinRequestRequest {
+  status: string;
+  decided_by?: string | null;
+}

@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2, GitBranch, Shield, Globe } from "lucide-react";
+import { ArrowLeft, Save, Loader2, GitBranch, Shield, Globe, Eye, Search as SearchIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuit, updateCircuit } from "@/lib/defarm-api";
 
@@ -26,6 +26,12 @@ export default function EditarCircuito() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<string>("private");
+  const [discoveryEnabled, setDiscoveryEnabled] = useState(false);
+  const [searchable, setSearchable] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
+  const [publicDescription, setPublicDescription] = useState("");
+  const [publicContactEmail, setPublicContactEmail] = useState("");
+  const [publicWebsite, setPublicWebsite] = useState("");
 
   // Fetch circuit data
   const { data: circuit, isLoading: isLoadingCircuit } = useQuery({
@@ -40,11 +46,17 @@ export default function EditarCircuito() {
       setName(circuit.name);
       setDescription(circuit.description || "");
       setVisibility(circuit.visibility || "private");
+      setDiscoveryEnabled(circuit.discovery_enabled || false);
+      setSearchable(circuit.searchable || false);
+      setIsPublished(circuit.is_published || false);
+      setPublicDescription(circuit.public_description || "");
+      setPublicContactEmail(circuit.public_contact_email || "");
+      setPublicWebsite(circuit.public_website || "");
     }
   }, [circuit]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: { name?: string; description?: string; visibility?: string }) =>
+    mutationFn: (data: { name?: string; description?: string; visibility?: string; metadata?: Record<string, unknown> }) =>
       updateCircuit(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuits"] });
@@ -66,7 +78,19 @@ export default function EditarCircuito() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate({ name, description, visibility });
+    updateMutation.mutate({
+      name,
+      description,
+      visibility,
+      metadata: {
+        discovery_enabled: discoveryEnabled,
+        searchable,
+        is_published: isPublished,
+        public_description: publicDescription,
+        public_contact_email: publicContactEmail,
+        public_website: publicWebsite,
+      },
+    });
   };
 
   if (isLoadingCircuit) {
@@ -176,6 +200,80 @@ export default function EditarCircuito() {
             </p>
           </div>
         </div>
+
+        {/* Discovery & Public Profile */}
+        {visibility === "public" && (
+          <div className="bg-background border border-border rounded-2xl p-6 space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                <Eye className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Discovery & Perfil Público</h2>
+                <p className="text-sm text-muted-foreground">Configure como seu circuito aparece para o público</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Habilitar discovery</Label>
+                  <p className="text-xs text-muted-foreground">Permite que outros encontrem seu circuito</p>
+                </div>
+                <Switch checked={discoveryEnabled} onCheckedChange={setDiscoveryEnabled} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Pesquisável</Label>
+                  <p className="text-xs text-muted-foreground">Aparece em buscas de circuitos públicos</p>
+                </div>
+                <Switch checked={searchable} onCheckedChange={setSearchable} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Publicado</Label>
+                  <p className="text-xs text-muted-foreground">Ativa a página pública do circuito</p>
+                </div>
+                <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="publicDescription">Descrição pública</Label>
+                <Textarea
+                  id="publicDescription"
+                  placeholder="Descrição visível na página pública..."
+                  value={publicDescription}
+                  onChange={(e) => setPublicDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="publicContactEmail">Email de contato público</Label>
+                <Input
+                  id="publicContactEmail"
+                  type="email"
+                  placeholder="contato@fazenda.com"
+                  value={publicContactEmail}
+                  onChange={(e) => setPublicContactEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="publicWebsite">Website</Label>
+                <Input
+                  id="publicWebsite"
+                  type="url"
+                  placeholder="https://suafazenda.com.br"
+                  value={publicWebsite}
+                  onChange={(e) => setPublicWebsite(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Submit */}
         <div className="flex gap-4">

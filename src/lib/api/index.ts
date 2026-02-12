@@ -13,3 +13,4 @@ export * from "./sessions";
 export * from "./admin";
 export * from "./health";
 export * from "./dfid";
+export * from "./join-requests";

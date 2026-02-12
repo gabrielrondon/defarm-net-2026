@@ -16,6 +16,7 @@ import {
   Camera,
   Landmark,
   ClipboardCheck,
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -30,6 +31,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/app" },
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
+  { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
   { icon: Package, label: "Itens", href: "/app/itens" },
   { icon: Activity, label: "Eventos", href: "/app/eventos" },
   { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
