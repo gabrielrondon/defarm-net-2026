@@ -2,31 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, MapPin, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
+import { getCarGeoJSON, getSampleCarNumbers, getRandomSampleCar, type CarGeoJSON } from "@/lib/check-api/car";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-interface StepPropertyProps {
-  value: string;
-  onChange: (value: string, isFake: boolean) => void;
-  onNext: () => void;
-}
-
-function generateFakeCAR(): string {
-  const states: Record<string, string> = {
-    MT: "51", MG: "31", SP: "35", GO: "52", MS: "50",
-    BA: "29", PA: "15", TO: "17", PR: "41", RS: "43",
-  };
-  const stateKeys = Object.keys(states);
-  const state = stateKeys[Math.floor(Math.random() * stateKeys.length)];
-  const code = states[state];
-  const mun = String(Math.floor(Math.random() * 900) + 100).padStart(4, "0");
-  const seq = String(Math.floor(Math.random() * 9000) + 1000);
-  const hash = Array.from({ length: 32 }, () =>
-    "0123456789ABCDEF"[Math.floor(Math.random() * 16)]
-  ).join("");
-  return `${state}-${code}${mun}-${hash.slice(0, 32)}`;
-}
 
 function PropertyMap({ geojson }: { geojson: CarGeoJSON }) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -77,21 +55,51 @@ function PropertyMap({ geojson }: { geojson: CarGeoJSON }) {
   );
 }
 
+interface StepPropertyProps {
+  value: string;
+  onChange: (value: string, isFake: boolean) => void;
+  onNext: () => void;
+}
+
 export function StepProperty({ value, onChange, onNext }: StepPropertyProps) {
   const { t } = useTranslation();
   const [isFake, setIsFake] = useState(false);
   const [loading, setLoading] = useState(false);
   const [geojson, setGeojson] = useState<CarGeoJSON | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sampleCars, setSampleCars] = useState<string[]>([]);
+  const [loadingSample, setLoadingSample] = useState(false);
+
+  // Pre-fetch sample CARs on mount
+  useEffect(() => {
+    getSampleCarNumbers().then(setSampleCars).catch(() => {});
+  }, []);
 
   const canProceed = value.trim().length >= 5;
 
-  const handleGenerateFake = () => {
-    const fakeCAR = generateFakeCAR();
-    onChange(fakeCAR, true);
-    setIsFake(true);
-    setGeojson(null);
-    setError(null);
+  const handleGenerateFake = async () => {
+    if (sampleCars.length > 0) {
+      const car = getRandomSampleCar(sampleCars);
+      onChange(car, true);
+      setIsFake(true);
+      setGeojson(null);
+      setError(null);
+    } else {
+      setLoadingSample(true);
+      try {
+        const samples = await getSampleCarNumbers();
+        setSampleCars(samples);
+        const car = getRandomSampleCar(samples);
+        onChange(car, true);
+        setIsFake(true);
+        setGeojson(null);
+        setError(null);
+      } catch {
+        setError(t("onboarding.stepProperty.searchError"));
+      } finally {
+        setLoadingSample(false);
+      }
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,8 +165,10 @@ export function StepProperty({ value, onChange, onNext }: StepPropertyProps) {
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={handleGenerateFake}
-          className="text-sm text-muted-foreground hover:text-primary transition-colors underline underline-offset-4"
+          disabled={loadingSample}
+          className="text-sm text-muted-foreground hover:text-primary transition-colors underline underline-offset-4 disabled:opacity-50"
         >
+          {loadingSample ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
           {t("onboarding.stepProperty.generateFake")}
         </button>
 
