@@ -46,8 +46,8 @@ const getInitialState = (): OnboardingState => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Check if data is less than 24h old
-      if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+      // Check if data is less than 24h old and has current schema
+      if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000 && parsed.state?.property) {
         return parsed.state;
       }
     }
