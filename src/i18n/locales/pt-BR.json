@@ -328,6 +328,7 @@
   },
   "onboarding": {
     "steps": {
+      "property": "Propriedade",
       "identify": "Identificar",
       "register": "Registrar",
       "portfolio": "Portfolio",
@@ -336,6 +337,17 @@
     },
     "loginPrompt": "Já tem conta?",
     "loginPromptMobile": "Entrar",
+    "stepProperty": {
+      "title": "Qual a sua propriedade rural?",
+      "subtitle": "Informe o número do CAR (Cadastro Ambiental Rural) para localizar sua propriedade",
+      "placeholder": "MT-5101-ABC123...",
+      "fakeGenerated": "Número de exemplo gerado",
+      "generateFake": "Não tenho um CAR? Gerar exemplo",
+      "searchMap": "Buscar no mapa",
+      "searchError": "Não foi possível encontrar esta propriedade. Verifique o número do CAR e tente novamente.",
+      "mapCaption": "Limites da propriedade identificados via CAR",
+      "continue": "Continuar"
+    },
     "footer": "Seus dados estão seguros e só serão salvos quando você criar uma conta",
     "step1": {
       "title": "Qual o número do seu animal?",
