@@ -421,8 +421,8 @@
       "reqEudr": "EUDR compliant",
       "reqCerts": "Certificações extras",
       "readyTitle": "Pronto para começar?",
-      "readyDesc": "Crie sua conta para salvar seu portfolio e acessar todas as oportunidades",
-      "savePortfolio": "Salvar meu portfolio"
+      "readyDesc": "",
+      "savePortfolio": "Criar conta"
     }
   }
 }
