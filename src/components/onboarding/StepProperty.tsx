@@ -117,6 +117,11 @@ export function StepProperty({ value, onChange, onNext }: StepPropertyProps) {
 
     try {
       const result = await getCarGeoJSON(value.trim(), { skipAuth: true });
+      // Validate that geometry actually has coordinates
+      if (!result?.geometry?.type || !result?.geometry?.coordinates?.length) {
+        setError(t("onboarding.stepProperty.noGeometry"));
+        return;
+      }
       setGeojson(result);
     } catch (err: any) {
       console.error("[StepProperty] CAR lookup failed:", err);
