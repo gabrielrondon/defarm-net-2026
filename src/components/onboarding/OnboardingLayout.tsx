@@ -12,7 +12,7 @@ interface OnboardingLayoutProps {
   onStepClick?: (step: number) => void;
 }
 
-const stepKeys = ["identify", "register", "portfolio", "compliance", "opportunities"];
+const stepKeys = ["property", "identify", "register", "portfolio", "compliance", "opportunities"];
 
 export function OnboardingLayout({ 
   children, 

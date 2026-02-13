@@ -1,4 +1,5 @@
 export { OnboardingLayout } from "./OnboardingLayout";
+export { StepProperty } from "./StepProperty";
 export { StepIdentifier } from "./StepIdentifier";
 export { StepDFID } from "./StepDFID";
 export { StepPortfolio } from "./StepPortfolio";
