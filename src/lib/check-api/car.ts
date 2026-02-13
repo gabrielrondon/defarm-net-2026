@@ -42,8 +42,15 @@ export async function getCarMetadata(carNumber: string, { skipAuth = false } = {
 }
 
 export async function getCarGeoJSON(carNumber: string, { skipAuth = false } = {}): Promise<CarGeoJSON> {
-  // API returns raw geometry, wrap into a GeoJSON Feature for Leaflet
-  const geometry = await checkRequest<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`, {}, { skipAuth });
+  let geometry: CarGeometry;
+
+  if (skipAuth) {
+    // Use direct Check API URL to avoid gateway CORS/routing issues
+    geometry = await publicFetch<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`);
+  } else {
+    geometry = await checkRequest<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`, {}, { skipAuth });
+  }
+
   return {
     type: "Feature",
     properties: {},
