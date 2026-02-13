@@ -340,12 +340,15 @@
     "stepProperty": {
       "title": "Qual a sua propriedade rural?",
       "subtitle": "Informe o número do CAR (Cadastro Ambiental Rural) para localizar sua propriedade",
-      "placeholder": "MT-5101-ABC123...",
+      "placeholder": "UF-0000000-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
       "fakeGenerated": "Número de exemplo gerado",
-      "generateFake": "Não tenho um CAR? Gerar exemplo",
+      "generateFake": "Gerar CAR de exemplo",
+      "tryAnother": "Gerar outro exemplo",
+      "orGenerate": "Não tem um CAR? Sem problemas!",
       "searchMap": "Buscar no mapa",
       "searchError": "Não foi possível encontrar esta propriedade. Verifique o número do CAR e tente novamente.",
       "noGeometry": "Este CAR não possui polígono georreferenciado disponível. Tente outro número.",
+      "formatHint": "Formato do CAR: UF-0000000-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
       "searching": "Localizando propriedade...",
       "mapCaption": "Limites da propriedade identificados via CAR",
       "continue": "Continuar"

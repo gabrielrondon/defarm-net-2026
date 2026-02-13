@@ -340,12 +340,15 @@
     "stepProperty": {
       "title": "What's your rural property?",
       "subtitle": "Enter your CAR number (Rural Environmental Registry) to locate your property",
-      "placeholder": "MT-5101-ABC123...",
+      "placeholder": "UF-0000000-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
       "fakeGenerated": "Example number generated",
-      "generateFake": "Don't have a CAR? Generate example",
+      "generateFake": "Generate example CAR",
+      "tryAnother": "Generate another example",
+      "orGenerate": "Don't have a CAR? No problem!",
       "searchMap": "Search on map",
       "searchError": "Could not find this property. Check the CAR number and try again.",
       "noGeometry": "This CAR does not have georeferenced polygon data available. Try another number.",
+      "formatHint": "CAR format: UF-0000000-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
       "searching": "Locating property...",
       "mapCaption": "Property boundaries identified via CAR",
       "continue": "Continue"
