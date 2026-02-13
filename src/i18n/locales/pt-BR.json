@@ -345,6 +345,7 @@
       "generateFake": "Não tenho um CAR? Gerar exemplo",
       "searchMap": "Buscar no mapa",
       "searchError": "Não foi possível encontrar esta propriedade. Verifique o número do CAR e tente novamente.",
+      "noGeometry": "Este CAR não possui polígono georreferenciado disponível. Tente outro número.",
       "mapCaption": "Limites da propriedade identificados via CAR",
       "continue": "Continuar"
     },

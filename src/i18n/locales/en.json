@@ -345,6 +345,7 @@
       "generateFake": "Don't have a CAR? Generate example",
       "searchMap": "Search on map",
       "searchError": "Could not find this property. Check the CAR number and try again.",
+      "noGeometry": "This CAR does not have georeferenced polygon data available. Try another number.",
       "mapCaption": "Property boundaries identified via CAR",
       "continue": "Continue"
     },
