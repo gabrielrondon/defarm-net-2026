@@ -35,14 +35,12 @@ export interface CarGeoJSON {
   };
 }
 
-export async function getCarMetadata(carNumber: string, { direct = false } = {}): Promise<CarMetadata> {
-  const endpoint = `/car/${encodeURIComponent(carNumber)}`;
-  return direct ? publicFetch<CarMetadata>(endpoint) : checkRequest<CarMetadata>(endpoint);
+export async function getCarMetadata(carNumber: string, { skipAuth = false } = {}): Promise<CarMetadata> {
+  return checkRequest<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`, {}, { skipAuth });
 }
 
-export async function getCarGeoJSON(carNumber: string, { direct = false } = {}): Promise<CarGeoJSON> {
-  const endpoint = `/car/${encodeURIComponent(carNumber)}/geojson`;
-  return direct ? publicFetch<CarGeoJSON>(endpoint) : checkRequest<CarGeoJSON>(endpoint);
+export async function getCarGeoJSON(carNumber: string, { skipAuth = false } = {}): Promise<CarGeoJSON> {
+  return checkRequest<CarGeoJSON>(`/car/${encodeURIComponent(carNumber)}/geojson`, {}, { skipAuth });
 }
 
 export async function batchQueryCars(carNumbers: string[]): Promise<CarMetadata[]> {
