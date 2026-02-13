@@ -116,7 +116,7 @@ export function StepProperty({ value, onChange, onNext }: StepPropertyProps) {
     setGeojson(null);
 
     try {
-      const result = await getCarGeoJSON(value.trim());
+      const result = await getCarGeoJSON(value.trim(), { direct: true });
       setGeojson(result);
     } catch (err: any) {
       console.error("[StepProperty] CAR lookup failed:", err);

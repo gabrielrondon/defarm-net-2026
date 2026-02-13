@@ -1,5 +1,18 @@
 import { checkRequest } from "./client";
 
+// Direct API base for public endpoints (bypasses gateway auth)
+const CHECK_API_DIRECT = "https://defarm-check-api-production.up.railway.app";
+
+async function publicFetch<T>(endpoint: string): Promise<T> {
+  const url = `${CHECK_API_DIRECT}${endpoint}`;
+  console.log(`[DeFarm Check Direct] GET ${url}`);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+  return response.json();
+}
+
 export interface CarMetadata {
   carNumber: string;
   status: string;
@@ -22,12 +35,14 @@ export interface CarGeoJSON {
   };
 }
 
-export async function getCarMetadata(carNumber: string): Promise<CarMetadata> {
-  return checkRequest<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`);
+export async function getCarMetadata(carNumber: string, { direct = false } = {}): Promise<CarMetadata> {
+  const endpoint = `/car/${encodeURIComponent(carNumber)}`;
+  return direct ? publicFetch<CarMetadata>(endpoint) : checkRequest<CarMetadata>(endpoint);
 }
 
-export async function getCarGeoJSON(carNumber: string): Promise<CarGeoJSON> {
-  return checkRequest<CarGeoJSON>(`/car/${encodeURIComponent(carNumber)}/geojson`);
+export async function getCarGeoJSON(carNumber: string, { direct = false } = {}): Promise<CarGeoJSON> {
+  const endpoint = `/car/${encodeURIComponent(carNumber)}/geojson`;
+  return direct ? publicFetch<CarGeoJSON>(endpoint) : checkRequest<CarGeoJSON>(endpoint);
 }
 
 export async function batchQueryCars(carNumbers: string[]): Promise<CarMetadata[]> {
@@ -68,7 +83,7 @@ export async function getSampleCarNumbers(): Promise<string[]> {
   if (cachedSamples) return cachedSamples;
 
   try {
-    const data = await checkRequest<{ samples: CarSample[] }>("/samples/car");
+    const data = await publicFetch<{ samples: CarSample[] }>("/samples/car");
     if (data.samples?.length > 0) {
       cachedSamples = data.samples.map(s => s.carNumber);
       return cachedSamples;
