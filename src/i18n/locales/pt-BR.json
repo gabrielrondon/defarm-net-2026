@@ -346,6 +346,7 @@
       "searchMap": "Buscar no mapa",
       "searchError": "Não foi possível encontrar esta propriedade. Verifique o número do CAR e tente novamente.",
       "noGeometry": "Este CAR não possui polígono georreferenciado disponível. Tente outro número.",
+      "searching": "Localizando propriedade...",
       "mapCaption": "Limites da propriedade identificados via CAR",
       "continue": "Continuar"
     },
@@ -357,7 +358,8 @@
       "detected": "Parece ser um {{type}}",
       "fakeGenerated": "Número de exemplo gerado",
       "generateFake": "Não tenho um número? Gerar exemplo",
-      "continue": "Continuar"
+      "continue": "Continuar",
+      "propertyContext": "Agora, cadastre os animais para criar o passaporte digital da sua propriedade"
     },
     "step2": {
       "registering": "Registrando seu animal...",
