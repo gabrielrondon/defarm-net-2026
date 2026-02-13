@@ -26,13 +26,15 @@ export interface CarMetadata {
   };
 }
 
+export interface CarGeometry {
+  type: "Polygon" | "MultiPolygon";
+  coordinates: number[][][] | number[][][][];
+}
+
 export interface CarGeoJSON {
   type: "Feature";
   properties: Record<string, any>;
-  geometry: {
-    type: string;
-    coordinates: number[][][];
-  };
+  geometry: CarGeometry;
 }
 
 export async function getCarMetadata(carNumber: string, { skipAuth = false } = {}): Promise<CarMetadata> {
@@ -40,7 +42,13 @@ export async function getCarMetadata(carNumber: string, { skipAuth = false } = {
 }
 
 export async function getCarGeoJSON(carNumber: string, { skipAuth = false } = {}): Promise<CarGeoJSON> {
-  return checkRequest<CarGeoJSON>(`/car/${encodeURIComponent(carNumber)}/geojson`, {}, { skipAuth });
+  // API returns raw geometry, wrap into a GeoJSON Feature for Leaflet
+  const geometry = await checkRequest<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`, {}, { skipAuth });
+  return {
+    type: "Feature",
+    properties: {},
+    geometry,
+  };
 }
 
 export async function batchQueryCars(carNumbers: string[]): Promise<CarMetadata[]> {
