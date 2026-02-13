@@ -126,12 +126,9 @@ export function StepFinance({ itemCount, onSave }: StepFinanceProps) {
         </div>
 
         <Card className="p-6 bg-primary/5 border-primary/20 text-center">
-          <h3 className="text-lg font-semibold text-foreground mb-2">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {t("onboarding.step5.readyTitle")}
           </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {t("onboarding.step5.readyDesc")}
-          </p>
           
           <Button
             size="lg"
