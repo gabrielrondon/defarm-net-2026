@@ -19,9 +19,10 @@ export class CheckApiError extends Error {
 
 export async function checkRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  { skipAuth = false }: { skipAuth?: boolean } = {}
 ): Promise<T> {
-  const token = getAccessToken();
+  const token = skipAuth ? null : getAccessToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> || {}),
