@@ -1,64 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, MapPin, Loader2 } from "lucide-react";
+import { ArrowRight, Sparkles, MapPin, Loader2, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getCarGeoJSON, getSampleCarNumbers, getRandomSampleCar, type CarGeoJSON } from "@/lib/check-api/car";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-function PropertyMap({ geojson }: { geojson: CarGeoJSON }) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
-
-  useEffect(() => {
-    if (!mapRef.current || !geojson) return;
-
-    if (mapInstance.current) {
-      mapInstance.current.remove();
-      mapInstance.current = null;
-    }
-
-    const map = L.map(mapRef.current, {
-      zoomControl: true,
-      attributionControl: false,
-    });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18,
-    }).addTo(map);
-
-    const geoLayer = L.geoJSON(geojson as any, {
-      style: {
-        color: "#16a34a",
-        weight: 3,
-        fillColor: "#16a34a",
-        fillOpacity: 0.15,
-      },
-    }).addTo(map);
-
-    map.fitBounds(geoLayer.getBounds(), { padding: [30, 30] });
-    mapInstance.current = map;
-
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-    };
-  }, [geojson]);
-
-  return (
-    <div
-      ref={mapRef}
-      className="w-full h-64 md:h-80 rounded-xl border border-border overflow-hidden"
-    />
-  );
-}
+import { PropertyMap } from "./PropertyMap";
 
 interface StepPropertyProps {
   value: string;
   onChange: (value: string, isFake: boolean) => void;
-  onNext: () => void;
+  onNext: (geojson: CarGeoJSON) => void;
 }
 
 export function StepProperty({ value, onChange, onNext }: StepPropertyProps) {
@@ -70,54 +20,18 @@ export function StepProperty({ value, onChange, onNext }: StepPropertyProps) {
   const [sampleCars, setSampleCars] = useState<string[]>([]);
   const [loadingSample, setLoadingSample] = useState(false);
 
-  // Pre-fetch sample CARs on mount
   useEffect(() => {
     getSampleCarNumbers().then(setSampleCars).catch(() => {});
   }, []);
 
-  const canProceed = value.trim().length >= 5;
-
-  const handleGenerateFake = async () => {
-    if (sampleCars.length > 0) {
-      const car = getRandomSampleCar(sampleCars);
-      onChange(car, true);
-      setIsFake(true);
-      setGeojson(null);
-      setError(null);
-    } else {
-      setLoadingSample(true);
-      try {
-        const samples = await getSampleCarNumbers();
-        setSampleCars(samples);
-        const car = getRandomSampleCar(samples);
-        onChange(car, true);
-        setIsFake(true);
-        setGeojson(null);
-        setError(null);
-      } catch {
-        setError(t("onboarding.stepProperty.searchError"));
-      } finally {
-        setLoadingSample(false);
-      }
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value, false);
-    setIsFake(false);
-    setGeojson(null);
-    setError(null);
-  };
-
-  const handleSearch = async () => {
-    if (!canProceed) return;
+  const searchCar = useCallback(async (carNumber: string) => {
+    if (carNumber.trim().length < 5) return;
     setLoading(true);
     setError(null);
     setGeojson(null);
 
     try {
-      const result = await getCarGeoJSON(value.trim(), { skipAuth: true });
-      // Validate that geometry actually has coordinates
+      const result = await getCarGeoJSON(carNumber.trim(), { skipAuth: true });
       if (!result?.geometry?.type || !result?.geometry?.coordinates?.length) {
         setError(t("onboarding.stepProperty.noGeometry"));
         return;
@@ -129,92 +43,150 @@ export function StepProperty({ value, onChange, onNext }: StepPropertyProps) {
     } finally {
       setLoading(false);
     }
+  }, [t]);
+
+  const handleGenerateFake = async () => {
+    let samples = sampleCars;
+    if (samples.length === 0) {
+      setLoadingSample(true);
+      try {
+        samples = await getSampleCarNumbers();
+        setSampleCars(samples);
+      } catch {
+        setError(t("onboarding.stepProperty.searchError"));
+        setLoadingSample(false);
+        return;
+      }
+      setLoadingSample(false);
+    }
+
+    const car = getRandomSampleCar(samples);
+    onChange(car, true);
+    setIsFake(true);
+    setGeojson(null);
+    setError(null);
+    // Auto-search after generating
+    await searchCar(car);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value, false);
+    setIsFake(false);
+    setGeojson(null);
+    setError(null);
+  };
+
+  const handleSearch = () => searchCar(value);
+
+  const canSearch = value.trim().length >= 5;
+  const canProceed = !!geojson;
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center">
-      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-8">
-        <MapPin className="w-10 h-10 text-primary" />
+    <div className="flex-1 flex flex-col items-center justify-center text-center animate-fade-in">
+      {/* Icon */}
+      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+        <MapPin className="w-8 h-8 text-primary" />
       </div>
 
-      <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
+      {/* Title */}
+      <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
         {t("onboarding.stepProperty.title")}
       </h1>
-
-      <p className="text-muted-foreground mb-10 max-w-md">
+      <p className="text-muted-foreground mb-8 max-w-md text-sm md:text-base">
         {t("onboarding.stepProperty.subtitle")}
       </p>
 
-      <div className="w-full max-w-lg mb-4">
-        <input
-          type="text"
-          value={value}
-          onChange={handleInputChange}
-          placeholder={t("onboarding.stepProperty.placeholder")}
-          autoFocus
-          className="w-full text-xl md:text-2xl font-mono font-bold text-center 
-                     border-b-4 border-primary/30 bg-transparent py-4
-                     focus:outline-none focus:border-primary
-                     placeholder:text-muted-foreground/30
-                     transition-colors"
-        />
+      {/* Input Area */}
+      <div className="w-full max-w-lg mb-3">
+        <div className="relative">
+          <input
+            type="text"
+            value={value}
+            onChange={handleInputChange}
+            placeholder={t("onboarding.stepProperty.placeholder")}
+            autoFocus
+            className="w-full text-lg md:text-xl font-mono font-semibold text-center 
+                       border-2 border-border rounded-xl bg-muted/30 px-4 py-4
+                       focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20
+                       placeholder:text-muted-foreground/40
+                       transition-all"
+          />
+          {geojson && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center animate-scale-in">
+                <Check className="w-4 h-4 text-primary-foreground" />
+              </div>
+            </div>
+          )}
+        </div>
 
-        {isFake && (
-          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-sm">
-            <Sparkles className="w-3 h-3" />
-            {t("onboarding.stepProperty.fakeGenerated")}
-          </div>
-        )}
+        {/* Status badges */}
+        <div className="mt-3 min-h-[28px]">
+          {isFake && !loading && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs font-medium animate-fade-in">
+              <Sparkles className="w-3 h-3" />
+              {t("onboarding.stepProperty.fakeGenerated")}
+            </div>
+          )}
+          {loading && (
+            <div className="inline-flex items-center gap-2 text-muted-foreground text-xs animate-fade-in">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              {t("onboarding.stepProperty.searching")}
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Action buttons */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={handleGenerateFake}
-          disabled={loadingSample}
+          disabled={loadingSample || loading}
           className="text-sm text-muted-foreground hover:text-primary transition-colors underline underline-offset-4 disabled:opacity-50"
         >
           {loadingSample ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
           {t("onboarding.stepProperty.generateFake")}
         </button>
 
-        {canProceed && (
+        {canSearch && !geojson && !loading && (
           <Button
             variant="outline"
             size="sm"
             onClick={handleSearch}
-            disabled={loading}
-            className="gap-2"
+            className="gap-2 animate-fade-in"
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <MapPin className="w-4 h-4" />
-            )}
+            <MapPin className="w-4 h-4" />
             {t("onboarding.stepProperty.searchMap")}
           </Button>
         )}
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="mb-6 text-sm text-amber-600 bg-amber-500/10 px-4 py-2 rounded-lg max-w-lg">
+        <div className="mb-6 text-sm text-amber-600 bg-amber-500/10 px-4 py-2.5 rounded-xl max-w-lg animate-fade-in">
           {error}
         </div>
       )}
 
+      {/* Map */}
       {geojson && (
-        <div className="w-full max-w-lg mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <PropertyMap geojson={geojson} />
-          <p className="text-xs text-muted-foreground mt-2">
+        <div className="w-full max-w-lg mb-6 animate-fade-in">
+          <PropertyMap geojson={geojson} className="h-56 md:h-72 shadow-lg" />
+          <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
+            <Check className="w-3 h-3 text-primary" />
             {t("onboarding.stepProperty.mapCaption")}
           </p>
         </div>
       )}
 
+      {/* Continue */}
       <Button
         size="lg"
-        onClick={onNext}
+        onClick={() => geojson && onNext(geojson)}
         disabled={!canProceed}
-        className="px-8 py-6 text-lg font-semibold gap-2"
+        className={`px-8 py-6 text-lg font-semibold gap-2 transition-all duration-300 ${
+          canProceed ? "animate-fade-in" : "opacity-50"
+        }`}
       >
         {t("onboarding.stepProperty.continue")}
         <ArrowRight className="w-5 h-5" />

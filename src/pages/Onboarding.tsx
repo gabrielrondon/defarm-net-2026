@@ -9,6 +9,7 @@ import {
   StepCompliance,
   StepFinance,
 } from "@/components/onboarding";
+import type { CarGeoJSON } from "@/lib/check-api/car";
 import { generateDFID } from "@/lib/fake-id-generator";
 
 interface PortfolioItem {
@@ -36,6 +37,7 @@ interface OnboardingState {
   dfid: string | null;
   portfolio: PortfolioItem[];
   complianceChecks: ComplianceChecks;
+  propertyGeojson: CarGeoJSON | null;
 }
 
 const STORAGE_KEY = "defarm_onboarding";
@@ -66,6 +68,7 @@ const getInitialState = (): OnboardingState => {
       eudr: null,
       documentation: null,
     },
+    propertyGeojson: null,
   };
 };
 
@@ -147,7 +150,10 @@ export default function Onboarding() {
           <StepProperty
             value={state.property.car}
             onChange={handlePropertyChange}
-            onNext={() => goToStep(2)}
+            onNext={(geojson) => {
+              updateState({ propertyGeojson: geojson });
+              goToStep(2);
+            }}
           />
         );
       case 2:
@@ -156,6 +162,8 @@ export default function Onboarding() {
             value={state.identifier.value}
             onChange={handleIdentifierChange}
             onNext={handleStep2Complete}
+            carNumber={state.property.car}
+            propertyGeojson={state.propertyGeojson}
           />
         );
       case 3:
