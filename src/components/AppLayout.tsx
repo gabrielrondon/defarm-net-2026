@@ -140,7 +140,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
 
           {/* Admin section - only visible to admin users */}
-          {user?.role === "admin" && (
+          {user?.is_admin && (
             <>
               <div className="pt-4 pb-1 px-3">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
