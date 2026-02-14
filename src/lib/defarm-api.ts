@@ -49,6 +49,8 @@ export interface AuthUser {
   workspace_id: string;
   workspace_slug: string;
   role: string;
+  is_admin?: boolean;
+  is_active?: boolean;
 }
 
 export interface AuthResponse {
@@ -68,7 +70,8 @@ export interface User {
   username: string;
   email: string;
   workspace_id: string;
-  role?: string;
+  is_admin?: boolean;
+  is_active?: boolean;
 }
 
 // User storage
