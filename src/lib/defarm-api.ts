@@ -68,6 +68,7 @@ export interface User {
   username: string;
   email: string;
   workspace_id: string;
+  role?: string;
 }
 
 // User storage
