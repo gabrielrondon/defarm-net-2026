@@ -75,7 +75,7 @@ export default function AdminUsers() {
   const fetchUsers = () => {
     setLoading(true);
     listAdminUsers()
-      .then((res) => setUsers(res.users || []))
+      .then(setUsers)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   };
@@ -118,10 +118,10 @@ export default function AdminUsers() {
   };
 
   const handleStatusToggle = async (user: AdminUser) => {
-    const newStatus = user.status === "active" ? "inactive" : "active";
+    const newActive = !user.is_active;
     try {
-      await updateUserStatus(user.id, { status: newStatus });
-      toast({ title: `Usuário ${newStatus === "active" ? "ativado" : "desativado"}` });
+      await updateUserStatus(user.id, { is_active: newActive });
+      toast({ title: `Usuário ${newActive ? "ativado" : "desativado"}` });
       fetchUsers();
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -229,8 +229,8 @@ export default function AdminUsers() {
                         </Select>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={user.status === "active" ? "border-green-500/30 text-green-500" : "border-muted text-muted-foreground"}>
-                          {user.status === "active" ? "Ativo" : "Inativo"}
+                        <Badge variant="outline" className={user.is_active ? "border-green-500/30 text-green-500" : "border-muted text-muted-foreground"}>
+                          {user.is_active ? "Ativo" : "Inativo"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
@@ -243,9 +243,9 @@ export default function AdminUsers() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => handleStatusToggle(user)}
-                            title={user.status === "active" ? "Desativar" : "Ativar"}
+                            title={user.is_active ? "Desativar" : "Ativar"}
                           >
-                            <Power className={`h-4 w-4 ${user.status === "active" ? "text-green-500" : "text-muted-foreground"}`} />
+                            <Power className={`h-4 w-4 ${user.is_active ? "text-green-500" : "text-muted-foreground"}`} />
                           </Button>
 
                           <AlertDialog>

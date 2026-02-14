@@ -58,7 +58,7 @@ import {
   Item, 
 } from "@/lib/defarm-api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
-
+import CircuitAdaptersPanel from "@/components/circuit/CircuitAdaptersPanel";
 export default function CircuitoDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -508,6 +508,9 @@ export default function CircuitoDetail() {
           </div>
         )}
       </div>
+
+      {/* Adapters Panel */}
+      {id && <CircuitAdaptersPanel circuitId={id} />}
 
       {/* Dialogs */}
       {circuit && (
