@@ -19,6 +19,7 @@ import {
   Compass,
   BarChart3,
   Users,
+  Fingerprint,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas" },
   { icon: Users, label: "Usuários", href: "/app/admin/usuarios" },
+  { icon: Fingerprint, label: "Identificadores", href: "/app/admin/identificadores" },
 ];
 
 interface AppLayoutProps {

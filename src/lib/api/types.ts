@@ -575,15 +575,68 @@ export interface IngestionReceipt {
   status: string;
   processing_time_ms: number;
   summary: IngestionSummary;
+  error_message?: string | null;
 }
 
 export interface IngestionSummary {
   rows_total: number;
+  rows_processed: number;
+  rows_failed: number;
   items_created: number;
   items_updated: number;
   events_created: number;
   identifiers_resolved: Record<string, number>;
   unclassified_fields: string[];
+}
+
+// --- Circuit Adapters ---
+
+export interface CircuitAdapter {
+  id: string;
+  circuit_id: string;
+  adapter_config_id: string;
+  adapter_name: string;
+  adapter_type: 'stellar' | 'ipfs' | 'nft';
+  is_enabled: boolean;
+  auto_publish: boolean;
+  trigger_events: string[];
+  rate_limit_per_hour?: number | null;
+  rate_limit_per_day?: number | null;
+}
+
+export interface AddCircuitAdapterRequest {
+  adapter_config_id: string;
+  auto_publish?: boolean;
+  trigger_events?: string[];
+  rate_limit_per_hour?: number | null;
+  rate_limit_per_day?: number | null;
+}
+
+export interface UpdateCircuitAdapterRequest {
+  is_enabled?: boolean;
+  auto_publish?: boolean;
+  trigger_events?: string[];
+  rate_limit_per_hour?: number;
+  rate_limit_per_day?: number;
+}
+
+// --- Admin Canonical Identifiers ---
+
+export interface CanonicalIdentifierResponse {
+  id: string;
+  value_chain: string;
+  identifier_type: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface CreateCanonicalIdentifierRequest {
+  value_chain: string;
+  identifier_type: string;
+}
+
+export interface UpdateCanonicalIdentifierRequest {
+  is_active: boolean;
 }
 
 export type TrustLevel = "verified" | "self_reported" | "unverified";

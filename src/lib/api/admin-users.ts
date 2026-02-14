@@ -7,16 +7,16 @@ export interface AdminUser {
   email: string;
   full_name: string;
   role: string;
-  status: string;
+  is_active: boolean;
   workspace_id: string;
+  workspace_name?: string;
   created_at: string;
+  updated_at?: string;
   last_login_at?: string | null;
 }
 
-export interface ListAdminUsersResponse {
-  users: AdminUser[];
-  count: number;
-}
+// Response can be array or { users: [] }
+export type ListAdminUsersResponse = { users: AdminUser[]; count?: number } | AdminUser[];
 
 export interface CreateAdminUserRequest {
   email: string;
@@ -31,7 +31,7 @@ export interface UpdateUserRoleRequest {
 }
 
 export interface UpdateUserStatusRequest {
-  status: string;
+  is_active: boolean;
 }
 
 // --- Adapter Stats ---
@@ -60,8 +60,9 @@ export interface AdapterStatsResponse {
 }
 
 // User Management endpoints
-export async function listAdminUsers(): Promise<ListAdminUsersResponse> {
-  return authRequest<ListAdminUsersResponse>("/api/admin/users");
+export async function listAdminUsers(): Promise<AdminUser[]> {
+  const res = await authRequest<ListAdminUsersResponse>("/api/admin/users");
+  return Array.isArray(res) ? res : res.users || [];
 }
 
 export async function createAdminUser(data: CreateAdminUserRequest): Promise<AdminUser> {
