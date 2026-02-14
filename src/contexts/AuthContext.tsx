@@ -93,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: response.user?.name || data.email,
       email: response.user?.email || data.email,
       workspace_id: response.user?.workspace_id || response.workspace_id || "default",
+      role: response.user?.role || "viewer",
     };
     
     storeAuth(response.access_token, userData, response.refresh_token);
@@ -110,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: response.user?.name || data.full_name || data.email,
       email: response.user?.email || data.email,
       workspace_id: response.user?.workspace_id || response.workspace_id || "default",
+      role: response.user?.role || "viewer",
     };
     
     storeAuth(response.access_token, userData, response.refresh_token);

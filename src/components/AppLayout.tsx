@@ -17,6 +17,8 @@ import {
   Landmark,
   ClipboardCheck,
   Compass,
+  BarChart3,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -38,6 +40,11 @@ const navItems: NavItem[] = [
   { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
   { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
   { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance" },
+];
+
+const adminNavItems: NavItem[] = [
+  { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas" },
+  { icon: Users, label: "Usuários", href: "/app/admin/usuarios" },
 ];
 
 interface AppLayoutProps {
@@ -108,7 +115,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href || 
               (item.href !== "/app" && location.pathname.startsWith(item.href));
@@ -131,6 +138,39 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
             );
           })}
+
+          {/* Admin section - only visible to admin users */}
+          {user?.role === "admin" && (
+            <>
+              <div className="pt-4 pb-1 px-3">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Admin
+                </span>
+              </div>
+              {adminNavItems.map((item) => {
+                const isActive = location.pathname === item.href ||
+                  location.pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         {/* User section */}
