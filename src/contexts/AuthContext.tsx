@@ -88,12 +88,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (data: LoginRequest) => {
     const response: AuthResponse = await apiLogin(data);
     
+    // Backend may return role "owner" with is_admin flag — normalize to "admin"
+    const rawRole = response.user?.role || "viewer";
+    const isAdmin = (response as any).user?.is_admin === true || (response as any).is_admin === true;
+    const normalizedRole = (isAdmin || rawRole === "owner" || rawRole === "admin") ? "admin" : rawRole;
+
     const userData: User = {
       id: response.user?.id || response.user_id || "unknown",
       username: response.user?.name || data.email,
       email: response.user?.email || data.email,
       workspace_id: response.user?.workspace_id || response.workspace_id || "default",
-      role: response.user?.role || "viewer",
+      role: normalizedRole,
     };
     
     storeAuth(response.access_token, userData, response.refresh_token);
@@ -106,12 +111,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterRequest) => {
     const response: AuthResponse = await apiRegister(data);
     
+    const rawRoleReg = response.user?.role || "viewer";
+    const isAdminReg = (response as any).user?.is_admin === true || (response as any).is_admin === true;
+    const normalizedRoleReg = (isAdminReg || rawRoleReg === "owner" || rawRoleReg === "admin") ? "admin" : rawRoleReg;
+
     const userData: User = {
       id: response.user?.id || response.user_id || "unknown",
       username: response.user?.name || data.full_name || data.email,
       email: response.user?.email || data.email,
       workspace_id: response.user?.workspace_id || response.workspace_id || "default",
-      role: response.user?.role || "viewer",
+      role: normalizedRoleReg,
     };
     
     storeAuth(response.access_token, userData, response.refresh_token);
