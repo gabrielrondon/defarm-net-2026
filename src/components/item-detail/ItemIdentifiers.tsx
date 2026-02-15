@@ -11,8 +11,10 @@ interface ItemIdentifiersProps {
 }
 
 function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
+  const txHash = anchor.transaction_hash || "";
+  if (!txHash) return null;
   const explorerUrl = anchor.stellar_url || 
-    `https://stellar.expert/explorer/public/tx/${anchor.transaction_hash}`;
+    `https://stellar.expert/explorer/public/tx/${txHash}`;
   return (
     <a
       href={explorerUrl}
@@ -21,14 +23,16 @@ function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
       className="flex items-center gap-1.5 text-xs text-primary hover:underline font-mono truncate"
     >
       <ExternalLink className="h-3 w-3 flex-shrink-0" />
-      {anchor.transaction_hash.slice(0, 12)}...{anchor.transaction_hash.slice(-6)}
+      {txHash.slice(0, 12)}...{txHash.slice(-6)}
     </a>
   );
 }
 
 function IpfsLink({ storageRef }: { storageRef: AdapterStorageRef }) {
+  const cid = storageRef.cid || "";
+  if (!cid) return null;
   const gatewayUrl = storageRef.gateway_url || 
-    `https://gateway.pinata.cloud/ipfs/${storageRef.cid}`;
+    `https://gateway.pinata.cloud/ipfs/${cid}`;
   return (
     <a
       href={gatewayUrl}
@@ -37,7 +41,7 @@ function IpfsLink({ storageRef }: { storageRef: AdapterStorageRef }) {
       className="flex items-center gap-1.5 text-xs text-primary hover:underline font-mono truncate"
     >
       <ExternalLink className="h-3 w-3 flex-shrink-0" />
-      {storageRef.cid.slice(0, 16)}...
+      {cid.slice(0, 16)}...
     </a>
   );
 }
