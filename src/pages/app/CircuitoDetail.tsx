@@ -514,7 +514,7 @@ export default function CircuitoDetail() {
                           {canonical.identifier_type}
                         </span>
                         <p className="font-mono text-xs text-muted-foreground">
-                          {canonical.value.length > 16 ? `${canonical.value.slice(0, 16)}...` : canonical.value}
+                          {(canonical.value || "").length > 16 ? `${(canonical.value || "").slice(0, 16)}...` : canonical.value || ""}
                         </p>
                       </div>
                     ) : (
@@ -552,7 +552,7 @@ export default function CircuitoDetail() {
                             </a>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="font-mono text-xs">{latestStellar.transaction_hash.slice(0, 20)}...</p>
+                            <p className="font-mono text-xs">{(latestStellar.transaction_hash || "").slice(0, 20)}...</p>
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -560,7 +560,7 @@ export default function CircuitoDetail() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <a
-                              href={latestIpfs.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestIpfs.cid}`}
+                              href={latestIpfs.gateway_url || `https://gateway.pinata.cloud/ipfs/${(latestIpfs as any).content_id || latestIpfs.cid || ""}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
@@ -571,7 +571,7 @@ export default function CircuitoDetail() {
                             </a>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="font-mono text-xs">{latestIpfs.cid.slice(0, 20)}...</p>
+                            <p className="font-mono text-xs">{((latestIpfs as any).content_id || latestIpfs.cid || "").slice(0, 20)}...</p>
                           </TooltipContent>
                         </Tooltip>
                       )}
