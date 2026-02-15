@@ -16,3 +16,4 @@ export * from "./dfid";
 export * from "./join-requests";
 export * from "./circuit-adapters";
 export * from "./canonical-identifiers";
+export * from "./anchors";

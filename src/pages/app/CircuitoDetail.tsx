@@ -21,6 +21,7 @@ import {
   Shield,
   Trash2,
   UserPlus,
+  Database,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -55,6 +62,8 @@ import {
   getCircuitItems, 
   updateItem,
   getItems,
+  getItem,
+  getItemAnchors,
   Item, 
 } from "@/lib/defarm-api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
@@ -83,6 +92,45 @@ export default function CircuitoDetail() {
     queryKey: ["circuitItems", id],
     queryFn: () => getCircuitItems(id!),
     enabled: !!id,
+  });
+
+  // Fetch details (identifiers) for each circuit item
+  const { data: itemDetailsMap = {} } = useQuery({
+    queryKey: ["circuitItemDetails", id, circuitItems.map(i => i.id).join(",")],
+    queryFn: async () => {
+      const details: Record<string, Awaited<ReturnType<typeof getItem>>> = {};
+      // Fetch details for up to 20 items to avoid too many requests
+      const itemsToFetch = circuitItems.slice(0, 20);
+      const results = await Promise.allSettled(
+        itemsToFetch.map(item => getItem(item.id))
+      );
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          details[itemsToFetch[i].id] = result.value;
+        }
+      });
+      return details;
+    },
+    enabled: circuitItems.length > 0,
+  });
+
+  // Fetch anchors for each circuit item
+  const { data: itemAnchorsMap = {} } = useQuery({
+    queryKey: ["circuitItemAnchors", id, circuitItems.map(i => i.id).join(",")],
+    queryFn: async () => {
+      const anchors: Record<string, Awaited<ReturnType<typeof getItemAnchors>>> = {};
+      const itemsToFetch = circuitItems.slice(0, 20);
+      const results = await Promise.allSettled(
+        itemsToFetch.map(item => getItemAnchors(item.id))
+      );
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          anchors[itemsToFetch[i].id] = result.value;
+        }
+      });
+      return anchors;
+    },
+    enabled: circuitItems.length > 0,
   });
 
   // Fetch all items (for push dialog)
@@ -418,18 +466,30 @@ export default function CircuitoDetail() {
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : filteredItems.length > 0 ? (
+          <TooltipProvider>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>DFID</TableHead>
+                <TableHead>Identificadores</TableHead>
                 <TableHead>Cadeia / País</TableHead>
+                <TableHead>Anchors</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Última atualização</TableHead>
+                <TableHead>Atualização</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredItems.map((item) => (
+              {filteredItems.map((item) => {
+                const details = itemDetailsMap[item.id];
+                const anchors = itemAnchorsMap[item.id];
+                const canonical = details?.canonical_identifier;
+                const stellarAnchors = anchors?.blockchain_anchors || [];
+                const ipfsRefs = anchors?.storage_refs || [];
+                const latestStellar = stellarAnchors[0];
+                const latestIpfs = ipfsRefs[0];
+
+                return (
                 <TableRow
                   key={item.id}
                   className="group cursor-pointer hover:bg-muted/50"
@@ -442,10 +502,24 @@ export default function CircuitoDetail() {
                       </div>
                       <div>
                         <p className="font-mono text-sm font-medium text-foreground">
-                          {(item.dfid || "").length > 22 ? `${item.dfid.slice(0, 22)}...` : item.dfid}
+                          {(item.dfid || "").length > 20 ? `${item.dfid.slice(0, 20)}...` : item.dfid}
                         </p>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {canonical ? (
+                      <div className="space-y-0.5">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-700">
+                          {canonical.identifier_type}
+                        </span>
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {canonical.value.length > 16 ? `${canonical.value.slice(0, 16)}...` : canonical.value}
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -458,6 +532,51 @@ export default function CircuitoDetail() {
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
                           {item.country}
                         </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      {latestStellar && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={latestStellar.stellar_url || `https://stellar.expert/explorer/public/tx/${latestStellar.transaction_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/10 text-purple-700 hover:bg-purple-500/20 transition-colors"
+                            >
+                              <Database className="h-3 w-3" />
+                              Stellar
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-mono text-xs">{latestStellar.transaction_hash.slice(0, 20)}...</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      {latestIpfs && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={latestIpfs.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestIpfs.cid}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-700 hover:bg-blue-500/20 transition-colors"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              IPFS
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-mono text-xs">{latestIpfs.cid.slice(0, 20)}...</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                      {!latestStellar && !latestIpfs && (
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </div>
                   </TableCell>
@@ -487,9 +606,11 @@ export default function CircuitoDetail() {
                     <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
+          </TooltipProvider>
         ) : (
           <div className="text-center py-12">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
