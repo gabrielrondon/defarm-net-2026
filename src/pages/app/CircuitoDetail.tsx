@@ -483,7 +483,8 @@ export default function CircuitoDetail() {
               {filteredItems.map((item) => {
                 const details = itemDetailsMap[item.id];
                 const anchors = itemAnchorsMap[item.id];
-                const canonical = details?.canonical_identifier;
+                const canonical = details?.canonical_identifier || (details?.identifiers && details.identifiers.length > 0 ? details.identifiers[0] : null);
+                const allIdentifiers = details?.identifiers || [];
                 const stellarAnchors = anchors?.blockchain_anchors || [];
                 const ipfsRefs = anchors?.storage_refs || [];
                 const latestStellar = stellarAnchors[0];
@@ -508,14 +509,25 @@ export default function CircuitoDetail() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {canonical ? (
-                      <div className="space-y-0.5">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-700">
-                          {canonical.identifier_type}
-                        </span>
-                        <p className="font-mono text-xs text-muted-foreground">
-                          {(canonical.value || "").length > 16 ? `${(canonical.value || "").slice(0, 16)}...` : canonical.value || ""}
-                        </p>
+                    {allIdentifiers.length > 0 ? (
+                      <div className="space-y-1">
+                        {allIdentifiers.slice(0, 2).map((ident, idx) => (
+                          <div key={idx} className="space-y-0.5">
+                            <span className={cn(
+                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
+                              ident.is_canonical ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-700"
+                            )}>
+                              {ident.identifier_type}
+                              {ident.is_canonical && " ★"}
+                            </span>
+                            <p className="font-mono text-xs text-muted-foreground">
+                              {(ident.value || "").length > 16 ? `${(ident.value || "").slice(0, 16)}...` : ident.value || ""}
+                            </p>
+                          </div>
+                        ))}
+                        {allIdentifiers.length > 2 && (
+                          <span className="text-[10px] text-muted-foreground">+{allIdentifiers.length - 2} mais</span>
+                        )}
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">-</span>
