@@ -20,20 +20,23 @@ import {
   MapPin,
   Calendar,
   Network,
+  Tag,
+  Plus,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { createItem, getCircuits, CreateItemRequest } from "@/lib/defarm-api";
+import { createItem, getCircuits, listCanonicalIdentifiers, CreateItemRequest, IdentifierInput } from "@/lib/defarm-api";
 
 const valueChainOptions = [
-  { value: "bovino", label: "Bovino" },
-  { value: "cafe", label: "Café" },
-  { value: "soja", label: "Soja" },
-  { value: "milho", label: "Milho" },
-  { value: "algodao", label: "Algodão" },
-  { value: "frango", label: "Frango" },
-  { value: "suino", label: "Suíno" },
-  { value: "outro", label: "Outro" },
+  { value: "BEEF", label: "Bovino" },
+  { value: "COFFEE", label: "Café" },
+  { value: "SOY", label: "Soja" },
+  { value: "CORN", label: "Milho" },
+  { value: "COTTON", label: "Algodão" },
+  { value: "POULTRY", label: "Frango" },
+  { value: "PORK", label: "Suíno" },
+  { value: "OTHER", label: "Outro" },
 ];
 
 const countryOptions = [
@@ -46,11 +49,13 @@ const countryOptions = [
 ];
 
 export default function NovoItem() {
-  const [valueChain, setValueChain] = useState("bovino");
+  const [valueChain, setValueChain] = useState("BEEF");
   const [country, setCountry] = useState("BR");
   const [year, setYear] = useState(new Date().getFullYear());
-  
   const [circuitId, setCircuitId] = useState("");
+  const [identifiers, setIdentifiers] = useState<IdentifierInput[]>([
+    { identifier_type: "", value: "", is_canonical: true },
+  ]);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -61,6 +66,14 @@ export default function NovoItem() {
     queryKey: ["circuits"],
     queryFn: () => getCircuits(),
   });
+
+  const { data: canonicalTypes = [], isLoading: isLoadingTypes } = useQuery({
+    queryKey: ["canonical-identifiers", valueChain],
+    queryFn: () => listCanonicalIdentifiers(valueChain),
+    enabled: !!valueChain,
+  });
+
+  const activeTypes = canonicalTypes.filter((t) => t.is_active);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateItemRequest) => createItem(data),
@@ -83,14 +96,53 @@ export default function NovoItem() {
     },
   });
 
+  const handleValueChainChange = (vc: string) => {
+    setValueChain(vc);
+    // Reset identifiers when value chain changes
+    setIdentifiers([{ identifier_type: "", value: "", is_canonical: true }]);
+  };
+
+  const updateIdentifier = (index: number, field: keyof IdentifierInput, val: string | boolean) => {
+    setIdentifiers((prev) =>
+      prev.map((id, i) => (i === index ? { ...id, [field]: val } : id))
+    );
+  };
+
+  const addIdentifier = () => {
+    setIdentifiers((prev) => [...prev, { identifier_type: "", value: "", is_canonical: false }]);
+  };
+
+  const removeIdentifier = (index: number) => {
+    if (identifiers.length <= 1) return;
+    setIdentifiers((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const hasValidIdentifier = identifiers.some(
+    (id) => id.identifier_type.trim() && id.value.trim()
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const validIdentifiers = identifiers.filter(
+      (id) => id.identifier_type.trim() && id.value.trim()
+    );
+
+    if (validIdentifiers.length === 0) {
+      toast({
+        title: "Identificador obrigatório",
+        description: "Informe ao menos um identificador canônico para criar o item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createMutation.mutate({
       value_chain: valueChain,
       country,
       year,
       circuit_id: circuitId || null,
+      identifiers: validIdentifiers,
       user_id: user?.id || null,
     });
   };
@@ -133,7 +185,7 @@ export default function NovoItem() {
                 <Wheat className="h-4 w-4 text-muted-foreground" />
                 Cadeia de Valor *
               </Label>
-              <Select value={valueChain} onValueChange={setValueChain}>
+              <Select value={valueChain} onValueChange={handleValueChainChange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -206,6 +258,84 @@ export default function NovoItem() {
           </div>
         </div>
 
+        {/* Identifiers section */}
+        <div className="bg-background border border-border rounded-2xl p-6 space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-border">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Tag className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-foreground">Identificadores *</h2>
+              <p className="text-sm text-muted-foreground">
+                Informe ao menos um identificador canônico (ex: SISBOV, Brinco, GTA)
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {identifiers.map((identifier, index) => (
+              <div key={index} className="flex gap-3 items-start">
+                <div className="flex-1 space-y-2">
+                  <Label className="text-xs text-muted-foreground">
+                    Tipo {index === 0 && "(canônico)"}
+                  </Label>
+                  {activeTypes.length > 0 ? (
+                    <Select
+                      value={identifier.identifier_type}
+                      onValueChange={(v) => updateIdentifier(index, "identifier_type", v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isLoadingTypes ? "Carregando..." : "Selecione o tipo"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeTypes.map((t) => (
+                          <SelectItem key={t.id} value={t.identifier_type}>
+                            {t.identifier_type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      placeholder={isLoadingTypes ? "Carregando..." : "Ex: SISBOV, GTA, Brinco"}
+                      value={identifier.identifier_type}
+                      onChange={(e) =>
+                        updateIdentifier(index, "identifier_type", e.target.value)
+                      }
+                    />
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label className="text-xs text-muted-foreground">Valor</Label>
+                  <Input
+                    placeholder="Ex: BR000123456789012"
+                    value={identifier.value}
+                    onChange={(e) => updateIdentifier(index, "value", e.target.value)}
+                  />
+                </div>
+                {identifiers.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeIdentifier(index)}
+                    className="mt-7 p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={addIdentifier}
+              className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar outro identificador
+            </button>
+          </div>
+        </div>
+
         {/* Info */}
         <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
           <div className="flex gap-3">
@@ -215,8 +345,8 @@ export default function NovoItem() {
                 Como funciona?
               </p>
               <p className="text-xs text-muted-foreground">
-                O item será criado e receberá um DFID único. Ele poderá ser enviado para circuitos 
-                de compartilhamento para rastreabilidade completa na cadeia de valor.
+                O item será criado e receberá um DFID único. Se já existir um item com o mesmo 
+                identificador canônico, ele será enriquecido automaticamente (deduplicação).
               </p>
             </div>
           </div>
@@ -234,7 +364,7 @@ export default function NovoItem() {
           </Button>
           <Button
             type="submit"
-            disabled={createMutation.isPending}
+            disabled={createMutation.isPending || !hasValidIdentifier}
             className="flex-1 btn-offset bg-primary hover:bg-primary text-primary-foreground"
           >
             {createMutation.isPending ? (
