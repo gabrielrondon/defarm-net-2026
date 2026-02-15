@@ -29,7 +29,7 @@ function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
 }
 
 function IpfsLink({ storageRef }: { storageRef: AdapterStorageRef }) {
-  const cid = storageRef.cid || "";
+  const cid = storageRef.cid || (storageRef as any).content_id || "";
   if (!cid) return null;
   const gatewayUrl = storageRef.gateway_url || 
     `https://gateway.pinata.cloud/ipfs/${cid}`;
