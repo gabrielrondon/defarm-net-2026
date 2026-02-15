@@ -2,13 +2,13 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Package, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getItem, getItemEvents } from "@/lib/defarm-api";
+import { getItem, getItemEvents, getItemAnchors } from "@/lib/defarm-api";
 import { ItemHeader, ItemIdentifiers, ItemTimeline } from "@/components/item-detail";
 
 export default function ItemDetail() {
   const { id } = useParams<{ id: string }>();
 
-  // Fetch item details
+  // Fetch item details (includes identifiers and events)
   const { data: itemDetails, isLoading: isLoadingItem, error: itemError } = useQuery({
     queryKey: ["item", id],
     queryFn: () => getItem(id!),
@@ -18,14 +18,24 @@ export default function ItemDetail() {
   });
 
   const item = itemDetails?.item;
+  const identifiers = itemDetails?.identifiers || [];
+  const canonicalIdentifier = itemDetails?.canonical_identifier || null;
 
-  // Fetch item events (now returns Event[] directly)
+  // Fetch item events (fallback if not in itemDetails)
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["itemEvents", id],
     queryFn: () => getItemEvents(id!),
     enabled: !!id,
     retry: 1,
     retryDelay: 1000,
+  });
+
+  // Fetch blockchain anchors (Stellar + IPFS)
+  const { data: anchorsData } = useQuery({
+    queryKey: ["itemAnchors", id],
+    queryFn: () => getItemAnchors(id!),
+    enabled: !!id,
+    retry: 0,
   });
 
   if (isLoadingItem) {
@@ -56,13 +66,22 @@ export default function ItemDetail() {
     );
   }
 
+  // Merge events from detail response + separate query
+  const allEvents = itemDetails?.events?.length ? itemDetails.events : events;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <ItemHeader item={item} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ItemIdentifiers item={item} />
-        <ItemTimeline events={events} isLoading={isLoadingEvents} />
+        <ItemIdentifiers
+          item={item}
+          identifiers={identifiers}
+          canonicalIdentifier={canonicalIdentifier}
+          blockchainAnchors={anchorsData?.blockchain_anchors}
+          storageRefs={anchorsData?.storage_refs}
+        />
+        <ItemTimeline events={allEvents} isLoading={isLoadingEvents} />
       </div>
     </div>
   );

@@ -907,3 +907,52 @@ export interface ItemRelationshipRecord {
   confidence_score?: number | null;
   created_at: string;
 }
+
+// --- Adapter Anchors (Tokenization) ---
+
+export interface AdapterBlockchainAnchor {
+  adapter_type: string; // "stellar"
+  network: string; // "mainnet" | "testnet"
+  transaction_hash: string;
+  asset_code?: string | null;
+  asset_issuer?: string | null;
+  memo?: string | null;
+  stellar_url?: string | null; // link to stellar explorer
+  created_at: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface AdapterStorageRef {
+  adapter_type: string; // "ipfs"
+  cid: string; // IPFS Content ID
+  gateway_url?: string | null; // e.g. https://gateway.pinata.cloud/ipfs/{cid}
+  pin_status?: string | null;
+  size_bytes?: number | null;
+  created_at: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface AdapterAnchorsResponse {
+  item_id: string;
+  blockchain_anchors: AdapterBlockchainAnchor[];
+  storage_refs: AdapterStorageRef[];
+}
+
+// --- Timeline ---
+
+export interface TimelineEvent {
+  id: string;
+  event_type: string;
+  description?: string | null;
+  actor_name?: string | null;
+  created_at: string;
+  metadata?: Record<string, unknown> | null;
+  // Anchors associated with this timeline event
+  blockchain_anchor?: AdapterBlockchainAnchor | null;
+  storage_ref?: AdapterStorageRef | null;
+}
+
+export interface TimelineResponse {
+  item_id: string;
+  events: TimelineEvent[];
+}
