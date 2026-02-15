@@ -44,6 +44,7 @@ import PublicCircuit from "./pages/PublicCircuit";
 import AdminMetrics from "./pages/app/AdminMetrics";
 import AdminUsers from "./pages/app/AdminUsers";
 import AdminCanonicalIdentifiers from "./pages/app/AdminCanonicalIdentifiers";
+import AdminJobs from "./pages/app/AdminJobs";
 
 const queryClient = new QueryClient(); // init
 
@@ -96,6 +97,7 @@ const App = () => (
             <Route path="/app/admin/metricas" element={<AppLayout><AdminMetrics /></AppLayout>} />
             <Route path="/app/admin/usuarios" element={<AppLayout><AdminUsers /></AppLayout>} />
             <Route path="/app/admin/identificadores" element={<AppLayout><AdminCanonicalIdentifiers /></AppLayout>} />
+            <Route path="/app/admin/jobs" element={<AppLayout><AdminJobs /></AppLayout>} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
