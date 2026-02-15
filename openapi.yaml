@@ -1,22 +1,57 @@
 openapi: 3.0.3
 info:
   title: DeFarm API Gateway
-  description: "**Single entry point for all DeFarm services**\n\nThe Gateway provides:\n\
-    - JWT-based authentication\n- Request routing to backend services\n- User context\
-    \ injection\n- Rate limiting\n\n## Authentication\n\nMost endpoints require a\
-    \ JWT token in the Authorization header:\n```\nAuthorization: Bearer <access_token>\n\
-    ```\n\n### Getting Started\n\n1. **Register**: POST `/auth/register`\n2. **Login**:\
-    \ POST `/auth/login` \u2192 Returns `access_token` and `refresh_token`\n3. **Use\
-    \ token**: Add `Authorization: Bearer <access_token>` to all `/api/*` requests\n\
-    4. **Refresh**: POST `/auth/refresh` with `refresh_token` when access token expires\n\
-    \n### Token Lifetimes\n- **Access Token**: 15 minutes\n- **Refresh Token**: 30\
-    \ days\n"
+  description: '**Single entry point for all DeFarm services**
+
+
+    The Gateway provides:
+
+    - JWT-based authentication
+
+    - Request routing to backend services
+
+    - User context injection
+
+    - Rate limiting
+
+
+    ## Authentication
+
+
+    Most endpoints require a JWT token in the Authorization header:
+
+    ```
+
+    Authorization: Bearer <access_token>
+
+    ```
+
+
+    ### Getting Started
+
+
+    1. **Register**: POST `/auth/register`
+
+    2. **Login**: POST `/auth/login` → Returns `access_token` and `refresh_token`
+
+    3. **Use token**: Add `Authorization: Bearer <access_token>` to all `/api/*` requests
+
+    4. **Refresh**: POST `/auth/refresh` with `refresh_token` when access token expires
+
+
+    ### Token Lifetimes
+
+    - **Access Token**: 15 minutes
+
+    - **Refresh Token**: 30 days
+
+    '
   version: 1.0.0
   contact:
     name: DeFarm Support
     email: support@defarm.com
 servers:
-- url: http://gateway.defarm.net:8080
+- url: https://gateway.defarm.net
   description: Production (Custom Domain)
 - url: https://gateway-service-production-f54d.up.railway.app
   description: Production (Railway Domain)
@@ -24,43 +59,39 @@ servers:
   description: Local development
 tags:
 - name: Authentication
-  description: User registration, login, and token management
-- name: Circuits
-  description: Multi-tenant data repositories with RBAC
-- name: Items
-  description: Agricultural items with traceability
-- name: Events
-  description: Item state changes and lifecycle events
-- name: Audit
-  description: Immutable audit trails
-- name: DFID
-  description: DeFarm Identifier generation and validation
+  description: User registration, login, logout, and token refresh.
 - name: Health
-  description: Service health checks
-- name: items
-  description: Item registry CRUD operations and bulk import
-- name: workflows
-  description: Item merge, split, unmerge, and relationship tracking
-- name: circuits
-  description: Circuit and member management
-- name: events
-  description: Event tracking and lifecycle management
-- name: audit
-  description: Immutable audit logs with hash chain verification
-- name: admin
-  description: Administrative operations and API key management
-- name: webhooks
-  description: Webhook subscriptions and delivery tracking
-- name: activity
-  description: Activity feeds, sessions, and user tracking
-- name: snapshots
-  description: Point-in-time snapshots with restore capabilities
-- name: merkle
-  description: Merkle tree construction and cryptographic verification
-- name: compliance
-  description: Compliance checks proxy endpoints
-- name: Circuit Adapters
-  description: Manage adapter configurations per circuit (enable/disable auto-publish to Stellar, IPFS, NFT)
+  description: Service liveness and readiness checks.
+- name: Documentation
+  description: OpenAPI spec and Swagger UI.
+- name: DFID
+  description: Generate and validate DeFarm Identifiers.
+- name: Circuits
+  description: Multi-tenant data repositories with RBAC and membership management.
+- name: Items
+  description: Item registry CRUD, bulk import, and public item lookups.
+- name: Adapters
+  description: Adapter service endpoints (anchors, publishing, external integrations).
+- name: Events
+  description: Item lifecycle events and status transitions.
+- name: Workflows
+  description: Item merge, split, unmerge, and relationship graph operations.
+- name: Audit
+  description: Immutable audit logs and hash-chain verification.
+- name: Admin
+  description: Admin-only operations (API keys, canonical identifiers).
+- name: Partner API Keys
+  description: Partner API key issuance and usage metrics.
+- name: Webhooks
+  description: Webhook subscriptions, deliveries, retries, and stats.
+- name: Activity
+  description: Activity feeds, sessions, and summaries.
+- name: Snapshots
+  description: Point-in-time snapshots, comparisons, restore, and retention policies.
+- name: Merkle
+  description: Merkle tree creation, proofs, and verification.
+- name: Compliance
+  description: Compliance checks and external data sources (proxy).
 components:
   securitySchemes:
     bearerAuth:
@@ -109,7 +140,7 @@ components:
           enum:
           - viewer
           - editor
-          - admin
+          - Admin
           - owner
     UserInfo:
       type: object
@@ -166,6 +197,370 @@ components:
           example: 900
         user:
           $ref: '#/components/schemas/UserInfo'
+    AdminUser:
+      description: Admin user record for workspace management.
+      type: object
+      required:
+      - id
+      - email
+      - role
+      - is_active
+      - workspace_id
+      - workspace_name
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+          nullable: true
+        role:
+          type: string
+          description: Workspace role (admin, partner, viewer, etc.)
+        is_active:
+          type: boolean
+        workspace_id:
+          type: string
+          format: uuid
+        workspace_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+    CreateAdminUserRequest:
+      description: Request payload to create/invite a user (admin only).
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          description: Minimum 8 characters
+        full_name:
+          type: string
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+    UpdateAdminUserRoleRequest:
+      description: Request payload to update user role (admin only).
+      type: object
+      required:
+      - role
+      properties:
+        role:
+          type: string
+    UpdateAdminUserStatusRequest:
+      description: Request payload to activate/deactivate a user (admin only).
+      type: object
+      required:
+      - is_active
+      properties:
+        is_active:
+          type: boolean
+    AdapterStatsResponse:
+      description: Adapter service statistics for admin dashboard
+      type: object
+      required:
+      - jobs
+      - queue
+      - adapters
+      - costs
+      - rate_limits
+      properties:
+        jobs:
+          type: object
+          description: Job processing statistics
+          required:
+          - completed
+          - failed
+          - total
+          - success_rate
+          properties:
+            completed:
+              type: integer
+              format: int64
+              description: Total jobs completed successfully
+              example: 1234
+            failed:
+              type: integer
+              format: int64
+              description: Total jobs that failed
+              example: 5
+            total:
+              type: integer
+              format: int64
+              description: Total jobs processed
+              example: 1239
+            success_rate:
+              type: number
+              format: double
+              description: Success rate (0.0 - 1.0)
+              example: 0.996
+        queue:
+          type: object
+          description: Queue statistics
+          required:
+          - depth
+          - active_workers
+          properties:
+            depth:
+              type: integer
+              format: int64
+              description: Current number of jobs in queue
+              example: 10
+            active_workers:
+              type: integer
+              format: int64
+              description: Number of workers processing jobs
+              example: 2
+        adapters:
+          type: object
+          description: Adapter operation statistics
+          required:
+          - stellar
+          - ipfs
+          properties:
+            stellar:
+              type: object
+              description: Stellar blockchain adapter stats
+              required:
+              - success
+              - failed
+              - total
+              - success_rate
+              properties:
+                success:
+                  type: integer
+                  format: int64
+                  example: 500
+                failed:
+                  type: integer
+                  format: int64
+                  example: 3
+                total:
+                  type: integer
+                  format: int64
+                  example: 503
+                success_rate:
+                  type: number
+                  format: double
+                  example: 0.994
+            ipfs:
+              type: object
+              description: IPFS storage adapter stats
+              required:
+              - success
+              - failed
+              - total
+              - success_rate
+              properties:
+                success:
+                  type: integer
+                  format: int64
+                  example: 450
+                failed:
+                  type: integer
+                  format: int64
+                  example: 1
+                total:
+                  type: integer
+                  format: int64
+                  example: 451
+                success_rate:
+                  type: number
+                  format: double
+                  example: 0.998
+        costs:
+          type: object
+          description: Cost tracking
+          required:
+          - stellar_xlm
+          - stellar_usd
+          - ipfs_storage_bytes
+          - ipfs_storage_gb
+          properties:
+            stellar_xlm:
+              type: number
+              format: double
+              description: Total Stellar costs in XLM
+              example: 0.05
+            stellar_usd:
+              type: number
+              format: double
+              description: Total Stellar costs in USD (approximate)
+              example: 0.005
+            ipfs_storage_bytes:
+              type: integer
+              format: int64
+              description: Total IPFS storage in bytes
+              example: 10485760
+            ipfs_storage_gb:
+              type: number
+              format: double
+              description: Total IPFS storage in GB
+              example: 0.01
+        rate_limits:
+          type: object
+          description: Rate limiting statistics
+          required:
+          - rejections
+          properties:
+            rejections:
+              type: integer
+              format: int64
+              description: Total requests rejected due to rate limits
+              example: 15
+    AdminUserListResponse:
+      description: Paginated list of users for admin management.
+      type: object
+      required:
+      - users
+      - count
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUser'
+        count:
+          type: integer
+          format: int64
+    RegisterRequest:
+      type: object
+      required:
+      - email
+      - password
+      - full_name
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: SecurePassword123!
+        full_name:
+          type: string
+          example: John Doe
+        name:
+          type: string
+          deprecated: true
+          description: Deprecated alias for full_name
+        workspace_slug:
+          type: string
+          nullable: true
+          description: Optional custom workspace slug
+        workspace_name:
+          type: string
+          nullable: true
+          description: Optional custom workspace name
+    LoginRequest:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: SecurePassword123!
+    RefreshRequest:
+      type: object
+      required:
+      - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token issued by /auth/login or /auth/register.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    LogoutRequest:
+      type: object
+      required:
+      - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token to revoke.
+    DFIDGenerateRequest:
+      type: object
+      required:
+      - value_chain
+      - country
+      - year
+      properties:
+        value_chain:
+          type: string
+          description: Value chain code (e.g., BEEF, SOY, CORN).
+          example: BEEF
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+          example: BR
+        year:
+          type: integer
+          description: Four-digit year of issuance.
+          example: 2025
+    DFIDGenerateResponse:
+      type: object
+      required:
+      - dfid
+      properties:
+        dfid:
+          type: string
+          description: Generated DeFarm Identifier.
+          example: DFID-BEEF-BR-2025-000123-a3f2c1
+    DFIDValidateRequest:
+      type: object
+      required:
+      - dfid
+      properties:
+        dfid:
+          type: string
+          description: DFID to validate.
+          example: DFID-BEEF-BR-2025-000123-a3f2c1
+    DFIDValidateResponse:
+      type: object
+      required:
+      - valid
+      - dfid
+      properties:
+        valid:
+          type: boolean
+          description: Whether the DFID is syntactically valid and passes checksum
+            validation.
+        dfid:
+          type: string
+          description: The input DFID.
+        components:
+          type: object
+          description: Parsed DFID components (value_chain, country, year, sequence,
+            checksum).
     ActivityFeed:
       description: User activity entry for audit trail and activity feed display.
       type: object
@@ -214,7 +609,7 @@ components:
           enum:
           - snapshot
           - circuit
-          - audit
+          - Audit
           - event
           - item
           - mixed
@@ -269,7 +664,7 @@ components:
           enum:
           - viewer
           - editor
-          - admin
+          - Admin
           - owner
         user_id:
           type: string
@@ -280,7 +675,7 @@ components:
       type: object
       required:
       - policy_id
-      - snapshots_affected
+      - Snapshots_affected
       properties:
         policy_id:
           type: string
@@ -703,7 +1098,7 @@ components:
           type: object
           description: Additional information about you
           example:
-            company: "Fazenda S\xE3o Jo\xE3o"
+            company: Fazenda São João
             location: Dourados, MS
     ReviewJoinRequestInput:
       description: Payload to approve or reject a join request
@@ -882,7 +1277,7 @@ components:
       description: Response containing list of public circuits with pagination
       type: object
       required:
-      - circuits
+      - Circuits
       - total
       - limit
       - offset
@@ -1031,6 +1426,45 @@ components:
         message:
           type: string
           description: Important message about saving the key
+    ApiKeyMetadata:
+      description: API key metadata without the secret key value.
+      type: object
+      required:
+      - id
+      - key_name
+      - circuit_id
+      - is_active
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this API key record
+        key_name:
+          type: string
+          description: Name of the API key
+        circuit_id:
+          type: string
+          format: uuid
+          description: Circuit this key grants access to
+        description:
+          type: string
+          description: Description of the key's purpose
+          nullable: true
+        is_active:
+          type: boolean
+          description: Whether the key is currently active
+        created_at:
+          type: string
+          description: Creation timestamp (RFC3339)
+        last_used_at:
+          type: string
+          description: Last time this key was used (RFC3339)
+          nullable: true
+        expires_at:
+          type: string
+          description: Expiration timestamp (RFC3339)
+          nullable: true
     CreatePartnerApiKeyRequest:
       description: Request payload to create a partner API key.
       type: object
@@ -1150,159 +1584,6 @@ components:
           type: integer
           format: int32
           nullable: true
-    AdapterStatsResponse:
-      description: Adapter service statistics for admin dashboard
-      type: object
-      required:
-      - jobs
-      - queue
-      - adapters
-      - costs
-      - rate_limits
-      properties:
-        jobs:
-          type: object
-          description: Job processing statistics
-          required:
-          - completed
-          - failed
-          - total
-          - success_rate
-          properties:
-            completed:
-              type: integer
-              format: int64
-              description: Total jobs completed successfully
-              example: 1234
-            failed:
-              type: integer
-              format: int64
-              description: Total jobs that failed
-              example: 5
-            total:
-              type: integer
-              format: int64
-              description: Total jobs processed
-              example: 1239
-            success_rate:
-              type: number
-              format: double
-              description: Success rate (0.0 - 1.0)
-              example: 0.996
-        queue:
-          type: object
-          description: Queue statistics
-          required:
-          - depth
-          - active_workers
-          properties:
-            depth:
-              type: integer
-              format: int64
-              description: Current number of jobs in queue
-              example: 10
-            active_workers:
-              type: integer
-              format: int64
-              description: Number of workers processing jobs
-              example: 2
-        adapters:
-          type: object
-          description: Adapter operation statistics
-          required:
-          - stellar
-          - ipfs
-          properties:
-            stellar:
-              type: object
-              description: Stellar blockchain adapter stats
-              required:
-              - success
-              - failed
-              - total
-              - success_rate
-              properties:
-                success:
-                  type: integer
-                  format: int64
-                  example: 500
-                failed:
-                  type: integer
-                  format: int64
-                  example: 3
-                total:
-                  type: integer
-                  format: int64
-                  example: 503
-                success_rate:
-                  type: number
-                  format: double
-                  example: 0.994
-            ipfs:
-              type: object
-              description: IPFS storage adapter stats
-              required:
-              - success
-              - failed
-              - total
-              - success_rate
-              properties:
-                success:
-                  type: integer
-                  format: int64
-                  example: 450
-                failed:
-                  type: integer
-                  format: int64
-                  example: 1
-                total:
-                  type: integer
-                  format: int64
-                  example: 451
-                success_rate:
-                  type: number
-                  format: double
-                  example: 0.998
-        costs:
-          type: object
-          description: Cost tracking
-          required:
-          - stellar_xlm
-          - stellar_usd
-          - ipfs_storage_bytes
-          - ipfs_storage_gb
-          properties:
-            stellar_xlm:
-              type: number
-              format: double
-              description: Total Stellar costs in XLM
-              example: 0.05
-            stellar_usd:
-              type: number
-              format: double
-              description: Total Stellar costs in USD (approximate)
-              example: 0.005
-            ipfs_storage_bytes:
-              type: integer
-              format: int64
-              description: Total IPFS storage in bytes
-              example: 10485760
-            ipfs_storage_gb:
-              type: number
-              format: double
-              description: Total IPFS storage in GB
-              example: 0.01
-        rate_limits:
-          type: object
-          description: Rate limiting statistics
-          required:
-          - rejections
-          properties:
-            rejections:
-              type: integer
-              format: int64
-              description: Total requests rejected due to rate limits
-              example: 15
     CreateCanonicalIdentifierRequest:
       description: Request payload to create a canonical identifier type.
       type: object
@@ -1346,13 +1627,12 @@ components:
           format: date-time
     CreateCircuitRequest:
       description: Request payload to create a new circuit. Requires name, circuit_type,
-        and workspace_id.
+        and visibility.
       type: object
       required:
       - name
       - circuit_type
       - visibility
-      - owner_id
       properties:
         circuit_type:
           type: string
@@ -1367,6 +1647,7 @@ components:
         ip_address:
           type: string
           nullable: true
+          description: Internal audit field (usually set by gateway).
         metadata:
           nullable: true
         name:
@@ -1378,12 +1659,16 @@ components:
         owner_id:
           type: string
           format: uuid
+          nullable: true
+          description: Optional; ignored if provided. Owner is derived from the authenticated
+            user.
         settings:
           nullable: true
         user_id:
           type: string
           format: uuid
           nullable: true
+          description: Internal audit field (usually set by gateway).
         visibility:
           type: string
           enum:
@@ -1508,7 +1793,7 @@ components:
           enum:
           - snapshot
           - circuit
-          - audit_batch
+          - Audit_batch
           - event_batch
           - item_batch
     CreateRestorationRequest:
@@ -1584,7 +1869,7 @@ components:
       - circuit_id
       - name
       - url
-      - events
+      - Events
       - created_by
       properties:
         circuit_id:
@@ -1778,6 +2063,68 @@ components:
           type: string
         valid:
           type: boolean
+    AdapterAnchorsResponse:
+      description: Aggregated blockchain anchors and storage references for an item.
+      type: object
+      required:
+      - blockchain_anchors
+      - storage_refs
+      properties:
+        blockchain_anchors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterBlockchainAnchor'
+        storage_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterStorageRef'
+    AdapterBlockchainAnchor:
+      description: Blockchain anchor metadata for an item.
+      type: object
+      required:
+      - chain_type
+      - transaction_hash
+      - status
+      properties:
+        chain_type:
+          type: string
+          description: Chain type identifier (e.g. stellar, stellar_nft)
+        transaction_hash:
+          type: string
+        ledger_number:
+          type: integer
+          format: int64
+          nullable: true
+        confirmations:
+          type: integer
+          format: int32
+          nullable: true
+        status:
+          type: string
+    AdapterStorageRef:
+      description: Storage reference metadata (e.g. IPFS).
+      type: object
+      required:
+      - storage_type
+      - content_id
+      - status
+      properties:
+        storage_type:
+          type: string
+        content_id:
+          type: string
+        gateway_url:
+          type: string
+          nullable: true
+        version:
+          type: integer
+          format: int32
+          nullable: true
+        is_pinned:
+          type: boolean
+          nullable: true
+        status:
+          type: string
     HealthResponse:
       description: System health status response including component statuses.
       type: object
@@ -1842,9 +2189,9 @@ components:
       - rows_total
       - rows_processed
       - rows_failed
-      - items_created
-      - items_updated
-      - events_created
+      - Items_created
+      - Items_updated
+      - Events_created
       - identifiers_resolved
       - unclassified_fields
       properties:
@@ -2001,7 +2348,7 @@ components:
       required:
       - item
       - identifiers
-      - events
+      - Events
       properties:
         item:
           $ref: '#/components/schemas/ItemResponse'
@@ -2023,7 +2370,7 @@ components:
       required:
       - item
       - identifiers
-      - events
+      - Events
       - was_deduplicated
       properties:
         item:
@@ -2060,7 +2407,7 @@ components:
       description: Paginated API response containing list of circuits with metadata.
       type: object
       required:
-      - circuits
+      - Circuits
       - count
       properties:
         circuits:
@@ -2075,7 +2422,7 @@ components:
         filters.
       type: object
       required:
-      - events
+      - Events
       - count
       properties:
         count:
@@ -2090,7 +2437,7 @@ components:
         metadata.
       type: object
       required:
-      - items
+      - Items
       - count
       properties:
         count:
@@ -2134,7 +2481,7 @@ components:
       description: Paginated API response containing list of snapshots with metadata.
       type: object
       required:
-      - snapshots
+      - Snapshots
       - count
       properties:
         count:
@@ -2336,7 +2683,7 @@ components:
           enum:
           - snapshot
           - circuit
-          - audit
+          - Audit
           - event
           - item
           - mixed
@@ -2351,7 +2698,7 @@ components:
           enum:
           - snapshot
           - circuit
-          - audit_batch
+          - Audit_batch
           - event_batch
           - item_batch
         updated_at:
@@ -2401,7 +2748,7 @@ components:
           enum:
           - snapshot
           - circuit
-          - audit
+          - Audit
           - event
           - item
           - mixed
@@ -2416,7 +2763,7 @@ components:
           enum:
           - snapshot
           - circuit
-          - audit_batch
+          - Audit_batch
           - event_batch
           - item_batch
         updated_at:
@@ -2511,8 +2858,8 @@ components:
       required:
       - id
       - user_id
-      - activity_type
-      - activity_count
+      - Activity_type
+      - Activity_count
       - last_activity_at
       - created_at
       properties:
@@ -2582,33 +2929,32 @@ components:
           format: uuid
           nullable: true
     CreateRetentionPolicyRequest:
-  type: object
-  required:
-    - circuit_id
-    - snapshot_type
-    - retention_days
-    - auto_archive
-  properties:
-    circuit_id:
-      type: string
-      format: uuid
-    snapshot_type:
-      type: string
-    resource_type:
-      type: string
-      nullable: true
-    retention_days:
-      type: integer
-    max_snapshots:
-      type: integer
-      nullable: true
-    auto_archive:
-      type: boolean
-    is_active:
-      type: boolean
-      nullable: true
-
-RetentionPolicyResponse:
+      type: object
+      required:
+      - circuit_id
+      - snapshot_type
+      - retention_days
+      - auto_archive
+      properties:
+        circuit_id:
+          type: string
+          format: uuid
+        snapshot_type:
+          type: string
+        resource_type:
+          type: string
+          nullable: true
+        retention_days:
+          type: integer
+        max_snapshots:
+          type: integer
+          nullable: true
+        auto_archive:
+          type: boolean
+        is_active:
+          type: boolean
+          nullable: true
+    RetentionPolicyResponse:
       description: API response containing retention policy details and affected snapshots
         count.
       type: object
@@ -3179,7 +3525,7 @@ RetentionPolicyResponse:
       - circuit_id
       - name
       - url
-      - events
+      - Events
       - is_active
       - created_by
       - created_at
@@ -3323,7 +3669,6 @@ RetentionPolicyResponse:
         webhook_id:
           type: string
           format: uuid
-
     CircuitAdapter:
       type: object
       description: Circuit adapter configuration
@@ -3387,7 +3732,6 @@ RetentionPolicyResponse:
           nullable: true
           description: Maximum requests per day (null = use global default)
           example: 1000
-
     AddCircuitAdapterRequest:
       type: object
       description: Request to add adapter to circuit
@@ -3424,7 +3768,6 @@ RetentionPolicyResponse:
           nullable: true
           description: Optional custom rate limit per day
           example: 500
-
     UpdateCircuitAdapterRequest:
       type: object
       description: Request to update circuit adapter
@@ -3452,14 +3795,47 @@ RetentionPolicyResponse:
           type: integer
           description: Update rate limit per day
           example: 1000
-
 paths:
+  /api/adapter/items/{item_id}/anchors:
+    get:
+      tags:
+      - Items
+      - Adapters
+      summary: Get item anchors and storage references
+      description: Fetch blockchain anchors and storage references (e.g. IPFS) for a given item.
+      operationId: getItemAnchors
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Item anchors and storage references
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAnchorsResponse'
+        '400':
+          description: Invalid item id
+        '404':
+          description: Item not found
+        '500':
+          description: Internal server error
   /health:
     get:
       tags:
       - Health
       summary: Gateway health check
-      description: Check if the gateway is running
+      description: 'Liveness check for the Gateway process.
+
+        Use this for load balancers and uptime monitoring.
+
+        Note: this endpoint does not validate downstream services.
+
+        '
       responses:
         '200':
           description: Gateway is healthy
@@ -3492,42 +3868,13 @@ paths:
         \ (expires in 30 days)\n\n**Use cases:**\n- New farmer/organization onboarding\n\
         - Team member registration\n- API client setup\n\n**Example:**\n```json\n\
         POST /auth/register\n{\n  \"email\": \"farmer@example.com\",\n  \"password\"\
-        : \"SecurePass123!\",\n  \"full_name\": \"Jo\xE3o Silva\"\n}\n```\n"
+        : \"SecurePass123!\",\n  \"full_name\": \"João Silva\"\n}\n```\n"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - email
-              - password
-              - full_name
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: user@example.com
-                password:
-                  type: string
-                  format: password
-                  minLength: 8
-                  example: SecurePassword123!
-                full_name:
-                  type: string
-                  example: John Doe
-                name:
-                  type: string
-                  deprecated: true
-                  description: Deprecated alias for full_name
-                workspace_slug:
-                  type: string
-                  nullable: true
-                  description: Optional custom workspace slug
-                workspace_name:
-                  type: string
-                  nullable: true
-                  description: Optional custom workspace name
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
           description: User created successfully
@@ -3574,19 +3921,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - email
-              - password
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: user@example.com
-                password:
-                  type: string
-                  format: password
-                  example: SecurePassword123!
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
           description: Login successful
@@ -3618,20 +3953,13 @@ paths:
         POST /auth/refresh\n{\n  \"refresh_token\": \"28214fc8c04cba687dc778e6d8a1e8e2...\"\
         \n}\n\nResponse:\n{\n  \"access_token\": \"eyJ0eXAiOiJKV1QiLCJhbGc...\",\n\
         \  \"expires_in\": 900\n}\n```\n\n**Error handling:**\n- 401: Refresh token\
-        \ expired \u2192 redirect to login\n- 400: Invalid token format \u2192 redirect\
-        \ to login\n"
+        \ expired → redirect to login\n- 400: Invalid token format → redirect to login\n"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - refresh_token
-              properties:
-                refresh_token:
-                  type: string
-                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+              $ref: '#/components/schemas/RefreshRequest'
       responses:
         '200':
           description: New access token issued
@@ -3705,12 +4033,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - refresh_token
-              properties:
-                refresh_token:
-                  type: string
+              $ref: '#/components/schemas/LogoutRequest'
       responses:
         '204':
           description: Successfully logged out
@@ -3723,7 +4046,7 @@ paths:
   /api/circuits:
     get:
       tags:
-      - circuits
+      - Circuits
       summary: GET /circuits?name=...&owner_id=...
       description: 'List circuits (permission-based data repositories) with optional
         filters.
@@ -3852,30 +4175,29 @@ paths:
                 $ref: '#/components/schemas/Error'
     post:
       tags:
-      - circuits
+      - Circuits
       summary: POST /circuits
-      description: "Create a new circuit (permission-based data repository).\n\n**What\
-        \ it does:**\n- Creates a new multi-tenant data isolation boundary\n- Automatically\
-        \ assigns creator as circuit owner\n- Sets up default RBAC permissions\n-\
-        \ Generates unique circuit ID\n- Creates audit trail for circuit creation\n\
-        \n**Required fields:**\n- `name`: Human-readable circuit name (unique within\
-        \ workspace)\n- `circuit_type`: Type of circuit (private, shared, public,\
-        \ enterprise)\n- `visibility`: Circuit visibility (private, restricted, public)\n\
-        - `owner_id`: Owner user UUID\n\n**Optional fields:**\n- `description`: Circuit\
-        \ purpose and context\n- `metadata`: Custom JSON metadata (tags, categories,\
-        \ etc.)\n- `settings`: Circuit-specific configuration\n\n**RBAC:**\n- User\
-        \ must be workspace owner or admin\n- Creator automatically becomes circuit\
-        \ owner with full permissions\n- Circuit owner can then invite members with\
-        \ specific roles\n\n**After creation:**\n1. Add members via `POST /api/circuits/{id}/members`\n\
+      description: "Create a new circuit (permission-based data repository).\n\nWhat\
+        \ it does:\n- Creates a new multi-tenant data isolation boundary\n- Automatically\
+        \ assigns the authenticated user as circuit owner\n- Sets up default RBAC\
+        \ permissions\n- Generates a unique circuit ID\n- Creates an audit trail for\
+        \ circuit creation\n- Assigns the circuit to the user's workspace (from JWT)\n\
+        \nRequired fields:\n- `name`: Human-readable circuit name (unique within workspace)\n\
+        - `circuit_type`: Type of circuit (private, shared, public, enterprise)\n\
+        - `visibility`: Circuit visibility (private, restricted, public)\n\nOptional\
+        \ fields:\n- `description`: Circuit purpose and context\n- `metadata`: Custom\
+        \ JSON metadata (tags, categories, etc.)\n- `settings`: Circuit-specific configuration\n\
+        - `organization_id`: Optional organization association\n\nRBAC:\n- Any authenticated\
+        \ user can create a circuit\n- Creator automatically becomes circuit owner\
+        \ with full permissions\n- Circuit owner can then invite members with specific\
+        \ roles\n\nAfter creation:\n1. Add members via `POST /api/circuits/{id}/members`\n\
         2. Create items within circuit via `POST /api/items`\n3. Track events via\
-        \ `POST /api/events`\n\n**Use cases:**\n- New private or shared circuit onboarding\n\
-        - Public/enterprise circuit setup\n- Project-specific data isolation\n\n**Example:**\n\
-        ```json\nPOST /api/circuits\n{\n  \"name\": \"Fazenda S\xE3o Jos\xE9 - Soja\
-        \ 2025\",\n  \"circuit_type\": \"private\",\n  \"visibility\": \"private\"\
-        ,\n  \"owner_id\": \"abc-123-...\",\n  \"description\": \"Safra de soja 2025\
-        \ da Fazenda S\xE3o Jos\xE9\",\n  \"metadata\": {\n    \"crop\": \"soy\",\n\
-        \    \"season\": \"2025\",\n    \"area_hectares\": 500\n  }\n}\n```\n"
-      operationId: create_circuit
+        \ `POST /api/events`\n\nUse cases:\n- New private or shared circuit onboarding\n\
+        - Public/enterprise circuit setup\n- Project-specific data isolation\n\nExample:\n\
+        ```json\nPOST /api/circuits\n{\n  \"name\": \"Fazenda São José - Soja 2025\"\
+        ,\n  \"circuit_type\": \"private\",\n  \"visibility\": \"private\",\n  \"\
+        description\": \"Safra de soja 2025 da Fazenda São José\",\n  \"metadata\"\
+        : {\n    \"crop\": \"soy\",\n    \"season\": \"2025\"\n  }\n}\n```\n"
       requestBody:
         content:
           application/json:
@@ -3904,7 +4226,7 @@ paths:
   /api/items:
     get:
       tags:
-      - items
+      - Items
       summary: GET /items?dfid=...&value_chain=...
       description: 'List items (physical/digital assets) with optional filters.
 
@@ -4045,7 +4367,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     post:
       tags:
-      - items
+      - Items
       summary: POST /items
       description: "Create a new item with automatic DFID generation.\n\n**What it\
         \ does:**\n- Generates unique DFID for the item\n- Creates item record in\
@@ -4069,7 +4391,7 @@ paths:
         ```json\nPOST /api/items\n{\n  \"value_chain\": \"BEEF\",\n  \"country\":\
         \ \"BR\",\n  \"circuit_id\": \"abc-123-...\",\n  \"metadata\": {\n    \"breed\"\
         : \"Nelore\",\n    \"weight_kg\": 450,\n    \"birth_date\": \"2024-01-15\"\
-        ,\n    \"farm_name\": \"Fazenda S\xE3o Jos\xE9\"\n  },\n  \"tags\": [\"cattle\"\
+        ,\n    \"farm_name\": \"Fazenda São José\"\n  },\n  \"tags\": [\"cattle\"\
         , \"organic\", \"2025-batch\"]\n}\n\nResponse (when created):\n{\n  \"item\"\
         : {\n    \"id\": \"item-uuid-...\",\n    \"dfid\": \"DFID-BEEF-BR-2025-000789-f4e1a2\"\
         ,\n    \"status\": \"active\"\n  },\n  \"events\": [],\n  \"was_deduplicated\"\
@@ -4111,7 +4433,12 @@ paths:
       tags:
       - DFID
       summary: Generate DFID
-      description: Generate a new DeFarm Identifier
+      description: 'Generate a new DeFarm Identifier (DFID).
+
+        DFIDs encode value chain, country, year, and checksum for globally unique
+        IDs.
+
+        '
       security:
       - bearerAuth: []
       requestBody:
@@ -4119,32 +4446,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - value_chain
-              - country
-              - year
-              properties:
-                value_chain:
-                  type: string
-                  example: BEEF
-                country:
-                  type: string
-                  example: BR
-                year:
-                  type: integer
-                  example: 2025
+              $ref: '#/components/schemas/DFIDGenerateRequest'
       responses:
         '200':
           description: DFID generated
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  dfid:
-                    type: string
-                    example: DFID-BEEF-BR-2025-000123-a3f2c1
+                $ref: '#/components/schemas/DFIDGenerateResponse'
         '401':
           description: Unauthorized
           content:
@@ -4156,7 +4465,11 @@ paths:
       tags:
       - DFID
       summary: Validate DFID
-      description: Check if a DFID is valid
+      description: 'Validate a DFID and return its parsed components.
+
+        Use this for imports, client-side validation, and integrity checks.
+
+        '
       security:
       - bearerAuth: []
       requestBody:
@@ -4164,27 +4477,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-              - dfid
-              properties:
-                dfid:
-                  type: string
-                  example: DFID-BEEF-BR-2025-000123-a3f2c1
+              $ref: '#/components/schemas/DFIDValidateRequest'
       responses:
         '200':
           description: Validation result
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  valid:
-                    type: boolean
-                  dfid:
-                    type: string
-                  components:
-                    type: object
+                $ref: '#/components/schemas/DFIDValidateResponse'
         '401':
           description: Unauthorized
           content:
@@ -4196,7 +4496,11 @@ paths:
       tags:
       - Documentation
       summary: API Documentation UI
-      description: Interactive API documentation (Swagger UI)
+      description: 'Interactive API documentation (Swagger UI).
+
+        This endpoint is public and does not require authentication.
+
+        '
       responses:
         '200':
           description: Swagger UI HTML
@@ -4205,7 +4509,12 @@ paths:
       tags:
       - Documentation
       summary: OpenAPI Specification
-      description: Complete OpenAPI 3.0 specification for all endpoints
+      description: 'Complete OpenAPI 3.0 specification for all endpoints served by
+        the gateway.
+
+        This endpoint is public and does not require authentication.
+
+        '
       responses:
         '200':
           description: OpenAPI JSON
@@ -4216,8 +4525,13 @@ paths:
   /api/activity/circuit/{circuit_id}:
     get:
       tags:
-      - activity
+      - Activity
       summary: Get circuit activity feed
+      description: 'Returns activity feed entries scoped to a circuit.
+
+        Supports filtering by actor, resource_type, action, and pagination.
+
+        '
       operationId: get_circuit_activity_feed
       parameters:
       - name: circuit_id
@@ -4289,8 +4603,12 @@ paths:
   /api/activity/public:
     get:
       tags:
-      - activity
+      - Activity
       summary: Get public activity feed
+      description: 'Returns public activity entries across circuits for discovery
+        and portfolio views.
+
+        '
       operationId: get_public_activity_feed
       parameters:
       - name: circuit_id
@@ -4355,8 +4673,11 @@ paths:
   /api/activity/recent:
     get:
       tags:
-      - activity
+      - Activity
       summary: Get recent activity cache
+      description: 'Returns the most recent activity entries visible to the caller.
+
+        '
       operationId: get_recent_activity
       parameters:
       - name: user_id
@@ -4404,8 +4725,12 @@ paths:
   /api/activity/summaries:
     get:
       tags:
-      - activity
+      - Activity
       summary: Get activity summaries
+      description: 'Returns aggregated activity counts by action and resource for
+        reporting dashboards.
+
+        '
       operationId: get_activity_summaries
       parameters:
       - name: circuit_id
@@ -4472,8 +4797,11 @@ paths:
   /api/activity/user/{user_id}:
     get:
       tags:
-      - activity
+      - Activity
       summary: Get user activity feed
+      description: 'Returns activity feed entries performed by a specific user.
+
+        '
       operationId: get_user_activity_feed
       parameters:
       - name: user_id
@@ -4542,13 +4870,201 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/admin/users:
+    get:
+      tags:
+      - Admin
+      x-internal: true
+      summary: GET /admin/users
+      description: 'List all users in the system (admin only). Returns user profile,
+        workspace,
+
+        role, and status fields.'
+      operationId: list_admin_users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserListResponse'
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+    post:
+      tags:
+      - Admin
+      x-internal: true
+      summary: POST /admin/users
+      description: 'Create or invite a new user (admin only). If workspace_id is omitted,
+
+        a personal workspace is created for the user.'
+      operationId: create_admin_user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Validation error
+        '403':
+          description: Admin key required
+        '409':
+          description: Email already exists
+        '500':
+          description: Internal server error
+  /api/admin/users/{id}:
+    delete:
+      tags:
+      - Admin
+      x-internal: true
+      summary: DELETE /admin/users/{id}
+      description: Permanently delete a user (admin only). This is irreversible.
+      operationId: delete_admin_user
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: User not found
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/users/{id}/role:
+    patch:
+      tags:
+      - Admin
+      x-internal: true
+      summary: PATCH /admin/users/{id}/role
+      description: Update a user's role within their workspace (admin only).
+      operationId: update_admin_user_role
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminUserRoleRequest'
+      responses:
+        '200':
+          description: User role updated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: User not found
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/users/{id}/status:
+    patch:
+      tags:
+      - Admin
+      x-internal: true
+      summary: PATCH /admin/users/{id}/status
+      description: Activate or deactivate a user account (admin only).
+      operationId: update_admin_user_status
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminUserStatusRequest'
+      responses:
+        '200':
+          description: User status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: User not found
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/adapter/stats:
+    get:
+      tags:
+      - Admin
+      x-internal: true
+      summary: GET /admin/adapter/stats
+      description: Adapter service operational statistics for admin dashboards.
+      operationId: get_adapter_stats
+      responses:
+        '200':
+          description: Adapter stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterStatsResponse'
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
   /api/admin/api-keys:
     post:
       tags:
-      - admin
+      - Admin
+      x-internal: true
       summary: POST /admin/api-keys
-      description: "Create a new API key for circuit access\n\n**\u26A0\uFE0F SECURITY**:\
-        \ The API key is only returned once and cannot be retrieved later!"
+      description: 'Create a new API key for circuit access (admin use).
+
+
+        **Security:** The secret key value is returned only once in this response.
+
+        Store it securely. It cannot be retrieved later.
+
+
+        **Use cases:**
+
+        - Provision server-to-server integrations
+
+        - Generate keys for internal services
+
+        - Rotate access for automation'
       operationId: create_api_key
       requestBody:
         content:
@@ -4568,12 +5084,13 @@ paths:
   /api/admin/api-keys/{circuit_id}:
     get:
       tags:
-      - admin
+      - Admin
+      x-internal: true
       summary: GET /admin/api-keys/:circuit_id
-      description: 'List API keys for a circuit
+      description: 'List API keys for a circuit (admin).
 
 
-        Returns metadata about API keys without revealing the actual key values.'
+        Returns metadata only — the secret key values are never returned.'
       operationId: list_api_keys
       parameters:
       - name: circuit_id
@@ -4586,14 +5103,26 @@ paths:
       responses:
         '200':
           description: List of API keys returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKeyMetadata'
         '500':
           description: Internal server error
   /api/admin/api-keys/{id}/metrics:
     get:
       tags:
-      - admin
+      - Admin
+      x-internal: true
       summary: GET /admin/api-keys/{id}/metrics
-      description: Get API key metrics (admin only)
+      description: 'Get usage metrics for a specific API key (admin).
+
+
+        Includes total requests and recent error counts to aid in monitoring and
+
+        rate-limit analysis.'
       operationId: get_api_key_metrics
       parameters:
       - name: id
@@ -4616,333 +5145,11 @@ paths:
           description: API key not found
         '500':
           description: Internal server error
-  /api/admin/adapter/metrics:
-    get:
-      tags:
-      - admin
-      summary: GET /admin/adapter/metrics
-      description: |
-        Get Prometheus metrics from adapter service (admin only).
-
-        Returns metrics in Prometheus text format for scraping by monitoring systems.
-
-        **Use case**: Connect Prometheus to scrape this endpoint for monitoring.
-      operationId: get_adapter_metrics
-      responses:
-        '200':
-          description: Prometheus metrics in text format
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: |
-                  # HELP adapter_jobs_processed_total Total number of publishing jobs processed
-                  # TYPE adapter_jobs_processed_total counter
-                  adapter_jobs_processed_total{status="completed",adapter_type="stellar"} 1234
-                  adapter_jobs_processed_total{status="failed",adapter_type="stellar"} 5
-                  adapter_queue_depth 10
-                  adapter_active_workers 2
-        '403':
-          description: Admin authentication required
-        '500':
-          description: Internal server error
-      security:
-      - bearerAuth: []
-  /api/admin/adapter/stats:
-    get:
-      tags:
-      - admin
-      summary: GET /admin/adapter/stats
-      description: |
-        Get adapter service statistics in JSON format (admin only).
-
-        Returns human-readable statistics including:
-        - Job completion rates
-        - Queue depth and active workers
-        - Adapter success/failure rates (Stellar, IPFS)
-        - Cost tracking (Stellar XLM/USD, IPFS storage)
-        - Rate limit rejections
-
-        **Use case**: Display statistics in admin dashboard UI.
-      operationId: get_adapter_stats
-      responses:
-        '200':
-          description: Adapter statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdapterStatsResponse'
-        '403':
-          description: Admin authentication required
-        '500':
-          description: Internal server error
-      security:
-      - bearerAuth: []
-  /api/admin/users:
-    post:
-      tags:
-      - admin
-      summary: POST /admin/users
-      description: |
-        Create/invite a new user (admin only).
-
-        Creates a new user with specified role and workspace.
-        If workspace_id is not provided, creates a new personal workspace.
-
-        **Use case**: Admin invites new team members or partners.
-      operationId: create_admin_user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - email
-              - password
-              properties:
-                email:
-                  type: string
-                  format: email
-                password:
-                  type: string
-                  minLength: 8
-                full_name:
-                  type: string
-                  nullable: true
-                role:
-                  type: string
-                  enum: [admin, partner, editor, viewer]
-                  default: viewer
-                workspace_id:
-                  type: string
-                  format: uuid
-                  nullable: true
-      responses:
-        '201':
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  user_id:
-                    type: string
-                    format: uuid
-                  workspace_id:
-                    type: string
-                    format: uuid
-                  role:
-                    type: string
-        '400':
-          description: Validation error
-        '403':
-          description: Admin authentication required
-        '409':
-          description: Email already registered
-      security:
-      - bearerAuth: []
-    get:
-      tags:
-      - admin
-      summary: GET /admin/users
-      description: |
-        List all users in the system (admin only).
-
-        Returns complete user information including roles, status, and workspace.
-
-        **Use case**: Admin dashboard user management.
-      operationId: list_admin_users
-      responses:
-        '200':
-          description: List of users
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uuid
-                    email:
-                      type: string
-                    full_name:
-                      type: string
-                      nullable: true
-                    role:
-                      type: string
-                    is_active:
-                      type: boolean
-                    workspace_id:
-                      type: string
-                      format: uuid
-                    workspace_name:
-                      type: string
-                    created_at:
-                      type: string
-                      format: date-time
-                    updated_at:
-                      type: string
-                      format: date-time
-                    last_login_at:
-                      type: string
-                      format: date-time
-                      nullable: true
-        '403':
-          description: Admin authentication required
-      security:
-      - bearerAuth: []
-  /api/admin/users/{id}:
-    delete:
-      tags:
-      - admin
-      summary: DELETE /admin/users/{id}
-      description: |
-        Permanently delete a user (admin only).
-
-        ⚠️ **WARNING**: This action cannot be undone.
-
-        **Use case**: Remove user accounts.
-      operationId: delete_admin_user
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: User deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  user_id:
-                    type: string
-                    format: uuid
-        '403':
-          description: Admin authentication required
-        '404':
-          description: User not found
-      security:
-      - bearerAuth: []
-  /api/admin/users/{id}/role:
-    patch:
-      tags:
-      - admin
-      summary: PATCH /admin/users/{id}/role
-      description: |
-        Update user role (admin only).
-
-        Changes a user's role within their workspace.
-
-        **Use case**: Promote/demote users.
-      operationId: update_user_role
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - role
-              properties:
-                role:
-                  type: string
-                  enum: [admin, partner, editor, viewer]
-      responses:
-        '200':
-          description: Role updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  user_id:
-                    type: string
-                    format: uuid
-                  role:
-                    type: string
-        '400':
-          description: Validation error
-        '403':
-          description: Admin authentication required
-        '404':
-          description: User not found
-      security:
-      - bearerAuth: []
-  /api/admin/users/{id}/status:
-    patch:
-      tags:
-      - admin
-      summary: PATCH /admin/users/{id}/status
-      description: |
-        Activate/deactivate user account (admin only).
-
-        Deactivated users cannot log in.
-
-        **Use case**: Temporarily disable user access.
-      operationId: update_user_status
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - is_active
-              properties:
-                is_active:
-                  type: boolean
-      responses:
-        '200':
-          description: Status updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  user_id:
-                    type: string
-                    format: uuid
-                  is_active:
-                    type: boolean
-        '403':
-          description: Admin authentication required
-        '404':
-          description: User not found
-      security:
-      - bearerAuth: []
   /api/admin/canonical-identifiers:
     post:
       tags:
-      - admin
+      - Admin
+      x-internal: true
       summary: POST /admin/canonical-identifiers
       description: Create or enable a canonical identifier type for a value chain
       operationId: create_canonical_identifier
@@ -4966,7 +5173,8 @@ paths:
   /api/admin/canonical-identifiers/value-chain/{value_chain}:
     get:
       tags:
-      - admin
+      - Admin
+      x-internal: true
       summary: GET /admin/canonical-identifiers/value-chain/{value_chain}
       description: List canonical identifier types for a value chain
       operationId: list_canonical_identifiers
@@ -4993,7 +5201,8 @@ paths:
   /api/admin/canonical-identifiers/{id}:
     patch:
       tags:
-      - admin
+      - Admin
+      x-internal: true
       summary: PATCH /admin/canonical-identifiers/{id}
       description: Enable or disable a canonical identifier type
       operationId: update_canonical_identifier
@@ -5025,12 +5234,19 @@ paths:
   /api/partner/api-keys:
     post:
       tags:
-      - partner-api-keys
+      - Partner API Keys
       summary: POST /api/partner/api-keys
       description: 'Create a new API key for your circuit.
 
 
-        The API key is only shown once at creation time.'
+        The secret key value is shown only once at creation time. Store it securely.
+
+
+        **Use cases:**
+
+        - Allow partner systems to write events/items
+
+        - Integrate external ERPs or data pipelines'
       operationId: create_partner_api_key
       requestBody:
         content:
@@ -5057,9 +5273,12 @@ paths:
       - bearerAuth: []
     get:
       tags:
-      - partner-api-keys
+      - Partner API Keys
       summary: GET /api/partner/api-keys
-      description: List your API keys across all circuits
+      description: 'List your API keys across all circuits.
+
+
+        Returns metadata only — secret key values are not returned.'
       operationId: list_partner_api_keys
       responses:
         '200':
@@ -5079,9 +5298,12 @@ paths:
   /api/partner/api-keys/{id}:
     delete:
       tags:
-      - partner-api-keys
+      - Partner API Keys
       summary: DELETE /api/partner/api-keys/{id}
-      description: Revoke (deactivate) an API key
+      description: 'Revoke (deactivate) an API key immediately.
+
+
+        Once revoked, the key can no longer be used to authenticate API requests.'
       operationId: revoke_partner_api_key
       parameters:
       - name: id
@@ -5107,9 +5329,12 @@ paths:
   /api/partner/api-keys/{id}/metrics:
     get:
       tags:
-      - partner-api-keys
+      - Partner API Keys
       summary: GET /api/partner/api-keys/{id}/metrics
-      description: Get metrics for a specific API key
+      description: 'Get usage metrics for a specific API key.
+
+
+        Useful for monitoring usage, abuse detection, and rate-limit planning.'
       operationId: get_partner_api_key_metrics
       parameters:
       - name: id
@@ -5139,7 +5364,7 @@ paths:
   /api/audit:
     get:
       tags:
-      - audit
+      - Audit
       summary: GET /audit?user_id=...&action=...
       description: 'List immutable audit logs with optional filters.
 
@@ -5289,7 +5514,7 @@ paths:
   /api/audit/verify:
     get:
       tags:
-      - audit
+      - Audit
       summary: GET /audit/verify?limit=...
       description: "Verify cryptographic hash chain integrity of audit logs.\n\n**What\
         \ it does:**\n- Validates hash chain linkage between audit log entries\n-\
@@ -5339,7 +5564,7 @@ paths:
   /api/audit/{id}:
     get:
       tags:
-      - audit
+      - Audit
       summary: GET /audit/:id
       description: "Retrieve detailed information about a specific audit log entry.\n\
         \n**What it returns:**\n- Audit log UUID and timestamp\n- Actor (user) who\
@@ -5397,7 +5622,7 @@ paths:
   /api/circuits/{id}:
     get:
       tags:
-      - circuits
+      - Circuits
       summary: GET /circuits/:id
       description: 'Retrieve detailed information about a specific circuit.
 
@@ -5483,24 +5708,24 @@ paths:
                 $ref: '#/components/schemas/Error'
     put:
       tags:
-      - circuits
+      - Circuits
       summary: PUT /circuits/:id
       description: "Update circuit details and configuration.\n\n**What you can update:**\n\
         - Circuit name (must remain unique within workspace)\n- Description and metadata\n\
         - Circuit type (with restrictions)\n- Settings and configuration\n- Status\
-        \ (active \u2192 archived, etc.)\n\n**RBAC Requirements:**\n- User must have\
-        \ `admin` permission in the circuit\n- Only circuit owners/admins can update\n\
-        - Some fields require owner-level access\n\n**Restricted fields:**\n- `workspace_id`:\
+        \ (active → archived, etc.)\n\n**RBAC Requirements:**\n- User must have `admin`\
+        \ permission in the circuit\n- Only circuit owners/admins can update\n- Some\
+        \ fields require owner-level access\n\n**Restricted fields:**\n- `workspace_id`:\
         \ Cannot be changed (permanent association)\n- `created_at`: Immutable timestamp\n\
         - `owner_id`: Use transfer ownership endpoint instead\n\n**Audit trail:**\n\
         - All updates are logged in audit trail\n- Includes actor, timestamp, old/new\
         \ values\n- Immutable record for compliance\n\n**Use cases:**\n- Update circuit\
         \ metadata as project evolves\n- Archive completed supply chains\n- Adjust\
         \ settings and configuration\n\n**Example:**\n```json\nPUT /api/circuits/abc-123-def-456\n\
-        {\n  \"name\": \"Fazenda S\xE3o Jos\xE9 - Soja 2025 (Atualizado)\",\n  \"\
-        description\": \"Safra expandida com \xE1rea adicional\",\n  \"metadata\"\
-        : {\n    \"crop\": \"soy\",\n    \"season\": \"2025\",\n    \"area_hectares\"\
-        : 750\n  },\n  \"status\": \"active\"\n}\n```\n"
+        {\n  \"name\": \"Fazenda São José - Soja 2025 (Atualizado)\",\n  \"description\"\
+        : \"Safra expandida com área adicional\",\n  \"metadata\": {\n    \"crop\"\
+        : \"soy\",\n    \"season\": \"2025\",\n    \"area_hectares\": 750\n  },\n\
+        \  \"status\": \"active\"\n}\n```\n"
       operationId: update_circuit
       parameters:
       - name: id
@@ -5543,7 +5768,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     delete:
       tags:
-      - circuits
+      - Circuits
       summary: DELETE /circuits/:id
       description: 'Soft delete a circuit (archive it, but preserve data).
 
@@ -5644,7 +5869,7 @@ paths:
   /api/circuits/{id}/members:
     get:
       tags:
-      - circuits
+      - Circuits
       summary: GET /circuits/:id/members
       description: 'List all members of a circuit with their roles and permissions.
 
@@ -5736,7 +5961,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     post:
       tags:
-      - circuits
+      - Circuits
       summary: POST /circuits/:id/members
       description: "Add a new member to a circuit with specified role and permissions.\n\
         \n**What it does:**\n- Adds user to circuit with specified role\n- Grants\
@@ -5804,7 +6029,7 @@ paths:
   /api/circuits/{id}/members/{user_id}:
     get:
       tags:
-      - circuits
+      - Circuits
       summary: GET /circuits/:id/members/:user_id
       description: 'Get detailed information about a specific circuit member.
 
@@ -5890,22 +6115,22 @@ paths:
                 $ref: '#/components/schemas/Error'
     put:
       tags:
-      - circuits
+      - Circuits
       summary: PUT /circuits/:id/members/:user_id
       description: "Update a circuit member's role or permissions.\n\n**What you can\
         \ update:**\n- Role (promote/demote between roles)\n- Custom permissions (override\
         \ role defaults)\n- Member status (active, suspended)\n\n**RBAC Requirements:**\n\
         - User must have `manage_members` permission\n- Only admins/owners can update\
         \ members\n- Cannot demote circuit owner\n- Cannot modify your own permissions\n\
-        \n**Role changes:**\n- Viewer \u2192 Member \u2192 Editor \u2192 Admin \u2192\
-        \ Owner\n- Role change updates standard permissions automatically\n- Custom\
-        \ permissions are preserved unless explicitly cleared\n\n**Permission overrides:**\n\
-        - Can grant/revoke specific permissions\n- Custom permissions take precedence\
-        \ over role defaults\n- Use carefully - prefer standard roles for clarity\n\
-        \n**Audit trail:**\n- All permission changes are logged\n- Includes actor,\
-        \ timestamp, old/new values\n- Visible in audit log\n\n**Use cases:**\n- Promote\
-        \ trusted members to admin\n- Grant temporary elevated access\n- Revoke specific\
-        \ permissions without changing role\n\n**Example:**\n```json\nPUT /api/circuits/abc-123/members/user-456\n\
+        \n**Role changes:**\n- Viewer → Member → Editor → Admin → Owner\n- Role change\
+        \ updates standard permissions automatically\n- Custom permissions are preserved\
+        \ unless explicitly cleared\n\n**Permission overrides:**\n- Can grant/revoke\
+        \ specific permissions\n- Custom permissions take precedence over role defaults\n\
+        - Use carefully - prefer standard roles for clarity\n\n**Audit trail:**\n\
+        - All permission changes are logged\n- Includes actor, timestamp, old/new\
+        \ values\n- Visible in audit log\n\n**Use cases:**\n- Promote trusted members\
+        \ to admin\n- Grant temporary elevated access\n- Revoke specific permissions\
+        \ without changing role\n\n**Example:**\n```json\nPUT /api/circuits/abc-123/members/user-456\n\
         {\n  \"role\": \"admin\",\n  \"custom_permissions\": null\n}\n```\n"
       operationId: update_member
       parameters:
@@ -5956,7 +6181,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     delete:
       tags:
-      - circuits
+      - Circuits
       summary: DELETE /circuits/:id/members/:user_id
       description: 'Remove a member from a circuit (revoke all access).
 
@@ -6074,31 +6299,50 @@ paths:
   /api/circuits/{id}/items/{item_id}:
     delete:
       tags:
-      - circuits
+      - Circuits
       summary: DELETE /circuits/:id/items/:item_id - Remove item from circuit
-      description: |
-        **Protected endpoint** - Requires JWT authentication + `delete_items` permission.
+      description: '**Protected endpoint** - Requires JWT authentication + `delete_items`
+        permission.
 
-        Removes the association between an item and a circuit **without deleting the item**.
+
+        Removes the association between an item and a circuit **without deleting the
+        item**.
+
 
         **What happens:**
+
         - Item removed from circuit (circuit_items junction table entry deleted)
+
         - Item continues to exist globally with its DFID
+
         - Item remains in other circuits (if multi-circuit item)
+
         - Item metadata unchanged
 
+
         **Use cases:**
+
         - Remove incorrectly added item
+
         - Clean up old/inactive items from circuit
+
         - Reorganize circuit membership
 
+
         **Example:**
-        ```
-        DELETE /api/circuits/550e8400-e29b-41d4-a716-446655440000/items/123e4567-e89b-12d3-a456-426614174000
-        Authorization: Bearer <access_token>
+
         ```
 
+        DELETE /api/circuits/550e8400-e29b-41d4-a716-446655440000/items/123e4567-e89b-12d3-a456-426614174000
+
+        Authorization: Bearer <access_token>
+
+        ```
+
+
         **Note:** Requires owner or admin role in the circuit.
+
+        '
       operationId: remove_item_from_circuit
       parameters:
       - name: id
@@ -6143,11 +6387,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-      - bearer_auth: []
+      - bearerAuth: []
   /api/circuits/public:
     get:
       tags:
-      - circuits
+      - Circuits
       summary: GET /circuits/public - List public circuits for discovery
       description: '**Public endpoint** - No authentication required.
 
@@ -6229,7 +6473,7 @@ paths:
   /api/circuits/{id}/public:
     get:
       tags:
-      - circuits
+      - Circuits
       summary: GET /circuits/:id/public - Public circuit portfolio
       description: '**Public endpoint** - No authentication required.
 
@@ -6297,7 +6541,7 @@ paths:
   /api/circuits/{id}/join-requests:
     post:
       tags:
-      - circuits
+      - Circuits
       summary: POST /circuits/:id/join-requests - Request to join circuit
       description: "**Protected endpoint** - Requires JWT authentication.\n\nSubmit\
         \ a request to join a public circuit. The circuit admins will review and approve/reject.\n\
@@ -6306,8 +6550,8 @@ paths:
         \n**Example:**\n```json\nPOST /api/circuits/550e8400-e29b-41d4-a716-446655440000/join-requests\n\
         Authorization: Bearer <access_token>\n\n{\n  \"message\": \"Sou produtor de\
         \ soja em Dourados/MS e gostaria de participar\",\n  \"user_metadata\": {\n\
-        \    \"company\": \"Fazenda S\xE3o Jo\xE3o\",\n    \"location\": \"Dourados,\
-        \ MS\"\n  }\n}\n```\n"
+        \    \"company\": \"Fazenda São João\",\n    \"location\": \"Dourados, MS\"\
+        \n  }\n}\n```\n"
       operationId: create_join_request
       parameters:
       - name: id
@@ -6355,10 +6599,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-      - bearer_auth: []
+      - bearerAuth: []
     get:
       tags:
-      - circuits
+      - Circuits
       summary: GET /circuits/:id/join-requests - List join requests (admin)
       description: '**Protected endpoint** - Requires JWT authentication + `manage_members`
         permission.
@@ -6425,22 +6669,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-      - bearer_auth: []
+      - bearerAuth: []
   /api/circuits/{id}/join-requests/{request_id}:
     put:
       tags:
-      - circuits
+      - Circuits
       summary: PUT /circuits/:id/join-requests/:request_id - Review request (admin)
       description: "**Protected endpoint** - Requires JWT authentication + `manage_members`\
         \ permission.\n\nApprove or reject a join request. If approved, user is automatically\
         \ added as circuit member.\n\n**What happens on approval:**\n- Request status\
-        \ \u2192 `approved`\n- User added to `circuit_members` with specified role\n\
-        - User receives notification (future)\n\n**What happens on rejection:**\n\
-        - Request status \u2192 `rejected`\n- Optional rejection reason recorded\n\
-        - User receives notification (future)\n\n**Example (approve):**\n```json\n\
-        PUT /api/circuits/550e8400.../join-requests/abc-123...\nAuthorization: Bearer\
-        \ <access_token>\n\n{\n  \"action\": \"approve\",\n  \"role\": \"member\"\n\
-        }\n```\n\n**Example (reject):**\n```json\nPUT /api/circuits/550e8400.../join-requests/abc-123...\n\
+        \ → `approved`\n- User added to `circuit_members` with specified role\n- User\
+        \ receives notification (future)\n\n**What happens on rejection:**\n- Request\
+        \ status → `rejected`\n- Optional rejection reason recorded\n- User receives\
+        \ notification (future)\n\n**Example (approve):**\n```json\nPUT /api/circuits/550e8400.../join-requests/abc-123...\n\
+        Authorization: Bearer <access_token>\n\n{\n  \"action\": \"approve\",\n  \"\
+        role\": \"member\"\n}\n```\n\n**Example (reject):**\n```json\nPUT /api/circuits/550e8400.../join-requests/abc-123...\n\
         Authorization: Bearer <access_token>\n\n{\n  \"action\": \"reject\",\n  \"\
         rejection_reason\": \"Circuit is full\"\n}\n```\n"
       operationId: review_join_request
@@ -6503,34 +6746,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-      - bearer_auth: []
+      - bearerAuth: []
   /api/items/{dfid}/public:
     get:
       tags:
-      - items
+      - Items
       summary: GET /items/:dfid/public - Public item details
-      description: |
-        **Public endpoint** - No authentication required.
+      description: '**Public endpoint** - No authentication required.
+
 
         View item details for items that belong to public circuits.
 
+
         **What it returns:**
+
         - Item DFID, value chain, country, year
+
         - Metadata (breed, weight, etc.)
+
         - Status (active, sold, etc.)
+
         - Created/updated timestamps
 
+
         **Use cases:**
+
         - Share item information via public URL
+
         - Display item details on public circuit portfolio
+
         - External verification of item data
 
+
         **Example:**
-        ```
-        GET /api/items/DFID-BEEF-BR-2025-000123-a3f2c1/public
+
         ```
 
-        **Note:** Only returns items from public circuits. Private circuit items return 404.
+        GET /api/items/DFID-BEEF-BR-2025-000123-a3f2c1/public
+
+        ```
+
+
+        **Note:** Only returns items from public circuits. Private circuit items return
+        404.
+
+        '
       operationId: get_item_public
       parameters:
       - name: dfid
@@ -6571,7 +6831,7 @@ paths:
                     example:
                       breed: Nelore
                       weight_kg: 450
-                      birth_date: "2023-01-15"
+                      birth_date: '2023-01-15'
                   created_at:
                     type: string
                     format: date-time
@@ -6593,30 +6853,47 @@ paths:
   /api/items/{dfid}/events/public:
     get:
       tags:
-      - items
+      - Items
       summary: GET /items/:dfid/events/public - Public item events
-      description: |
-        **Public endpoint** - No authentication required.
+      description: '**Public endpoint** - No authentication required.
+
 
         View events for an item that belong to public circuits.
 
+
         **What it returns:**
+
         - Event type (weight_measurement, location_change, etc.)
+
         - Timestamp
+
         - Event metadata/payload
+
         - Circuit context (only from public circuits)
 
+
         **Use cases:**
+
         - Display item history on public pages
+
         - Transparency for supply chain tracking
+
         - External audit trail
 
+
         **Example:**
-        ```
-        GET /api/items/DFID-BEEF-BR-2025-000123-a3f2c1/events/public?limit=10
+
         ```
 
-        **Note:** Only returns events from public circuits. Private circuit events are filtered out.
+        GET /api/items/DFID-BEEF-BR-2025-000123-a3f2c1/events/public?limit=10
+
+        ```
+
+
+        **Note:** Only returns events from public circuits. Private circuit events
+        are filtered out.
+
+        '
       operationId: get_item_events_public
       parameters:
       - name: dfid
@@ -6674,7 +6951,7 @@ paths:
                       type: object
                       example:
                         weight_kg: 450
-                        date: "2025-02-12"
+                        date: '2025-02-12'
                     created_at:
                       type: string
                       format: date-time
@@ -6693,7 +6970,7 @@ paths:
   /api/events:
     get:
       tags:
-      - events
+      - Events
       summary: GET /events?event_type=...&circuit_id=...
       description: 'List lifecycle events for items with optional filters.
 
@@ -6859,7 +7136,7 @@ paths:
   /api/events/{id}:
     get:
       tags:
-      - events
+      - Events
       summary: GET /events/:id
       description: 'Retrieve detailed information about a specific lifecycle event.
 
@@ -6954,25 +7231,25 @@ paths:
   /api/events/{id}/status:
     put:
       tags:
-      - events
+      - Events
+      x-internal: true
       summary: PUT /events/:id/status
       description: "Update event processing status (typically for async workflows).\n\
         \n**What it does:**\n- Updates event processing status\n- Records processing\
         \ results or errors\n- Triggers downstream workflows\n- Updates audit trail\n\
-        \n**Valid status transitions:**\n- `pending` \u2192 `processing`: Event being\
-        \ processed\n- `pending` \u2192 `failed`: Failure before processing completes\n\
-        - `processing` \u2192 `completed`: Successfully completed\n- `processing`\
-        \ \u2192 `failed`: Processing error occurred\n\n**RBAC Requirements:**\n-\
-        \ User must have `manage_events` permission (admin only)\n- Typically used\
-        \ by system/worker processes\n- Not commonly used by end users\n\n**Request\
-        \ body includes:**\n- `status`: New status value\n- `error_message`: Error\
-        \ details (if failed)\n- `processed_at`: Timestamp (optional)\n\n**Use cases:**\n\
-        - Async event processing workflows\n- Webhook delivery status updates\n- External\
-        \ integration callbacks\n- Retry failed operations\n\n**Example:**\n```json\n\
-        PUT /api/events/550e8400-e29b-41d4-a716-446655440000/status\n{\n  \"status\"\
-        : \"completed\",\n  \"processed_at\": \"2025-02-08T15:30:00Z\"\n}\n```\n\n\
-        **Error example:**\n```json\n{\n  \"status\": \"failed\",\n  \"error_message\"\
-        : \"External API timeout after 30s\"\n}\n```\n"
+        \n**Valid status transitions:**\n- `pending` → `processing`: Event being processed\n\
+        - `pending` → `failed`: Failure before processing completes\n- `processing`\
+        \ → `completed`: Successfully completed\n- `processing` → `failed`: Processing\
+        \ error occurred\n\n**RBAC Requirements:**\n- User must have `manage_events`\
+        \ permission (admin only)\n- Typically used by system/worker processes\n-\
+        \ Not commonly used by end users\n\n**Request body includes:**\n- `status`:\
+        \ New status value\n- `error_message`: Error details (if failed)\n- `processed_at`:\
+        \ Timestamp (optional)\n\n**Use cases:**\n- Async event processing workflows\n\
+        - Webhook delivery status updates\n- External integration callbacks\n- Retry\
+        \ failed operations\n\n**Example:**\n```json\nPUT /api/events/550e8400-e29b-41d4-a716-446655440000/status\n\
+        {\n  \"status\": \"completed\",\n  \"processed_at\": \"2025-02-08T15:30:00Z\"\
+        \n}\n```\n\n**Error example:**\n```json\n{\n  \"status\": \"failed\",\n  \"\
+        error_message\": \"External API timeout after 30s\"\n}\n```\n"
       operationId: update_event_status
       parameters:
       - name: id
@@ -7012,7 +7289,7 @@ paths:
   /api/items/bulk:
     post:
       tags:
-      - items
+      - Items
       summary: Bulk ingest items from CSV file
       description: 'Create multiple items at once from CSV file upload.
 
@@ -7120,7 +7397,7 @@ paths:
   /api/items/{dfid}/merge:
     post:
       tags:
-      - workflows
+      - Workflows
       summary: POST /items/{dfid}/merge
       description: "Merge two items together (deduplication or consolidation).\n\n\
         **What it does:**\n- Combines two items into one (primary remains, secondary\
@@ -7133,13 +7410,13 @@ paths:
         - User must have `update_items` permission in both circuits\n- Items must\
         \ be in same workspace (cross-workspace not allowed)\n- Cannot merge already-merged\
         \ items\n\n**What happens to secondary item:**\n- Status changed to 'merged'\n\
-        - DFID preserved for audit trail\n- Relationship created: secondary \u2192\
-        \ merged_into \u2192 primary\n- Data remains accessible (read-only)\n\n**Use\
-        \ cases:**\n- Deduplicate accidentally created items\n- Consolidate batches\
-        \ from same source\n- Combine split shipments\n\n**Example:**\n```json\nPOST\
-        \ /api/items/DFID-BEEF-BR-2025-000123-abc/merge\n{\n  \"secondary_dfid\":\
-        \ \"DFID-BEEF-BR-2025-000456-def\",\n  \"strategy\": \"append\",\n  \"user_id\"\
-        : \"550e8400-e29b-41d4-a716-446655440000\"\n}\n```\n"
+        - DFID preserved for audit trail\n- Relationship created: secondary → merged_into\
+        \ → primary\n- Data remains accessible (read-only)\n\n**Use cases:**\n- Deduplicate\
+        \ accidentally created items\n- Consolidate batches from same source\n- Combine\
+        \ split shipments\n\n**Example:**\n```json\nPOST /api/items/DFID-BEEF-BR-2025-000123-abc/merge\n\
+        {\n  \"secondary_dfid\": \"DFID-BEEF-BR-2025-000456-def\",\n  \"strategy\"\
+        : \"append\",\n  \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}\n\
+        ```\n"
       operationId: merge_items
       parameters:
       - name: dfid
@@ -7170,7 +7447,7 @@ paths:
   /api/items/{dfid}/relationships:
     get:
       tags:
-      - workflows
+      - Workflows
       summary: GET /items/{dfid}/relationships
       description: "Get all relationships for an item (parent/child, merges, splits).\n\
         \n**What it returns:**\n- Parent items (source/origin)\n- Child items (derived\
@@ -7213,7 +7490,7 @@ paths:
   /api/items/{dfid}/split:
     post:
       tags:
-      - workflows
+      - Workflows
       summary: POST /items/{dfid}/split
       description: "Split an item into two separate items (division/transfer).\n\n\
         **What it does:**\n- Creates new item with new DFID\n- Both items remain active\
@@ -7265,7 +7542,7 @@ paths:
   /api/items/{dfid}/unmerge:
     post:
       tags:
-      - workflows
+      - Workflows
       summary: POST /items/{dfid}/unmerge
       description: "Unmerge a previously merged item (restore both original items).\n\
         \n**What it does:**\n- Restores secondary item to 'active' status\n- Removes\
@@ -7274,11 +7551,11 @@ paths:
         \n**RBAC Requirements:**\n- User must have `update_items` permission in both\
         \ circuits\n- Only merged items can be unmerged (status = 'merged')\n- Cannot\
         \ unmerge if primary item was subsequently merged/archived\n\n**What gets\
-        \ restored:**\n- Secondary item status: merged \u2192 active\n- Secondary\
-        \ item metadata (pre-merge snapshot)\n- Independent access to both items\n\
-        \n**When unmerge is blocked:**\n- Primary item was archived\n- Primary item\
-        \ was merged into another\n- More than 90 days elapsed since merge (configurable)\n\
-        \n**Use cases:**\n- Undo accidental merge\n- Restore items mistakenly deduplicated\n\
+        \ restored:**\n- Secondary item status: merged → active\n- Secondary item\
+        \ metadata (pre-merge snapshot)\n- Independent access to both items\n\n**When\
+        \ unmerge is blocked:**\n- Primary item was archived\n- Primary item was merged\
+        \ into another\n- More than 90 days elapsed since merge (configurable)\n\n\
+        **Use cases:**\n- Undo accidental merge\n- Restore items mistakenly deduplicated\n\
         - Correct data entry errors\n\n**Example:**\n```json\nPOST /api/items/DFID-BEEF-BR-2025-000456-def/unmerge\n\
         {\n  \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\"\n}\n\nResponse:\n\
         {\n  \"primary_dfid\": \"DFID-BEEF-BR-2025-000123-abc\",\n  \"restored_dfid\"\
@@ -7313,7 +7590,7 @@ paths:
   /api/items/{id}:
     get:
       tags:
-      - items
+      - Items
       summary: GET /items/:id
       description: 'Retrieve detailed information about a specific item by UUID.
 
@@ -7399,7 +7676,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     put:
       tags:
-      - items
+      - Items
       summary: PUT /items/:id
       description: "Update item metadata and properties.\n\n**What you can update:**\n\
         - Metadata fields (weight, location, notes, etc.)\n- Tags for categorization\n\
@@ -7458,7 +7735,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     delete:
       tags:
-      - items
+      - Items
       summary: DELETE /items/:id
       description: 'Soft delete an item (archive it, but preserve data).
 
@@ -7578,9 +7855,16 @@ paths:
   /api/items/{id}/status:
     put:
       tags:
-      - items
+      - Items
       summary: PUT /items/:id/status
-      description: Update item status
+      description: 'Update only the lifecycle status of an item without changing its
+        metadata or
+
+        DFID/circuit ownership. Use this endpoint for state transitions such as
+
+        pending → active or active → archived. Requires permission to update items
+
+        in the item''s circuit.'
       operationId: update_item_status
       parameters:
       - name: id
@@ -7624,9 +7908,13 @@ paths:
   /api/merkle-trees:
     get:
       tags:
-      - merkle
+      - Merkle
       summary: GET /merkle-trees
-      description: List Merkle trees with optional filters
+      description: 'List Merkle trees. Use filters such as tree_type, resource_type/resource_id,
+
+        circuit_id, or snapshot_id to narrow the results. Supports pagination via
+
+        limit and offset.'
       operationId: list_merkle_trees
       parameters:
       - name: tree_type
@@ -7697,9 +7985,12 @@ paths:
                 $ref: '#/components/schemas/Error'
     post:
       tags:
-      - merkle
+      - Merkle
       summary: POST /merkle-trees
-      description: Create a new Merkle tree
+      description: 'Create a new Merkle tree for a specific resource or snapshot.
+        The resulting
+
+        tree anchors a root hash that can later be used to generate and verify proofs.'
       operationId: create_merkle_tree
       requestBody:
         content:
@@ -7735,9 +8026,12 @@ paths:
   /api/merkle-trees/{id}:
     get:
       tags:
-      - merkle
+      - Merkle
       summary: GET /merkle-trees/:id
-      description: Get a Merkle tree by ID
+      description: 'Retrieve a Merkle tree by ID, including its root hash and metadata
+        needed for
+
+        auditing or proof workflows.'
       operationId: get_merkle_tree
       parameters:
       - name: id
@@ -7774,9 +8068,12 @@ paths:
                 $ref: '#/components/schemas/Error'
     delete:
       tags:
-      - merkle
+      - Merkle
       summary: DELETE /merkle-trees/:id
-      description: Delete a Merkle tree
+      description: 'Delete a Merkle tree record. Use with care because removing a
+        tree can break
+
+        future proof verification for the associated snapshot/resource.'
       operationId: delete_merkle_tree
       parameters:
       - name: id
@@ -7810,9 +8107,12 @@ paths:
   /api/merkle-trees/{id}/generate-proof:
     post:
       tags:
-      - merkle
+      - Merkle
       summary: POST /merkle-trees/:id/generate-proof
-      description: Generate a Merkle proof for a leaf
+      description: 'Generate an inclusion proof for a leaf in the specified tree.
+        The leaf_data
+
+        must match the canonical representation used when the tree was created.'
       operationId: generate_proof
       parameters:
       - name: id
@@ -7856,9 +8156,10 @@ paths:
   /api/merkle-trees/{id}/verifications:
     get:
       tags:
-      - merkle
+      - Merkle
       summary: GET /merkle-trees/:id/verifications
-      description: Get verification history for a tree
+      description: List verification events for a Merkle tree, including outcomes
+        and timestamps.
       operationId: get_verifications
       parameters:
       - name: id
@@ -7904,9 +8205,12 @@ paths:
   /api/merkle-trees/{id}/verify:
     post:
       tags:
-      - merkle
+      - Merkle
       summary: POST /merkle-trees/:id/verify
-      description: Verify the entire Merkle tree structure
+      description: 'Verify the integrity of a Merkle tree by recomputing/validating
+        its structure
+
+        and comparing the computed root to the stored root.'
       operationId: verify_tree
       parameters:
       - name: id
@@ -7944,9 +8248,12 @@ paths:
   /api/merkle-trees/{id}/verify-proof:
     post:
       tags:
-      - merkle
+      - Merkle
       summary: POST /merkle-trees/:id/verify-proof
-      description: Verify a Merkle proof
+      description: 'Verify a client-provided Merkle proof against an expected root
+        to confirm
+
+        inclusion of a leaf in the tree.'
       operationId: verify_proof
       parameters:
       - name: id
@@ -7990,8 +8297,17 @@ paths:
   /api/sessions:
     get:
       tags:
-      - activity
+      - Activity
       summary: Get active sessions for a user
+      description: 'List active sessions for a user. Useful for security monitoring
+        and
+
+        session management (e.g., detect unusual logins and terminate sessions
+
+        from the client side).
+
+
+        Requires permission to view the user''s sessions (typically self or admin).'
       operationId: get_active_sessions
       parameters:
       - name: user_id
@@ -8031,7 +8347,7 @@ paths:
   /api/snapshots:
     get:
       tags:
-      - snapshots
+      - Snapshots
       summary: GET /snapshots - List snapshots with filtering
       description: 'List all snapshots from circuits in your workspace with optional
         filtering.
@@ -8119,7 +8435,7 @@ paths:
                 $ref: '#/components/schemas/Error'
     post:
       tags:
-      - snapshots
+      - Snapshots
       summary: POST /snapshots - Create a point-in-time snapshot
       description: 'Create a point-in-time snapshot of circuit or item state.
 
@@ -8176,9 +8492,12 @@ paths:
   /api/snapshots/comparisons/{id}:
     get:
       tags:
-      - snapshots
+      - Snapshots
       summary: GET /snapshots/comparisons/:id
-      description: Get a snapshot comparison by ID
+      description: 'Retrieve a previously generated snapshot comparison by ID. The
+        comparison
+
+        contains a diff summary (added/removed/modified) and detailed change lists.'
       operationId: get_comparison
       parameters:
       - name: id
@@ -8210,9 +8529,13 @@ paths:
   /api/snapshots/restorations/{id}/status:
     put:
       tags:
-      - snapshots
+      - Snapshots
+      x-internal: true
       summary: PUT /snapshots/restorations/:id/status
-      description: Update restoration status
+      description: 'Update the status of an ongoing restoration job (typically used
+        by async
+
+        workers). Records progress, success, or failure details for auditability.'
       operationId: update_restoration_status
       parameters:
       - name: id
@@ -8248,11 +8571,63 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
   /api/snapshots/retention-policies:
+    post:
+      tags:
+      - Snapshots
+      summary: Create retention policy
+      description: 'Creates a retention policy for a circuit and snapshot type.
+
+        If a matching policy already exists, the API returns the existing policy.
+
+        '
+      operationId: create_retention_policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRetentionPolicyRequest'
+      responses:
+        '201':
+          description: Retention policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionPolicyResponse'
+        '200':
+          description: Existing policy returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionPolicyResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags:
-      - snapshots
+      - Snapshots
       summary: GET /snapshots/retention-policies
-      description: Get retention policies for a circuit
+      description: 'List retention policies. Optionally filter by circuit_id; when
+        omitted,
+
+        returns global/default policies. Policies define max snapshots and
+
+        retention windows per snapshot type.'
       operationId: get_retention_policies
       parameters:
       - name: circuit_id
@@ -8281,9 +8656,13 @@ paths:
   /api/snapshots/retention-policies/{id}/apply:
     post:
       tags:
-      - snapshots
+      - Snapshots
+      x-internal: true
       summary: POST /snapshots/retention-policies/:id/apply
-      description: Manually apply a retention policy
+      description: 'Manually apply a retention policy immediately. This can archive
+        or delete
+
+        snapshots beyond the policy limits without waiting for scheduled cleanup.'
       operationId: apply_retention_policy
       parameters:
       - name: id
@@ -8315,7 +8694,7 @@ paths:
   /api/snapshots/{id}:
     get:
       tags:
-      - snapshots
+      - Snapshots
       summary: GET /snapshots/:id - Retrieve a specific snapshot
       description: 'Retrieve a specific snapshot by its unique identifier.
 
@@ -8367,9 +8746,12 @@ paths:
                 $ref: '#/components/schemas/Error'
     delete:
       tags:
-      - snapshots
+      - Snapshots
       summary: DELETE /snapshots/:id
-      description: Delete a snapshot
+      description: 'Permanently delete a snapshot. Use only when compliance requirements
+        allow
+
+        removal. Consider archiving instead for audit retention.'
       operationId: delete_snapshot
       parameters:
       - name: id
@@ -8397,9 +8779,12 @@ paths:
   /api/snapshots/{id}/archive:
     post:
       tags:
-      - snapshots
+      - Snapshots
       summary: POST /snapshots/:id/archive
-      description: Archive a snapshot
+      description: 'Archive a snapshot to hide it from default listings while preserving
+        data
+
+        for compliance and audit purposes.'
       operationId: archive_snapshot
       parameters:
       - name: id
@@ -8431,7 +8816,7 @@ paths:
   /api/snapshots/{id}/compare:
     post:
       tags:
-      - snapshots
+      - Snapshots
       summary: POST /snapshots/:id/compare - Compare two snapshots
       description: 'Compare two snapshots to analyze changes over time.
 
@@ -8486,16 +8871,29 @@ paths:
   /api/snapshots/{id}/restore:
     post:
       tags:
-      - snapshots
+      - Snapshots
       summary: POST /snapshots/:id/restore - Restore from snapshot (CRITICAL OPERATION)
-      description: "Initiate a restoration operation to rollback to a previous snapshot\
-        \ state.\n\n**\u26A0\uFE0F WARNING**: This operation will modify current circuit/item\
-        \ state.\n\n**Process**: Auto-creates pre-restore snapshot \u2192 Validates\
-        \ integrity \u2192 Applies changes \u2192 Tracks status\n\n**Restoration Types**:\
-        \ full (complete replacement), partial (selective), merge (combine with current)\n\
-        \n**Safety Features**: Pre-restore backup, rollback on failure, integrity\
-        \ verification, async processing\n\n**Permissions Required**: `ManageSnapshots`\
-        \ permission in the snapshot's circuit"
+      description: 'Initiate a restoration operation to rollback to a previous snapshot
+        state.
+
+
+        **⚠️ WARNING**: This operation will modify current circuit/item state.
+
+
+        **Process**: Auto-creates pre-restore snapshot → Validates integrity → Applies
+        changes → Tracks status
+
+
+        **Restoration Types**: full (complete replacement), partial (selective), merge
+        (combine with current)
+
+
+        **Safety Features**: Pre-restore backup, rollback on failure, integrity verification,
+        async processing
+
+
+        **Permissions Required**: `ManageSnapshots` permission in the snapshot''s
+        circuit'
       operationId: create_restoration
       parameters:
       - name: id
@@ -8533,8 +8931,12 @@ paths:
   /api/webhooks:
     get:
       tags:
-      - webhooks
+      - Webhooks
       summary: List webhooks
+      description: 'List webhook subscriptions visible to the caller for the specified
+        circuit
+
+        or workspace. Use filters to narrow by circuit or active status.'
       operationId: list_webhooks
       parameters:
       - name: circuit_id
@@ -8567,8 +8969,14 @@ paths:
           description: Internal server error
     post:
       tags:
-      - webhooks
+      - Webhooks
       summary: Create a new webhook
+      description: 'Create a webhook subscription to receive event notifications at
+        a URL.
+
+        Configure the target URL, subscribed events, and optional secret for
+
+        signature verification.'
       operationId: create_webhook
       requestBody:
         content:
@@ -8592,8 +9000,9 @@ paths:
   /api/webhooks/{id}:
     get:
       tags:
-      - webhooks
+      - Webhooks
       summary: Get webhook by ID
+      description: Retrieve a single webhook configuration by ID.
       operationId: get_webhook
       parameters:
       - name: id
@@ -8618,8 +9027,12 @@ paths:
           description: Internal server error
     put:
       tags:
-      - webhooks
+      - Webhooks
       summary: Update webhook
+      description: 'Update a webhook configuration (URL, subscribed events, status,
+        and secret).
+
+        Use this to rotate secrets or pause/resume deliveries.'
       operationId: update_webhook
       parameters:
       - name: id
@@ -8652,8 +9065,9 @@ paths:
           description: Internal server error
     delete:
       tags:
-      - webhooks
+      - Webhooks
       summary: Delete webhook
+      description: Delete a webhook subscription and stop future deliveries.
       operationId: delete_webhook
       parameters:
       - name: id
@@ -8675,8 +9089,12 @@ paths:
   /api/webhooks/{id}/deliveries:
     get:
       tags:
-      - webhooks
+      - Webhooks
       summary: Get webhook delivery history
+      description: 'List delivery attempts for a webhook, including status, response
+        codes,
+
+        and timestamps. Useful for troubleshooting failed deliveries.'
       operationId: get_webhook_deliveries
       parameters:
       - name: id
@@ -8712,8 +9130,12 @@ paths:
   /api/webhooks/{id}/retry:
     post:
       tags:
-      - webhooks
+      - Webhooks
       summary: Trigger manual delivery retry
+      description: 'Trigger a retry for recent failed webhook deliveries. This schedules
+        a
+
+        re-delivery attempt with the latest payload.'
       operationId: retry_webhook
       parameters:
       - name: id
@@ -8735,8 +9157,12 @@ paths:
   /api/webhooks/{id}/stats:
     get:
       tags:
-      - webhooks
+      - Webhooks
       summary: Get webhook statistics
+      description: 'Return aggregate delivery metrics (success/failure counts and
+        latency) for
+
+        operational monitoring and SLA tracking.'
       operationId: get_webhook_stats
       parameters:
       - name: id
@@ -8762,8 +9188,14 @@ paths:
   /api/compliance/check:
     post:
       tags:
-      - compliance
+      - Compliance
       summary: Submit a compliance check
+      description: 'Run a compliance check for the provided input (e.g., CNPJ). The
+        gateway
+
+        forwards the request to the Compliance service and returns the verdict and
+
+        check id.'
       operationId: submitComplianceCheck
       requestBody:
         required: true
@@ -8787,8 +9219,9 @@ paths:
   /api/compliance/car/{carNumber}:
     get:
       tags:
-      - compliance
+      - Compliance
       summary: Get CAR details by number (public)
+      description: Look up a CAR registration by number and return metadata if found.
       operationId: getComplianceCar
       security: []
       parameters:
@@ -8813,8 +9246,9 @@ paths:
   /api/compliance/car/{carNumber}/geojson:
     get:
       tags:
-      - compliance
+      - Compliance
       summary: Get CAR geometry as GeoJSON (public)
+      description: Return CAR geometry in GeoJSON for mapping and geo analysis.
       operationId: getComplianceCarGeojson
       security: []
       parameters:
@@ -8839,8 +9273,9 @@ paths:
   /api/compliance/checks/{id}:
     get:
       tags:
-      - compliance
+      - Compliance
       summary: Get compliance check status by ID
+      description: Fetch the result of a previously created compliance check by id.
       operationId: getComplianceCheck
       parameters:
       - name: id
@@ -8863,8 +9298,9 @@ paths:
   /api/compliance/sources:
     get:
       tags:
-      - compliance
+      - Compliance
       summary: List compliance data sources
+      description: List compliance data sources and their current operational status.
       operationId: listComplianceSources
       responses:
         '200':
@@ -8876,300 +9312,3 @@ paths:
                 additionalProperties: true
         '401':
           description: Unauthorized
-  /api/circuits/{circuit_id}/adapters:
-    get:
-      tags:
-      - Circuit Adapters
-      summary: List circuit adapters
-      description: |
-        Get all adapters (Stellar, IPFS, NFT) configured for a specific circuit.
-
-        **What it does:**
-        - Returns all adapter configurations for the circuit
-        - Includes auto-publish settings and rate limits
-        - Shows whether each adapter is enabled/disabled
-
-        **Response includes:**
-        - Adapter name and type (stellar, ipfs, nft)
-        - Auto-publish status (on/off)
-        - Trigger events (item_created, item_updated)
-        - Rate limits (per hour and per day)
-
-        **Use cases:**
-        - Check which adapters are active for a circuit
-        - Verify auto-publish settings
-        - Monitor adapter configurations
-      operationId: list_circuit_adapters
-      parameters:
-      - name: circuit_id
-        in: path
-        description: Circuit UUID
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: List of adapters
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CircuitAdapter'
-        '401':
-          description: Unauthorized
-        '404':
-          description: Circuit not found
-        '500':
-          description: Internal server error
-      security:
-      - bearerAuth: []
-
-    post:
-      tags:
-      - Circuit Adapters
-      summary: Add adapter to circuit
-      description: |
-        Add a specific adapter (Stellar, IPFS, NFT) to a circuit with custom configuration.
-
-        **What it does:**
-        - Adds an adapter to the circuit
-        - Configures auto-publish settings
-        - Sets custom rate limits (optional)
-        - If adapter already exists, updates it instead
-
-        **Parameters:**
-        - `adapter_config_id`: ID of the adapter to add (get from /adapter-configs)
-        - `auto_publish`: Enable automatic publishing on item events (default: false)
-        - `trigger_events`: Events that trigger auto-publish (default: item_created, item_updated)
-        - `rate_limit_per_hour`: Custom hourly rate limit (optional)
-        - `rate_limit_per_day`: Custom daily rate limit (optional)
-
-        **Use cases:**
-        - Manually add a specific adapter to a circuit
-        - Configure custom rate limits for a circuit
-        - Enable auto-publish for specific events only
-      operationId: add_circuit_adapter
-      parameters:
-      - name: circuit_id
-        in: path
-        description: Circuit UUID
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddCircuitAdapterRequest'
-      responses:
-        '201':
-          description: Adapter added successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CircuitAdapter'
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Adapter config not found
-        '500':
-          description: Internal server error
-      security:
-      - bearerAuth: []
-
-  /api/circuits/{circuit_id}/adapters/setup-defaults:
-    post:
-      tags:
-      - Circuit Adapters
-      summary: Setup default adapters
-      description: |
-        Automatically configure Stellar and IPFS adapters with auto-publish enabled.
-        This is the recommended way to enable publishing for new circuits.
-
-        **What it does:**
-        - Adds Stellar mainnet adapter with auto-publish ON
-        - Adds IPFS (Pinata) adapter with auto-publish ON
-        - Uses default rate limits from adapter configs
-        - Idempotent - safe to call multiple times
-
-        **Adapters configured:**
-        - **stellar_mainnet**: Blockchain anchoring (100 req/hour, 1000 req/day)
-        - **ipfs_pinata**: Distributed storage (500 req/hour, 5000 req/day)
-
-        **Auto-publish behavior:**
-        - Items created in this circuit will automatically be published to Stellar + IPFS
-        - Items updated in this circuit will also be republished
-
-        **Use cases:**
-        - Quick setup for new circuits
-        - Enable decentralized publishing in one API call
-        - Recommended for production circuits
-      operationId: setup_default_adapters
-      parameters:
-      - name: circuit_id
-        in: path
-        description: Circuit UUID
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: Default adapters configured
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CircuitAdapter'
-        '401':
-          description: Unauthorized
-        '404':
-          description: Circuit not found
-        '500':
-          description: Internal server error
-      security:
-      - bearerAuth: []
-
-  /api/circuits/{circuit_id}/adapters/{adapter_id}:
-    patch:
-      tags:
-      - Circuit Adapters
-      summary: Update adapter configuration
-      description: |
-        Update settings for a specific adapter. Use this to enable/disable auto-publish,
-        enable/disable the adapter entirely, or adjust rate limits.
-
-        **What it does:**
-        - Updates adapter settings (all fields optional)
-        - Changes take effect immediately
-        - Does not affect already-queued jobs
-
-        **Common use cases:**
-
-        **Turn off auto-publish (manual publishing only):**
-        ```json
-        { "auto_publish": false }
-        ```
-
-        **Turn on auto-publish:**
-        ```json
-        { "auto_publish": true }
-        ```
-
-        **Disable adapter completely:**
-        ```json
-        { "is_enabled": false }
-        ```
-
-        **Re-enable adapter:**
-        ```json
-        { "is_enabled": true, "auto_publish": true }
-        ```
-
-        **Adjust rate limits:**
-        ```json
-        {
-          "rate_limit_per_hour": 50,
-          "rate_limit_per_day": 500
-        }
-        ```
-
-        **Difference between is_enabled and auto_publish:**
-        - `is_enabled=false`: Adapter completely disabled (auto + manual blocked)
-        - `auto_publish=false`: Only disables auto-publish (manual `/publish` still works)
-      operationId: update_circuit_adapter
-      parameters:
-      - name: circuit_id
-        in: path
-        description: Circuit UUID
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: adapter_id
-        in: path
-        description: Adapter UUID
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateCircuitAdapterRequest'
-      responses:
-        '200':
-          description: Adapter updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CircuitAdapter'
-        '400':
-          description: Invalid request (no fields to update)
-        '401':
-          description: Unauthorized
-        '404':
-          description: Adapter not found
-        '500':
-          description: Internal server error
-      security:
-      - bearerAuth: []
-
-    delete:
-      tags:
-      - Circuit Adapters
-      summary: Remove adapter from circuit
-      description: |
-        Removes an adapter from a circuit. Items will no longer be published to this adapter.
-
-        **What it does:**
-        - Deletes adapter configuration from circuit
-        - Stops all future auto-publishing to this adapter
-        - Does not affect already-published data
-        - Does not affect other circuits using the same adapter
-
-        **Important:**
-        - This operation is irreversible
-        - Already-published data on Stellar/IPFS remains unchanged
-        - To temporarily disable, use PATCH with `is_enabled: false` instead
-
-        **Use cases:**
-        - Circuit no longer needs this adapter
-        - Switching to different adapter configuration
-        - Testing/development cleanup
-      operationId: delete_circuit_adapter
-      parameters:
-      - name: circuit_id
-        in: path
-        description: Circuit UUID
-        required: true
-        schema:
-          type: string
-          format: uuid
-      - name: adapter_id
-        in: path
-        description: Adapter UUID
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '204':
-          description: Adapter deleted successfully
-        '401':
-          description: Unauthorized
-        '404':
-          description: Adapter not found
-        '500':
-          description: Internal server error
-      security:
-      - bearerAuth: []
