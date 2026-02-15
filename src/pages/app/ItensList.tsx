@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,11 +35,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getItems, updateItemStatus, Item } from "@/lib/defarm-api";
+import { getItems, getItem, getCircuits, getCircuitItems, getItemAnchors, updateItemStatus, Item } from "@/lib/defarm-api";
 import { PushToCircuitDialog } from "@/components/item-detail/PushToCircuitDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import type { AdapterAnchorsResponse, ItemDetailsResponse } from "@/lib/api/types";
 
 export default function ItensList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,6 +63,75 @@ export default function ItensList() {
   const { data: items = [], isLoading, error, refetch } = useQuery({
     queryKey: ["items"],
     queryFn: () => getItems(),
+  });
+
+  // Fetch all circuits to build item→circuit mapping
+  const { data: circuits = [] } = useQuery({
+    queryKey: ["circuits"],
+    queryFn: () => getCircuits(),
+  });
+
+  // Fetch circuit items for each circuit to build reverse map
+  const { data: circuitItemsMap = {} } = useQuery({
+    queryKey: ["allCircuitItems", circuits.map(c => c.id).join(",")],
+    queryFn: async () => {
+      const map: Record<string, { id: string; name: string }[]> = {};
+      const results = await Promise.allSettled(
+        circuits.map(async (circuit) => {
+          const circuitItems = await getCircuitItems(circuit.id);
+          return { circuit, items: circuitItems };
+        })
+      );
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          const { circuit, items: cItems } = result.value;
+          cItems.forEach((item) => {
+            if (!map[item.id]) map[item.id] = [];
+            map[item.id].push({ id: circuit.id, name: circuit.name });
+          });
+        }
+      });
+      return map;
+    },
+    enabled: circuits.length > 0,
+  });
+
+  // Fetch details (identifiers) for items
+  const { data: itemDetailsMap = {} } = useQuery({
+    queryKey: ["itemDetails", items.map(i => i.id).join(",")],
+    queryFn: async () => {
+      const details: Record<string, ItemDetailsResponse> = {};
+      const itemsToFetch = items.slice(0, 30);
+      const results = await Promise.allSettled(
+        itemsToFetch.map(item => getItem(item.id))
+      );
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          details[itemsToFetch[i].id] = result.value;
+        }
+      });
+      return details;
+    },
+    enabled: items.length > 0,
+  });
+
+  // Fetch anchors for items
+  const { data: itemAnchorsMap = {} } = useQuery({
+    queryKey: ["itemAnchors", items.map(i => i.id).join(",")],
+    queryFn: async () => {
+      const anchors: Record<string, AdapterAnchorsResponse> = {};
+      const itemsToFetch = items.slice(0, 30);
+      const results = await Promise.allSettled(
+        itemsToFetch.map(item => getItemAnchors(item.id))
+      );
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          anchors[itemsToFetch[i].id] = result.value;
+        }
+      });
+      return anchors;
+    },
+    enabled: items.length > 0,
   });
 
   const depreciateMutation = useMutation({
@@ -123,7 +200,7 @@ export default function ItensList() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Itens</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie seus itens rastreados e tokenizados
+            Todos os itens rastreados nos circuitos do seu workspace
           </p>
         </div>
         <div className="flex gap-2">
@@ -181,52 +258,89 @@ export default function ItensList() {
           <p className="text-sm text-muted-foreground">Ativos</p>
         </div>
         <div className="bg-background border border-border rounded-xl p-4">
-          <p className="text-2xl font-bold text-foreground">{items.length - tokenizedCount}</p>
-          <p className="text-sm text-muted-foreground">Pendentes</p>
+          <p className="text-2xl font-bold text-foreground">{circuits.length}</p>
+          <p className="text-sm text-muted-foreground">Circuitos</p>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-background border border-border rounded-2xl overflow-hidden">
         {filteredItems.length > 0 ? (
+          <TooltipProvider>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>DFID / Identificador</TableHead>
+                <TableHead>DFID</TableHead>
+                <TableHead>Identificadores</TableHead>
                 <TableHead>Cadeia / País</TableHead>
+                <TableHead>Circuito(s)</TableHead>
+                <TableHead>Anchors</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Criado em</TableHead>
+                <TableHead>Atualização</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredItems.map((item) => {
+                const details = itemDetailsMap[item.id];
+                const anchors = itemAnchorsMap[item.id];
+                const allIdentifiers = details?.identifiers || [];
+                const stellarAnchors = anchors?.blockchain_anchors || [];
+                const ipfsRefs = anchors?.storage_refs || [];
+                const latestStellar = stellarAnchors[0];
+                const latestIpfs = ipfsRefs[0];
+                const itemCircuits = circuitItemsMap[item.id] || [];
                 const isTokenized = item.dfid?.startsWith("DFID-");
-                
+
                 return (
-                  <TableRow key={item.id} className="group cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/app/itens/${item.id}`)}>
+                  <TableRow
+                    key={item.id}
+                    className="group cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/app/itens/${item.id}`)}
+                  >
+                    {/* DFID */}
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-8 h-8 rounded-lg flex items-center justify-center",
                           isTokenized ? "bg-primary/10" : "bg-muted"
                         )}>
-                          {isTokenized ? (
-                            <QrCode className="h-4 w-4 text-primary" />
-                          ) : (
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                          )}
+                          <QrCode className={cn("h-4 w-4", isTokenized ? "text-primary" : "text-muted-foreground")} />
                         </div>
-                        <div>
-                          <p className="font-mono text-sm font-medium text-foreground">
-                            {(item.dfid || "").length > 24 ? `${item.dfid.slice(0, 24)}...` : item.dfid}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {isTokenized ? "Tokenizado" : "Local (não tokenizado)"}
-                          </p>
-                        </div>
+                        <p className="font-mono text-sm font-medium text-foreground">
+                          {(item.dfid || "").length > 20 ? `${item.dfid.slice(0, 20)}...` : item.dfid}
+                        </p>
                       </div>
                     </TableCell>
+
+                    {/* Identificadores */}
+                    <TableCell>
+                      {allIdentifiers.length > 0 ? (
+                        <div className="space-y-1">
+                          {allIdentifiers.slice(0, 2).map((ident, idx) => (
+                            <div key={idx} className="space-y-0.5">
+                              <span className={cn(
+                                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium",
+                                ident.is_canonical ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                              )}>
+                                {ident.identifier_type}
+                                {ident.is_canonical && " ★"}
+                              </span>
+                              <p className="font-mono text-xs text-muted-foreground">
+                                {(ident.value || "").length > 16 ? `${(ident.value || "").slice(0, 16)}...` : ident.value || ""}
+                              </p>
+                            </div>
+                          ))}
+                          {allIdentifiers.length > 2 && (
+                            <span className="text-[10px] text-muted-foreground">+{allIdentifiers.length - 2} mais</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+
+                    {/* Cadeia / País */}
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {item.value_chain && (
@@ -239,13 +353,89 @@ export default function ItensList() {
                             {item.country}
                           </span>
                         )}
-                        {item.year && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
-                            {item.year}
-                          </span>
+                      </div>
+                    </TableCell>
+
+                    {/* Circuito(s) */}
+                    <TableCell>
+                      {itemCircuits.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {itemCircuits.slice(0, 2).map((c) => (
+                            <Tooltip key={c.id}>
+                              <TooltipTrigger asChild>
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-primary/10 text-primary cursor-pointer hover:bg-primary/20 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/app/circuitos/${c.id}`);
+                                  }}
+                                >
+                                  <GitBranch className="h-3 w-3" />
+                                  {c.name.length > 12 ? `${c.name.slice(0, 12)}...` : c.name}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">{c.name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {itemCircuits.length > 2 && (
+                            <span className="text-[10px] text-muted-foreground self-center">+{itemCircuits.length - 2}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+
+                    {/* Anchors */}
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {latestStellar && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={`https://stellar.expert/explorer/public/tx/${latestStellar.transaction_hash || ""}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Stellar
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-mono text-xs">{(latestStellar.transaction_hash || "").slice(0, 20)}...</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {latestIpfs && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={latestIpfs.gateway_url || `https://gateway.pinata.cloud/ipfs/${(latestIpfs as any).content_id || latestIpfs.cid || ""}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent text-accent-foreground hover:bg-accent/80 transition-colors"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                IPFS
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-mono text-xs">{((latestIpfs as any).content_id || latestIpfs.cid || "").slice(0, 20)}...</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {!latestStellar && !latestIpfs && (
+                          <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </div>
                     </TableCell>
+
+                    {/* Status */}
                     <TableCell>
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
@@ -258,14 +448,18 @@ export default function ItensList() {
                         ) : (
                           <XCircle className="h-3 w-3" />
                         )}
-                        {item.status === "Active" ? "Ativo" : item.status}
+                        {item.status === "Active" ? "active" : item.status?.toLowerCase() || "unknown"}
                       </span>
                     </TableCell>
+
+                    {/* Atualização */}
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {new Date(item.registered_at).toLocaleDateString("pt-BR")}
+                        {new Date(item.updated_at || item.registered_at || item.created_at).toLocaleDateString("pt-BR")}
                       </span>
                     </TableCell>
+
+                    {/* Actions */}
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -280,17 +474,13 @@ export default function ItensList() {
                               Ver detalhes
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setPushDialogItem(item)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setPushDialogItem(item); }}>
                             <GitBranch className="h-4 w-4 mr-2" />
                             Enviar para circuito
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/app/itens/${item.id}`)}>
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Ver eventos
-                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
-                            onClick={() => depreciateMutation.mutate({ id: item.id })}
+                            onClick={(e) => { e.stopPropagation(); depreciateMutation.mutate({ id: item.id }); }}
                           >
                             <AlertTriangle className="h-4 w-4 mr-2" />
                             Depreciar
@@ -303,6 +493,7 @@ export default function ItensList() {
               })}
             </TableBody>
           </Table>
+          </TooltipProvider>
         ) : (
           <div className="text-center py-12">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
