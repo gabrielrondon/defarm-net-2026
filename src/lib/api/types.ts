@@ -911,24 +911,38 @@ export interface ItemRelationshipRecord {
 // --- Adapter Anchors (Tokenization) ---
 
 export interface AdapterBlockchainAnchor {
-  adapter_type: string; // "stellar"
-  network: string; // "mainnet" | "testnet"
-  transaction_hash: string;
+  id?: string;
+  adapter_type?: string; // "stellar"
+  chain_type?: string; // "stellar" | "stellar_nft"
+  network?: string; // "mainnet" | "testnet"
+  transaction_hash?: string;
   asset_code?: string | null;
   asset_issuer?: string | null;
   memo?: string | null;
-  stellar_url?: string | null; // link to stellar explorer
-  created_at: string;
+  stellar_url?: string | null;
+  ledger_number?: number | null;
+  status?: string; // "confirmed"
+  anchored_at?: string;
+  adapter_name?: string;
+  created_at?: string;
   metadata?: Record<string, unknown> | null;
 }
 
 export interface AdapterStorageRef {
-  adapter_type: string; // "ipfs"
-  cid: string; // IPFS Content ID
-  gateway_url?: string | null; // e.g. https://gateway.pinata.cloud/ipfs/{cid}
+  id?: string;
+  adapter_type?: string; // "ipfs"
+  storage_type?: string; // "ipfs"
+  cid?: string; // IPFS Content ID
+  content_id?: string; // alternative field name for CID
+  gateway_url?: string | null;
   pin_status?: string | null;
+  is_pinned?: boolean;
+  is_latest?: boolean;
+  version?: number;
   size_bytes?: number | null;
-  created_at: string;
+  uploaded_at?: string;
+  adapter_name?: string;
+  created_at?: string;
   metadata?: Record<string, unknown> | null;
 }
 
