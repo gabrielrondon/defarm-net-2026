@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
+  BookOpen,
   LayoutDashboard,
   GitBranch,
   Package,
@@ -33,7 +34,8 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/app" },
+  { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/app/dashboard" },
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
   { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
   { icon: Package, label: "Itens", href: "/app/itens" },
