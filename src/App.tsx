@@ -19,7 +19,7 @@ import Cadastro from "./pages/Cadastro";
 import NotFound from "./pages/NotFound";
 
 // App pages
-import Dashboard from "./pages/app/Dashboard";
+
 import Caderneta from "./pages/app/Caderneta";
 import CircuitosList from "./pages/app/CircuitosList";
 import CircuitoDetail from "./pages/app/CircuitoDetail";
@@ -72,7 +72,7 @@ const App = () => (
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><Caderneta /></AppLayout>} />
             <Route path="/app/caderneta" element={<AppLayout><Caderneta /></AppLayout>} />
-            <Route path="/app/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+            
             <Route path="/app/descobrir" element={<AppLayout><CircuitDiscovery /></AppLayout>} />
             <Route path="/app/circuitos" element={<AppLayout><CircuitosList /></AppLayout>} />
             <Route path="/app/circuitos/novo" element={<AppLayout><NovoCircuito /></AppLayout>} />

@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   BookOpen,
-  LayoutDashboard,
   GitBranch,
   Package,
   Activity,
@@ -28,14 +27,14 @@ import { useState } from "react";
 import logoIcon from "@/assets/logo-icon.png";
 
 interface NavItem {
-  icon: typeof LayoutDashboard;
+  icon: typeof BookOpen;
   label: string;
   href: string;
 }
 
 const navItems: NavItem[] = [
   { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
-  { icon: LayoutDashboard, label: "Dashboard", href: "/app/dashboard" },
+  
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
   { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
   { icon: Package, label: "Itens", href: "/app/itens" },
