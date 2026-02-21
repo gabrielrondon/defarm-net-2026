@@ -1,10 +1,18 @@
 import { useTranslation } from "react-i18next";
 import esalqtecLogo from "@/assets/partners/esalqtec.png";
 import stellarLogo from "@/assets/partners/stellar.png";
+import rbbLogo from "@/assets/partners/rbb.png";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const partners = [
-  { name: "EsalqTec", logo: esalqtecLogo },
-  { name: "Stellar Development Foundation", logo: stellarLogo },
+  { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: undefined },
+  { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined },
+  { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net" },
 ];
 
 export function PartnersSection() {
@@ -17,20 +25,41 @@ export function PartnersSection() {
         <p className="text-center text-sm font-medium text-muted-foreground mb-8 uppercase tracking-wider">
           {isEn ? "Trusted by" : "Parceiros"}
         </p>
-        <div className="flex items-center justify-center gap-16 flex-wrap">
-          {partners.map((partner) => (
-            <div
-              key={partner.name}
-              className="flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
-            >
-              <img
-                src={partner.logo}
-                alt={partner.name}
-                className="h-10 w-auto object-contain max-w-[180px]"
-              />
-            </div>
-          ))}
-        </div>
+        <TooltipProvider delayDuration={200}>
+          <div className="flex items-center justify-center gap-16 flex-wrap">
+            {partners.map((partner) => {
+              const relation = t(`partners.${partner.relationKey}`);
+              const inner = (
+                <div
+                  className="flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer"
+                >
+                  <img
+                    src={partner.logo}
+                    alt={partner.name}
+                    className="h-10 w-auto object-contain max-w-[180px]"
+                  />
+                </div>
+              );
+
+              return (
+                <Tooltip key={partner.name}>
+                  <TooltipTrigger asChild>
+                    {partner.url ? (
+                      <a href={partner.url} target="_blank" rel="noopener noreferrer">
+                        {inner}
+                      </a>
+                    ) : (
+                      <div>{inner}</div>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs font-medium">{relation}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </TooltipProvider>
       </div>
     </section>
   );
