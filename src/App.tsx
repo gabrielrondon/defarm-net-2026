@@ -46,6 +46,7 @@ import AdminMetrics from "./pages/app/AdminMetrics";
 import AdminUsers from "./pages/app/AdminUsers";
 import AdminCanonicalIdentifiers from "./pages/app/AdminCanonicalIdentifiers";
 import AdminJobs from "./pages/app/AdminJobs";
+import PartnerPortal from "./pages/app/PartnerPortal";
 
 const queryClient = new QueryClient(); // init
 
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/app/compliance" element={<AppLayout><ComplianceCheck /></AppLayout>} />
             
             <Route path="/app/api-keys" element={<AppLayout><ApiKeys /></AppLayout>} />
+            <Route path="/app/parceiro" element={<AppLayout><PartnerPortal /></AppLayout>} />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
             
             {/* Admin routes */}

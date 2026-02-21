@@ -21,6 +21,7 @@ import {
   Users,
   Fingerprint,
   ListTodo,
+  Handshake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -44,6 +45,12 @@ const navItems: NavItem[] = [
   { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
   { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance" },
 ];
+
+const partnerNavItem: NavItem = {
+  icon: Handshake,
+  label: "Portal Parceiro",
+  href: "/app/parceiro",
+};
 
 const adminNavItems: NavItem[] = [
   { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas" },
@@ -143,6 +150,34 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
             );
           })}
+
+          {/* Partner Portal - visible to admin/partner users */}
+          {user?.is_admin && (() => {
+            const isActive = location.pathname.startsWith(partnerNavItem.href);
+            return (
+              <>
+                <div className="pt-4 pb-1 px-3">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Parceiro
+                  </span>
+                </div>
+                <Link
+                  to={partnerNavItem.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <partnerNavItem.icon className="h-5 w-5" />
+                  {partnerNavItem.label}
+                  {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                </Link>
+              </>
+            );
+          })()}
 
           {/* Admin section - only visible to admin users */}
           {user?.is_admin && (
