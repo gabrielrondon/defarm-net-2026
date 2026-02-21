@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import EsqueciSenha from "./pages/EsqueciSenha";
 import ResetSenha from "./pages/ResetSenha";
+import VerificarEmail from "./pages/VerificarEmail";
 import NotFound from "./pages/NotFound";
 
 // App pages
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-senha" element={<ResetSenha />} />
+            <Route path="/verificar-email" element={<VerificarEmail />} />
             
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><Caderneta /></AppLayout>} />

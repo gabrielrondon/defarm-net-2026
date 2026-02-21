@@ -1,6 +1,7 @@
-import { registryRequest } from "./client";
+import { authRequest } from "./client";
 import type { UserSession } from "./types";
 
 export async function getActiveSessions(userId: string): Promise<UserSession[]> {
-  return registryRequest<UserSession[]>(`/sessions?user_id=${userId}`);
+  const res = await authRequest<{ sessions: UserSession[] }>("/auth/sessions");
+  return res.sessions.filter((s) => s.user_id === userId);
 }

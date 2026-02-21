@@ -16,6 +16,7 @@ import {
   storeTokens,
   getMe as apiGetMe,
   setStoredUser,
+  switchWorkspace as apiSwitchWorkspace,
 } from "@/lib/defarm-api";
 import { createCircuit, getCircuits } from "@/lib/api/circuits";
 
@@ -29,6 +30,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   setUserData: (user: User) => void;
   refreshUser: () => Promise<void>;
+  switchWorkspace: (workspaceId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -52,6 +54,7 @@ function mapAuthUser(response: AuthResponse, fallbackName: string, fallbackEmail
     full_name: response.user?.full_name || fallbackName,
     avatar_url: response.user?.avatar_url || null,
     email: response.user?.email || fallbackEmail,
+    email_verified: response.user?.email_verified || false,
     workspace_id: workspace.id,
     workspace_name: workspace.name,
     workspace_slug: workspace.slug,
@@ -163,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ...user,
       id: me.id,
       email: me.email,
+      email_verified: me.email_verified || false,
       username: me.full_name || user.username,
       full_name: me.full_name || undefined,
       avatar_url: me.avatar_url || null,
@@ -177,6 +181,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserData(next);
   };
 
+  const switchWorkspace = async (workspaceId: string) => {
+    if (!user) return;
+    const response = await apiSwitchWorkspace(workspaceId);
+    const userData = mapAuthUser(response, user.username, user.email);
+    storeAuth(response.access_token, userData, response.refresh_token);
+    setUser(userData);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -189,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         setUserData,
         refreshUser,
+        switchWorkspace,
       }}
     >
       {children}
@@ -212,6 +225,7 @@ export function useAuth() {
       logout: async () => { throw new Error("AuthProvider not available"); },
       setUserData: () => { throw new Error("AuthProvider not available"); },
       refreshUser: async () => { throw new Error("AuthProvider not available"); },
+      switchWorkspace: async () => { throw new Error("AuthProvider not available"); },
     };
   }
   return context;

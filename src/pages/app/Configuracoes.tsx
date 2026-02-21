@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,16 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { getActiveSessions } from "@/lib/api/sessions";
-import type { UserSession } from "@/lib/api/types";
-import { changePassword, updateProfile } from "@/lib/defarm-api";
+import {
+  changePassword,
+  listMySessions,
+  listMyWorkspaces,
+  requestEmailVerification,
+  revokeAllMySessions,
+  revokeMySession,
+  updateProfile,
+} from "@/lib/defarm-api";
+import type { AuthSession, UserWorkspaceSummary } from "@/lib/defarm-api";
 
 type SettingsTab = "perfil" | "workspace" | "notificacoes" | "seguranca";
 
@@ -58,7 +65,7 @@ function TabButton({ icon: Icon, label, isActive, onClick }: TabButtonProps) {
 }
 
 export default function Configuracoes() {
-  const { user, logout, setUserData } = useAuth();
+  const { user, logout, setUserData, switchWorkspace } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
@@ -79,15 +86,18 @@ export default function Configuracoes() {
 
   // Sessions state
   const [sessionsOpen, setSessionsOpen] = useState(false);
-  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [sessions, setSessions] = useState<AuthSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [workspaces, setWorkspaces] = useState<UserWorkspaceSummary[]>([]);
+  const [workspacesLoading, setWorkspacesLoading] = useState(false);
+  const [workspaceSwitchLoading, setWorkspaceSwitchLoading] = useState(false);
+  const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
 
   const handleViewSessions = async () => {
-    if (!user?.id) return;
     setSessionsLoading(true);
     try {
-      const data = await getActiveSessions(user.id);
-      setSessions(data);
+      const data = await listMySessions();
+      setSessions(data.sessions);
       setSessionsOpen(true);
     } catch (err) {
       toast({
@@ -97,6 +107,95 @@ export default function Configuracoes() {
       });
     } finally {
       setSessionsLoading(false);
+    }
+  };
+
+  const handleLoadWorkspaces = async () => {
+    setWorkspacesLoading(true);
+    try {
+      const data = await listMyWorkspaces();
+      setWorkspaces(data.workspaces);
+    } catch (error) {
+      toast({
+        title: "Falha ao carregar workspaces",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setWorkspacesLoading(false);
+    }
+  };
+
+  const handleSwitchWorkspace = async (workspaceId: string) => {
+    setWorkspaceSwitchLoading(true);
+    try {
+      await switchWorkspace(workspaceId);
+      await handleLoadWorkspaces();
+      toast({
+        title: "Workspace alterado",
+        description: "Seu contexto foi atualizado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao trocar workspace",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setWorkspaceSwitchLoading(false);
+    }
+  };
+
+  const handleRequestEmailVerification = async () => {
+    setEmailVerifyLoading(true);
+    try {
+      const res = await requestEmailVerification();
+      toast({
+        title: "Verificação enviada",
+        description: res.message,
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao enviar verificação",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setEmailVerifyLoading(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await revokeMySession(sessionId);
+      setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, is_active: false, ended_at: new Date().toISOString() } : s)));
+      toast({
+        title: "Sessão revogada",
+        description: "A sessão/dispositivo foi desconectado.",
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao revogar sessão",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    try {
+      await revokeAllMySessions();
+      setSessions((prev) => prev.map((s) => ({ ...s, is_active: false, ended_at: new Date().toISOString() })));
+      toast({
+        title: "Sessões encerradas",
+        description: "Todas as sessões foram revogadas.",
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao encerrar sessões",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -183,6 +282,12 @@ export default function Configuracoes() {
     navigate("/");
   };
 
+  useEffect(() => {
+    if (activeTab === "workspace") {
+      handleLoadWorkspaces();
+    }
+  }, [activeTab]);
+
   const renderContent = () => {
     switch (activeTab) {
       case "perfil":
@@ -205,6 +310,9 @@ export default function Configuracoes() {
                 <div>
                   <p className="text-lg font-medium text-foreground">{user?.username}</p>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Email: {user?.email_verified ? "verificado" : "não verificado"}
+                  </p>
                 </div>
               </div>
 
@@ -240,6 +348,16 @@ export default function Configuracoes() {
                 <Save className="h-4 w-4 mr-2" />
                 {isLoading ? "Salvando..." : "Salvar alterações"}
               </Button>
+              {!user?.email_verified && (
+                <Button
+                  variant="outline"
+                  onClick={handleRequestEmailVerification}
+                  disabled={emailVerifyLoading}
+                >
+                  {emailVerifyLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Reenviar verificação de email
+                </Button>
+              )}
             </div>
           </div>
         );
@@ -304,6 +422,40 @@ export default function Configuracoes() {
                   <Button variant="outline" size="sm" disabled>
                     Em breve
                   </Button>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Trocar workspace padrão</p>
+                      <p className="text-xs text-muted-foreground">
+                        Define o contexto padrão da sua conta e renova seu token.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleLoadWorkspaces} disabled={workspacesLoading}>
+                      {workspacesLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Atualizar"}
+                    </Button>
+                  </div>
+                  {workspaces.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhum workspace encontrado.</p>
+                  ) : (
+                    workspaces.map((ws) => (
+                      <div key={ws.id} className="flex items-center justify-between border rounded-md p-3 bg-background">
+                        <div>
+                          <p className="text-sm font-medium">{ws.name} {ws.is_default ? "(atual)" : ""}</p>
+                          <p className="text-xs text-muted-foreground">{ws.slug} · {ws.workspace_type} · {ws.role}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={ws.is_default || workspaceSwitchLoading}
+                          onClick={() => handleSwitchWorkspace(ws.id)}
+                        >
+                          Usar
+                        </Button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -436,6 +588,11 @@ export default function Configuracoes() {
                   {sessionsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Ver sessões"}
                 </Button>
               </div>
+              <div className="flex justify-end">
+                <Button variant="destructive" size="sm" onClick={handleRevokeAllSessions}>
+                  Encerrar todas as sessões
+                </Button>
+              </div>
             </div>
 
             {/* Logout - simple, no drama */}
@@ -485,8 +642,19 @@ export default function Configuracoes() {
                           </p>
                           {session.is_active && (
                             <span className="inline-block mt-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                              Sessão atual
+                              Ativa
                             </span>
+                          )}
+                          {session.is_active && (
+                            <div className="mt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRevokeSession(session.id)}
+                              >
+                                Revogar
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </div>

@@ -45,6 +45,7 @@ export interface RegisterRequest {
 export interface AuthUser {
   id: string;
   email: string;
+  email_verified?: boolean;
   full_name?: string | null;
   is_admin?: boolean;
   is_active?: boolean;
@@ -74,6 +75,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  email_verified?: boolean;
   full_name?: string;
   avatar_url?: string | null;
   workspace_id: string;
@@ -175,6 +177,38 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface UserWorkspaceSummary {
+  id: string;
+  name: string;
+  slug: string;
+  tier: string;
+  workspace_type: "partner" | "producer" | "processor" | "certifier";
+  role: string;
+  is_default: boolean;
+}
+
+export interface UserWorkspaceListResponse {
+  workspaces: UserWorkspaceSummary[];
+  count: number;
+}
+
+export interface AuthSession {
+  id: string;
+  user_id: string;
+  started_at: string;
+  last_activity_at: string;
+  is_active: boolean;
+  ended_at?: string | null;
+  ip_address?: string | null;
+  session_token?: string | null;
+  user_agent?: string | null;
+}
+
+export interface AuthSessionsResponse {
+  sessions: AuthSession[];
+  count: number;
+}
+
 export async function getMe(): Promise<AuthUser> {
   return authRequest<AuthUser>("/auth/me");
 }
@@ -204,5 +238,45 @@ export async function resetPassword(data: ResetPasswordRequest): Promise<Message
   return authRequest<MessageResponse>("/auth/reset-password", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function requestEmailVerification(): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/verify-email/request", {
+    method: "POST",
+  });
+}
+
+export async function verifyEmail(token: string): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function listMyWorkspaces(): Promise<UserWorkspaceListResponse> {
+  return authRequest<UserWorkspaceListResponse>("/auth/workspaces");
+}
+
+export async function switchWorkspace(workspace_id: string): Promise<AuthResponse> {
+  return authRequest<AuthResponse>("/auth/workspace/switch", {
+    method: "POST",
+    body: JSON.stringify({ workspace_id }),
+  });
+}
+
+export async function listMySessions(): Promise<AuthSessionsResponse> {
+  return authRequest<AuthSessionsResponse>("/auth/sessions");
+}
+
+export async function revokeMySession(sessionId: string): Promise<void> {
+  return authRequest<void>(`/auth/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function revokeAllMySessions(): Promise<void> {
+  return authRequest<void>("/auth/sessions", {
+    method: "DELETE",
   });
 }
