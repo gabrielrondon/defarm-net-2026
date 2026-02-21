@@ -40,7 +40,7 @@ export function HeroSection() {
           {/* Headline with rotating text */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 min-h-[120px] sm:min-h-[144px] lg:min-h-[160px] flex items-center justify-center">
             <span
-              className="transition-all duration-400 ease-out"
+              className="transition-all duration-500 ease-out inline-block"
               style={{
                 opacity: isVisible ? 1 : 0,
                 transform: isVisible ? "translateY(0)" : "translateY(12px)",
