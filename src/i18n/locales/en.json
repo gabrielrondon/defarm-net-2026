@@ -332,6 +332,7 @@
       "identify": "Identify",
       "register": "Register",
       "portfolio": "Portfolio",
+      "caderneta": "Passbook",
       "compliance": "Compliance",
       "opportunities": "Opportunities"
     },
@@ -385,6 +386,23 @@
       "assetsSingular": "registered asset",
       "assetsPlural": "registered assets",
       "checkCompliance": "Check compliance"
+    },
+    "stepCaderneta": {
+      "title": "Your Digital Passbook",
+      "subtitle": "Everything about your operation in one place — ready for compliance, credit, and traceability",
+      "cardLabel": "Digital Agro Passbook",
+      "ownerLabel": "Title Owner",
+      "ownerPlaceholder": "Will be filled when you create an account",
+      "landLabel": "Associated Lands",
+      "verified": "Verified",
+      "assetsLabel": "Connected Assets",
+      "moreAssets": "additional assets",
+      "syncLabel": "Synced with Blockchain Network",
+      "unlockedLabel": "Unlocked Features",
+      "featureCompliance": "Compliance",
+      "featureFinance": "Rural Credit",
+      "featureNetwork": "Stellar Network",
+      "continue": "Check compliance"
     },
     "step4": {
       "title": "Verifying your assets",

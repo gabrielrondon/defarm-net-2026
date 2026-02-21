@@ -6,6 +6,7 @@ import {
   StepIdentifier,
   StepDFID,
   StepPortfolio,
+  StepCaderneta,
   StepCompliance,
   StepFinance,
 } from "@/components/onboarding";
@@ -41,7 +42,7 @@ interface OnboardingState {
 }
 
 const STORAGE_KEY = "defarm_onboarding";
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const getInitialState = (): OnboardingState => {
   try {
@@ -186,14 +187,22 @@ export default function Onboarding() {
         );
       case 5:
         return (
-          <StepCompliance
-            itemCount={state.portfolio.length}
-            checks={state.complianceChecks}
-            onChecksComplete={handleComplianceComplete}
+          <StepCaderneta
+            carNumber={state.property.car}
+            portfolio={state.portfolio}
             onNext={() => goToStep(6)}
           />
         );
       case 6:
+        return (
+          <StepCompliance
+            itemCount={state.portfolio.length}
+            checks={state.complianceChecks}
+            onChecksComplete={handleComplianceComplete}
+            onNext={() => goToStep(7)}
+          />
+        );
+      case 7:
         return (
           <StepFinance
             itemCount={state.portfolio.length}

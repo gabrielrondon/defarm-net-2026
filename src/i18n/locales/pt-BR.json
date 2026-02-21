@@ -332,6 +332,7 @@
       "identify": "Identificar",
       "register": "Registrar",
       "portfolio": "Portfolio",
+      "caderneta": "Caderneta",
       "compliance": "Compliance",
       "opportunities": "Oportunidades"
     },
@@ -385,6 +386,23 @@
       "assetsSingular": "ativo registrado",
       "assetsPlural": "ativos registrados",
       "checkCompliance": "Verificar compliance"
+    },
+    "stepCaderneta": {
+      "title": "Sua Caderneta Digital",
+      "subtitle": "Tudo sobre sua operação em um só lugar — pronta para compliance, crédito e rastreabilidade",
+      "cardLabel": "Caderneta Digital Agro",
+      "ownerLabel": "Proprietário Titular",
+      "ownerPlaceholder": "Será preenchido ao criar conta",
+      "landLabel": "Terras Associadas",
+      "verified": "Verificado",
+      "assetsLabel": "Ativos Conectados",
+      "moreAssets": "ativos adicionais",
+      "syncLabel": "Sincronizado com Rede Blockchain",
+      "unlockedLabel": "Funcionalidades Desbloqueadas",
+      "featureCompliance": "Compliance",
+      "featureFinance": "Crédito Rural",
+      "featureNetwork": "Rede Stellar",
+      "continue": "Verificar compliance"
     },
     "step4": {
       "title": "Verificando seus ativos",
