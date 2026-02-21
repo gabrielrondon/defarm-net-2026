@@ -1,8 +1,32 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight, Play } from "lucide-react";
 
+const ROTATING_PHRASES = [
+  { before: "Transforme seus dados de rastreabilidade em", highlight: "liquidez" },
+  { before: "Organize seus ativos em uma", highlight: "caderneta digital" },
+  { before: "Compartilhe seus certificados com", highlight: "quem quiser" },
+  { before: "Transforme sua caderneta em", highlight: "oportunidades de crédito" },
+];
+
 export function HeroSection() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsVisible(false);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % ROTATING_PHRASES.length);
+        setIsVisible(true);
+      }, 400);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const phrase = ROTATING_PHRASES[currentIndex];
+
   return (
     <section className="pt-32 pb-20 bg-background">
       <div className="section-container">
@@ -13,11 +37,18 @@ export function HeroSection() {
             Plataforma #1 em Rastreabilidade
           </div>
 
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-            A plataforma de{" "}
-            <span className="highlight-text">rastreabilidade agrícola</span>{" "}
-            mais completa do Brasil
+          {/* Headline with rotating text */}
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 min-h-[120px] sm:min-h-[144px] lg:min-h-[160px] flex items-center justify-center">
+            <span
+              className="transition-all duration-400 ease-out"
+              style={{
+                opacity: isVisible ? 1 : 0,
+                transform: isVisible ? "translateY(0)" : "translateY(12px)",
+              }}
+            >
+              {phrase.before}{" "}
+              <span className="highlight-text">{phrase.highlight}</span>
+            </span>
           </h1>
 
           {/* Subheadline */}
