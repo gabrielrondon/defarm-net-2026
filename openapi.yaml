@@ -92,6 +92,10 @@ tags:
   description: Merkle tree creation, proofs, and verification.
 - name: Compliance
   description: Compliance checks and external data sources (proxy).
+- name: Ownership Claims
+  description: User-submitted property ownership claims (CAR/CNPJ/CPF/INCRA) and admin verification with auto-circuit surfacing.
+- name: Property Links
+  description: Item-to-property provenance annotations forming a custody/movement trail (item_property_links).
 components:
   securitySchemes:
     bearerAuth:
@@ -2125,6 +2129,132 @@ components:
           nullable: true
         status:
           type: string
+    AdapterJobRecord:
+      description: Adapter publish job record.
+      type: object
+      required:
+      - id
+      - item_id
+      - circuit_id
+      - adapters
+      properties:
+        id:
+          type: string
+          format: uuid
+        item_id:
+          type: string
+          format: uuid
+        circuit_id:
+          type: string
+          format: uuid
+        adapters:
+          type: array
+          items:
+            type: string
+        priority:
+          type: integer
+          format: int32
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        retry_count:
+          type: integer
+          format: int32
+          nullable: true
+        max_retries:
+          type: integer
+          format: int32
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminJobsResponse:
+      description: Paginated adapter jobs response.
+      type: object
+      required:
+      - data
+      - limit
+      - offset
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterJobRecord'
+        limit:
+          type: integer
+          format: int64
+        offset:
+          type: integer
+          format: int64
+    AdapterAdminRetryResponse:
+      description: Manual retry response.
+      type: object
+      required:
+      - job_id
+      - status
+      - message
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        message:
+          type: string
+    AdapterAdminJobSummary:
+      description: Summary counts for adapter publish jobs.
+      type: object
+      required:
+      - pending
+      - scheduled
+      - processing
+      - failed
+      - completed
+      - due_retries
+      properties:
+        pending:
+          type: integer
+          format: int64
+        scheduled:
+          type: integer
+          format: int64
+        processing:
+          type: integer
+          format: int64
+        failed:
+          type: integer
+          format: int64
+        completed:
+          type: integer
+          format: int64
+        due_retries:
+          type: integer
+          format: int64
+    AdapterAdminJobsSummaryResponse:
+      description: Adapter jobs summary response.
+      type: object
+      required:
+      - summary
+      properties:
+        summary:
+          $ref: '#/components/schemas/AdapterAdminJobSummary'
     HealthResponse:
       description: System health status response including component statuses.
       type: object
@@ -3822,6 +3952,184 @@ paths:
           description: Invalid item id
         '404':
           description: Item not found
+        '500':
+          description: Internal server error
+  /api/adapter/admin/jobs:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: List adapter publish jobs (admin)
+      description: List adapter publish jobs with optional filters. Requires X-Admin-Key if configured.
+      operationId: listAdapterJobs
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: item_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: circuit_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: adapter
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Adapter jobs list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminJobsResponse'
+              example:
+                data:
+                - id: 2b9f3c7e-0d2a-4a5e-9a42-1f1c3d9d7b2a
+                  item_id: 4e7a3c2b-1d5f-4e1c-8f5f-9a0f2e4b6d1c
+                  circuit_id: 8a2b5d3e-2f8a-4c3d-9f1b-7c2a1b4d9f8e
+                  adapters:
+                  - stellar_mainnet
+                  - ipfs_pinata
+                  priority: 3
+                  status: failed
+                  retry_count: 2
+                  max_retries: 5
+                  next_retry_at: '2026-02-15T13:10:00Z'
+                  error_message: "Soroban submit timeout"
+                  created_at: '2026-02-15T12:40:00Z'
+                  updated_at: '2026-02-15T12:45:00Z'
+                  completed_at: null
+                limit: 50
+                offset: 0
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/jobs/summary:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get adapter jobs summary (admin)
+      description: Aggregate counts for adapter publish jobs. Requires X-Admin-Key if configured.
+      operationId: getAdapterJobsSummary
+      responses:
+        '200':
+          description: Summary counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminJobsSummaryResponse'
+              example:
+                summary:
+                  pending: 3
+                  scheduled: 2
+                  processing: 1
+                  failed: 4
+                  completed: 120
+                  due_retries: 1
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/jobs/{job_id}:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get adapter job (admin)
+      description: Fetch a single adapter job by id. Requires X-Admin-Key if configured.
+      operationId: getAdapterJob
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Adapter job record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterJobRecord'
+              example:
+                id: 2b9f3c7e-0d2a-4a5e-9a42-1f1c3d9d7b2a
+                item_id: 4e7a3c2b-1d5f-4e1c-8f5f-9a0f2e4b6d1c
+                circuit_id: 8a2b5d3e-2f8a-4c3d-9f1b-7c2a1b4d9f8e
+                adapters:
+                - stellar_mainnet
+                - ipfs_pinata
+                priority: 3
+                status: failed
+                retry_count: 2
+                max_retries: 5
+                next_retry_at: '2026-02-15T13:10:00Z'
+                error_message: "Soroban submit timeout"
+                created_at: '2026-02-15T12:40:00Z'
+                updated_at: '2026-02-15T12:45:00Z'
+                completed_at: null
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+  /api/adapter/admin/jobs/{job_id}/retry:
+    post:
+      tags:
+      - Adapters
+      - Admin
+      summary: Retry adapter job (admin)
+      description: Manually re-queue a job. Requires X-Admin-Key if configured.
+      operationId: retryAdapterJob
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '202':
+          description: Job re-queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminRetryResponse'
+              example:
+                job_id: 2b9f3c7e-0d2a-4a5e-9a42-1f1c3d9d7b2a
+                status: pending
+                message: Job re-queued for retry
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
         '500':
           description: Internal server error
   /health:
@@ -6296,7 +6604,255 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/circuits/{id}/items/bulk:
+    post:
+      tags:
+      - Circuits
+      summary: POST /circuits/:id/items/bulk - Bulk add items to circuit
+      description: '**Protected endpoint** - Requires JWT authentication + `create_items`
+        permission.
+
+
+        Adds multiple existing items to a circuit in a single request. Items already
+        in the circuit or that do not exist are silently skipped (not an error). Useful
+        for adding an entire herd to a property circuit.
+
+
+        **Use cases:**
+
+        - Add 500+ cattle to a property circuit at once
+
+        - Batch-associate items after a property transfer
+
+        - Sync offline-created items into a shared circuit
+
+
+        **Example:**
+
+        ```
+
+        POST /api/circuits/abc-123/items/bulk
+
+        Authorization: Bearer <access_token>
+
+        {
+          "item_ids": ["uuid-1", "uuid-2", "uuid-3"],
+          "role": "member"
+        }
+
+        ```
+
+        '
+      operationId: bulk_add_items_to_circuit
+      parameters:
+      - name: id
+        in: path
+        description: Circuit UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - item_ids
+              properties:
+                item_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: List of item UUIDs to add
+                role:
+                  type: string
+                  default: member
+                  description: Role applied to all items
+      responses:
+        '200':
+          description: Bulk add completed — check `total_added` and `total_skipped`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_added:
+                    type: integer
+                  total_skipped:
+                    type: integer
+                  added:
+                    type: array
+                    items:
+                      type: object
+                  skipped:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Circuit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
   /api/circuits/{id}/items/{item_id}:
+    post:
+      tags:
+      - Circuits
+      summary: POST /circuits/:id/items/:item_id - Add existing item to circuit
+      description: '**Protected endpoint** - Requires JWT authentication + `create_items`
+        permission.
+
+
+        Adds an existing item to a circuit, enabling cross-circuit sharing and animal
+        transfers between properties. Returns 409 if the item is already associated
+        with the circuit.
+
+
+        **What happens:**
+
+        - Item linked to circuit via circuit_items junction table
+
+        - Item retains all other circuit associations (M:N relationship)
+
+        - Role defaults to "member" unless overridden
+
+
+        **Use cases:**
+
+        - Transfer an animal from one property circuit to another
+
+        - Share an item with a certifier circuit for audit
+
+        - Add a newly registered property item to a processing circuit
+
+
+        **Example:**
+
+        ```
+
+        POST /api/circuits/abc-123/items/item-456
+
+        Authorization: Bearer <access_token>
+
+        {
+          "role": "member",
+          "circuit_metadata": {"transfer_date": "2026-02-21", "gta": "GTA-12345"}
+        }
+
+        ```
+
+        '
+      operationId: add_item_to_circuit
+      parameters:
+      - name: id
+        in: path
+        description: Circuit UUID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: item_id
+        in: path
+        description: Item UUID to add
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  default: member
+                  description: Role of item in this circuit
+                circuit_metadata:
+                  type: object
+                  description: Optional circuit-specific annotations (e.g. GTA number, transfer date)
+      responses:
+        '201':
+          description: Item added to circuit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  circuit_id:
+                    type: string
+                    format: uuid
+                  item_id:
+                    type: string
+                    format: uuid
+                  role:
+                    type: string
+                  added_at:
+                    type: string
+                    format: date-time
+                  added_by:
+                    type: string
+                    format: uuid
+                    nullable: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - requires create_items permission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Item or circuit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Item already in circuit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
     delete:
       tags:
       - Circuits
@@ -9185,6 +9741,295 @@ paths:
           description: Webhook not found
         '500':
           description: Internal server error
+  /api/claims:
+    post:
+      tags:
+      - Ownership Claims
+      summary: Submit property ownership claim
+      description: 'Declare ownership of a rural property via its CAR, CNPJ, CPF, or INCRA number. The claim starts as `pending` and becomes effective only after admin verification. Only `producer` and `certifier` workspace types may submit claims.'
+      operationId: submit_ownership_claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier_type, identifier_value]
+              properties:
+                identifier_type:
+                  type: string
+                  enum: [car, cnpj, cpf, incra]
+                  example: car
+                identifier_value:
+                  type: string
+                  example: MT-1234.56789.0000.00
+                notes:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Claim submitted, awaiting admin review
+        '400':
+          description: Invalid identifier type or value
+        '403':
+          description: Workspace type not allowed (partner/processor cannot claim)
+        '409':
+          description: Active claim for this identifier already exists
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+    get:
+      tags:
+      - Ownership Claims
+      summary: List my ownership claims
+      description: Returns all ownership claims submitted by the authenticated user.
+      operationId: list_my_ownership_claims
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [pending, verified, rejected]
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: List of claims
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/admin/claims:
+    get:
+      tags:
+      - Ownership Claims
+      summary: Admin — list all ownership claims
+      description: Lists all claims across all users. Requires system admin (`is_admin=true`).
+      operationId: admin_list_ownership_claims
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [pending, verified, rejected]
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: List of claims
+        '403':
+          description: Admin access required
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/admin/claims/{id}/verify:
+    put:
+      tags:
+      - Ownership Claims
+      summary: Admin — verify ownership claim
+      description: 'Verifies a pending claim. Triggers auto-circuit surfacing: finds all LAND items with the claimed identifier, finds all items ever linked to those properties, creates a circuit for the claimant, and adds all found items to it.'
+      operationId: admin_verify_ownership_claim
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Claim verified, circuit created with surfaced items
+        '404':
+          description: Claim not found
+        '403':
+          description: Admin access required
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/admin/claims/{id}/reject:
+    put:
+      tags:
+      - Ownership Claims
+      summary: Admin — reject ownership claim
+      description: Rejects a pending claim. The user may re-submit after rejection.
+      operationId: admin_reject_ownership_claim
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Claim rejected
+        '404':
+          description: Claim not found
+        '403':
+          description: Admin access required
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/items/{id}/properties:
+    post:
+      tags:
+      - Property Links
+      summary: Add item → property link (provenance annotation)
+      description: 'Annotates an item (animal, batch) as being located on a LAND property at a point in time. The `property_dfid` must be a DFID-LAND-... identifier. If `is_transfer=true`, a `gta_number` (Guia de Trânsito Animal) is required. Multiple active links are allowed (e.g., grazing across adjacent properties).'
+      operationId: add_property_link
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Item UUID
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [property_dfid]
+              properties:
+                property_dfid:
+                  type: string
+                  example: DFID-LAND-BR-2026-000001-abc123
+                is_transfer:
+                  type: boolean
+                  default: false
+                gta_number:
+                  type: string
+                  nullable: true
+                  description: Required when is_transfer=true
+                notes:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Property link created
+        '400':
+          description: Validation error (e.g. gta_number required for transfers)
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+    get:
+      tags:
+      - Property Links
+      summary: List item's property links (provenance trail)
+      description: Returns all property links for an item, ordered newest first. The ordered collection is the provenance trail — two or more links imply at least one transfer occurred.
+      operationId: list_item_property_links
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Item UUID
+        schema:
+          type: string
+          format: uuid
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: List of property links
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/items/{id}/properties/{link_id}:
+    delete:
+      tags:
+      - Property Links
+      summary: Soft-unlink item from property
+      description: Sets `unlinked_at` on the link record. The record is preserved for audit purposes — deletion is always soft.
+      operationId: unlink_item_property
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Item UUID
+        schema:
+          type: string
+          format: uuid
+      - name: link_id
+        in: path
+        required: true
+        description: Link UUID
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Link soft-deleted
+        '404':
+          description: Link not found
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/properties/{property_dfid}/items:
+    get:
+      tags:
+      - Property Links
+      summary: List all items linked to a property
+      description: Returns all items (current and historical) that have been annotated as being on this LAND property. Supports `active_only=true` to return only currently linked items.
+      operationId: list_property_items
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        description: LAND item DFID (e.g. DFID-LAND-BR-2026-000001-abc123)
+        schema:
+          type: string
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: List of item property links
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
   /api/compliance/check:
     post:
       tags:

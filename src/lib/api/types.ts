@@ -140,6 +140,19 @@ export interface UpdateCircuitRequest {
   ip_address?: string | null;
 }
 
+export interface AddItemToCircuitRequest {
+  role?: string;
+  added_by?: string | null;
+  circuit_metadata?: Record<string, unknown> | null;
+}
+
+export interface AddItemsToCircuitBulkRequest {
+  item_ids: string[];
+  role?: string;
+  added_by?: string | null;
+  circuit_metadata?: Record<string, unknown> | null;
+}
+
 // --- Circuit Members ---
 
 export interface CircuitMember {
@@ -969,4 +982,62 @@ export interface TimelineEvent {
 export interface TimelineResponse {
   item_id: string;
   events: TimelineEvent[];
+}
+
+// --- Property Links ---
+
+export interface AddPropertyLinkRequest {
+  property_dfid: string;
+  is_transfer: boolean;
+  gta_number?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface PropertyLink {
+  id: string;
+  item_id: string;
+  property_dfid: string;
+  is_transfer: boolean;
+  gta_number?: string | null;
+  linked_at: string;
+  linked_by?: string | null;
+  unlinked_at?: string | null;
+  notes?: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ListPropertyLinksResponse {
+  links: PropertyLink[];
+  count: number;
+}
+
+// --- Ownership Claims ---
+
+export interface SubmitClaimRequest {
+  identifier_type: "car" | "cnpj" | "cpf" | "incra";
+  identifier_value: string;
+  notes?: string | null;
+}
+
+export interface OwnershipClaim {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  identifier_type: string;
+  identifier_value: string;
+  status: "pending" | "verified" | "rejected";
+  verified_at?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
+  notes?: string | null;
+  circuit_id?: string | null;
+  items_surfaced: number;
+  created_at: string;
+}
+
+export interface ListClaimsResponse {
+  claims: OwnershipClaim[];
+  count: number;
 }

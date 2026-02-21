@@ -29,6 +29,33 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function getWorkspace(response: AuthResponse) {
+  return response.user?.workspace || {
+    id: response.workspace_id || "default",
+    name: "Workspace",
+    slug: "workspace",
+    tier: "free",
+    workspace_type: "producer" as const,
+    role: "viewer",
+  };
+}
+
+function mapAuthUser(response: AuthResponse, fallbackName: string, fallbackEmail: string): User {
+  const workspace = getWorkspace(response);
+  return {
+    id: response.user?.id || response.user_id || "unknown",
+    username: response.user?.full_name || fallbackName,
+    email: response.user?.email || fallbackEmail,
+    workspace_id: workspace.id,
+    workspace_name: workspace.name,
+    workspace_slug: workspace.slug,
+    workspace_type: workspace.workspace_type,
+    role: workspace.role,
+    is_admin: response.user?.is_admin || false,
+    is_active: response.user?.is_active ?? true,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,15 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (data: LoginRequest) => {
     const response: AuthResponse = await apiLogin(data);
-
-    const userData: User = {
-      id: response.user?.id || response.user_id || "unknown",
-      username: response.user?.name || data.email,
-      email: response.user?.email || data.email,
-      workspace_id: response.user?.workspace_id || response.workspace_id || "default",
-      is_admin: response.user?.is_admin || false,
-      is_active: response.user?.is_active ?? true,
-    };
+    const userData = mapAuthUser(response, data.email, data.email);
 
     storeAuth(response.access_token, userData, response.refresh_token);
 
@@ -107,15 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: RegisterRequest) => {
     const response: AuthResponse = await apiRegister(data);
-
-    const userData: User = {
-      id: response.user?.id || response.user_id || "unknown",
-      username: response.user?.name || data.full_name || data.email,
-      email: response.user?.email || data.email,
-      workspace_id: response.user?.workspace_id || response.workspace_id || "default",
-      is_admin: response.user?.is_admin || false,
-      is_active: response.user?.is_active ?? true,
-    };
+    const userData = mapAuthUser(response, data.full_name || data.email, data.email);
 
     storeAuth(response.access_token, userData, response.refresh_token);
 

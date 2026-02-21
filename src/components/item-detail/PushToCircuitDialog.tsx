@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { getCircuits, updateItem, Item } from "@/lib/defarm-api";
+import { addItemToCircuit, getCircuits, Item } from "@/lib/defarm-api";
 
 interface PushToCircuitDialogProps {
   item: Item;
@@ -39,13 +39,15 @@ export function PushToCircuitDialog({
   // Push mutation
   const pushMutation = useMutation({
     mutationFn: ({ circuitId, itemId }: { circuitId: string; itemId: string }) =>
-      updateItem(itemId, { metadata: { circuit_id: circuitId } }),
+      addItemToCircuit(circuitId, itemId, { role: "member" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["itemEvents", item.dfid] });
-      queryClient.invalidateQueries({ queryKey: ["item", item.dfid] });
+      queryClient.invalidateQueries({ queryKey: ["itemEvents", item.id] });
+      queryClient.invalidateQueries({ queryKey: ["item", item.id] });
+      queryClient.invalidateQueries({ queryKey: ["allCircuitItems"] });
+      queryClient.invalidateQueries({ queryKey: ["items"] });
       toast({
         title: "Item enviado!",
-        description: "O item foi adicionado ao circuito com sucesso.",
+        description: "O item foi associado ao circuito com sucesso.",
       });
       onOpenChange(false);
       setSelectedCircuit("");

@@ -45,12 +45,17 @@ export interface RegisterRequest {
 export interface AuthUser {
   id: string;
   email: string;
-  name: string;
-  workspace_id: string;
-  workspace_slug: string;
-  role: string;
+  full_name?: string | null;
   is_admin?: boolean;
   is_active?: boolean;
+  workspace: {
+    id: string;
+    name: string;
+    slug: string;
+    tier: string;
+    workspace_type: "partner" | "producer" | "processor" | "certifier";
+    role: string;
+  };
 }
 
 export interface AuthResponse {
@@ -70,6 +75,10 @@ export interface User {
   username: string;
   email: string;
   workspace_id: string;
+  workspace_name?: string;
+  workspace_slug?: string;
+  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  role?: string;
   is_admin?: boolean;
   is_active?: boolean;
 }

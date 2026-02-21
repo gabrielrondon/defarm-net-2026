@@ -8,6 +8,8 @@ import type {
   ListMembersResponse,
   AddMemberRequest,
   UpdateMemberRequest,
+  AddItemToCircuitRequest,
+  AddItemsToCircuitBulkRequest,
   CircuitFilters,
 } from "./types";
 
@@ -82,5 +84,27 @@ export async function removeCircuitMember(
   const qs = removedBy ? `?removed_by=${removedBy}` : "";
   await registryRequest(`/circuits/${circuitId}/members/${userId}${qs}`, {
     method: "DELETE",
+  });
+}
+
+// Circuit item transfer endpoints
+export async function addItemToCircuit(
+  circuitId: string,
+  itemId: string,
+  data?: AddItemToCircuitRequest
+): Promise<void> {
+  await registryRequest(`/circuits/${circuitId}/items/${itemId}`, {
+    method: "POST",
+    body: JSON.stringify(data || {}),
+  });
+}
+
+export async function bulkAddItemsToCircuit(
+  circuitId: string,
+  data: AddItemsToCircuitBulkRequest
+): Promise<void> {
+  await registryRequest(`/circuits/${circuitId}/items/bulk`, {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }

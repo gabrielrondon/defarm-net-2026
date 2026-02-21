@@ -58,6 +58,7 @@ export default function ItensList() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const canBulkIngest = user?.is_admin || user?.workspace_type === "partner";
   const queryClient = useQueryClient();
 
   const { data: items = [], isLoading, error, refetch } = useQuery({
@@ -204,10 +205,12 @@ export default function ItensList() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setBulkOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Importar CSV/JSON
-          </Button>
+          {canBulkIngest && (
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar CSV/JSON
+            </Button>
+          )}
           <Link to="/app/itens/novo">
             <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground">
               <Plus className="h-4 w-4 mr-2" />

@@ -47,6 +47,8 @@ import AdminUsers from "./pages/app/AdminUsers";
 import AdminCanonicalIdentifiers from "./pages/app/AdminCanonicalIdentifiers";
 import AdminJobs from "./pages/app/AdminJobs";
 import PartnerPortal from "./pages/app/PartnerPortal";
+import OwnershipClaims from "./pages/app/OwnershipClaims";
+import PropertyHerd from "./pages/app/PropertyHerd";
 
 const queryClient = new QueryClient(); // init
 
@@ -83,6 +85,8 @@ const App = () => (
             <Route path="/app/itens" element={<AppLayout><ItensList /></AppLayout>} />
             <Route path="/app/itens/novo" element={<AppLayout><NovoItem /></AppLayout>} />
             <Route path="/app/itens/:id" element={<AppLayout><ItemDetail /></AppLayout>} />
+            <Route path="/app/claims" element={<AppLayout><OwnershipClaims /></AppLayout>} />
+            <Route path="/app/propriedades/rebanho" element={<AppLayout><PropertyHerd /></AppLayout>} />
             <Route path="/app/eventos" element={<AppLayout><EventosList /></AppLayout>} />
             <Route path="/app/auditoria" element={<AppLayout><AuditTrail /></AppLayout>} />
             <Route path="/app/snapshots" element={<AppLayout><SnapshotsList /></AppLayout>} />

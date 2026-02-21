@@ -31,6 +31,7 @@ interface NavItem {
   icon: typeof BookOpen;
   label: string;
   href: string;
+  workspaceTypes?: Array<"partner" | "producer" | "processor" | "certifier">;
 }
 
 const navItems: NavItem[] = [
@@ -39,6 +40,8 @@ const navItems: NavItem[] = [
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
   { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
   { icon: Package, label: "Itens", href: "/app/itens" },
+  { icon: Users, label: "Minhas Propriedades", href: "/app/claims", workspaceTypes: ["producer", "certifier"] },
+  { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho", workspaceTypes: ["producer", "certifier"] },
   { icon: Activity, label: "Eventos", href: "/app/eventos" },
   { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
   { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
@@ -68,6 +71,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const workspaceType = user?.workspace_type || "producer";
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -128,7 +132,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems
+            .filter((item) => user?.is_admin || !item.workspaceTypes || item.workspaceTypes.includes(workspaceType))
+            .map((item) => {
             const isActive = location.pathname === item.href || 
               (item.href !== "/app" && location.pathname.startsWith(item.href));
             
@@ -151,8 +157,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             );
           })}
 
-          {/* Partner Portal - visible to admin/partner users */}
-          {user?.is_admin && (() => {
+          {/* Partner Portal - visible to admin and workspace type partner */}
+          {(user?.is_admin || workspaceType === "partner") && (() => {
             const isActive = location.pathname.startsWith(partnerNavItem.href);
             return (
               <>
@@ -226,7 +232,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 {user?.username}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {user?.email}
+                {user?.email} · {workspaceType}
               </p>
             </div>
           </div>

@@ -214,9 +214,11 @@ export default function Configuracoes() {
                 </div>
                 <div>
                   <p className="text-lg font-medium text-foreground">
-                    {user?.workspace_id || "Meu Workspace"}
+                    {user?.workspace_name || "Meu Workspace"}
                   </p>
-                  <p className="text-sm text-muted-foreground">Plano: Starter</p>
+                  <p className="text-sm text-muted-foreground">
+                    Plano: Starter · Tipo: {user?.workspace_type || "producer"} · Papel: {user?.role || "viewer"}
+                  </p>
                 </div>
               </div>
 
