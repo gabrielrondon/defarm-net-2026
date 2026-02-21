@@ -60,6 +60,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   getCircuit, 
   getCircuitItems, 
+  getJoinRequests,
   updateItem,
   getItems,
   getItem,
@@ -137,6 +138,12 @@ export default function CircuitoDetail() {
   const { data: allItems = [] } = useQuery({
     queryKey: ["items"],
     queryFn: () => getItems(),
+  });
+
+  const { data: pendingJoinRequests = [] } = useQuery({
+    queryKey: ["joinRequestsPendingCount", id],
+    queryFn: () => getJoinRequests(id!, "pending"),
+    enabled: !!id,
   });
 
   // Push item mutation
@@ -374,6 +381,11 @@ export default function CircuitoDetail() {
                   <Link to={`/app/circuitos/${id}/solicitacoes`} className="flex items-center">
                     <UserPlus className="h-4 w-4 mr-2" />
                     Solicitações de entrada
+                    {pendingJoinRequests.length > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5">
+                        {pendingJoinRequests.length}
+                      </span>
+                    )}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

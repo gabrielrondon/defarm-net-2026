@@ -75,6 +75,12 @@ export async function reviewJoinRequest(
   );
 }
 
+// User: list own join requests across circuits
+export async function getMyJoinRequests(status?: string): Promise<JoinRequest[]> {
+  const qs = status ? buildQueryString({ status }) : "";
+  return registryRequest<JoinRequest[]>(`/join-requests/mine${qs}`);
+}
+
 // Remove item from circuit (N:N)
 export async function removeItemFromCircuit(
   circuitId: string,

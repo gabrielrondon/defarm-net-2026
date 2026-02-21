@@ -26,6 +26,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logoIcon from "@/assets/logo-icon.png";
+import { useQuery } from "@tanstack/react-query";
+import { getMyJoinRequests, requestEmailVerification } from "@/lib/defarm-api";
+import { useToast } from "@/hooks/use-toast";
 
 interface NavItem {
   icon: typeof BookOpen;
@@ -68,6 +71,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -82,6 +86,29 @@ export function AppLayout({ children }: AppLayoutProps) {
   const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const { data: myApprovedJoinRequests = [] } = useQuery({
+    queryKey: ["myJoinRequestsApproved"],
+    queryFn: () => getMyJoinRequests("approved"),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  });
+
+  const handleResendVerification = async () => {
+    try {
+      const res = await requestEmailVerification();
+      toast({
+        title: "Verificação enviada",
+        description: res.message,
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao reenviar verificação",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -277,6 +304,19 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-4 lg:p-6">
+          {!user?.email_verified && (
+            <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-center justify-between gap-3">
+              <span>Seu email ainda não foi verificado. Verifique para aumentar a segurança da conta.</span>
+              <Button variant="outline" size="sm" onClick={handleResendVerification}>
+                Reenviar verificação
+              </Button>
+            </div>
+          )}
+          {myApprovedJoinRequests.length > 0 && (
+            <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground">
+              Você possui {myApprovedJoinRequests.length} solicitação(ões) de entrada aprovada(s). Acesse seus circuitos para conferir.
+            </div>
+          )}
           {children}
         </main>
       </div>
