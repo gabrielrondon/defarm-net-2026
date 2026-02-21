@@ -24,11 +24,12 @@
         "0": "Immutable blockchain",
         "1": "EUDR Compliance"
       },
-      "rotate": {
-        "0": { "headline": "Organize your assets in a", "highlight": "digital passbook" },
-        "1": { "headline": "Share your certificates with", "highlight": "anyone you want" },
-        "2": { "headline": "Turn your passbook into", "highlight": "credit opportunities" }
-      }
+      "rotate0headline": "Organize your assets in a",
+      "rotate0highlight": "digital passbook",
+      "rotate1headline": "Share your certificates with",
+      "rotate1highlight": "anyone you want",
+      "rotate2headline": "Turn your passbook into",
+      "rotate2highlight": "credit opportunities"
     },
     "financeiro": {
       "label": "Finance",

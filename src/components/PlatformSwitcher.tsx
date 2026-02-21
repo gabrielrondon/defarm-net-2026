@@ -62,9 +62,9 @@ export function PlatformSwitcher() {
 
   const ROTATING_PHRASES = [
     { headline: t("platform.rastreio.headline"), highlight: t("platform.rastreio.highlight") },
-    { headline: t("platform.rastreio.rotate.0.headline"), highlight: t("platform.rastreio.rotate.0.highlight") },
-    { headline: t("platform.rastreio.rotate.1.headline"), highlight: t("platform.rastreio.rotate.1.highlight") },
-    { headline: t("platform.rastreio.rotate.2.headline"), highlight: t("platform.rastreio.rotate.2.highlight") },
+    { headline: t("platform.rastreio.rotate0headline"), highlight: t("platform.rastreio.rotate0highlight") },
+    { headline: t("platform.rastreio.rotate1headline"), highlight: t("platform.rastreio.rotate1highlight") },
+    { headline: t("platform.rastreio.rotate2headline"), highlight: t("platform.rastreio.rotate2highlight") },
   ];
 
   const [phraseIndex, setPhraseIndex] = useState(0);

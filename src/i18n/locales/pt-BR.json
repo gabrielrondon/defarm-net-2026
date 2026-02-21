@@ -24,11 +24,12 @@
         "0": "Blockchain imutável",
         "1": "Compliance EUDR"
       },
-      "rotate": {
-        "0": { "headline": "Organize seus ativos em uma", "highlight": "caderneta digital" },
-        "1": { "headline": "Compartilhe seus certificados com", "highlight": "quem quiser" },
-        "2": { "headline": "Torne sua caderneta em", "highlight": "oportunidades de crédito" }
-      }
+      "rotate0headline": "Organize seus ativos em uma",
+      "rotate0highlight": "caderneta digital",
+      "rotate1headline": "Compartilhe seus certificados com",
+      "rotate1highlight": "quem quiser",
+      "rotate2headline": "Torne sua caderneta em",
+      "rotate2highlight": "oportunidades de crédito"
     },
     "financeiro": {
       "label": "Financeiro",
