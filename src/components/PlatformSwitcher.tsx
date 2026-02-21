@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -60,9 +60,36 @@ export function PlatformSwitcher() {
     }
   };
 
+  const ROTATING_PHRASES = [
+    { headline: t("platform.rastreio.headline"), highlight: t("platform.rastreio.highlight") },
+    { headline: t("platform.rastreio.rotate.0.headline"), highlight: t("platform.rastreio.rotate.0.highlight") },
+    { headline: t("platform.rastreio.rotate.1.headline"), highlight: t("platform.rastreio.rotate.1.highlight") },
+    { headline: t("platform.rastreio.rotate.2.headline"), highlight: t("platform.rastreio.rotate.2.highlight") },
+  ];
+
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [phraseVisible, setPhraseVisible] = useState(true);
+
+  useEffect(() => {
+    if (activePlatform !== "rastreio") return;
+    const interval = setInterval(() => {
+      setPhraseVisible(false);
+      setTimeout(() => {
+        setPhraseIndex((prev) => (prev + 1) % ROTATING_PHRASES.length);
+        setPhraseVisible(true);
+      }, 400);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [activePlatform]);
+
+  useEffect(() => {
+    setPhraseIndex(0);
+    setPhraseVisible(true);
+  }, [activePlatform]);
+
   const label = t(`platform.${activePlatform}.label`);
-  const headline = t(`platform.${activePlatform}.headline`);
-  const highlight = t(`platform.${activePlatform}.highlight`);
+  const headline = activePlatform === "rastreio" ? ROTATING_PHRASES[phraseIndex].headline : t(`platform.${activePlatform}.headline`);
+  const highlight = activePlatform === "rastreio" ? ROTATING_PHRASES[phraseIndex].highlight : t(`platform.${activePlatform}.highlight`);
   const description = t(`platform.${activePlatform}.description`);
   const cta = t(`platform.${activePlatform}.cta`);
   const secondaryCta = t(`platform.${activePlatform}.secondaryCta`, { defaultValue: "" });
@@ -158,9 +185,24 @@ export function PlatformSwitcher() {
               </div>
 
               {/* Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-                {headline}{" "}
-                <span className="highlight-text">{highlight}</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 min-h-[120px] sm:min-h-[144px] lg:min-h-[160px] flex items-center justify-center">
+                {activePlatform === "rastreio" ? (
+                  <span
+                    className="transition-all duration-500 ease-out inline-block"
+                    style={{
+                      opacity: phraseVisible ? 1 : 0,
+                      transform: phraseVisible ? "translateY(0)" : "translateY(12px)",
+                    }}
+                  >
+                    {headline}{" "}
+                    <span className="highlight-text">{highlight}</span>
+                  </span>
+                ) : (
+                  <span>
+                    {headline}{" "}
+                    <span className="highlight-text">{highlight}</span>
+                  </span>
+                )}
               </h1>
 
               {/* Description */}
