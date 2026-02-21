@@ -209,8 +209,7 @@ components:
       - email
       - role
       - is_active
-      - workspace_id
-      - workspace_name
+      - is_admin
       - created_at
       - updated_at
       properties:
@@ -228,11 +227,26 @@ components:
           description: Workspace role (admin, partner, viewer, etc.)
         is_active:
           type: boolean
+        is_admin:
+          type: boolean
         workspace_id:
           type: string
           format: uuid
+          nullable: true
         workspace_name:
           type: string
+          nullable: true
+        workspace_slug:
+          type: string
+          nullable: true
+        workspace_type:
+          type: string
+          enum: [partner, producer, processor, certifier]
+          nullable: true
+        workspace_tier:
+          type: string
+          enum: [free, basic, pro, enterprise]
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -262,9 +276,22 @@ components:
         role:
           type: string
           nullable: true
+        is_admin:
+          type: boolean
+          nullable: true
         workspace_id:
           type: string
           format: uuid
+          nullable: true
+        workspace_name:
+          type: string
+          nullable: true
+        workspace_slug:
+          type: string
+          nullable: true
+        workspace_type:
+          type: string
+          enum: [partner, producer, processor, certifier]
           nullable: true
     UpdateAdminUserRoleRequest:
       description: Request payload to update user role (admin only).
@@ -282,6 +309,94 @@ components:
       properties:
         is_active:
           type: boolean
+    UpdateAdminUserAdminRequest:
+      description: Request payload to promote/demote system admin.
+      type: object
+      required:
+      - is_admin
+      properties:
+        is_admin:
+          type: boolean
+    AdminWorkspace:
+      description: Workspace object for admin management.
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - tier
+      - workspace_type
+      - owner_id
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        tier:
+          type: string
+          enum: [free, basic, pro, enterprise]
+        workspace_type:
+          type: string
+          enum: [partner, producer, processor, certifier]
+        owner_id:
+          type: string
+          format: uuid
+        owner_email:
+          type: string
+          format: email
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateAdminWorkspaceRequest:
+      description: Request payload to create a workspace with explicit type.
+      type: object
+      required:
+      - name
+      - owner_user_id
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        tier:
+          type: string
+          enum: [free, basic, pro, enterprise]
+          nullable: true
+        workspace_type:
+          type: string
+          enum: [partner, producer, processor, certifier]
+          nullable: true
+        owner_user_id:
+          type: string
+          format: uuid
+    UpdateAdminWorkspaceRequest:
+      description: Request payload to update workspace attributes.
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        tier:
+          type: string
+          enum: [free, basic, pro, enterprise]
+          nullable: true
+        workspace_type:
+          type: string
+          enum: [partner, producer, processor, certifier]
+          nullable: true
     AdapterStatsResponse:
       description: Adapter service statistics for admin dashboard
       type: object
@@ -5329,6 +5444,149 @@ paths:
                 additionalProperties: true
         '404':
           description: User not found
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/users/{id}/admin:
+    patch:
+      tags:
+      - Admin
+      x-internal: true
+      summary: PATCH /admin/users/{id}/admin
+      description: Promote or demote a system administrator.
+      operationId: update_admin_user_admin
+      parameters:
+      - name: id
+        in: path
+        description: User ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminUserAdminRequest'
+      responses:
+        '200':
+          description: User admin flag updated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: User not found
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/admins:
+    get:
+      tags:
+      - Admin
+      x-internal: true
+      summary: GET /admin/admins
+      description: List system administrators.
+      operationId: list_system_admins
+      responses:
+        '200':
+          description: List of admins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUser'
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/workspaces:
+    get:
+      tags:
+      - Admin
+      x-internal: true
+      summary: GET /admin/workspaces
+      description: List all workspaces including type, tier and owner.
+      operationId: list_admin_workspaces
+      responses:
+        '200':
+          description: List of workspaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminWorkspace'
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+    post:
+      tags:
+      - Admin
+      x-internal: true
+      summary: POST /admin/workspaces
+      description: Create workspace and define workspace_type/tier.
+      operationId: create_admin_workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminWorkspaceRequest'
+      responses:
+        '201':
+          description: Workspace created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWorkspace'
+        '400':
+          description: Validation error
+        '404':
+          description: Owner user not found
+        '403':
+          description: Admin key required
+        '500':
+          description: Internal server error
+  /api/admin/workspaces/{id}:
+    patch:
+      tags:
+      - Admin
+      x-internal: true
+      summary: PATCH /admin/workspaces/{id}
+      description: Update workspace metadata including workspace_type.
+      operationId: update_admin_workspace
+      parameters:
+      - name: id
+        in: path
+        description: Workspace ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdminWorkspaceRequest'
+      responses:
+        '200':
+          description: Workspace updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminWorkspace'
+        '400':
+          description: Validation error
+        '404':
+          description: Workspace not found
         '403':
           description: Admin key required
         '500':

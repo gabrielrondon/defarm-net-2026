@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -12,273 +11,488 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  listAdminUsers,
   createAdminUser,
-  deleteAdminUser,
+  createWorkspace,
+  listAdmins,
+  listAdminUsers,
+  listWorkspaces,
+  updateUserAdmin,
   updateUserRole,
   updateUserStatus,
+  updateWorkspace,
   type AdminUser,
+  type AdminWorkspace,
 } from "@/lib/api/admin-users";
-import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Trash2, Shield, Power, Users } from "lucide-react";
 
-const ROLES = ["admin", "partner", "editor", "viewer"];
-const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-red-500/10 text-red-500 border-red-500/20",
-  partner: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  editor: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-  viewer: "bg-muted text-muted-foreground",
-};
+const WORKSPACE_TYPES = ["producer", "partner", "certifier", "processor"] as const;
+const WORKSPACE_TIERS = ["free", "basic", "pro", "enterprise"] as const;
+const USER_ROLES = ["owner", "admin", "partner", "editor", "viewer"] as const;
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
 
-  // New user form
-  const [newEmail, setNewEmail] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newRole, setNewRole] = useState("viewer");
-  const [creating, setCreating] = useState(false);
+  const [createMode, setCreateMode] = useState<"existing" | "new">("new");
+  const [newUser, setNewUser] = useState({
+    full_name: "",
+    email: "",
+    password: "",
+    role: "owner",
+    is_admin: false,
+    workspace_id: "",
+    workspace_name: "",
+    workspace_slug: "",
+    workspace_type: "producer" as (typeof WORKSPACE_TYPES)[number],
+  });
 
-  const fetchUsers = () => {
+  const [newWorkspace, setNewWorkspace] = useState({
+    name: "",
+    slug: "",
+    owner_user_id: "",
+    workspace_type: "producer" as (typeof WORKSPACE_TYPES)[number],
+    tier: "free" as (typeof WORKSPACE_TIERS)[number],
+  });
+
+  const loadAll = async () => {
     setLoading(true);
-    listAdminUsers()
-      .then(setUsers)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { fetchUsers(); }, []);
-
-  const handleCreate = async () => {
-    if (!newEmail || !newName || !newPassword) return;
-    setCreating(true);
     try {
-      await createAdminUser({ email: newEmail, full_name: newName, password: newPassword, role: newRole });
-      toast({ title: "Usuário criado", description: `${newEmail} adicionado com sucesso.` });
-      setNewEmail(""); setNewName(""); setNewPassword(""); setNewRole("viewer");
-      fetchUsers();
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      const [usersResp, adminsResp, wsResp] = await Promise.all([
+        listAdminUsers(),
+        listAdmins(),
+        listWorkspaces(),
+      ]);
+      setUsers(usersResp);
+      setAdmins(adminsResp);
+      setWorkspaces(wsResp);
+    } catch (err) {
+      toast({
+        title: "Erro ao carregar admin",
+        description: err instanceof Error ? err.message : "Falha inesperada.",
+        variant: "destructive",
+      });
     } finally {
-      setCreating(false);
+      setLoading(false);
     }
   };
 
-  const handleDelete = async (userId: string) => {
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  const userOptions = useMemo(
+    () => users.map((u) => ({ id: u.id, label: `${u.email} (${u.full_name || "Sem nome"})` })),
+    [users]
+  );
+
+  const handleCreateUser = async () => {
+    if (!newUser.email || !newUser.password) return;
     try {
-      await deleteAdminUser(userId);
-      toast({ title: "Usuário removido" });
-      fetchUsers();
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      await createAdminUser({
+        email: newUser.email.trim(),
+        password: newUser.password,
+        full_name: newUser.full_name.trim() || undefined,
+        role: newUser.role,
+        is_admin: newUser.is_admin,
+        workspace_id: createMode === "existing" ? newUser.workspace_id || undefined : undefined,
+        workspace_name: createMode === "new" ? newUser.workspace_name || undefined : undefined,
+        workspace_slug: createMode === "new" ? newUser.workspace_slug || undefined : undefined,
+        workspace_type: createMode === "new" ? newUser.workspace_type : undefined,
+      });
+      toast({ title: "Usuário criado com sucesso" });
+      setNewUser({
+        full_name: "",
+        email: "",
+        password: "",
+        role: "owner",
+        is_admin: false,
+        workspace_id: "",
+        workspace_name: "",
+        workspace_slug: "",
+        workspace_type: "producer",
+      });
+      await loadAll();
+    } catch (err) {
+      toast({
+        title: "Falha ao criar usuário",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateWorkspace = async () => {
+    if (!newWorkspace.name || !newWorkspace.owner_user_id) return;
+    try {
+      await createWorkspace({
+        name: newWorkspace.name,
+        slug: newWorkspace.slug || undefined,
+        owner_user_id: newWorkspace.owner_user_id,
+        workspace_type: newWorkspace.workspace_type,
+        tier: newWorkspace.tier,
+      });
+      toast({ title: "Workspace criado com sucesso" });
+      setNewWorkspace({
+        name: "",
+        slug: "",
+        owner_user_id: "",
+        workspace_type: "producer",
+        tier: "free",
+      });
+      await loadAll();
+    } catch (err) {
+      toast({
+        title: "Falha ao criar workspace",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleActive = async (user: AdminUser) => {
+    try {
+      await updateUserStatus(user.id, { is_active: !user.is_active });
+      await loadAll();
+    } catch (err) {
+      toast({
+        title: "Falha ao atualizar status",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleRoleChange = async (userId: string, role: string) => {
     try {
       await updateUserRole(userId, { role });
-      toast({ title: "Role atualizado" });
-      fetchUsers();
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      await loadAll();
+    } catch (err) {
+      toast({
+        title: "Falha ao atualizar role",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleStatusToggle = async (user: AdminUser) => {
-    const newActive = !user.is_active;
+  const handleAdminFlag = async (user: AdminUser) => {
     try {
-      await updateUserStatus(user.id, { is_active: newActive });
-      toast({ title: `Usuário ${newActive ? "ativado" : "desativado"}` });
-      fetchUsers();
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      await updateUserAdmin(user.id, { is_admin: !user.is_admin });
+      await loadAll();
+    } catch (err) {
+      toast({
+        title: "Falha ao atualizar admin",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
     }
   };
+
+  const handleWorkspaceType = async (ws: AdminWorkspace, workspace_type: AdminWorkspace["workspace_type"]) => {
+    try {
+      await updateWorkspace(ws.id, { workspace_type });
+      await loadAll();
+    } catch (err) {
+      toast({
+        title: "Falha ao atualizar tipo de workspace",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="text-sm text-muted-foreground">Carregando painel admin...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-6 w-6" /> Gestão de Usuários
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Criar, editar roles e gerenciar status dos usuários da plataforma.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">IAM Admin</h1>
+        <p className="text-sm text-muted-foreground">
+          Crie usuários e workspaces, defina tipo de workspace, senha inicial e gerencie administradores.
+        </p>
+      </div>
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button><UserPlus className="h-4 w-4 mr-2" /> Convidar Usuário</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Usuário</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Criar Usuário</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <Label>Nome</Label>
+              <Input
+                value={newUser.full_name}
+                onChange={(e) => setNewUser((p) => ({ ...p, full_name: e.target.value }))}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                value={newUser.email}
+                onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))}
+                placeholder="usuario@empresa.com"
+              />
+            </div>
+            <div>
+              <Label>Senha Inicial</Label>
+              <Input
+                type="password"
+                value={newUser.password}
+                onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))}
+                placeholder="********"
+              />
+            </div>
+            <div>
+              <Label>Role no Workspace</Label>
+              <Select value={newUser.role} onValueChange={(v) => setNewUser((p) => ({ ...p, role: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {USER_ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={newUser.is_admin}
+              onChange={(e) => setNewUser((p) => ({ ...p, is_admin: e.target.checked }))}
+            />
+            <Label>Tornar usuário administrador do sistema</Label>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Label>Workspace</Label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="radio" checked={createMode === "new"} onChange={() => setCreateMode("new")} />
+              Criar novo
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="radio" checked={createMode === "existing"} onChange={() => setCreateMode("existing")} />
+              Usar existente
+            </label>
+          </div>
+
+          {createMode === "new" ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <Label>Nome Completo</Label>
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="João Silva" />
+                <Label>Nome do Workspace</Label>
+                <Input
+                  value={newUser.workspace_name}
+                  onChange={(e) => setNewUser((p) => ({ ...p, workspace_name: e.target.value }))}
+                  placeholder="Fazenda Boa Vista"
+                />
               </div>
               <div>
-                <Label>Email</Label>
-                <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="joao@empresa.com" />
+                <Label>Slug (opcional)</Label>
+                <Input
+                  value={newUser.workspace_slug}
+                  onChange={(e) => setNewUser((p) => ({ ...p, workspace_slug: e.target.value }))}
+                  placeholder="fazenda-boa-vista"
+                />
               </div>
               <div>
-                <Label>Senha</Label>
-                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
-              </div>
-              <div>
-                <Label>Role</Label>
-                <Select value={newRole} onValueChange={setNewRole}>
+                <Label>Tipo de Workspace</Label>
+                <Select
+                  value={newUser.workspace_type}
+                  onValueChange={(v: AdminWorkspace["workspace_type"]) => setNewUser((p) => ({ ...p, workspace_type: v }))}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {ROLES.map((r) => <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>)}
+                    {WORKSPACE_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="ghost">Cancelar</Button>
-              </DialogClose>
-              <Button onClick={handleCreate} disabled={creating || !newEmail || !newName || !newPassword}>
-                {creating ? "Criando..." : "Criar Usuário"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+          ) : (
+            <div>
+              <Label>Workspace existente</Label>
+              <Select
+                value={newUser.workspace_id}
+                onValueChange={(v) => setNewUser((p) => ({ ...p, workspace_id: v }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione workspace" /></SelectTrigger>
+                <SelectContent>
+                  {workspaces.map((w) => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name} ({w.workspace_type})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-      {loading ? (
-        <Card><CardContent className="pt-6"><Skeleton className="h-40 w-full" /></CardContent></Card>
-      ) : error ? (
-        <Card><CardContent className="pt-6"><p className="text-destructive">Erro: {error}</p></CardContent></Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Criado em</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      Nenhum usuário encontrado.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={user.role}
-                          onValueChange={(val) => handleRoleChange(user.id, val)}
-                        >
-                          <SelectTrigger className="w-28 h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ROLES.map((r) => (
-                              <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={user.is_active ? "border-green-500/30 text-green-500" : "border-muted text-muted-foreground"}>
-                          {user.is_active ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {new Date(user.created_at).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleStatusToggle(user)}
-                            title={user.is_active ? "Desativar" : "Ativar"}
-                          >
-                            <Power className={`h-4 w-4 ${user.is_active ? "text-green-500" : "text-muted-foreground"}`} />
-                          </Button>
+          <Button onClick={handleCreateUser}>Criar Usuário</Button>
+        </CardContent>
+      </Card>
 
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta ação irá remover permanentemente <strong>{user.full_name}</strong> ({user.email}) da plataforma.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(user.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Remover
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Gerenciar Administradores</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {admins.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum admin encontrado.</p>
+          ) : (
+            admins.map((admin) => (
+              <div key={admin.id} className="flex items-center justify-between border rounded-md p-3">
+                <div>
+                  <p className="font-medium">{admin.full_name || "Sem nome"}</p>
+                  <p className="text-xs text-muted-foreground">{admin.email}</p>
+                </div>
+                <Button variant="outline" onClick={() => handleAdminFlag(admin)}>
+                  Remover Admin
+                </Button>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Usuários</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {users.map((user) => (
+            <div key={user.id} className="border rounded-md p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <p className="font-medium">{user.full_name || "Sem nome"} <span className="text-xs text-muted-foreground">({user.email})</span></p>
+                <div className="flex items-center gap-2 text-xs mt-1">
+                  <Badge variant="outline">{user.workspace_type || "sem-workspace"}</Badge>
+                  {user.is_admin && <Badge>admin</Badge>}
+                  <Badge variant={user.is_active ? "default" : "secondary"}>{user.is_active ? "ativo" : "inativo"}</Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={user.role} onValueChange={(v) => handleRoleChange(user.id, v)}>
+                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {USER_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>{role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => handleToggleActive(user)}>
+                  {user.is_active ? "Desativar" : "Ativar"}
+                </Button>
+                <Button variant="outline" onClick={() => handleAdminFlag(user)}>
+                  {user.is_admin ? "Despromover" : "Promover Admin"}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Criar Workspace</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div>
+            <Label>Nome</Label>
+            <Input
+              value={newWorkspace.name}
+              onChange={(e) => setNewWorkspace((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Nome do workspace"
+            />
+          </div>
+          <div>
+            <Label>Slug (opcional)</Label>
+            <Input
+              value={newWorkspace.slug}
+              onChange={(e) => setNewWorkspace((p) => ({ ...p, slug: e.target.value }))}
+              placeholder="slug-workspace"
+            />
+          </div>
+          <div>
+            <Label>Owner</Label>
+            <Select
+              value={newWorkspace.owner_user_id}
+              onValueChange={(v) => setNewWorkspace((p) => ({ ...p, owner_user_id: v }))}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecione usuário" /></SelectTrigger>
+              <SelectContent>
+                {userOptions.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{u.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Tipo</Label>
+            <Select
+              value={newWorkspace.workspace_type}
+              onValueChange={(v: AdminWorkspace["workspace_type"]) => setNewWorkspace((p) => ({ ...p, workspace_type: v }))}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {WORKSPACE_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Tier</Label>
+            <Select
+              value={newWorkspace.tier}
+              onValueChange={(v: AdminWorkspace["tier"]) => setNewWorkspace((p) => ({ ...p, tier: v }))}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {WORKSPACE_TIERS.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-5">
+            <Button onClick={handleCreateWorkspace}>Criar Workspace</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Workspaces</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {workspaces.map((ws) => (
+            <div key={ws.id} className="border rounded-md p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <p className="font-medium">{ws.name} <span className="text-xs text-muted-foreground">({ws.slug})</span></p>
+                <p className="text-xs text-muted-foreground">owner: {ws.owner_email || ws.owner_id}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{ws.tier}</Badge>
+                <Select value={ws.workspace_type} onValueChange={(v: AdminWorkspace["workspace_type"]) => handleWorkspaceType(ws, v)}>
+                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {WORKSPACE_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

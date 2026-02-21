@@ -5,11 +5,15 @@ import { authRequest } from "./client";
 export interface AdminUser {
   id: string;
   email: string;
-  full_name: string;
+  full_name?: string | null;
   role: string;
   is_active: boolean;
-  workspace_id: string;
-  workspace_name?: string;
+  is_admin: boolean;
+  workspace_id?: string | null;
+  workspace_name?: string | null;
+  workspace_slug?: string | null;
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | null;
+  workspace_tier?: string | null;
   created_at: string;
   updated_at?: string;
   last_login_at?: string | null;
@@ -21,9 +25,13 @@ export type ListAdminUsersResponse = { users: AdminUser[]; count?: number } | Ad
 export interface CreateAdminUserRequest {
   email: string;
   password: string;
-  full_name: string;
-  role: string;
+  full_name?: string;
+  role?: string;
+  workspace_id?: string;
+  workspace_name?: string;
   workspace_slug?: string;
+  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  is_admin?: boolean;
 }
 
 export interface UpdateUserRoleRequest {
@@ -32,6 +40,37 @@ export interface UpdateUserRoleRequest {
 
 export interface UpdateUserStatusRequest {
   is_active: boolean;
+}
+
+export interface UpdateUserAdminRequest {
+  is_admin: boolean;
+}
+
+export interface AdminWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+  tier: "free" | "basic" | "pro" | "enterprise";
+  workspace_type: "partner" | "producer" | "processor" | "certifier";
+  owner_id: string;
+  owner_email?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateWorkspaceRequest {
+  name: string;
+  slug?: string;
+  tier?: "free" | "basic" | "pro" | "enterprise";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  owner_user_id: string;
+}
+
+export interface UpdateWorkspaceRequest {
+  name?: string;
+  slug?: string;
+  tier?: "free" | "basic" | "pro" | "enterprise";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier";
 }
 
 // --- Adapter Stats ---
@@ -87,6 +126,35 @@ export async function updateUserRole(userId: string, data: UpdateUserRoleRequest
 
 export async function updateUserStatus(userId: string, data: UpdateUserStatusRequest): Promise<AdminUser> {
   return authRequest<AdminUser>(`/api/admin/users/${userId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function listAdmins(): Promise<AdminUser[]> {
+  return authRequest<AdminUser[]>("/api/admin/admins");
+}
+
+export async function updateUserAdmin(userId: string, data: UpdateUserAdminRequest): Promise<void> {
+  return authRequest<void>(`/api/admin/users/${userId}/admin`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function listWorkspaces(): Promise<AdminWorkspace[]> {
+  return authRequest<AdminWorkspace[]>("/api/admin/workspaces");
+}
+
+export async function createWorkspace(data: CreateWorkspaceRequest): Promise<AdminWorkspace> {
+  return authRequest<AdminWorkspace>("/api/admin/workspaces", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateWorkspace(workspaceId: string, data: UpdateWorkspaceRequest): Promise<AdminWorkspace> {
+  return authRequest<AdminWorkspace>(`/api/admin/workspaces/${workspaceId}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
