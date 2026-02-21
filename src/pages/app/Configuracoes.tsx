@@ -28,15 +28,26 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
+  addWorkspaceMember,
   changePassword,
+  getNotificationPreferences,
   listMySessions,
   listMyWorkspaces,
+  listWorkspaceMembers,
+  removeWorkspaceMember,
+  requestEmailChange,
   requestEmailVerification,
   revokeAllMySessions,
   revokeMySession,
+  updateNotificationPreferences,
   updateProfile,
+  updateWorkspaceMemberRole,
 } from "@/lib/defarm-api";
-import type { AuthSession, UserWorkspaceSummary } from "@/lib/defarm-api";
+import type {
+  AuthSession,
+  UserWorkspaceSummary,
+  WorkspaceMemberInfo,
+} from "@/lib/defarm-api";
 
 type SettingsTab = "perfil" | "workspace" | "notificacoes" | "seguranca";
 
@@ -74,6 +85,7 @@ export default function Configuracoes() {
   // Profile state
   const [displayName, setDisplayName] = useState(user?.username || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [newEmail, setNewEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -83,6 +95,8 @@ export default function Configuracoes() {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [circuitUpdates, setCircuitUpdates] = useState(true);
   const [itemAlerts, setItemAlerts] = useState(true);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsSaving, setNotificationsSaving] = useState(false);
 
   // Sessions state
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -91,6 +105,11 @@ export default function Configuracoes() {
   const [workspaces, setWorkspaces] = useState<UserWorkspaceSummary[]>([]);
   const [workspacesLoading, setWorkspacesLoading] = useState(false);
   const [workspaceSwitchLoading, setWorkspaceSwitchLoading] = useState(false);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMemberInfo[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberRole, setMemberRole] = useState<"admin" | "member">("member");
+  const [memberActionLoading, setMemberActionLoading] = useState(false);
   const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
 
   const handleViewSessions = async () => {
@@ -162,6 +181,151 @@ export default function Configuracoes() {
       });
     } finally {
       setEmailVerifyLoading(false);
+    }
+  };
+
+  const handleRequestEmailChange = async () => {
+    if (!newEmail.trim()) {
+      toast({
+        title: "Informe um email",
+        description: "Digite o novo email para enviar a verificação.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const res = await requestEmailChange({ new_email: newEmail.trim() });
+      toast({
+        title: "Verificação enviada",
+        description: res.message,
+      });
+      setNewEmail("");
+    } catch (error) {
+      toast({
+        title: "Falha ao solicitar troca de email",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLoadWorkspaceMembers = async () => {
+    setMembersLoading(true);
+    try {
+      const data = await listWorkspaceMembers();
+      setWorkspaceMembers(data.members);
+    } catch (error) {
+      toast({
+        title: "Falha ao carregar membros",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const handleAddWorkspaceMember = async () => {
+    if (!memberEmail.trim()) {
+      toast({
+        title: "Informe o email do membro",
+        variant: "destructive",
+      });
+      return;
+    }
+    setMemberActionLoading(true);
+    try {
+      await addWorkspaceMember({ email: memberEmail.trim(), role: memberRole });
+      setMemberEmail("");
+      await handleLoadWorkspaceMembers();
+      toast({
+        title: "Membro adicionado",
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao adicionar membro",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setMemberActionLoading(false);
+    }
+  };
+
+  const handleUpdateMemberRole = async (memberUserId: string, role: "owner" | "admin" | "member") => {
+    setMemberActionLoading(true);
+    try {
+      await updateWorkspaceMemberRole(memberUserId, role);
+      await handleLoadWorkspaceMembers();
+      toast({ title: "Papel atualizado" });
+    } catch (error) {
+      toast({
+        title: "Falha ao atualizar papel",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setMemberActionLoading(false);
+    }
+  };
+
+  const handleRemoveWorkspaceMember = async (memberUserId: string) => {
+    setMemberActionLoading(true);
+    try {
+      await removeWorkspaceMember(memberUserId);
+      await handleLoadWorkspaceMembers();
+      toast({ title: "Membro removido" });
+    } catch (error) {
+      toast({
+        title: "Falha ao remover membro",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setMemberActionLoading(false);
+    }
+  };
+
+  const handleLoadNotificationPreferences = async () => {
+    setNotificationsLoading(true);
+    try {
+      const prefs = await getNotificationPreferences();
+      setEmailNotifications(prefs.email_notifications);
+      setPushNotifications(prefs.push_notifications);
+      setCircuitUpdates(prefs.circuit_updates);
+      setItemAlerts(prefs.item_alerts);
+    } catch (error) {
+      toast({
+        title: "Falha ao carregar notificações",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const handleSaveNotificationPreferences = async () => {
+    setNotificationsSaving(true);
+    try {
+      await updateNotificationPreferences({
+        email_notifications: emailNotifications,
+        push_notifications: pushNotifications,
+        circuit_updates: circuitUpdates,
+        item_alerts: itemAlerts,
+      });
+      toast({
+        title: "Preferências salvas",
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao salvar notificações",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setNotificationsSaving(false);
     }
   };
 
@@ -285,6 +449,10 @@ export default function Configuracoes() {
   useEffect(() => {
     if (activeTab === "workspace") {
       handleLoadWorkspaces();
+      handleLoadWorkspaceMembers();
+    }
+    if (activeTab === "notificacoes") {
+      handleLoadNotificationPreferences();
     }
   }, [activeTab]);
 
@@ -336,7 +504,26 @@ export default function Configuracoes() {
                     placeholder="seu@email.com"
                     disabled
                   />
-                  <p className="text-xs text-muted-foreground">Alteração de email ainda não disponível.</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user?.pending_email
+                      ? `Troca pendente para ${user.pending_email}. Verifique o novo email para confirmar.`
+                      : "Para alterar, solicite abaixo e confirme no novo email."}
+                  </p>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="newEmail">Novo email</Label>
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <Input
+                      id="newEmail"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="novo@email.com"
+                    />
+                    <Button variant="outline" onClick={handleRequestEmailChange} disabled={!newEmail.trim()}>
+                      Solicitar troca
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -388,16 +575,74 @@ export default function Configuracoes() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Membros</p>
+                    <p className="text-sm font-medium text-foreground">Membros</p>
                     <p className="text-xs text-muted-foreground">
-                      Gestão de membros do workspace (pendente de endpoints dedicados)
+                      Adicione membros existentes e gerencie papéis
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" disabled>
-                    Indisponível
+                  <Button variant="outline" size="sm" onClick={handleLoadWorkspaceMembers} disabled={membersLoading}>
+                    {membersLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Atualizar"}
                   </Button>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <Input
+                      value={memberEmail}
+                      onChange={(e) => setMemberEmail(e.target.value)}
+                      type="email"
+                      placeholder="email do membro"
+                    />
+                    <select
+                      value={memberRole}
+                      onChange={(e) => setMemberRole(e.target.value as "admin" | "member")}
+                      className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    >
+                      <option value="member">member</option>
+                      <option value="admin">admin</option>
+                    </select>
+                    <Button onClick={handleAddWorkspaceMember} disabled={memberActionLoading || !memberEmail.trim()}>
+                      Adicionar
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {workspaceMembers.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">Nenhum membro encontrado.</p>
+                    ) : (
+                      workspaceMembers.map((member) => (
+                        <div key={member.user_id} className="flex items-center justify-between border rounded-md p-3 bg-background">
+                          <div>
+                            <p className="text-sm font-medium">{member.full_name || member.email}</p>
+                            <p className="text-xs text-muted-foreground">{member.email} · {member.role}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {member.role !== "owner" && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={memberActionLoading}
+                                  onClick={() => handleUpdateMemberRole(member.user_id, member.role === "admin" ? "member" : "admin")}
+                                >
+                                  {member.role === "admin" ? "Tornar member" : "Tornar admin"}
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  disabled={memberActionLoading}
+                                  onClick={() => handleRemoveWorkspaceMember(member.user_id)}
+                                >
+                                  Remover
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
@@ -472,50 +717,58 @@ export default function Configuracoes() {
               </p>
             </div>
 
-            <div className="bg-background border border-border rounded-2xl p-6 space-y-4 opacity-50">
-              <p className="text-xs text-muted-foreground italic mb-2">Funcionalidade em breve</p>
+            <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
+              {notificationsLoading && (
+                <p className="text-xs text-muted-foreground">Carregando preferências...</p>
+              )}
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-foreground">
                     Notificações por email
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Receba atualizações importantes no seu email
                   </p>
                 </div>
-                <Switch checked={emailNotifications} disabled />
+                <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Push notifications</p>
+                  <p className="text-sm font-medium text-foreground">Push notifications</p>
                   <p className="text-xs text-muted-foreground">
                     Notificações no navegador
                   </p>
                 </div>
-                <Switch checked={pushNotifications} disabled />
+                <Switch checked={pushNotifications} onCheckedChange={setPushNotifications} />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-sm font-medium text-foreground">
                     Atualizações de circuitos
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Quando itens são adicionados ou removidos
                   </p>
                 </div>
-                <Switch checked={circuitUpdates} disabled />
+                <Switch checked={circuitUpdates} onCheckedChange={setCircuitUpdates} />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Alertas de itens</p>
+                  <p className="text-sm font-medium text-foreground">Alertas de itens</p>
                   <p className="text-xs text-muted-foreground">
                     Quando itens são tokenizados ou deprecados
                   </p>
                 </div>
-                <Switch checked={itemAlerts} disabled />
+                <Switch checked={itemAlerts} onCheckedChange={setItemAlerts} />
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveNotificationPreferences} disabled={notificationsSaving}>
+                  {notificationsSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Salvar preferências
+                </Button>
               </div>
             </div>
           </div>

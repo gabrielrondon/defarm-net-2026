@@ -46,6 +46,7 @@ export interface AuthUser {
   id: string;
   email: string;
   email_verified?: boolean;
+  pending_email?: string | null;
   full_name?: string | null;
   is_admin?: boolean;
   is_active?: boolean;
@@ -76,6 +77,7 @@ export interface User {
   username: string;
   email: string;
   email_verified?: boolean;
+  pending_email?: string | null;
   full_name?: string;
   avatar_url?: string | null;
   workspace_id: string;
@@ -159,6 +161,10 @@ export interface UpdateProfileRequest {
   avatar_url?: string;
 }
 
+export interface ChangeEmailRequest {
+  new_email: string;
+}
+
 export interface ChangePasswordRequest {
   current_password: string;
   new_password: string;
@@ -185,6 +191,33 @@ export interface UserWorkspaceSummary {
   workspace_type: "partner" | "producer" | "processor" | "certifier";
   role: string;
   is_default: boolean;
+}
+
+export interface WorkspaceMemberInfo {
+  user_id: string;
+  email: string;
+  full_name?: string | null;
+  role: "owner" | "admin" | "member";
+  is_admin: boolean;
+  is_active: boolean;
+  joined_at: string;
+}
+
+export interface WorkspaceMembersResponse {
+  members: WorkspaceMemberInfo[];
+  count: number;
+}
+
+export interface AddWorkspaceMemberRequest {
+  email: string;
+  role: "admin" | "member";
+}
+
+export interface NotificationPreferences {
+  email_notifications: boolean;
+  push_notifications: boolean;
+  circuit_updates: boolean;
+  item_alerts: boolean;
 }
 
 export interface UserWorkspaceListResponse {
@@ -217,6 +250,20 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<AuthUse
   return authRequest<AuthUser>("/auth/profile", {
     method: "PATCH",
     body: JSON.stringify(data),
+  });
+}
+
+export async function requestEmailChange(data: ChangeEmailRequest): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/email/change/request", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function confirmEmailChange(token: string): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/email/change/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token }),
   });
 }
 
@@ -267,6 +314,46 @@ export async function switchWorkspace(workspace_id: string): Promise<AuthRespons
 
 export async function listMySessions(): Promise<AuthSessionsResponse> {
   return authRequest<AuthSessionsResponse>("/auth/sessions");
+}
+
+export async function listWorkspaceMembers(): Promise<WorkspaceMembersResponse> {
+  return authRequest<WorkspaceMembersResponse>("/auth/workspace/members");
+}
+
+export async function addWorkspaceMember(data: AddWorkspaceMemberRequest): Promise<WorkspaceMemberInfo> {
+  return authRequest<WorkspaceMemberInfo>("/auth/workspace/members", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateWorkspaceMemberRole(
+  memberUserId: string,
+  role: "owner" | "admin" | "member"
+): Promise<MessageResponse> {
+  return authRequest<MessageResponse>(`/auth/workspace/members/${memberUserId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function removeWorkspaceMember(memberUserId: string): Promise<void> {
+  return authRequest<void>(`/auth/workspace/members/${memberUserId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
+  return authRequest<NotificationPreferences>("/auth/notification-preferences");
+}
+
+export async function updateNotificationPreferences(
+  data: NotificationPreferences
+): Promise<NotificationPreferences> {
+  return authRequest<NotificationPreferences>("/auth/notification-preferences", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function revokeMySession(sessionId: string): Promise<void> {

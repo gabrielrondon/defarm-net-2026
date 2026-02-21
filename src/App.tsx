@@ -64,6 +64,7 @@ function TokenAwareIndex() {
     const params = new URLSearchParams(location.search);
     const resetToken = params.get("reset_token");
     const verifyToken = params.get("verify_token");
+    const emailChangeToken = params.get("email_change_token");
 
     if (resetToken) {
       navigate(`/reset-senha?token=${encodeURIComponent(resetToken)}`, { replace: true });
@@ -72,6 +73,11 @@ function TokenAwareIndex() {
 
     if (verifyToken) {
       navigate(`/verificar-email?token=${encodeURIComponent(verifyToken)}`, { replace: true });
+      return;
+    }
+
+    if (emailChangeToken) {
+      navigate(`/verificar-email?email_change_token=${encodeURIComponent(emailChangeToken)}`, { replace: true });
     }
   }, [location.search, navigate]);
 
