@@ -556,6 +556,11 @@ export default function Configuracoes() {
   };
 
   useEffect(() => {
+    setDisplayName(user?.username || "");
+    setEmail(user?.email || "");
+  }, [user?.username, user?.email]);
+
+  useEffect(() => {
     if (activeTab === "workspace") {
       handleLoadWorkspaces();
       handleLoadWorkspaceMembers();
@@ -897,9 +902,6 @@ export default function Configuracoes() {
             </div>
 
             <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Disponível agora: alterar senha, listar sessões e revogar sessões.
-              </p>
               <div className="p-4 bg-muted/30 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-foreground">Alterar senha</p>

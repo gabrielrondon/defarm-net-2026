@@ -1,12 +1,12 @@
 # DeFarm Net - Sync Repository
 
-Este repositório funciona como espelho de [watiinspired-design](https://github.com/defarm-repo/watiinspired-design) para deploy automático no Netlify.
+Este repositório funciona como espelho do frontend oficial da DeFarm para deploy automático no Netlify.
 
 ## 🔄 Fluxo de Sincronização
 
 ```
-defarm-repo/watiinspired-design  →  gabrielrondon/defarm-net-2026  →  Netlify Deploy
-         (upstream)                        (origin)                    (automático)
+defarm-repo/frontend-source  →  gabrielrondon/defarm-net-2026  →  Netlify Deploy
+       (upstream)                    (origin)                    (automático)
 ```
 
 ## 🚀 Como sincronizar
@@ -29,12 +29,12 @@ Isso vai:
 git remote add origin git@github.com:gabrielrondon/defarm-net-2026.git
 
 # Remote upstream (repo original)
-git remote add upstream git@github.com:defarm-repo/watiinspired-design.git
+git remote add upstream git@github.com:defarm-repo/frontend-source.git
 ```
 
 ## 🔗 Links
 
-- **Repo Original:** https://github.com/defarm-repo/watiinspired-design
+- **Repo Original:** repositório frontend oficial da DeFarm
 - **Repo Pessoal:** https://github.com/gabrielrondon/defarm-net-2026
 - **Deploy Netlify:** Configurado no dashboard
 
