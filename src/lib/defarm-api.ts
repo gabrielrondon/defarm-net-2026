@@ -72,6 +72,14 @@ export interface AuthResponse {
   expires_at?: number;
 }
 
+export interface LoginChallengeResponse {
+  requires_2fa: true;
+  twofa_token: string;
+  message: string;
+}
+
+export type LoginResponse = AuthResponse | LoginChallengeResponse;
+
 export interface User {
   id: string;
   username: string;
@@ -121,10 +129,17 @@ export function setStoredUser(user: User): void {
 }
 
 // Auth endpoints (via Gateway)
-export async function login(data: LoginRequest): Promise<AuthResponse> {
-  return authRequest<AuthResponse>("/auth/login", {
+export async function login(data: LoginRequest): Promise<LoginResponse> {
+  return authRequest<LoginResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+export async function verifyLogin2FA(twofa_token: string, code: string): Promise<AuthResponse> {
+  return authRequest<AuthResponse>("/auth/login/2fa", {
+    method: "POST",
+    body: JSON.stringify({ twofa_token, code }),
   });
 }
 
@@ -218,6 +233,20 @@ export interface NotificationPreferences {
   push_notifications: boolean;
   circuit_updates: boolean;
   item_alerts: boolean;
+}
+
+export interface TwoFaStatusResponse {
+  enabled: boolean;
+  recovery_codes_remaining: number;
+}
+
+export interface TwoFaSetupResponse {
+  secret: string;
+  otpauth_url: string;
+}
+
+export interface RecoveryCodesResponse {
+  recovery_codes: string[];
 }
 
 export interface UserWorkspaceListResponse {
@@ -353,6 +382,37 @@ export async function updateNotificationPreferences(
   return authRequest<NotificationPreferences>("/auth/notification-preferences", {
     method: "PUT",
     body: JSON.stringify(data),
+  });
+}
+
+export async function getTwoFaStatus(): Promise<TwoFaStatusResponse> {
+  return authRequest<TwoFaStatusResponse>("/auth/2fa/status");
+}
+
+export async function setupTwoFa(): Promise<TwoFaSetupResponse> {
+  return authRequest<TwoFaSetupResponse>("/auth/2fa/setup", {
+    method: "POST",
+  });
+}
+
+export async function enableTwoFa(code: string): Promise<RecoveryCodesResponse> {
+  return authRequest<RecoveryCodesResponse>("/auth/2fa/enable", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function disableTwoFa(current_password: string): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/2fa/disable", {
+    method: "POST",
+    body: JSON.stringify({ current_password }),
+  });
+}
+
+export async function regenerateRecoveryCodes(current_password: string): Promise<RecoveryCodesResponse> {
+  return authRequest<RecoveryCodesResponse>("/auth/2fa/recovery-codes/regenerate", {
+    method: "POST",
+    body: JSON.stringify({ current_password }),
   });
 }
 

@@ -14,9 +14,11 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [twofaToken, setTwofaToken] = useState<string | null>(null);
+  const [twofaCode, setTwofaCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, verifyLogin2FA } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -26,8 +28,21 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login({ email, password });
-      navigate("/app");
+      if (twofaToken) {
+        await verifyLogin2FA(twofaToken, twofaCode);
+        navigate("/app");
+      } else {
+        const challenge = await login({ email, password });
+        if (challenge?.requires_2fa) {
+          setTwofaToken(challenge.twofa_token);
+          toast({
+            title: "2FA necessário",
+            description: "Digite o código do seu app autenticador para continuar.",
+          });
+          return;
+        }
+        navigate("/app");
+      }
     } catch (error) {
       toast({
         title: t("login.errorTitle"),
@@ -64,68 +79,95 @@ export default function Login() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {t("login.welcome")}
+              {twofaToken ? "Verificação em duas etapas" : t("login.welcome")}
             </h1>
             <p className="text-muted-foreground">
-              {t("login.subtitle")}
+              {twofaToken ? "Informe o código de 6 dígitos do autenticador ou um recovery code." : t("login.subtitle")}
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">{t("login.email")}</Label>
-              <Input
-                id="email"
-                type="text"
-                placeholder={t("register.emailPlaceholder")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-12"
-              />
-            </div>
+            {!twofaToken ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t("login.email")}</Label>
+                  <Input
+                    id="email"
+                    type="text"
+                    placeholder={t("register.emailPlaceholder")}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">{t("login.password")}</Label>
-                <Link 
-                  to="/esqueci-senha" 
-                  className="text-sm text-primary hover:underline"
-                >
-                  {t("login.forgotPassword")}
-                </Link>
-              </div>
-              <div className="relative">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">{t("login.password")}</Label>
+                    <Link 
+                      to="/esqueci-senha" 
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {t("login.forgotPassword")}
+                    </Link>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-12 pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="twofa">Código 2FA</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="twofa"
+                  type="text"
+                  placeholder="123456 ou XXXX-XXXX"
+                  value={twofaCode}
+                  onChange={(e) => setTwofaCode(e.target.value)}
                   required
-                  className="h-12 pr-12"
+                  className="h-12"
                 />
-                <button
+                <Button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  variant="outline"
+                  onClick={() => {
+                    setTwofaToken(null);
+                    setTwofaCode("");
+                  }}
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
+                  Voltar para login e senha
+                </Button>
               </div>
-            </div>
+            )}
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (twofaToken ? !twofaCode.trim() : false)}
               className="w-full h-12 btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold text-lg"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  {t("login.signIn")}
+                  {twofaToken ? "Validar 2FA" : t("login.signIn")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}

@@ -2,9 +2,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import {
   User,
   AuthResponse,
+  LoginChallengeResponse,
+  LoginResponse,
   LoginRequest,
   RegisterRequest,
   login as apiLogin,
+  verifyLogin2FA as apiVerifyLogin2FA,
   register as apiRegister,
   logout as apiLogout,
   refreshToken as apiRefreshToken,
@@ -25,7 +28,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLoading: boolean;
-  login: (data: LoginRequest) => Promise<void>;
+  login: (data: LoginRequest) => Promise<LoginChallengeResponse | null>;
+  verifyLogin2FA: (twofaToken: string, code: string) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   setUserData: (user: User) => void;
@@ -123,26 +127,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (data: LoginRequest) => {
-    const response: AuthResponse = await apiLogin(data);
-    const userData = mapAuthUser(response, data.email, data.email);
-
+  const completeLogin = async (response: AuthResponse, fallbackName: string, fallbackEmail: string) => {
+    const userData = mapAuthUser(response, fallbackName, fallbackEmail);
     storeAuth(response.access_token, userData, response.refresh_token);
-
-    // Ensure circuit exists BEFORE setting user (which triggers Dashboard mount)
     await ensureDefaultCircuit(userData.id);
     setUser(userData);
   };
 
+  const login = async (data: LoginRequest): Promise<LoginChallengeResponse | null> => {
+    const response: LoginResponse = await apiLogin(data);
+    if ("requires_2fa" in response && response.requires_2fa) {
+      return response;
+    }
+
+    const authResponse = response as AuthResponse;
+    await completeLogin(authResponse, data.email, data.email);
+    return null;
+  };
+
+  const verifyLogin2FA = async (twofaToken: string, code: string) => {
+    const response: AuthResponse = await apiVerifyLogin2FA(twofaToken, code);
+    await completeLogin(response, response.user?.full_name || response.user?.email || "user", response.user?.email || "");
+  };
+
   const register = async (data: RegisterRequest) => {
     const response: AuthResponse = await apiRegister(data);
-    const userData = mapAuthUser(response, data.full_name || data.email, data.email);
-
-    storeAuth(response.access_token, userData, response.refresh_token);
-
-    // Ensure circuit exists BEFORE setting user (which triggers Dashboard mount)
-    await ensureDefaultCircuit(userData.id);
-    setUser(userData);
+    await completeLogin(response, data.full_name || data.email, data.email);
   };
 
   const logout = async () => {
@@ -199,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: user?.is_admin || false,
         isLoading,
         login,
+        verifyLogin2FA,
         register,
         logout,
         setUserData,
@@ -223,6 +234,7 @@ export function useAuth() {
       isAdmin: false,
       isLoading: true,
       login: async () => { throw new Error("AuthProvider not available"); },
+      verifyLogin2FA: async () => { throw new Error("AuthProvider not available"); },
       register: async () => { throw new Error("AuthProvider not available"); },
       logout: async () => { throw new Error("AuthProvider not available"); },
       setUserData: () => { throw new Error("AuthProvider not available"); },

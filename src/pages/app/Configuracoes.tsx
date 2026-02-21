@@ -31,14 +31,19 @@ import {
   addWorkspaceMember,
   changePassword,
   getNotificationPreferences,
+  getTwoFaStatus,
   listMySessions,
   listMyWorkspaces,
   listWorkspaceMembers,
   removeWorkspaceMember,
+  regenerateRecoveryCodes,
   requestEmailChange,
   requestEmailVerification,
   revokeAllMySessions,
   revokeMySession,
+  setupTwoFa,
+  enableTwoFa,
+  disableTwoFa,
   updateNotificationPreferences,
   updateProfile,
   updateWorkspaceMemberRole,
@@ -89,6 +94,14 @@ export default function Configuracoes() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [twofaEnabled, setTwofaEnabled] = useState(false);
+  const [twofaRecoveryRemaining, setTwofaRecoveryRemaining] = useState(0);
+  const [twofaSetupSecret, setTwofaSetupSecret] = useState("");
+  const [twofaSetupUrl, setTwofaSetupUrl] = useState("");
+  const [twofaCode, setTwofaCode] = useState("");
+  const [twofaPassword, setTwofaPassword] = useState("");
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [twofaLoading, setTwofaLoading] = useState(false);
 
   // Notification preferences
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -329,6 +342,102 @@ export default function Configuracoes() {
     }
   };
 
+  const handleLoadTwoFaStatus = async () => {
+    try {
+      const status = await getTwoFaStatus();
+      setTwofaEnabled(status.enabled);
+      setTwofaRecoveryRemaining(status.recovery_codes_remaining);
+    } catch (error) {
+      toast({
+        title: "Falha ao carregar status de 2FA",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStartTwoFaSetup = async () => {
+    setTwofaLoading(true);
+    try {
+      const setup = await setupTwoFa();
+      setTwofaSetupSecret(setup.secret);
+      setTwofaSetupUrl(setup.otpauth_url);
+      toast({
+        title: "Setup 2FA iniciado",
+        description: "Adicione o segredo no autenticador e confirme com um código.",
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao iniciar 2FA",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setTwofaLoading(false);
+    }
+  };
+
+  const handleEnableTwoFa = async () => {
+    if (!twofaCode.trim()) return;
+    setTwofaLoading(true);
+    try {
+      const res = await enableTwoFa(twofaCode.trim());
+      setRecoveryCodes(res.recovery_codes);
+      setTwofaCode("");
+      setTwofaSetupSecret("");
+      setTwofaSetupUrl("");
+      await handleLoadTwoFaStatus();
+      toast({ title: "2FA ativado", description: "Guarde os recovery codes com segurança." });
+    } catch (error) {
+      toast({
+        title: "Falha ao ativar 2FA",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setTwofaLoading(false);
+    }
+  };
+
+  const handleDisableTwoFa = async () => {
+    if (!twofaPassword.trim()) return;
+    setTwofaLoading(true);
+    try {
+      const res = await disableTwoFa(twofaPassword.trim());
+      setTwofaPassword("");
+      setRecoveryCodes([]);
+      await handleLoadTwoFaStatus();
+      toast({ title: "2FA desativado", description: res.message });
+    } catch (error) {
+      toast({
+        title: "Falha ao desativar 2FA",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setTwofaLoading(false);
+    }
+  };
+
+  const handleRegenerateRecoveryCodes = async () => {
+    if (!twofaPassword.trim()) return;
+    setTwofaLoading(true);
+    try {
+      const res = await regenerateRecoveryCodes(twofaPassword.trim());
+      setRecoveryCodes(res.recovery_codes);
+      await handleLoadTwoFaStatus();
+      toast({ title: "Recovery codes regenerados" });
+    } catch (error) {
+      toast({
+        title: "Falha ao regenerar recovery codes",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setTwofaLoading(false);
+    }
+  };
+
   const handleRevokeSession = async (sessionId: string) => {
     try {
       await revokeMySession(sessionId);
@@ -453,6 +562,9 @@ export default function Configuracoes() {
     }
     if (activeTab === "notificacoes") {
       handleLoadNotificationPreferences();
+    }
+    if (activeTab === "seguranca") {
+      handleLoadTwoFaStatus();
     }
   }, [activeTab]);
 
@@ -819,18 +931,64 @@ export default function Configuracoes() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Autenticação em dois fatores
-                  </p>
+                  <p className="text-sm font-medium text-foreground">Autenticação em dois fatores (2FA)</p>
                   <p className="text-xs text-muted-foreground">
-                    Requer implementação de backend + fluxo de app autenticador
+                    Status: {twofaEnabled ? "Ativado" : "Desativado"} · Recovery codes restantes: {twofaRecoveryRemaining}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" disabled>
-                  Indisponível
-                </Button>
+                {!twofaEnabled ? (
+                  <div className="space-y-2">
+                    <Button variant="outline" size="sm" onClick={handleStartTwoFaSetup} disabled={twofaLoading}>
+                      Iniciar configuração 2FA
+                    </Button>
+                    {twofaSetupSecret && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">Segredo (use no app autenticador):</p>
+                        <Input value={twofaSetupSecret} readOnly />
+                        <p className="text-xs text-muted-foreground break-all">{twofaSetupUrl}</p>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Código de 6 dígitos"
+                            value={twofaCode}
+                            onChange={(e) => setTwofaCode(e.target.value)}
+                          />
+                          <Button onClick={handleEnableTwoFa} disabled={twofaLoading || !twofaCode.trim()}>
+                            Ativar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="Senha atual para ações de 2FA"
+                      value={twofaPassword}
+                      onChange={(e) => setTwofaPassword(e.target.value)}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={handleRegenerateRecoveryCodes} disabled={twofaLoading || !twofaPassword.trim()}>
+                        Regenerar recovery codes
+                      </Button>
+                      <Button variant="destructive" onClick={handleDisableTwoFa} disabled={twofaLoading || !twofaPassword.trim()}>
+                        Desativar 2FA
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {recoveryCodes.length > 0 && (
+                  <div className="mt-2 border rounded-md p-3 bg-background">
+                    <p className="text-xs font-medium mb-2">Recovery codes (salve agora):</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {recoveryCodes.map((code) => (
+                        <code key={code} className="text-xs">{code}</code>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
