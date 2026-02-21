@@ -1,86 +1,105 @@
 
 
-# Caderneta Digital -- Hub pessoal do produtor
+# Portal do Parceiro de Dados
 
-## Conceito
+## Contexto
 
-A "Caderneta Digital" substitui o dashboard tecnico como ponto de entrada do usuario logado. Assim como uma caderneta de vacinacao ou de poupanca, e algo familiar onde o produtor **registra, acompanha e consulta** tudo sobre sua operacao. Sem carga burocratica de "passaporte", sem implicar validacao governamental -- e simplesmente o lugar onde estao todas as informacoes importantes.
+Parceiros de dados sao empresas (ex: apps de gestao de fazendas) que compartilham dados com a DeFarm via API. Eles precisam de uma interface propria para gerenciar sua integracao, monitorar o fluxo de dados e configurar como os dados chegam na plataforma.
 
-A caderneta tem **abas** (como paginas de uma caderneta) que organizam os dados do produtor de forma visual e intuitiva.
+## O que ja existe no projeto
 
-## Estrutura das Abas
+A base tecnica para parceiros ja esta construida:
+- **API Keys** (`/app/api-keys`): criacao, revogacao e metricas de chaves
+- **Webhooks** (`src/lib/api/webhooks.ts`): notificacoes de eventos
+- **Circuit Adapters** (`src/lib/api/circuit-adapters.ts`): integracao com Stellar/IPFS
+- **Circuitos**: cada parceiro ja opera dentro de circuitos com membros e permissoes (RBAC)
 
-### Aba 1: Resumo (capa da caderneta)
-- Nome do produtor, propriedade, localizacao
-- DFID do workspace
-- Resumo rapido: quantos ativos, status geral de compliance, oportunidades abertas
-- Estilo visual: card 3D-offset verde com selo DeFarm
+O que falta e **uma interface dedicada** que agrupe tudo isso de forma coerente para o parceiro.
 
-### Aba 2: Meu Rebanho / Producao
-- Cards visuais dos itens rastreados, agrupados por circuito
-- Badge mostrando em qual circuito cada item esta
-- Botao rapido para adicionar novo item
-- Reusa dados de `getItems()` + `getCircuits()` que ja existem
+## Proposta: Hub do Parceiro (`/app/parceiro`)
 
-### Aba 3: Compliance
-- Checagens ambientais, EUDR, documentacao
-- Indicadores visuais verde/amarelo/vermelho
-- Historico de verificacoes
-- Reusa a Check API ja integrada
+Uma area dedicada na sidebar (visivel apenas para usuarios com role `partner` ou `admin`) que centraliza a experiencia B2B.
 
-### Aba 4: Financeiro
-- Cards de oportunidades de credito disponiveis
-- Barra de progresso de requisitos preenchidos vs pendentes
-- Links para simulador e linhas de credito
-- Reusa a Finance API existente
+### Estrutura com abas (mesmo padrao da Caderneta)
 
-### Aba 5: Meu Agente AI
-- Interface de chat placeholder (UI pronta, sem backend por enquanto)
-- Area de "sugestoes inteligentes" com cards estaticos
-- Ex: "Voce tem 3 itens sem verificacao EUDR -- regularize para desbloquear CPR Verde"
+**Aba 1: Visao Geral**
+- Nome da organizacao parceira, status da integracao
+- Metricas rapidas: itens sincronizados, eventos processados, erros recentes
+- Status da conexao (ultima sincronizacao, uptime)
+- Dados vem de: `getCircuits()` + `getPartnerApiKeyMetrics()`
 
-## Mudancas Tecnicas
+**Aba 2: Integracao (API Keys + Webhooks)**
+- Lista de API Keys ativas (reusa logica de `ApiKeys.tsx`)
+- Configuracao de webhooks para receber notificacoes
+- Documentacao inline com exemplos de payload
+- Dados vem de: `listPartnerApiKeys()` + `getWebhooks()`
 
-### Arquivos novos
+**Aba 3: Fluxo de Dados**
+- Visualizacao dos circuitos em que o parceiro participa
+- Itens enviados pelo parceiro (filtrados por source)
+- Eventos recentes do parceiro
+- Status de processamento (pendente, processado, erro)
+- Dados vem de: `getCircuits()` + `getItems()` + `getEvents()`
+
+**Aba 4: Adaptadores**
+- Configuracao de adapters (Stellar, IPFS, NFT) nos circuitos do parceiro
+- Status de cada adapter (ativo, pausado, erro)
+- Dados vem de: `listCircuitAdapters()`
+
+## Diferenca entre Caderneta e Portal do Parceiro
+
+```text
+Caderneta (B2C - Produtor)         Portal do Parceiro (B2B)
++----------------------------+     +----------------------------+
+| Minha identidade           |     | Minha organizacao          |
+| Meu rebanho                |     | Minhas API Keys            |
+| Meu compliance             |     | Fluxo de dados             |
+| Minhas oportunidades       |     | Adaptadores                |
+| Meu agente AI              |     | Metricas de integracao     |
++----------------------------+     +----------------------------+
+```
+
+O produtor ve seus ativos e oportunidades. O parceiro ve suas integracoes e o fluxo de dados que ele alimenta.
+
+## Arquivos novos
 
 | Arquivo | Descricao |
 |---------|-----------|
-| `src/pages/app/Caderneta.tsx` | Container principal com Tabs (Radix Tabs) |
-| `src/components/caderneta/CadernetaResumo.tsx` | Aba resumo: identidade + metricas rapidas |
-| `src/components/caderneta/CadernetaRebanho.tsx` | Aba ativos: lista visual por circuito |
-| `src/components/caderneta/CadernetaCompliance.tsx` | Aba compliance: status das checagens |
-| `src/components/caderneta/CadernetaFinanceiro.tsx` | Aba financeiro: oportunidades |
-| `src/components/caderneta/CadernetaAgente.tsx` | Aba AI agent: chat placeholder |
-| `src/components/caderneta/index.ts` | Re-exports |
+| `src/pages/app/PartnerPortal.tsx` | Container principal com Tabs |
+| `src/components/partner/PartnerOverview.tsx` | Aba visao geral: metricas e status |
+| `src/components/partner/PartnerIntegration.tsx` | Aba integracao: API Keys + Webhooks |
+| `src/components/partner/PartnerDataFlow.tsx` | Aba fluxo: itens, eventos, circuitos |
+| `src/components/partner/PartnerAdapters.tsx` | Aba adapters: Stellar/IPFS config |
+| `src/components/partner/index.ts` | Re-exports |
 
-### Arquivos modificados
+## Arquivos modificados
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/App.tsx` | Adiciona rota `/app/caderneta`; muda `/app` para renderizar `Caderneta` em vez de `Dashboard` |
-| `src/components/AppLayout.tsx` | Adiciona "Minha Caderneta" como primeiro item da sidebar (icone BookOpen); Dashboard desce para item secundario |
+| `src/App.tsx` | Adiciona rota `/app/parceiro` |
+| `src/components/AppLayout.tsx` | Adiciona "Portal Parceiro" na sidebar (icone `Handshake`), visivel para roles partner/admin |
 
-### Fontes de dados (APIs ja existentes, sem backend novo)
+## Visibilidade na sidebar
 
-- **Resumo**: `AuthContext` (user/workspace) + `getCircuits()` + `getItems()` para contagens
-- **Rebanho**: `getItems()` + `getCircuits()` + `getItemDetails()` para identificadores
-- **Compliance**: `runChecks()` da Check API
-- **Financeiro**: `getCreditLines()` + `getInstruments()` da Finance API
-- **AI Agent**: dados estaticos/placeholder por enquanto
+O Portal do Parceiro aparece na sidebar apenas para usuarios que sao parceiros. A logica de visibilidade usa o campo `user.is_admin` existente por enquanto, com a possibilidade futura de checar um role `partner` especifico quando o RBAC estiver mais granular.
 
-### Navegacao entre abas
+```text
+Sidebar (usuario produtor):        Sidebar (usuario parceiro):
+- Minha Caderneta                  - Minha Caderneta
+- Circuitos                        - Portal Parceiro  <-- novo
+- Descobrir                        - Circuitos
+- Itens                            - Itens
+- ...                              - ...
+```
 
-Usa Radix Tabs (ja instalado no projeto) -- simples, acessivel, funciona bem no mobile. Cada aba renderiza seu componente dedicado.
+## Escopo v1
 
-### Estilo visual
+1. Container com 4 abas
+2. Visao Geral com metricas basicas (reusa APIs existentes)
+3. Integracao: reusa componentes de API Keys inline + lista de webhooks
+4. Fluxo de Dados: tabela de itens/eventos filtrados pelo parceiro
+5. Adaptadores: lista de adapters por circuito
+6. Rota e sidebar atualizados
 
-- Cards com borda preta 4px e sombra offset (3D style ja usado no projeto)
-- Cor primaria verde (#28c268)
-- Abas com icones + label curto
-- Mobile-first: abas viram scroll horizontal no celular
-
-### O que acontece com o Dashboard atual
-
-- A rota `/app` passa a renderizar a Caderneta
-- O Dashboard de metricas tecnicas fica acessivel em `/app/dashboard` como item secundario na sidebar (para quem precisa das metricas brutas)
+Nao inclui nesta versao: onboarding de parceiro, convite de parceiros, painel de associacao de produtores (fica para v2).
 
