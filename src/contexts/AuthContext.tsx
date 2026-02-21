@@ -14,6 +14,8 @@ import {
   clearAuth,
   getRefreshToken,
   storeTokens,
+  getMe as apiGetMe,
+  setStoredUser,
 } from "@/lib/defarm-api";
 import { createCircuit, getCircuits } from "@/lib/api/circuits";
 
@@ -25,6 +27,8 @@ interface AuthContextType {
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
+  setUserData: (user: User) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -45,6 +49,8 @@ function mapAuthUser(response: AuthResponse, fallbackName: string, fallbackEmail
   return {
     id: response.user?.id || response.user_id || "unknown",
     username: response.user?.full_name || fallbackName,
+    full_name: response.user?.full_name || fallbackName,
+    avatar_url: response.user?.avatar_url || null,
     email: response.user?.email || fallbackEmail,
     workspace_id: workspace.id,
     workspace_name: workspace.name,
@@ -144,6 +150,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setUserData = (nextUser: User) => {
+    setStoredUser(nextUser);
+    setUser(nextUser);
+  };
+
+  const refreshUser = async () => {
+    if (!getStoredToken()) return;
+    const me = await apiGetMe();
+    if (!user) return;
+    const next: User = {
+      ...user,
+      id: me.id,
+      email: me.email,
+      username: me.full_name || user.username,
+      full_name: me.full_name || undefined,
+      avatar_url: me.avatar_url || null,
+      is_admin: me.is_admin,
+      is_active: me.is_active,
+      workspace_id: me.workspace.id,
+      workspace_name: me.workspace.name,
+      workspace_slug: me.workspace.slug,
+      workspace_type: me.workspace.workspace_type,
+      role: me.workspace.role,
+    };
+    setUserData(next);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -154,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        setUserData,
+        refreshUser,
       }}
     >
       {children}
@@ -175,6 +210,8 @@ export function useAuth() {
       login: async () => { throw new Error("AuthProvider not available"); },
       register: async () => { throw new Error("AuthProvider not available"); },
       logout: async () => { throw new Error("AuthProvider not available"); },
+      setUserData: () => { throw new Error("AuthProvider not available"); },
+      refreshUser: async () => { throw new Error("AuthProvider not available"); },
     };
   }
   return context;

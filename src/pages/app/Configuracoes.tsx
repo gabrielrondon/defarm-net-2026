@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getActiveSessions } from "@/lib/api/sessions";
 import type { UserSession } from "@/lib/api/types";
+import { changePassword, updateProfile } from "@/lib/defarm-api";
 
 type SettingsTab = "perfil" | "workspace" | "notificacoes" | "seguranca";
 
@@ -57,7 +58,7 @@ function TabButton({ icon: Icon, label, isActive, onClick }: TabButtonProps) {
 }
 
 export default function Configuracoes() {
-  const { user, logout } = useAuth();
+  const { user, logout, setUserData } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
@@ -66,6 +67,9 @@ export default function Configuracoes() {
   // Profile state
   const [displayName, setDisplayName] = useState(user?.username || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Notification preferences
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -113,10 +117,20 @@ export default function Configuracoes() {
   };
 
   const handleSaveProfile = async () => {
+    if (!user) return;
     setIsLoading(true);
     try {
-      // Simulated API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const profile = await updateProfile({
+        full_name: displayName.trim(),
+      });
+
+      setUserData({
+        ...user,
+        username: profile.full_name || user.username,
+        full_name: profile.full_name || undefined,
+        avatar_url: profile.avatar_url || null,
+      });
+
       toast({
         title: "Perfil atualizado",
         description: "Suas alterações foram salvas com sucesso.",
@@ -129,6 +143,38 @@ export default function Configuracoes() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Informe a senha atual e a nova senha.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const res = await changePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      toast({
+        title: "Senha alterada",
+        description: res.message,
+      });
+    } catch (error) {
+      toast({
+        title: "Falha ao alterar senha",
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -180,19 +226,20 @@ export default function Configuracoes() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu@email.com"
+                    disabled
                   />
+                  <p className="text-xs text-muted-foreground">Alteração de email ainda não disponível.</p>
                 </div>
               </div>
 
               <Button
-                disabled
-                className="btn-offset bg-muted text-muted-foreground cursor-not-allowed opacity-50"
-                title="Em breve"
+                disabled={isLoading || !displayName.trim()}
+                className="btn-offset"
+                onClick={handleSaveProfile}
               >
                 <Save className="h-4 w-4 mr-2" />
-                Salvar alterações
+                {isLoading ? "Salvando..." : "Salvar alterações"}
               </Button>
-              <p className="text-xs text-muted-foreground italic">Funcionalidade em breve</p>
             </div>
           </div>
         );
@@ -333,16 +380,35 @@ export default function Configuracoes() {
             </div>
 
             <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
+              <div className="p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Alterar senha</p>
+                  <p className="text-sm font-medium text-foreground">Alterar senha</p>
                   <p className="text-xs text-muted-foreground">
                     Atualize sua senha regularmente
                   </p>
                 </div>
-                <Button variant="outline" size="sm" disabled>
-                  Em breve
-                </Button>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Input
+                    type="password"
+                    placeholder="Senha atual"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Nova senha (mín. 8 chars)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={8}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={handleChangePassword}
+                    disabled={passwordLoading || !currentPassword || newPassword.length < 8}
+                  >
+                    {passwordLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Atualizar senha"}
+                  </Button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">

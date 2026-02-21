@@ -16,6 +16,8 @@ import Privacidade from "./pages/Privacidade";
 import Termos from "./pages/Termos";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
+import EsqueciSenha from "./pages/EsqueciSenha";
+import ResetSenha from "./pages/ResetSenha";
 import NotFound from "./pages/NotFound";
 
 // App pages
@@ -71,6 +73,8 @@ const App = () => (
             <Route path="/c/:id" element={<PublicCircuit />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
+            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+            <Route path="/reset-senha" element={<ResetSenha />} />
             
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><Caderneta /></AppLayout>} />

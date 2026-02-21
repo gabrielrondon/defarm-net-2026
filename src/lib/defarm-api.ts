@@ -74,6 +74,8 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  full_name?: string;
+  avatar_url?: string | null;
   workspace_id: string;
   workspace_name?: string;
   workspace_slug?: string;
@@ -110,6 +112,10 @@ export function clearAuth(): void {
   localStorage.removeItem(USER_KEY);
 }
 
+export function setStoredUser(user: User): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
 // Auth endpoints (via Gateway)
 export async function login(data: LoginRequest): Promise<AuthResponse> {
   return authRequest<AuthResponse>("/auth/login", {
@@ -144,4 +150,59 @@ export async function logout(): Promise<void> {
   } finally {
     clearAuth();
   }
+}
+
+export interface UpdateProfileRequest {
+  full_name?: string;
+  avatar_url?: string;
+}
+
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
+export async function getMe(): Promise<AuthUser> {
+  return authRequest<AuthUser>("/auth/me");
+}
+
+export async function updateProfile(data: UpdateProfileRequest): Promise<AuthUser> {
+  return authRequest<AuthUser>("/auth/profile", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function changePassword(data: ChangePasswordRequest): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<MessageResponse> {
+  return authRequest<MessageResponse>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
