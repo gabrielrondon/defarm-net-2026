@@ -448,5 +448,10 @@
       "readyDesc": "",
       "savePortfolio": "Create account"
     }
+  },
+  "partners": {
+    "esalqtec": "Associate member",
+    "stellar": "Support grant",
+    "rbb": "Observer node"
   }
 }

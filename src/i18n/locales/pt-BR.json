@@ -448,5 +448,10 @@
       "readyDesc": "",
       "savePortfolio": "Criar conta"
     }
+  },
+  "partners": {
+    "esalqtec": "Associado",
+    "stellar": "Grant de apoio",
+    "rbb": "Nó observador"
   }
 }
