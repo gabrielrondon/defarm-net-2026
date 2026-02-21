@@ -392,11 +392,11 @@ export default function Configuracoes() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Membros</p>
                     <p className="text-xs text-muted-foreground">
-                      Gerencie os membros do seu workspace
+                      Gestão de membros do workspace (pendente de endpoints dedicados)
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
-                    Em breve
+                    Indisponível
                   </Button>
                 </div>
 
@@ -416,11 +416,11 @@ export default function Configuracoes() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Uso e limites</p>
                     <p className="text-xs text-muted-foreground">
-                      Veja seu consumo de recursos
+                      Painel de consumo e limites do plano (backend pendente)
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
-                    Em breve
+                    Indisponível
                   </Button>
                 </div>
 
@@ -532,6 +532,9 @@ export default function Configuracoes() {
             </div>
 
             <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Disponível agora: alterar senha, listar sessões e revogar sessões.
+              </p>
               <div className="p-4 bg-muted/30 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-foreground">Alterar senha</p>
@@ -569,11 +572,11 @@ export default function Configuracoes() {
                     Autenticação em dois fatores
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Adicione uma camada extra de segurança
+                    Requer implementação de backend + fluxo de app autenticador
                   </p>
                 </div>
                 <Button variant="outline" size="sm" disabled>
-                  Em breve
+                  Indisponível
                 </Button>
               </div>
 
