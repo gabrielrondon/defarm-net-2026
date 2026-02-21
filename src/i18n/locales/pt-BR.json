@@ -23,6 +23,11 @@
       "features": {
         "0": "Blockchain imutável",
         "1": "Compliance EUDR"
+      },
+      "rotate": {
+        "0": { "headline": "Organize seus ativos em uma", "highlight": "caderneta digital" },
+        "1": { "headline": "Compartilhe seus certificados com", "highlight": "quem quiser" },
+        "2": { "headline": "Torne sua caderneta em", "highlight": "oportunidades de crédito" }
       }
     },
     "financeiro": {
