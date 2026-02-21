@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 
@@ -55,6 +56,28 @@ import PropertyHerd from "./pages/app/PropertyHerd";
 
 const queryClient = new QueryClient(); // init
 
+function TokenAwareIndex() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const resetToken = params.get("reset_token");
+    const verifyToken = params.get("verify_token");
+
+    if (resetToken) {
+      navigate(`/reset-senha?token=${encodeURIComponent(resetToken)}`, { replace: true });
+      return;
+    }
+
+    if (verifyToken) {
+      navigate(`/verificar-email?token=${encodeURIComponent(verifyToken)}`, { replace: true });
+    }
+  }, [location.search, navigate]);
+
+  return <Index />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -64,7 +87,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<TokenAwareIndex />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/solucoes" element={<Solucoes />} />
             <Route path="/sobre" element={<Sobre />} />
