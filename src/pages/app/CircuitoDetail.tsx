@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   getCircuit, 
   getCircuitItems, 
@@ -73,6 +74,7 @@ import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import CircuitAdaptersPanel from "@/components/circuit/CircuitAdaptersPanel";
 import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 export default function CircuitoDetail() {
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -184,6 +186,20 @@ export default function CircuitoDetail() {
   // Items available for push (not already in circuit)
   const availableForPush = allItems.filter(
     (item) => !circuitItems.some((ci) => ci.id === item.id)
+  );
+  const safePendingJoinRequests = Array.isArray(pendingJoinRequests) ? pendingJoinRequests : [];
+  const safeCircuitItems = Array.isArray(circuitItems) ? circuitItems : [];
+  const safeAllItems = Array.isArray(allItems) ? allItems : [];
+  const safeFilteredItems = safeCircuitItems.filter((item) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      (item?.dfid || "").toLowerCase().includes(searchLower) ||
+      (item?.value_chain || "").toLowerCase().includes(searchLower) ||
+      (item?.country || "").toLowerCase().includes(searchLower)
+    );
+  });
+  const safeAvailableForPush = safeAllItems.filter(
+    (item) => !safeCircuitItems.some((ci) => ci?.id === item?.id)
   );
 
   const handleCopyId = () => {
@@ -350,9 +366,9 @@ export default function CircuitoDetail() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  {availableForPush.length > 0 ? (
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {availableForPush.map((item) => (
+                    {safeAvailableForPush.length > 0 ? (
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {safeAvailableForPush.map((item) => (
                         <button
                           key={item.id}
                           onClick={() => setSelectedItem(item.id)}
@@ -435,9 +451,9 @@ export default function CircuitoDetail() {
                   <Link to={`/app/circuitos/${id}/solicitacoes`} className="flex items-center">
                     <UserPlus className="h-4 w-4 mr-2" />
                     Solicitações de entrada
-                    {pendingJoinRequests.length > 0 && (
+                    {safePendingJoinRequests.length > 0 && (
                       <span className="ml-2 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5">
-                        {pendingJoinRequests.length}
+                        {safePendingJoinRequests.length}
                       </span>
                     )}
                   </Link>
@@ -464,7 +480,7 @@ export default function CircuitoDetail() {
               <Package className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{circuitItems.length}</p>
+              <p className="text-2xl font-bold text-foreground">{safeCircuitItems.length}</p>
               <p className="text-sm text-muted-foreground">Itens</p>
             </div>
           </div>
@@ -609,7 +625,7 @@ export default function CircuitoDetail() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : filteredItems.length > 0 ? (
+        ) : safeFilteredItems.length > 0 ? (
           <TooltipProvider>
           <Table>
             <TableHeader>
@@ -624,7 +640,7 @@ export default function CircuitoDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredItems.map((item) => {
+              {safeFilteredItems.map((item) => {
                 const details = itemDetailsMap[item.id];
                 const anchors = itemAnchorsMap[item.id];
                 const canonical = details?.canonical_identifier || (details?.identifiers && details.identifiers.length > 0 ? details.identifiers[0] : null);
@@ -790,7 +806,7 @@ export default function CircuitoDetail() {
       </div>
 
       {/* Adapters Panel */}
-      {id && <CircuitAdaptersPanel circuitId={id} />}
+      {id && user?.workspace_type !== "partner" && <CircuitAdaptersPanel circuitId={id} />}
 
       {/* Dialogs */}
       {circuit && (
