@@ -59,6 +59,7 @@ import OwnershipClaims from "./pages/app/OwnershipClaims";
 import PropertyHerd from "./pages/app/PropertyHerd";
 
 const queryClient = new QueryClient(); // init
+type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
 
 function TokenAwareIndex() {
   const location = useLocation();
@@ -97,12 +98,18 @@ function RequireAdmin({ children }: { children: ReactNode }) {
   return children;
 }
 
-function RequirePartnerOrAdmin({ children }: { children: ReactNode }) {
+function RequireWorkspaceAccess({
+  children,
+  allowed,
+}: {
+  children: ReactNode;
+  allowed: WorkspaceType[];
+}) {
   const { isLoading, isAuthenticated, user } = useAuth();
 
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!user?.is_admin && user?.workspace_type !== "partner") {
+  if (!user?.is_admin && !allowed.includes((user?.workspace_type || "producer") as WorkspaceType)) {
     return <Navigate to="/app" replace />;
   }
   return children;
@@ -150,37 +157,184 @@ const App = () => (
             
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><WorkspaceHome /></AppLayout>} />
-            <Route path="/app/caderneta" element={<AppLayout><Caderneta /></AppLayout>} />
+            <Route
+              path="/app/caderneta"
+              element={
+                <RequireWorkspaceAccess allowed={["producer"]}>
+                  <AppLayout><Caderneta /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
             
-            <Route path="/app/descobrir" element={<AppLayout><CircuitDiscovery /></AppLayout>} />
-            <Route path="/app/circuitos" element={<AppLayout><CircuitosList /></AppLayout>} />
-            <Route path="/app/circuitos/novo" element={<AppLayout><NovoCircuito /></AppLayout>} />
-            <Route path="/app/circuitos/:id" element={<AppLayout><CircuitoDetail /></AppLayout>} />
-            <Route path="/app/circuitos/:id/editar" element={<AppLayout><EditarCircuito /></AppLayout>} />
-            <Route path="/app/circuitos/:id/solicitacoes" element={<AppLayout><JoinRequestsAdmin /></AppLayout>} />
-            <Route path="/app/itens" element={<AppLayout><ItensList /></AppLayout>} />
-            <Route path="/app/itens/novo" element={<AppLayout><NovoItem /></AppLayout>} />
-            <Route path="/app/itens/:id" element={<AppLayout><ItemDetail /></AppLayout>} />
-            <Route path="/app/claims" element={<AppLayout><OwnershipClaims /></AppLayout>} />
-            <Route path="/app/propriedades/rebanho" element={<AppLayout><PropertyHerd /></AppLayout>} />
-            <Route path="/app/eventos" element={<AppLayout><EventosList /></AppLayout>} />
-            <Route path="/app/auditoria" element={<AppLayout><AuditTrail /></AppLayout>} />
-            <Route path="/app/snapshots" element={<AppLayout><SnapshotsList /></AppLayout>} />
+            <Route
+              path="/app/descobrir"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier"]}>
+                  <AppLayout><CircuitDiscovery /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/circuitos"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><CircuitosList /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/circuitos/novo"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><NovoCircuito /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/circuitos/:id"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><CircuitoDetail /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/circuitos/:id/editar"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><EditarCircuito /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/circuitos/:id/solicitacoes"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><JoinRequestsAdmin /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/itens"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><ItensList /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/itens/novo"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><NovoItem /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/itens/:id"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><ItemDetail /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/claims"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "certifier"]}>
+                  <AppLayout><OwnershipClaims /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/propriedades/rebanho"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "certifier"]}>
+                  <AppLayout><PropertyHerd /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/eventos"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                  <AppLayout><EventosList /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/auditoria"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier"]}>
+                  <AppLayout><AuditTrail /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/snapshots"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "certifier"]}>
+                  <AppLayout><SnapshotsList /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
             
-            <Route path="/app/finance" element={<AppLayout><FinanceDashboard /></AppLayout>} />
-            <Route path="/app/finance/linhas-credito" element={<AppLayout><FinanceCreditLines /></AppLayout>} />
-            <Route path="/app/finance/simulador" element={<AppLayout><FinanceSimulador /></AppLayout>} />
-            <Route path="/app/finance/analise" element={<AppLayout><FinanceAnalise /></AppLayout>} />
+            <Route
+              path="/app/finance"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "processor"]}>
+                  <AppLayout><FinanceDashboard /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/finance/linhas-credito"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "processor"]}>
+                  <AppLayout><FinanceCreditLines /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/finance/simulador"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "processor"]}>
+                  <AppLayout><FinanceSimulador /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/finance/analise"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "processor"]}>
+                  <AppLayout><FinanceAnalise /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
             
-            <Route path="/app/compliance" element={<AppLayout><ComplianceCheck /></AppLayout>} />
+            <Route
+              path="/app/compliance"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier"]}>
+                  <AppLayout><ComplianceCheck /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
             
-            <Route path="/app/api-keys" element={<AppLayout><ApiKeys /></AppLayout>} />
+            <Route
+              path="/app/api-keys"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><ApiKeys /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
             <Route
               path="/app/parceiro"
               element={
-                <RequirePartnerOrAdmin>
+                <RequireWorkspaceAccess allowed={["partner"]}>
                   <AppLayout><PartnerPortal /></AppLayout>
-                </RequirePartnerOrAdmin>
+                </RequireWorkspaceAccess>
               }
             />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
