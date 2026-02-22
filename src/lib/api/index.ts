@@ -20,3 +20,4 @@ export * from "./anchors";
 export * from "./ownership-claims";
 export * from "./property-links";
 export * from "./search-analytics";
+export * from "./ingestion-templates";

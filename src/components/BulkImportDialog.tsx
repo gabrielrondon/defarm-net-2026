@@ -15,9 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
-import { getCircuits, bulkIngestItems } from "@/lib/defarm-api";
-import type { IngestionReceipt } from "@/lib/api/types";
+import {
+  getCircuits,
+  bulkIngestItems,
+  listIngestionTemplates,
+  createIngestionTemplate,
+} from "@/lib/defarm-api";
+import type { IngestionReceipt, IngestionTemplate } from "@/lib/api/types";
 
 const CSV_TEMPLATE = `value_chain,country,year,sisbov,chip,lote,raca,peso,data_nasc,data_entrada,fazenda
 BEEF,BR,2026,105500497219983,900264000319233,Bezerros serra,Brangus,210,10/12/2025,09/01/2026,Faz. Santa Fé
@@ -61,7 +67,62 @@ const PREVIEW_LIMIT = 50;
 const CANONICAL_TYPES = [
   { label: "SISBOV", value: "sisbov" },
   { label: "CPF", value: "cpf" },
+  { label: "CHIP", value: "chip" },
 ];
+
+const TARGET_FIELDS = [
+  "sisbov",
+  "chip",
+  "cpf",
+  "cnpj",
+  "ear_tag",
+  "birth_date",
+  "entry_date",
+  "weight_kg",
+  "sex",
+  "lot_name",
+  "zone_name",
+  "origin_car",
+  "source_system",
+] as const;
+
+const TARGET_LABELS: Record<string, string> = {
+  sisbov: "SISBOV",
+  chip: "CHIP/RFID",
+  cpf: "CPF",
+  cnpj: "CNPJ",
+  ear_tag: "Brinco",
+  birth_date: "Data de nascimento",
+  entry_date: "Data de entrada",
+  weight_kg: "Peso (kg)",
+  sex: "Sexo",
+  lot_name: "Lote",
+  zone_name: "Zona/Pasto",
+  origin_car: "CAR origem",
+  source_system: "Sistema origem",
+};
+
+const TARGET_ALIASES: Record<string, string[]> = {
+  sisbov: ["sisbov", "bnd", "bovino_id", "sis_bov"],
+  chip: ["chip", "rfid", "microchip", "transponder"],
+  cpf: ["cpf", "doc_cpf", "produtor_cpf"],
+  cnpj: ["cnpj", "doc_cnpj"],
+  ear_tag: ["brinco", "ear_tag", "etiqueta", "numero_brinco"],
+  birth_date: ["birth_date", "data_nasc", "data_nascimento", "nascimento", "dt_nasc"],
+  entry_date: ["entry_date", "data_entrada", "ingresso", "dt_entrada"],
+  weight_kg: ["weight_kg", "peso", "peso_kg", "kg", "peso_vivo"],
+  sex: ["sexo", "sex", "genero"],
+  lot_name: ["lote", "lot_name", "lote_nome"],
+  zone_name: ["zona", "zone_name", "pasto", "piquete"],
+  origin_car: ["origin_car", "car_origem", "car"],
+  source_system: ["source_system", "origem_sistema", "sistema_origem", "provider"],
+};
+
+type DetectionResult = {
+  target: string;
+  confidence: number;
+  alternatives: Array<{ target: string; confidence: number }>;
+};
 
 const HEADER_ALIASES: Record<string, string> = {
   data_nasc: "data_nasc",
@@ -113,6 +174,49 @@ function dedupeHeaders(headers: string[]): string[] {
     seen.set(h, count + 1);
     return count === 0 ? h : `${h}_${count + 1}`;
   });
+}
+
+function scoreHeaderToTarget(header: string, target: string): number {
+  const normalized = normalizeHeader(header, 0);
+  const aliases = TARGET_ALIASES[target] ?? [];
+  if (normalized === target) return 1.0;
+  if (aliases.includes(normalized)) return 0.95;
+  if (normalized.includes(target) || target.includes(normalized)) return 0.8;
+  const tokenHit = aliases.some(
+    (alias) =>
+      alias.length >= 4 &&
+      (normalized.includes(alias) || alias.includes(normalized))
+  );
+  if (tokenHit) return 0.7;
+  return 0;
+}
+
+function detectMappingForHeader(header: string): DetectionResult | null {
+  const ranked = TARGET_FIELDS.map((target) => ({
+    target,
+    confidence: scoreHeaderToTarget(header, target),
+  }))
+    .filter((entry) => entry.confidence > 0)
+    .sort((a, b) => b.confidence - a.confidence);
+
+  if (!ranked.length) return null;
+  return {
+    target: ranked[0].target,
+    confidence: ranked[0].confidence,
+    alternatives: ranked.slice(1, 4),
+  };
+}
+
+function applyColumnMapping(
+  headers: string[],
+  rows: string[][],
+  columnMapping: Record<string, string>
+): { headers: string[]; rows: string[][] } {
+  const mappedHeaders = headers.map((h) => {
+    const mapped = columnMapping[h];
+    return mapped && mapped !== "__ignore__" ? mapped : h;
+  });
+  return { headers: dedupeHeaders(mappedHeaders), rows };
 }
 
 function detectHeaderRow(rows: string[][]): number {
@@ -474,11 +578,24 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
   const [canonicalType, setCanonicalType] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [detectionMap, setDetectionMap] = useState<Record<string, DetectionResult>>({});
+  const [ambiguousHeaders, setAmbiguousHeaders] = useState<string[]>([]);
+  const [templateName, setTemplateName] = useState("");
+  const [templateSourceHint, setTemplateSourceHint] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: circuits = [] } = useQuery({
     queryKey: ["circuits"],
     queryFn: () => getCircuits(),
+    enabled: open,
+  });
+
+  const { data: templates = [], refetch: refetchTemplates } = useQuery({
+    queryKey: ["ingestion-templates"],
+    queryFn: () => listIngestionTemplates(),
     enabled: open,
   });
 
@@ -493,6 +610,13 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     setCanonicalColumn("");
     setCanonicalType("");
     setParsing(false);
+    setColumnMapping({});
+    setDetectionMap({});
+    setAmbiguousHeaders([]);
+    setTemplateName("");
+    setTemplateSourceHint("");
+    setSelectedTemplateId("");
+    setSavingTemplate(false);
   }, []);
 
   const handleOpenChange = (v: boolean) => {
@@ -526,6 +650,50 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     }
   };
 
+  const applyTemplate = (template: IngestionTemplate) => {
+    const mapping = (template.mapping ?? {}) as Record<string, unknown>;
+    const columns = (mapping.columns ?? {}) as Record<string, string>;
+    if (Object.keys(columns).length > 0) {
+      setColumnMapping(columns);
+    }
+    if (template.canonical_type) setCanonicalType(template.canonical_type);
+    if (template.canonical_column) setCanonicalColumn(template.canonical_column);
+    setSelectedTemplateId(template.id);
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!preview) return;
+    const name = templateName.trim();
+    if (!name) {
+      setError("Informe um nome para o template.");
+      return;
+    }
+
+    setSavingTemplate(true);
+    setError(null);
+    try {
+      const mappingPayload = {
+        columns: columnMapping,
+        headers: preview.headers,
+      };
+      await createIngestionTemplate({
+        name,
+        source_hint: templateSourceHint.trim() || undefined,
+        canonical_type: canonicalType || undefined,
+        canonical_column: canonicalColumn || undefined,
+        mapping: mappingPayload,
+        is_default: false,
+      });
+      await refetchTemplates();
+      setTemplateName("");
+      setTemplateSourceHint("");
+    } catch (err: any) {
+      setError(err?.message || "Erro ao salvar template.");
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   const handlePreview = async () => {
     if (!file || !circuitId) return;
     setParsing(true);
@@ -534,6 +702,29 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     try {
       const previewData = await buildPreview(file);
       const headers = previewData.headers || [];
+      const detected: Record<string, DetectionResult> = {};
+      const mapped: Record<string, string> = {};
+      const ambiguous: string[] = [];
+
+      headers.forEach((header) => {
+        const result = detectMappingForHeader(header);
+        if (!result) return;
+        detected[header] = result;
+        mapped[header] = result.target;
+        const second = result.alternatives[0];
+        if (
+          second &&
+          result.confidence >= 0.7 &&
+          result.confidence - second.confidence < 0.15
+        ) {
+          ambiguous.push(header);
+        }
+      });
+
+      setDetectionMap(detected);
+      setColumnMapping(mapped);
+      setAmbiguousHeaders(ambiguous);
+
       const headerSet = headers.map((h) => h.toLowerCase());
       const sisbovIndex = headerSet.findIndex((h) => h.includes("sisbov") || h.includes("bnd"));
       const cpfIndex = headerSet.findIndex((h) => h.includes("cpf"));
@@ -544,6 +735,25 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
         } else if (cpfIndex >= 0) {
           setCanonicalColumn(headers[cpfIndex]);
           setCanonicalType("cpf");
+        }
+      }
+      if (templates.length > 0) {
+        let bestTemplate: IngestionTemplate | null = null;
+        let bestScore = 0;
+        templates.forEach((template) => {
+          const tplMapping = (template.mapping ?? {}) as Record<string, any>;
+          const tplColumns = (tplMapping.columns ?? {}) as Record<string, string>;
+          if (!tplColumns || Object.keys(tplColumns).length === 0) return;
+          const score = headers.reduce((acc, header) => {
+            return tplColumns[header] ? acc + 1 : acc;
+          }, 0);
+          if (score > bestScore) {
+            bestScore = score;
+            bestTemplate = template;
+          }
+        });
+        if (bestTemplate && bestScore > 0) {
+          applyTemplate(bestTemplate);
         }
       }
       setPreview({ ...previewData, preparedFile: file });
@@ -559,9 +769,10 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
     setUploading(true);
     setError(null);
     try {
+      const mapped = applyColumnMapping(preview.headers, preview.rows, columnMapping);
       const canonicalized = applyCanonicalOverride(
-        preview.headers,
-        preview.rows,
+        mapped.headers,
+        mapped.rows,
         canonicalColumn || undefined,
         canonicalType || undefined
       );
@@ -657,6 +868,111 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
                 <p className="text-xs text-muted-foreground">
                   {preview.rows.length} {preview.rows.length === 1 ? "item" : "itens"} encontrados · {preview.headers.length} colunas
                 </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <p className="text-sm font-medium text-foreground">Templates de mapeamento</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Select
+                  value={selectedTemplateId || "__none__"}
+                  onValueChange={(value) => {
+                    if (value === "__none__") {
+                      setSelectedTemplateId("");
+                      return;
+                    }
+                    const selected = templates.find((t) => t.id === value);
+                    if (selected) applyTemplate(selected);
+                  }}
+                >
+                  <SelectTrigger className="sm:col-span-2">
+                    <SelectValue placeholder="Aplicar template salvo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sem template</SelectItem>
+                    {templates.map((tpl) => (
+                      <SelectItem key={tpl.id} value={tpl.id}>
+                        {tpl.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  onClick={handleSaveTemplate}
+                  disabled={savingTemplate || !preview}
+                >
+                  {savingTemplate ? "Salvando..." : "Salvar template"}
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Input
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="Nome do template (ex: CowPro v1)"
+                />
+                <Input
+                  value={templateSourceHint}
+                  onChange={(e) => setTemplateSourceHint(e.target.value)}
+                  placeholder="Source hint (ex: cowpro)"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <p className="text-sm font-medium text-foreground">Mapeamento automático de colunas</p>
+              <p className="text-xs text-muted-foreground">
+                Colunas foram detectadas automaticamente. Ajuste apenas as ambíguas.
+              </p>
+              {ambiguousHeaders.length > 0 && (
+                <div className="rounded-md border border-yellow-500/30 bg-yellow-500/10 p-2 text-xs text-yellow-800">
+                  Ambíguas: {ambiguousHeaders.join(", ")}.
+                </div>
+              )}
+              <div className="max-h-40 overflow-auto rounded-md border border-border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted sticky top-0">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left">Coluna origem</th>
+                      <th className="px-2 py-1.5 text-left">Campo DeFarm</th>
+                      <th className="px-2 py-1.5 text-left">Conf.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.headers.map((header) => {
+                      const detection = detectionMap[header];
+                      const selected = columnMapping[header] ?? "__ignore__";
+                      return (
+                        <tr key={header} className="border-t border-border">
+                          <td className="px-2 py-1">{header}</td>
+                          <td className="px-2 py-1">
+                            <Select
+                              value={selected}
+                              onValueChange={(value) =>
+                                setColumnMapping((prev) => ({ ...prev, [header]: value }))
+                              }
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__ignore__">Ignorar</SelectItem>
+                                {TARGET_FIELDS.map((field) => (
+                                  <SelectItem key={field} value={field}>
+                                    {TARGET_LABELS[field]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-2 py-1">
+                            {detection ? `${Math.round(detection.confidence * 100)}%` : "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
 

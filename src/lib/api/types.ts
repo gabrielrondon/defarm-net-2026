@@ -613,6 +613,29 @@ export interface IngestionReceipt {
   error_message?: string | null;
 }
 
+export interface IngestionTemplate {
+  id: string;
+  workspace_id: string;
+  name: string;
+  source_hint?: string | null;
+  canonical_type?: string | null;
+  canonical_column?: string | null;
+  mapping: Record<string, unknown>;
+  is_default: boolean;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IngestionTemplateUpsertRequest {
+  name: string;
+  source_hint?: string;
+  canonical_type?: string;
+  canonical_column?: string;
+  mapping: Record<string, unknown>;
+  is_default?: boolean;
+}
+
 export interface IngestionSummary {
   rows_total: number;
   rows_processed: number;

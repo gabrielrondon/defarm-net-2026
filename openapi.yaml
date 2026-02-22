@@ -2875,6 +2875,74 @@ components:
           items:
             type: string
           description: CSV fields that were not recognized
+    IngestionTemplateUpsertRequest:
+      type: object
+      required:
+      - name
+      - mapping
+      properties:
+        name:
+          type: string
+          description: Template display name
+        source_hint:
+          type: string
+          nullable: true
+          description: Optional source hint for auto-match
+        canonical_type:
+          type: string
+          nullable: true
+          description: Optional canonical identifier type
+        canonical_column:
+          type: string
+          nullable: true
+          description: Optional source column used as canonical identifier
+        mapping:
+          type: object
+          description: Mapping payload with column assignments and defaults
+        is_default:
+          type: boolean
+          nullable: true
+          description: Mark this template as workspace default
+    IngestionTemplateResponse:
+      type: object
+      required:
+      - id
+      - workspace_id
+      - name
+      - mapping
+      - is_default
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        source_hint:
+          type: string
+          nullable: true
+        canonical_type:
+          type: string
+          nullable: true
+        canonical_column:
+          type: string
+          nullable: true
+        mapping:
+          type: object
+        is_default:
+          type: boolean
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
     Item:
       description: 'Represents a physical or digital asset in the supply chain, uniquely
         identified by a DFID.
@@ -9985,6 +10053,114 @@ paths:
           description: Permission denied
         '500':
           description: Internal server error
+  /api/ingestion/templates:
+    get:
+      tags:
+      - Items
+      summary: List partner ingestion templates
+      description: List saved ingestion templates for the authenticated partner workspace.
+      operationId: list_ingestion_templates
+      parameters:
+      - name: source_hint
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Workspace templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IngestionTemplateResponse'
+        '401':
+          description: Missing or invalid authentication
+        '403':
+          description: Requires partner workspace
+    post:
+      tags:
+      - Items
+      summary: Create partner ingestion template
+      description: Create a saved ingestion template for the authenticated partner workspace.
+      operationId: create_ingestion_template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestionTemplateUpsertRequest'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionTemplateResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Missing or invalid authentication
+        '403':
+          description: Requires partner workspace
+  /api/ingestion/templates/{id}:
+    put:
+      tags:
+      - Items
+      summary: Update partner ingestion template
+      description: Update a saved ingestion template in the authenticated partner workspace.
+      operationId: update_ingestion_template
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestionTemplateUpsertRequest'
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionTemplateResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Missing or invalid authentication
+        '403':
+          description: Requires partner workspace
+        '404':
+          description: Template not found
+    delete:
+      tags:
+      - Items
+      summary: Delete partner ingestion template
+      description: Soft-delete a saved ingestion template in the authenticated partner workspace.
+      operationId: delete_ingestion_template
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Template deleted
+        '401':
+          description: Missing or invalid authentication
+        '403':
+          description: Requires partner workspace
+        '404':
+          description: Template not found
   /api/items/{dfid}/merge:
     post:
       tags:
