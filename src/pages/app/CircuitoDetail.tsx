@@ -197,6 +197,7 @@ export default function CircuitoDetail() {
   const isPublic = isCircuitPublic(circuit.visibility);
   const publicPathId = (circuit.public_slug || "").trim() || circuit.id;
   const publicUrl = `${window.location.origin}/c/${publicPathId}`;
+  const publicUrlPlaceholder = "Disponível quando a visibilidade for Público";
 
   const handleCopyPublicUrl = () => {
     navigator.clipboard.writeText(publicUrl);
@@ -505,28 +506,54 @@ export default function CircuitoDetail() {
           </p>
         </div>
         <div className="flex flex-col md:flex-row gap-2 md:items-center">
-          <Input readOnly value={publicUrl} className="font-mono text-xs" />
+          <Input
+            readOnly
+            value={isPublic ? publicUrl : publicUrlPlaceholder}
+            className="font-mono text-xs"
+          />
           <Button variant="outline" onClick={handleCopyPublicUrl} disabled={!isPublic}>
             {copiedPublicUrl ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
             Copiar URL
           </Button>
-          <a href={whatsappShareUrl} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" disabled={!isPublic}>
+          {isPublic ? (
+            <a href={whatsappShareUrl} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                WhatsApp
+              </Button>
+            </a>
+          ) : (
+            <Button variant="outline" disabled>
               <MessageCircle className="h-4 w-4 mr-2" />
               WhatsApp
             </Button>
-          </a>
-          <a href={emailShareUrl}>
-            <Button variant="outline" disabled={!isPublic}>
+          )}
+          {isPublic ? (
+            <a href={emailShareUrl}>
+              <Button variant="outline">
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </Button>
+            </a>
+          ) : (
+            <Button variant="outline" disabled>
               <Mail className="h-4 w-4 mr-2" />
               Email
             </Button>
-          </a>
+          )}
           {isPublic && (
             <Link to={`/c/${publicPathId}`} target="_blank">
               <Button variant="outline">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Abrir página pública
+              </Button>
+            </Link>
+          )}
+          {!isPublic && (
+            <Link to={`/app/circuitos/${id}/editar`}>
+              <Button variant="outline">
+                <Pencil className="h-4 w-4 mr-2" />
+                Tornar público
               </Button>
             </Link>
           )}
@@ -576,6 +603,9 @@ export default function CircuitoDetail() {
                 const ipfsRefs = anchors?.storage_refs || [];
                 const latestStellar = stellarAnchors[0];
                 const latestIpfs = ipfsRefs[0];
+
+                const normalizedItemStatus = (item.status || "").trim().toLowerCase();
+                const isItemActive = normalizedItemStatus === "active";
 
                 return (
                 <TableRow
@@ -683,17 +713,17 @@ export default function CircuitoDetail() {
                     <span
                       className={cn(
                         "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
-                        item.status === "Active"
+                        isItemActive
                           ? "bg-primary/10 text-primary"
                           : "bg-muted text-muted-foreground"
                       )}
                     >
-                      {item.status === "Active" ? (
+                      {isItemActive ? (
                         <CheckCircle2 className="h-3 w-3" />
                       ) : (
                         <XCircle className="h-3 w-3" />
                       )}
-                      {item.status === "Active" ? "Ativo" : item.status}
+                      {isItemActive ? "Ativo" : item.status}
                     </span>
                   </TableCell>
                   <TableCell>
