@@ -179,6 +179,11 @@ export default function DemoAcessos() {
           <p className="text-muted-foreground mt-2">
             Acesso rapido por ator. Rota discreta para demonstracao e teste de fluxos.
           </p>
+          <div className="mt-3">
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/_demo/narrativa">Abrir rota de narrativa</Link>
+            </Button>
+          </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge variant="secondary">/_demo/acessos</Badge>
             <Badge variant="secondary">/_demo/acessos/producer</Badge>
