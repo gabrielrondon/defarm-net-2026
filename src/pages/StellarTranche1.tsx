@@ -71,19 +71,48 @@ const cliSnippet = `# Install & build
 cd tooling/defarm-sdk && npm install && npm run build
 cd ../defarm-cli && npm install && npm run build
 
-# Authenticate
-defarm auth login --email partner@example.com --password ••••••
+# Option A: expose "defarm" globally
+npm link
 
-# Explore
+# Configure + authenticate
+defarm workspace init --gateway https://gateway.defarm.net
+defarm auth login --email partner@example.com --password '••••••'
+
+# Explore circuits & items
 defarm circuits list
 defarm items list --circuit <circuit_id>
-defarm items new --circuit <circuit_id> \\
-  --chain BEEF --country BR --year 2026 \\
-  --identifier sisbov:105500497219983
+defarm items new \\
+  --value-chain BEEF --country BR --year 2026 \\
+  --circuit-id <circuit_id> \\
+  --metadata '{"canonical_type":"sisbov","canonical_id":"105500497219983"}'
 
 # Add an event
-defarm events add --circuit <circuit_id> --item <item_id> \\
-  --type item_vaccinated --payload '{"vaccine":"aftosa"}'`;
+defarm events add \\
+  --event-type item_vaccinated \\
+  --source-type partner --source-id demo_partner \\
+  --circuit-id <circuit_id> --item-id <item_id> \\
+  --payload '{"vaccine":"aftosa"}'`;
+
+const installSnippet = `# Prerequisites
+# - Node.js 20+
+# - npm 10+
+# - git
+
+git clone git@github.com:defarm-repo/engines.git
+cd engines/tooling/defarm-sdk
+npm install
+npm run build
+
+cd ../defarm-cli
+npm install
+npm run build
+
+# Option A (recommended for demos): global command
+npm link
+defarm --help
+
+# Option B (without global install)
+node dist/index.js --help`;
 
 const apiSnippet = `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
   -H "Authorization: Bearer <token>" \\
@@ -269,6 +298,40 @@ const StellarTranche1 = () => {
         <section id="playground" className="py-16">
           <div className="section-container">
             <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl font-bold mb-2">Install on any laptop (real setup)</h2>
+              <p className="text-muted-foreground mb-8">
+                The CLI and SDK are already implemented in the DeFarm engines repository. The commands below are executable as-is.
+              </p>
+
+              <div className="grid lg:grid-cols-3 gap-6 mb-8">
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Repository</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    <code className="text-xs bg-muted px-1 rounded">github.com:defarm-repo/engines</code>
+                  </CardContent>
+                </Card>
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Packages</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    <code className="text-xs bg-muted px-1 rounded">tooling/defarm-sdk</code> and <code className="text-xs bg-muted px-1 rounded">tooling/defarm-cli</code>
+                  </CardContent>
+                </Card>
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Distribution status</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    Usable now via git clone + npm build/link. Public npm publication is the next release step.
+                  </CardContent>
+                </Card>
+              </div>
+
+              <CodeBlock code={installSnippet} language="bash" />
+
               <h2 className="text-3xl font-bold mb-2">Interactive playground</h2>
               <p className="text-muted-foreground mb-8">
                 Three ways to integrate — pick the one that fits your workflow and try the commands below.
