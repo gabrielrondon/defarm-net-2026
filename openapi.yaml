@@ -4521,6 +4521,152 @@ components:
           description: Update rate limit per day
           example: 1000
 paths:
+  /api/circuits/{id}/adapters:
+    get:
+      tags:
+      - Adapters
+      summary: List adapters configured for a circuit
+      description: Return adapter configurations attached to the circuit.
+      operationId: listCircuitAdapters
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Circuit adapters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CircuitAdapter'
+        '404':
+          description: Circuit not found
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Adapters
+      summary: Add adapter to circuit
+      description: Attach an adapter configuration to a circuit.
+      operationId: addCircuitAdapter
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCircuitAdapterRequest'
+      responses:
+        '201':
+          description: Circuit adapter created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitAdapter'
+        '404':
+          description: Circuit not found
+      security:
+      - bearerAuth: []
+  /api/circuits/{id}/adapters/setup-defaults:
+    post:
+      tags:
+      - Adapters
+      summary: Setup default adapters for circuit
+      description: Configure default adapters (Stellar + IPFS) for the given circuit.
+      operationId: setupDefaultCircuitAdapters
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Defaults configured
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: Circuit not found
+      security:
+      - bearerAuth: []
+  /api/circuits/{id}/adapters/{adapter_id}:
+    patch:
+      tags:
+      - Adapters
+      summary: Update circuit adapter
+      description: Update adapter flags/settings for a circuit.
+      operationId: updateCircuitAdapter
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: adapter_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCircuitAdapterRequest'
+      responses:
+        '200':
+          description: Circuit adapter updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitAdapter'
+        '404':
+          description: Circuit adapter not found
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Adapters
+      summary: Remove adapter from circuit
+      description: Detach adapter configuration from circuit.
+      operationId: deleteCircuitAdapter
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: adapter_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Circuit adapter removed
+        '404':
+          description: Circuit adapter not found
+      security:
+      - bearerAuth: []
   /api/adapter/items/{item_id}/anchors:
     get:
       tags:
@@ -6359,21 +6505,21 @@ paths:
           nullable: true
       - name: start_date
         in: query
-        description: Start date (YYYY-MM-DD). Default: last 30 days.
+        description: 'Start date (YYYY-MM-DD). Default: last 30 days.'
         required: false
         schema:
           type: string
           nullable: true
       - name: end_date
         in: query
-        description: End date (YYYY-MM-DD). Default: today.
+        description: 'End date (YYYY-MM-DD). Default: today.'
         required: false
         schema:
           type: string
           nullable: true
       - name: summary_type
         in: query
-        description: Summary type (daily, weekly, monthly). Default: daily.
+        description: 'Summary type (daily, weekly, monthly). Default: daily.'
         required: false
         schema:
           type: string
