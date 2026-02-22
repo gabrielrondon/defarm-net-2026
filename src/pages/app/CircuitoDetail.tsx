@@ -466,7 +466,7 @@ export default function CircuitoDetail() {
         <div className="bg-background border border-border rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              {circuit.visibility === "public" ? (
+              {isPublic ? (
                 <Globe className="h-5 w-5 text-primary" />
               ) : (
                 <Lock className="h-5 w-5 text-primary" />

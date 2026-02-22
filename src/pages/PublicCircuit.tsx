@@ -24,6 +24,7 @@ import type { PublicCircuitPortfolio, ItemSummary } from "@/lib/api/types";
 import { useAuth } from "@/contexts/AuthContext";
 import logoIcon from "@/assets/logo-icon.png";
 import { useState } from "react";
+import { circuitTypeLabel } from "@/lib/circuit-ui";
 
 export default function PublicCircuit() {
   const { id } = useParams<{ id: string }>();
@@ -144,7 +145,7 @@ export default function PublicCircuit() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">{circuit.name}</h1>
               <p className="text-muted-foreground mt-1">
-                {circuit.description || "Sem descrição"}
+                {circuit.public_description || circuit.description || "Sem descrição"}
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-3">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
@@ -153,7 +154,7 @@ export default function PublicCircuit() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   <Package className="h-3 w-3" />
-                  {circuit.circuit_type || "Standard"}
+                  {circuitTypeLabel(circuit.circuit_type)}
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="h-3 w-3" />

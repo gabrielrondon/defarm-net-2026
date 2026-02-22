@@ -138,7 +138,7 @@ export default function CircuitosList() {
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    circuit.status === "Active" 
+                    normalizedStatus === "active"
                       ? "bg-primary/10 text-primary" 
                       : normalizedStatus === "inactive"
                       ? "bg-muted text-muted-foreground"
