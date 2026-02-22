@@ -7954,11 +7954,10 @@ paths:
       parameters:
       - name: id
         in: path
-        description: Circuit UUID
+        description: Circuit UUID or public slug
         required: true
         schema:
           type: string
-          format: uuid
       requestBody:
         required: true
         content:
@@ -8598,6 +8597,63 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Join request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
+  /api/join-requests/mine:
+    get:
+      tags:
+      - Circuits
+      summary: GET /join-requests/mine - List current user's join requests
+      description: '**Protected endpoint** - Requires JWT authentication.
+
+
+        Returns join requests created by the authenticated user across all circuits.
+
+
+        **Example:**
+
+        ```
+
+        GET /api/join-requests/mine?status=pending
+
+        Authorization: Bearer <access_token>
+
+        ```
+
+        '
+      operationId: list_my_join_requests
+      parameters:
+      - name: status
+        in: query
+        description: Filter by status
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+      responses:
+        '200':
+          description: List of current user's join requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CircuitJoinRequest'
+        '401':
+          description: Unauthorized - JWT required
           content:
             application/json:
               schema:
