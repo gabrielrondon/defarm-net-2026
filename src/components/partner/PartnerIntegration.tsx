@@ -215,13 +215,16 @@ export function PartnerIntegration() {
         </p>
         <div className="bg-background rounded-lg p-3 font-mono text-xs text-muted-foreground overflow-x-auto">
           <pre>{`POST /api/items/bulk
-Authorization: Bearer <sua-api-key>
+x-api-key: <sua-api-key>
 Content-Type: multipart/form-data
 
 file=@dados.csv
 circuit_id=<uuid-do-circuito>
+template_id=<uuid-do-template>
+idempotency_key=<chave-unica-do-lote>
 
-# Mesmo endpoint usado no upload CSV/JSON do frontend.`}</pre>
+# Mesmo endpoint usado no upload CSV/JSON do frontend.
+# Resultado retorna ingestion_receipt com score de qualidade e replay idempotente.`}</pre>
         </div>
       </Card>
     </div>
