@@ -1,183 +1,91 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, CheckCircle2, Code2, DatabaseZap, FileText, Rocket, TerminalSquare } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Circle,
+  Code2,
+  Copy,
+  DatabaseZap,
+  ExternalLink,
+  FileText,
+  Rocket,
+  TerminalSquare,
+} from "lucide-react";
+import { toast } from "sonner";
+
+/* ── deliverables data ─────────────────────────────────── */
+
+const deliverables = [
+  { label: "auth: login / logout / whoami / refresh", done: true },
+  { label: "workspace: init / status / config / reset", done: true },
+  { label: "circuits: list / show / join / members", done: true },
+  { label: "items: new / list / show / update", done: true },
+  { label: "events: add / list / show / update", done: true },
+  { label: "SDK + docs + partner quickstart", done: true },
+  { label: "2 external integrations with privacy strategy", done: false },
+];
 
 const steps = [
   {
-    title: "Passo 1: Preparar workspace e autenticação",
+    title: "Prepare workspace & authentication",
     detail:
-      "Crie/valide workspace do tipo partner, gere credenciais e confirme acesso ao gateway. Isso fecha identidade e autorização da integração.",
+      "Create or validate a partner-type workspace, generate credentials, and confirm gateway access. This closes identity and authorization for the integration.",
   },
   {
-    title: "Passo 2: Definir canônico e mapeamento",
+    title: "Define canonical identifiers & mapping",
     detail:
-      "Escolha o identificador canônico principal (SISBOV, chip, ear_tag etc), mapeie colunas e configure fallback para evitar duplicações de DFID.",
+      "Choose the primary canonical identifier (SISBOV, chip, ear_tag, etc.), map columns, and configure fallback to prevent DFID duplication.",
   },
   {
-    title: "Passo 3: Ingerir via endpoint único",
+    title: "Ingest via a single endpoint",
     detail:
-      "Envie dados para POST /api/items/bulk (mesmo endpoint usado no Portal Parceiro). Ative template salvo por parceiro para reduzir fricção.",
+      "Send data to POST /api/items/bulk — the same endpoint used by the Partner Portal. Activate saved partner templates to reduce friction.",
   },
   {
-    title: "Passo 4: Enriquecer com eventos",
+    title: "Enrich with typed events",
     detail:
-      "Registre eventos tipados (item_movement, item_vaccinated, item_weighed...) para construir timeline operacional e trilha de auditoria.",
+      "Record typed events (item_movement, item_vaccinated, item_weighed…) to build an operational timeline and audit trail.",
   },
   {
-    title: "Passo 5: Validar circuito e visão pública",
+    title: "Validate circuit & public view",
     detail:
-      "Confirme itens no circuito, visibilidade público/privado, URL compartilhável e coerência da página pública para demonstração.",
+      "Confirm items in the circuit, public/private visibility, shareable URL, and consistency of the public page for demonstration.",
   },
   {
-    title: "Passo 6: Evidências da tranche",
+    title: "Tranche evidence package",
     detail:
-      "Registre receipts, outputs de teste CLI/SDK, e logs de integração de dois parceiros para prestação da Tranche 1.",
+      "Collect receipts, CLI/SDK test outputs, and integration logs from two partners to deliver the Tranche 1 evidence package.",
   },
 ];
 
-const checklist = [
-  "auth: login/logout/whoami/refresh",
-  "workspace: init/status/config/reset",
-  "circuits: list/show/join/members",
-  "items: new/list/show/update",
-  "events: add/list/show/update",
-  "SDK + docs + quickstart parceiro",
-  "2 integrações externas com estratégia de privacidade",
-];
+/* ── code snippets ─────────────────────────────────────── */
 
-const StellarTranche1 = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main>
-        <section className="pt-28 pb-14 bg-gradient-to-b from-slate-50 to-background">
-          <div className="section-container">
-            <div className="max-w-5xl mx-auto">
-              <div className="flex flex-wrap items-center gap-3 mb-5">
-                <Badge className="bg-slate-800 text-white">Tranche 1 - MVP</Badge>
-                <Badge variant="outline">Mês 3</Badge>
-                <Badge variant="outline">Budget US$ 24k</Badge>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl font-black leading-tight">
-                Guia minucioso de execução: CLI, SDK, playground e demo operacional
-              </h1>
-              <p className="mt-5 text-lg text-muted-foreground max-w-4xl">
-                Esta página é seu roteiro para apresentar a DeFarm com profundidade técnica e clareza de negócio. Ela cobre o
-                passo a passo completo da Tranche 1, incluindo comandos práticos e narrativa de demo para parceiros.
-              </p>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button asChild className="btn-offset">
-                  <a href="#playground">Ir para playground <ArrowRight className="h-4 w-4" /></a>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/stellar">Voltar visão geral Stellar</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-14">
-          <div className="section-container">
-            <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl font-bold mb-6">Escopo oficial da Tranche 1</h2>
-              <Card>
-                <CardContent className="pt-6 grid sm:grid-cols-2 gap-3 text-sm">
-                  {checklist.map((item) => (
-                    <p key={item} className="flex items-start gap-2 text-muted-foreground">
-                      <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-600" />
-                      <span>{item}</span>
-                    </p>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-14 bg-muted/40 border-y">
-          <div className="section-container">
-            <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl font-bold mb-8">Passo a passo de execução</h2>
-              <div className="space-y-4">
-                {steps.map((step, index) => (
-                  <Card key={step.title}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-xl">{index + 1}. {step.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">{step.detail}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="playground" className="py-14">
-          <div className="section-container">
-            <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl font-bold mb-8">Playground (pronto para demo)</h2>
-              <div className="grid lg:grid-cols-3 gap-6 mb-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2"><TerminalSquare className="h-5 w-5 text-emerald-600" /> CLI</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-muted-foreground">
-                    Autenticar, listar circuitos, criar item e adicionar evento em menos de 2 minutos.
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2"><Code2 className="h-5 w-5 text-emerald-600" /> SDK</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-muted-foreground">
-                    Integrar em sistemas parceiros com TypeScript e fluxo padrão de autenticação + ingestão.
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl flex items-center gap-2"><DatabaseZap className="h-5 w-5 text-emerald-600" /> API Bulk</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-muted-foreground">
-                    Endpoint único de ingestão para portal parceiro e integração direta (`POST /api/items/bulk`).
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Comandos CLI essenciais</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <pre className="rounded-lg bg-slate-950 text-slate-50 p-4 text-xs sm:text-sm overflow-x-auto">
-{`cd tooling/defarm-sdk && npm install && npm run build
+const cliSnippet = `# Install & build
+cd tooling/defarm-sdk && npm install && npm run build
 cd ../defarm-cli && npm install && npm run build
 
-node dist/index.js workspace init --gateway https://gateway.defarm.net
-node dist/index.js auth login --email <email> --password <senha>
-node dist/index.js circuits list
-node dist/index.js items list --circuit <circuit_id>
-node dist/index.js events list --circuit <circuit_id>`}
-                    </pre>
-                  </CardContent>
-                </Card>
+# Authenticate
+defarm auth login --email partner@example.com --password ••••••
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Exemplo API Bulk (portal parceiro usa o mesmo endpoint)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <pre className="rounded-lg bg-slate-950 text-slate-50 p-4 text-xs sm:text-sm overflow-x-auto">
-{`curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
+# Explore
+defarm circuits list
+defarm items list --circuit <circuit_id>
+defarm items new --circuit <circuit_id> \\
+  --chain BEEF --country BR --year 2026 \\
+  --identifier sisbov:105500497219983
+
+# Add an event
+defarm events add --circuit <circuit_id> --item <item_id> \\
+  --type item_vaccinated --payload '{"vaccine":"aftosa"}'`;
+
+const apiSnippet = `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
   -H "Authorization: Bearer <token>" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -187,38 +95,49 @@ node dist/index.js events list --circuit <circuit_id>`}
         "value_chain": "BEEF",
         "country": "BR",
         "year": 2026,
-        "identifiers": [{ "identifier_type": "sisbov", "identifier_value": "105500497219983" }],
-        "metadata": { "source": "gerbov", "lote": "Bezerros serra" }
+        "identifiers": [
+          { "identifier_type": "sisbov",
+            "identifier_value": "105500497219983" }
+        ],
+        "metadata": {
+          "source": "gerbov",
+          "lot": "Calves - Serra"
+        }
       }
     ]
-  }'`}
-                    </pre>
-                  </CardContent>
-                </Card>
+  }'`;
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Exemplo SDK (TypeScript)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <pre className="rounded-lg bg-slate-950 text-slate-50 p-4 text-xs sm:text-sm overflow-x-auto">
-{`import { DefarmSdk } from "@defarm/sdk";
+const sdkSnippet = `import { DefarmSdk } from "@defarm/sdk";
 
-const sdk = new DefarmSdk({ gatewayBaseUrl: "https://gateway.defarm.net" });
-const auth = await sdk.auth.login(process.env.DEFARM_EMAIL!, process.env.DEFARM_PASSWORD!);
+const sdk = new DefarmSdk({
+  gatewayBaseUrl: "https://gateway.defarm.net",
+});
+
+// Authenticate
+const auth = await sdk.auth.login(
+  process.env.DEFARM_EMAIL!,
+  process.env.DEFARM_PASSWORD!,
+);
 sdk.setAccessToken(auth.access_token);
 
+// List circuits & pick the first one
 const circuits = await sdk.circuits.list();
 const circuit = circuits[0];
 
+// Create an item
 const item = await sdk.items.create({
   value_chain: "BEEF",
   country: "BR",
   year: 2026,
   circuit_id: circuit.id,
-  metadata: { canonical_type: "sisbov", canonical_id: "105500497219983", source: "gerbov" },
+  metadata: {
+    canonical_type: "sisbov",
+    canonical_id: "105500497219983",
+    source: "gerbov",
+  },
 });
 
+// Record a vaccination event
 await sdk.events.add({
   event_type: "item_vaccinated",
   source_type: "partner",
@@ -226,39 +145,224 @@ await sdk.events.add({
   circuit_id: circuit.id,
   item_id: item.id,
   payload: { vaccine: "aftosa" },
-});`}
-                    </pre>
-                  </CardContent>
-                </Card>
+});`;
+
+/* ── component ─────────────────────────────────────────── */
+
+function CodeBlock({ code, language }: { code: string; language: string }) {
+  const copy = () => {
+    navigator.clipboard.writeText(code);
+    toast.success("Copied to clipboard");
+  };
+  return (
+    <div className="relative group">
+      <button
+        onClick={copy}
+        className="absolute top-3 right-3 p-1.5 rounded-md bg-muted/20 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/40"
+        title="Copy"
+      >
+        <Copy className="h-4 w-4" />
+      </button>
+      <pre className="rounded-lg bg-card-foreground text-card p-5 text-xs sm:text-sm overflow-x-auto leading-relaxed">
+        <code>{code}</code>
+      </pre>
+      <span className="absolute bottom-2 right-3 text-[10px] uppercase tracking-wider text-muted-foreground/60">{language}</span>
+    </div>
+  );
+}
+
+const StellarTranche1 = () => {
+  const [activeStep, setActiveStep] = useState<number | null>(null);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main>
+        {/* Hero */}
+        <section className="pt-28 pb-16 bg-gradient-to-b from-emerald-50 to-background">
+          <div className="section-container">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex flex-wrap items-center gap-3 mb-5">
+                <Badge className="bg-primary text-primary-foreground">Tranche 1 — MVP</Badge>
+                <Badge variant="outline">Month 3</Badge>
+                <Badge variant="outline">Budget US $24,000</Badge>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl font-black leading-tight">
+                CLI, SDK & operational demo — ready to ship
+              </h1>
+              <p className="mt-5 text-lg text-muted-foreground max-w-4xl">
+                Everything needed to onboard a partner from scratch: authenticate, ingest data, record events,
+                and expose a verifiable public circuit — all through a single gateway.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild className="btn-offset">
+                  <a href="#playground">Jump to playground <ArrowRight className="h-4 w-4" /></a>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/stellar">Back to grant overview</Link>
+                </Button>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="py-14 bg-muted/40 border-y">
+        {/* Deliverables checklist */}
+        <section className="py-16">
+          <div className="section-container">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl font-bold mb-2">Tranche 1 deliverables</h2>
+              <p className="text-muted-foreground mb-6">Official scope committed in the SCF #40 proposal.</p>
+              <Card>
+                <CardContent className="pt-6 grid sm:grid-cols-2 gap-3 text-sm">
+                  {deliverables.map((item) => (
+                    <p key={item.label} className="flex items-start gap-2">
+                      {item.done ? (
+                        <CheckCircle2 className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                      ) : (
+                        <Circle className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      )}
+                      <span className={item.done ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
+                    </p>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Execution steps */}
+        <section className="py-16 bg-muted/40 border-y">
+          <div className="section-container">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl font-bold mb-2">Execution steps</h2>
+              <p className="text-muted-foreground mb-8">Click any step for details.</p>
+              <div className="space-y-3">
+                {steps.map((step, index) => (
+                  <Card
+                    key={step.title}
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-sm ${activeStep === index ? "ring-2 ring-primary" : ""}`}
+                    onClick={() => setActiveStep(activeStep === index ? null : index)}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center gap-3">
+                        <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center shrink-0">
+                          {index + 1}
+                        </span>
+                        {step.title}
+                      </CardTitle>
+                    </CardHeader>
+                    {activeStep === index && (
+                      <CardContent>
+                        <p className="text-muted-foreground pl-10">{step.detail}</p>
+                      </CardContent>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Playground */}
+        <section id="playground" className="py-16">
+          <div className="section-container">
+            <div className="max-w-5xl mx-auto">
+              <h2 className="text-3xl font-bold mb-2">Interactive playground</h2>
+              <p className="text-muted-foreground mb-8">
+                Three ways to integrate — pick the one that fits your workflow and try the commands below.
+              </p>
+
+              {/* Capability cards */}
+              <div className="grid lg:grid-cols-3 gap-6 mb-10">
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TerminalSquare className="h-5 w-5 text-primary" /> CLI
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    Authenticate, list circuits, create items, and add events from your terminal in under 2 minutes.
+                  </CardContent>
+                </Card>
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Code2 className="h-5 w-5 text-primary" /> SDK
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    Integrate into partner systems with TypeScript. Standard auth + ingestion flow with full type safety.
+                  </CardContent>
+                </Card>
+                <Card className="border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <DatabaseZap className="h-5 w-5 text-primary" /> REST API
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted-foreground">
+                    Single bulk ingestion endpoint for the Partner Portal and direct integrations (<code className="text-xs bg-muted px-1 rounded">POST /api/items/bulk</code>).
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Tabbed code examples */}
+              <Tabs defaultValue="cli" className="w-full">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="cli" className="gap-1.5"><TerminalSquare className="h-4 w-4" /> CLI</TabsTrigger>
+                  <TabsTrigger value="api" className="gap-1.5"><DatabaseZap className="h-4 w-4" /> REST API</TabsTrigger>
+                  <TabsTrigger value="sdk" className="gap-1.5"><Code2 className="h-4 w-4" /> SDK</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="cli">
+                  <CodeBlock code={cliSnippet} language="bash" />
+                </TabsContent>
+                <TabsContent value="api">
+                  <CodeBlock code={apiSnippet} language="bash" />
+                </TabsContent>
+                <TabsContent value="sdk">
+                  <CodeBlock code={sdkSnippet} language="typescript" />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </section>
+
+        {/* Demo script + links */}
+        <section className="py-16 bg-muted/40 border-y">
           <div className="section-container">
             <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2"><Rocket className="h-5 w-5 text-emerald-600" /> Script de demo (10 minutos)</CardTitle>
+                  <CardTitle className="text-xl flex items-center gap-2"><Rocket className="h-5 w-5 text-primary" /> Live demo script (10 min)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-muted-foreground">
-                  <p>1. Mostrar circuito parceiro (CowPro/Gerbov) e itens já tokenizados.</p>
-                  <p>2. Ingerir um novo item ao vivo e provar deduplicação por canônico.</p>
-                  <p>3. Registrar evento tipado e abrir timeline do item.</p>
-                  <p>4. Exibir página pública do circuito e link de compartilhamento.</p>
-                  <p>5. Mostrar recibo/log da ingestão para auditoria.</p>
+                  <p className="flex items-start gap-2"><span className="font-bold text-foreground w-5 shrink-0">1.</span> Show partner circuit (CowPro / Gerbov) with existing tokenized items.</p>
+                  <p className="flex items-start gap-2"><span className="font-bold text-foreground w-5 shrink-0">2.</span> Ingest a new item live and prove canonical deduplication.</p>
+                  <p className="flex items-start gap-2"><span className="font-bold text-foreground w-5 shrink-0">3.</span> Record a typed event and open the item timeline.</p>
+                  <p className="flex items-start gap-2"><span className="font-bold text-foreground w-5 shrink-0">4.</span> Display the public circuit page and shareable link.</p>
+                  <p className="flex items-start gap-2"><span className="font-bold text-foreground w-5 shrink-0">5.</span> Show ingestion receipt / log for audit evidence.</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2"><FileText className="h-5 w-5 text-emerald-600" /> Links de apoio</CardTitle>
+                  <CardTitle className="text-xl flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Resources</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  <Link className="block text-primary hover:underline" to="/app/parceiro">Portal Parceiro</Link>
-                  <a className="block text-primary hover:underline" href="/openapi.yaml">OpenAPI (gateway)</a>
-                  <Link className="block text-primary hover:underline" to="/stellar">Página principal do grant</Link>
-                  <p className="text-muted-foreground">Doc técnico interno: <code>engines/docs/partner/quickstart-cli-sdk.md</code></p>
+                  <Link className="flex items-center gap-2 text-primary hover:underline" to="/app/parceiro">
+                    Partner Portal <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                  <a className="flex items-center gap-2 text-primary hover:underline" href="/openapi.yaml" target="_blank" rel="noopener noreferrer">
+                    OpenAPI specification (gateway) <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  <Link className="flex items-center gap-2 text-primary hover:underline" to="/stellar">
+                    Grant overview page <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                  <p className="text-muted-foreground pt-1">
+                    Technical docs: <code className="text-xs bg-muted px-1.5 py-0.5 rounded">engines/docs/partner/quickstart-cli-sdk.md</code>
+                  </p>
                 </CardContent>
               </Card>
             </div>
