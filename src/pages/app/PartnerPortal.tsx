@@ -4,11 +4,13 @@ import {
   PartnerIntegration,
   PartnerDataFlow,
   PartnerAdapters,
+  PartnerKit,
 } from "@/components/partner";
-import { BarChart3, Key, ArrowRightLeft, Plug } from "lucide-react";
+import { BarChart3, Key, ArrowRightLeft, Plug, PackageOpen } from "lucide-react";
 
 const tabs = [
   { value: "overview", label: "Visão Geral", icon: BarChart3 },
+  { value: "kit", label: "Kit Parceiro", icon: PackageOpen },
   { value: "integration", label: "Integração", icon: Key },
   { value: "dataflow", label: "Fluxo de Dados", icon: ArrowRightLeft },
   { value: "adapters", label: "Adaptadores", icon: Plug },
@@ -41,6 +43,7 @@ export default function PartnerPortal() {
         </TabsList>
 
         <TabsContent value="overview"><PartnerOverview /></TabsContent>
+        <TabsContent value="kit"><PartnerKit /></TabsContent>
         <TabsContent value="integration"><PartnerIntegration /></TabsContent>
         <TabsContent value="dataflow"><PartnerDataFlow /></TabsContent>
         <TabsContent value="adapters"><PartnerAdapters /></TabsContent>
