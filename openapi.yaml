@@ -11463,7 +11463,31 @@ paths:
           application/json:
             schema:
               type: object
-              additionalProperties: true
+              required:
+              - input
+              properties:
+                input:
+                  type: object
+                  required:
+                  - type
+                  - value
+                  properties:
+                    type:
+                      type: string
+                      description: Compliance input kind. Use values like CAR, CPF, CNPJ.
+                      example: CAR
+                    value:
+                      type: string
+                      description: Document/value to be checked.
+                      example: MT-5107065-66FFD397690C4C9A9A62E572B932847E
+              additionalProperties: false
+            examples:
+              carCheck:
+                summary: CAR compliance check
+                value:
+                  input:
+                    type: CAR
+                    value: MT-5107065-66FFD397690C4C9A9A62E572B932847E
       responses:
         '200':
           description: Compliance check accepted
@@ -11572,3 +11596,19 @@ paths:
                 additionalProperties: true
         '401':
           description: Unauthorized
+  /api/compliance/samples/car:
+    get:
+      tags:
+      - Compliance
+      summary: List sample CAR numbers for testing (public)
+      description: Returns sample CAR records and a ready-to-use payload format for POST /api/compliance/check.
+      operationId: getComplianceCarSamples
+      security: []
+      responses:
+        '200':
+          description: Sample CAR records
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
