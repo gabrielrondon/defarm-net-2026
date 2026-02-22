@@ -953,6 +953,50 @@ export interface PublicItemEvent {
   created_at: string;
 }
 
+export interface SearchRequest {
+  query: string;
+  circuit_id?: string | null;
+  filters?: Record<string, unknown> | null;
+  page?: number;
+  page_size?: number;
+}
+
+export interface SearchResultItem extends Item {
+  rank?: number;
+}
+
+export interface SearchResponse {
+  results: SearchResultItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface IdentifierSearchResponse {
+  item: Item;
+  identifier_type: string;
+  identifier_value: string;
+  is_canonical: boolean;
+}
+
+export interface AnalyticsKpisResponse {
+  active_items: number;
+  items_24h: number;
+  active_circuits: number;
+  events_1h: number;
+  pending_anchors: number;
+  avg_confirmations: number;
+}
+
+export interface BlockchainMetricsResponse {
+  total_anchors: number;
+  confirmed_anchors: number;
+  failed_anchors: number;
+  pending_anchors: number;
+  avg_confirmations: number;
+  success_rate: number;
+}
+
 // --- Item Relationships ---
 
 export interface ItemRelationshipRecord {

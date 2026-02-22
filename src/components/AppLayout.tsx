@@ -22,6 +22,7 @@ import {
   Fingerprint,
   ListTodo,
   Handshake,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -66,6 +67,7 @@ const partnerNavItem: NavItem = {
 
 const adminNavItems: NavItem[] = [
   { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas" },
+  { icon: Search, label: "Search/Analytics", href: "/app/admin/search-analytics" },
   { icon: Users, label: "Usuários", href: "/app/admin/usuarios" },
   { icon: Fingerprint, label: "Identificadores", href: "/app/admin/identificadores" },
   { icon: ListTodo, label: "Fila de Jobs", href: "/app/admin/jobs" },
