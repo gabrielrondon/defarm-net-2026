@@ -2352,6 +2352,13 @@ components:
           type: string
         snapshot_type:
           type: string
+          description: Type of snapshot.
+          enum:
+          - manual
+          - automatic
+          - scheduled
+          - pre_update
+          - pre_delete
     CreateWebhookInput:
       description: Request payload to create a new webhook. Requires URL and event
         types.
@@ -3558,6 +3565,13 @@ components:
           format: uuid
         snapshot_type:
           type: string
+          description: Snapshot policy type.
+          enum:
+          - manual
+          - automatic
+          - scheduled
+          - pre_update
+          - pre_delete
         resource_type:
           type: string
           nullable: true
@@ -10332,7 +10346,7 @@ paths:
         access to.
 
 
-        **Example**: `GET /snapshots?snapshot_type=full&is_archived=false&limit=50`
+        **Example**: `GET /snapshots?snapshot_type=manual&is_archived=false&limit=50`
 
 
         **Permissions Required**: Access to at least one circuit in your workspace'
