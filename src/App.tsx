@@ -108,6 +108,16 @@ function RequirePartnerOrAdmin({ children }: { children: ReactNode }) {
   return children;
 }
 
+function WorkspaceHome() {
+  const { isLoading, isAuthenticated, user } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.workspace_type === "partner" && !user?.is_admin) {
+    return <Navigate to="/app/parceiro" replace />;
+  }
+  return <Caderneta />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -137,7 +147,7 @@ const App = () => (
             <Route path="/_demo/narrativa/:actorType" element={<DemoNarrativa />} />
             
             {/* App routes (protected) */}
-            <Route path="/app" element={<AppLayout><Caderneta /></AppLayout>} />
+            <Route path="/app" element={<AppLayout><WorkspaceHome /></AppLayout>} />
             <Route path="/app/caderneta" element={<AppLayout><Caderneta /></AppLayout>} />
             
             <Route path="/app/descobrir" element={<AppLayout><CircuitDiscovery /></AppLayout>} />

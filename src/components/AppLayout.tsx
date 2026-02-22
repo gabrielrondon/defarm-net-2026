@@ -23,6 +23,7 @@ import {
   ListTodo,
   Handshake,
   Search,
+  Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -45,16 +46,17 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
+  { icon: BookOpen, label: "Minha Caderneta", href: "/app", workspaceTypes: ["producer", "processor", "certifier"] },
 
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos", workspaceTypes: ["producer", "partner", "processor", "certifier"] },
-  { icon: Compass, label: "Descobrir", href: "/app/descobrir", workspaceTypes: ["producer", "partner", "processor", "certifier"] },
+  { icon: Compass, label: "Descobrir", href: "/app/descobrir", workspaceTypes: ["producer", "processor", "certifier"] },
   { icon: Package, label: "Itens", href: "/app/itens", workspaceTypes: ["producer", "partner", "processor", "certifier"] },
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims", workspaceTypes: ["producer", "certifier"] },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho", workspaceTypes: ["producer", "certifier"] },
   { icon: Activity, label: "Eventos", href: "/app/eventos", workspaceTypes: ["producer", "partner", "processor", "certifier"] },
   { icon: Shield, label: "Auditoria", href: "/app/auditoria", workspaceTypes: ["producer", "processor", "certifier"] },
   { icon: Camera, label: "Snapshots", href: "/app/snapshots", workspaceTypes: ["producer", "certifier"] },
+  { icon: Key, label: "API Keys", href: "/app/api-keys", workspaceTypes: ["partner"] },
   { icon: Landmark, label: "DeFarm Finance", href: "/app/finance", workspaceTypes: ["producer", "processor"] },
   { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance", workspaceTypes: ["producer", "processor", "certifier"] },
 ];
