@@ -17,6 +17,7 @@ import { ArrowLeft, Save, Loader2, GitBranch, Shield, Globe, Eye, Search as Sear
 import { useToast } from "@/hooks/use-toast";
 import { getCircuit, updateCircuit } from "@/lib/defarm-api";
 import type { UpdateCircuitRequest } from "@/lib/api/types";
+import { isCircuitPublic } from "@/lib/circuit-ui";
 
 export default function EditarCircuito() {
   const { id } = useParams<{ id: string }>();
@@ -27,9 +28,11 @@ export default function EditarCircuito() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<string>("private");
+  const [status, setStatus] = useState<string>("Active");
   const [discoveryEnabled, setDiscoveryEnabled] = useState(false);
   const [searchable, setSearchable] = useState(false);
   const [allowJoinRequests, setAllowJoinRequests] = useState(true);
+  const [publicSlug, setPublicSlug] = useState("");
   const [publicDescription, setPublicDescription] = useState("");
   const [publicContactEmail, setPublicContactEmail] = useState("");
   const [publicWebsite, setPublicWebsite] = useState("");
@@ -47,9 +50,11 @@ export default function EditarCircuito() {
       setName(circuit.name);
       setDescription(circuit.description || "");
       setVisibility(circuit.visibility || "private");
+      setStatus(circuit.status || "Active");
       setDiscoveryEnabled(circuit.discovery_enabled || false);
       setSearchable(circuit.searchable || false);
       setAllowJoinRequests(circuit.allow_join_requests ?? true);
+      setPublicSlug(circuit.public_slug || "");
       setPublicDescription(circuit.public_description || "");
       setPublicContactEmail(circuit.public_contact_email || "");
       setPublicWebsite(circuit.public_website || "");
@@ -82,10 +87,12 @@ export default function EditarCircuito() {
     updateMutation.mutate({
       name,
       description,
+      status,
       visibility,
       discovery_enabled: visibility === "public" ? discoveryEnabled : false,
       searchable: visibility === "public" ? searchable : false,
       allow_join_requests: visibility === "public" ? allowJoinRequests : false,
+      public_slug: visibility === "public" ? publicSlug || null : null,
       public_description: visibility === "public" ? publicDescription : null,
       public_contact_email: visibility === "public" ? publicContactEmail : null,
       public_website: visibility === "public" ? publicWebsite : null,
@@ -198,10 +205,28 @@ export default function EditarCircuito() {
               Circuitos públicos podem ser vistos por qualquer pessoa com o link
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Status operacional</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Ativo</SelectItem>
+                <SelectItem value="Inactive">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {status === "Active"
+                ? "Ativo: o circuito aparece como operacional e entra nos fluxos padrão."
+                : "Inativo: mantém histórico, mas sai dos fluxos operacionais principais."}
+            </p>
+          </div>
         </div>
 
         {/* Discovery & Public Profile */}
-        {visibility === "public" && (
+        {isCircuitPublic(visibility) && (
           <div className="bg-background border border-border rounded-2xl p-6 space-y-6">
             <div className="flex items-center gap-3 pb-4 border-b border-border">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -236,6 +261,19 @@ export default function EditarCircuito() {
                   <p className="text-xs text-muted-foreground">Permite que visitantes solicitem participação</p>
                 </div>
                 <Switch checked={allowJoinRequests} onCheckedChange={setAllowJoinRequests} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="publicSlug">URL pública (slug)</Label>
+                <Input
+                  id="publicSlug"
+                  placeholder="meu-circuito"
+                  value={publicSlug}
+                  onChange={(e) => setPublicSlug(e.target.value.replace(/\s+/g, "-").toLowerCase())}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Link público: {window.location.origin}/c/{publicSlug || circuit.id}
+                </p>
               </div>
 
               <div className="space-y-2">

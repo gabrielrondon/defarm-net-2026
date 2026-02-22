@@ -16,6 +16,8 @@ import {
   QrCode,
   Loader2,
   Copy,
+  MessageCircle,
+  Mail,
   CheckCircle2,
   XCircle,
   Shield,
@@ -69,6 +71,7 @@ import {
 } from "@/lib/defarm-api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import CircuitAdaptersPanel from "@/components/circuit/CircuitAdaptersPanel";
+import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 export default function CircuitoDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -80,6 +83,7 @@ export default function CircuitoDetail() {
   const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
 
   // Fetch circuit details
   const { data: circuit, isLoading: isLoadingCircuit, error: circuitError } = useQuery({
@@ -190,6 +194,25 @@ export default function CircuitoDetail() {
     }
   };
 
+  const isPublic = isCircuitPublic(circuit.visibility);
+  const publicPathId = (circuit.public_slug || "").trim() || circuit.id;
+  const publicUrl = `${window.location.origin}/c/${publicPathId}`;
+
+  const handleCopyPublicUrl = () => {
+    navigator.clipboard.writeText(publicUrl);
+    setCopiedPublicUrl(true);
+    setTimeout(() => setCopiedPublicUrl(false), 2000);
+  };
+
+  const shareMessage = `Veja o circuito "${circuit.name}" na DeFarm: ${publicUrl}`;
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+  const emailShareUrl = `mailto:?subject=${encodeURIComponent(`Circuito ${circuit.name} - DeFarm`)}&body=${encodeURIComponent(shareMessage)}`;
+  const memberCount = Array.isArray((circuit as any).members)
+    ? (circuit as any).members.length
+    : typeof (circuit as any).member_count === "number"
+    ? (circuit as any).member_count
+    : 1;
+
   const handlePushItem = () => {
     if (selectedItem && id) {
       pushMutation.mutate({ circuitId: id, itemId: selectedItem });
@@ -246,24 +269,38 @@ export default function CircuitoDetail() {
                 <h1 className="text-2xl font-bold text-foreground">
                   {circuit.name}
                 </h1>
+                {(() => {
+                  const normalizedStatus = normalizeCircuitStatus(circuit.status);
+                  return (
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    circuit.status === "Active"
+                    normalizedStatus === "active"
                       ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
+                      : normalizedStatus === "inactive"
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-amber-500/10 text-amber-700"
                   )}
                 >
                   <span
                     className={cn(
                       "w-1.5 h-1.5 rounded-full",
-                      circuit.status === "Active" ? "bg-primary" : "bg-muted-foreground"
+                      normalizedStatus === "active"
+                        ? "bg-primary"
+                        : normalizedStatus === "inactive"
+                        ? "bg-muted-foreground"
+                        : "bg-amber-600"
                     )}
                   />
-                  {circuit.status === "Active" ? "Ativo" : "Inativo"}
+                  {circuitStatusLabel(circuit.status)}
                 </span>
+                  );
+                })()}
               </div>
               <p className="text-muted-foreground">{circuit.description || "Sem descrição"}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Status operacional: Ativo aparece em listas e fluxos de operação; Inativo mantém histórico, mas sai dos fluxos principais.
+              </p>
               <div className="flex items-center gap-2 mt-2">
                 <button
                   onClick={handleCopyId}
@@ -421,7 +458,7 @@ export default function CircuitoDetail() {
               <Users className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">1</p>
+              <p className="text-2xl font-bold text-foreground">{memberCount}</p>
               <p className="text-sm text-muted-foreground">Membros</p>
             </div>
           </div>
@@ -437,7 +474,7 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-lg font-bold text-foreground">
-                {circuit.visibility === "public" ? "Público" : "Privado"}
+                {isPublic ? "Público" : "Privado"}
               </p>
               <p className="text-sm text-muted-foreground">Visibilidade</p>
             </div>
@@ -450,11 +487,49 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-lg font-bold text-foreground capitalize">
-                {circuit.circuit_type || "Standard"}
+                {circuitTypeLabel(circuit.circuit_type)}
               </p>
               <p className="text-sm text-muted-foreground">Tipo</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-background border border-border rounded-xl p-4 space-y-3">
+        <div>
+          <h2 className="font-semibold text-foreground">Compartilhamento público</h2>
+          <p className="text-sm text-muted-foreground">
+            {isPublic
+              ? "Use este link para compartilhar a página pública do circuito."
+              : "Este circuito está privado. Torne público em Editar para gerar uma página compartilhável."}
+          </p>
+        </div>
+        <div className="flex flex-col md:flex-row gap-2 md:items-center">
+          <Input readOnly value={publicUrl} className="font-mono text-xs" />
+          <Button variant="outline" onClick={handleCopyPublicUrl} disabled={!isPublic}>
+            {copiedPublicUrl ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+            Copiar URL
+          </Button>
+          <a href={whatsappShareUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" disabled={!isPublic}>
+              <MessageCircle className="h-4 w-4 mr-2" />
+              WhatsApp
+            </Button>
+          </a>
+          <a href={emailShareUrl}>
+            <Button variant="outline" disabled={!isPublic}>
+              <Mail className="h-4 w-4 mr-2" />
+              Email
+            </Button>
+          </a>
+          {isPublic && (
+            <Link to={`/c/${publicPathId}`} target="_blank">
+              <Button variant="outline">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Abrir página pública
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

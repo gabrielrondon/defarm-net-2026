@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { getCircuits } from "@/lib/defarm-api";
+import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 
 export default function CircuitosList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,8 +41,8 @@ export default function CircuitosList() {
     const matchesSearch = circuit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (circuit.description || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === "all" || 
-      (filter === "active" && circuit.status === "Active") ||
-      (filter === "inactive" && circuit.status === "Inactive");
+      (filter === "active" && normalizeCircuitStatus(circuit.status) === "active") ||
+      (filter === "inactive" && normalizeCircuitStatus(circuit.status) === "inactive");
     return matchesSearch && matchesFilter;
   });
 
@@ -122,6 +123,10 @@ export default function CircuitosList() {
       {filteredCircuits.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCircuits.map((circuit) => (
+            (() => {
+              const normalizedStatus = normalizeCircuitStatus(circuit.status);
+              const isPublic = isCircuitPublic(circuit.visibility);
+              return (
             <div
               key={circuit.id}
               className="bg-background border border-border rounded-2xl p-6 hover:border-primary/50 transition-colors group"
@@ -135,13 +140,19 @@ export default function CircuitosList() {
                     "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
                     circuit.status === "Active" 
                       ? "bg-primary/10 text-primary" 
-                      : "bg-muted text-muted-foreground"
+                      : normalizedStatus === "inactive"
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-amber-500/10 text-amber-700"
                   )}>
                     <span className={cn(
                       "w-1.5 h-1.5 rounded-full",
-                      circuit.status === "Active" ? "bg-primary" : "bg-muted-foreground"
+                      normalizedStatus === "active"
+                        ? "bg-primary"
+                        : normalizedStatus === "inactive"
+                        ? "bg-muted-foreground"
+                        : "bg-amber-600"
                     )} />
-                    {circuit.status === "Active" ? "Ativo" : "Inativo"}
+                    {circuitStatusLabel(circuit.status)}
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -168,15 +179,15 @@ export default function CircuitosList() {
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                 <span className="flex items-center gap-1">
                   <Package className="h-4 w-4" />
-                  {circuit.circuit_type || "Standard"}
+                  {circuitTypeLabel(circuit.circuit_type)}
                 </span>
                 <span className="flex items-center gap-1">
-                  {circuit.visibility === "public" ? (
+                  {isPublic ? (
                     <Globe className="h-4 w-4" />
                   ) : (
                     <Lock className="h-4 w-4" />
                   )}
-                  {circuit.visibility === "public" ? "Público" : "Privado"}
+                  {isPublic ? "Público" : "Privado"}
                 </span>
               </div>
 
@@ -187,6 +198,8 @@ export default function CircuitosList() {
                 </Button>
               </Link>
             </div>
+              );
+            })()
           ))}
         </div>
       ) : (

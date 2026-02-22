@@ -1,0 +1,26 @@
+export function normalizeCircuitStatus(raw?: string | null): "active" | "inactive" | "unknown" {
+  const value = (raw || "").trim().toLowerCase();
+  if (value === "active") return "active";
+  if (value === "inactive") return "inactive";
+  return "unknown";
+}
+
+export function circuitStatusLabel(raw?: string | null): string {
+  const normalized = normalizeCircuitStatus(raw);
+  if (normalized === "active") return "Ativo";
+  if (normalized === "inactive") return "Inativo";
+  return raw || "Desconhecido";
+}
+
+export function circuitTypeLabel(raw?: string | null): string {
+  const value = (raw || "").trim().toLowerCase();
+  if (!value || value === "standard" || value === "private") return "Padrão";
+  if (value === "supply_chain") return "Cadeia de suprimentos";
+  if (value === "compliance") return "Compliance";
+  if (value === "audit") return "Auditoria";
+  return raw || "Padrão";
+}
+
+export function isCircuitPublic(visibility?: string | null): boolean {
+  return (visibility || "").trim().toLowerCase() === "public";
+}
