@@ -219,6 +219,41 @@ await sdk.events.add({
   payload: { vaccine: "aftosa" },
 });`;
 
+const envTemplate = `# .env.partner-demo
+DEFARM_GATEWAY=https://gateway.defarm.net
+DEFARM_API_KEY=your_partner_api_key_here
+DEFARM_CIRCUIT_ID=your_circuit_id_here
+DEFARM_ITEM_ID=your_item_id_here`;
+
+const quickstartScript = `# 1) prerequisites
+npx @defarm/cli --help
+
+# 2) configure api key
+npx @defarm/cli auth api-key --key "$DEFARM_API_KEY"
+
+# 3) list circuits
+npx @defarm/cli circuits list
+
+# 4) create one item in the circuit
+npx @defarm/cli items new \\
+  --value-chain BEEF \\
+  --country BR \\
+  --year 2026 \\
+  --circuit-id "$DEFARM_CIRCUIT_ID" \\
+  --metadata '{"canonical_type":"sisbov","canonical_id":"105500497219983","source":"quickstart"}'
+
+# 5) list items in circuit
+npx @defarm/cli items list --circuit "$DEFARM_CIRCUIT_ID"
+
+# 6) add typed event
+npx @defarm/cli events add \\
+  --event-type item_vaccinated \\
+  --source-type partner \\
+  --source-id quickstart \\
+  --circuit-id "$DEFARM_CIRCUIT_ID" \\
+  --item-id "$DEFARM_ITEM_ID" \\
+  --payload '{"vaccine":"aftosa","batch":"A1"}'`;
+
 /* ── component ─────────────────────────────────────────── */
 
 function CodeBlock({ code, language }: { code: string; language: string }) {
@@ -245,6 +280,10 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
 
 const StellarTranche1 = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
+  const copyText = (value: string, label: string) => {
+    navigator.clipboard.writeText(value);
+    toast.success(`${label} copied`);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -308,6 +347,28 @@ const StellarTranche1 = () => {
         <section className="py-16 bg-muted/40 border-y">
           <div className="section-container">
             <div className="max-w-5xl mx-auto">
+              <Card className="mb-8 border-primary/30">
+                <CardHeader>
+                  <CardTitle className="text-xl">Quickstart mode (new developer)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Fastest way to run end-to-end without prior DeFarm knowledge: set env vars, copy one script, execute in terminal.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={() => copyText(envTemplate, ".env template")}>Copy .env template</Button>
+                    <Button size="sm" variant="outline" onClick={() => copyText(quickstartScript, "Quickstart script")}>Copy all 6 steps</Button>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">.env template</p>
+                    <CodeBlock code={envTemplate} language="env" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Terminal script</p>
+                    <CodeBlock code={quickstartScript} language="bash" />
+                  </div>
+                </CardContent>
+              </Card>
               <h2 className="text-3xl font-bold mb-2">Execution steps</h2>
               <p className="text-muted-foreground mb-8">Click any step for details.</p>
               <div className="space-y-3">
