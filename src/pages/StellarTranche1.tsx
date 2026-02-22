@@ -34,34 +34,78 @@ const deliverables = [
 
 const steps = [
   {
-    title: "Prepare workspace & authentication",
-    detail:
-      "Create or validate a partner-type workspace, generate credentials, and confirm gateway access. This closes identity and authorization for the integration.",
+    title: "Install CLI and set your gateway",
+    goal: "Confirm your machine is ready and point CLI to DeFarm gateway.",
+    commands: `npx @defarm/cli --help
+npx @defarm/cli workspace init --gateway https://gateway.defarm.net
+npx @defarm/cli workspace status`,
+    expected: "CLI prints command help and shows gateway config saved in ~/.defarm/config.json.",
+    nextAction: "If this fails, fix Node/npm first. If it works, configure authentication.",
   },
   {
-    title: "Define canonical identifiers & mapping",
-    detail:
-      "Choose the primary canonical identifier (SISBOV, chip, ear_tag, etc.), map columns, and configure fallback to prevent DFID duplication.",
+    title: "Authenticate (API key recommended)",
+    goal: "Use partner API key for production-safe integrations (or email/password for interactive tests).",
+    commands: `# Preferred: API key
+npx @defarm/cli auth api-key --key '<partner_api_key>'
+npx @defarm/cli auth whoami
+
+# Alternative: email/password
+npx @defarm/cli auth login --email partner@example.com --password '******'
+npx @defarm/cli auth whoami`,
+    expected: "whoami returns your user/workspace context with workspace_type=partner.",
+    nextAction: "List circuits and pick the target circuit_id for ingest.",
   },
   {
-    title: "Ingest via a single endpoint",
-    detail:
-      "Send data to POST /api/items/bulk — the same endpoint used by the Partner Portal. Activate saved partner templates to reduce friction.",
+    title: "Get circuit_id and validate permissions",
+    goal: "Find an existing circuit to receive items and ensure you can read/write there.",
+    commands: `npx @defarm/cli circuits list
+npx @defarm/cli circuits show <circuit_id>
+npx @defarm/cli circuits members <circuit_id>`,
+    expected: "Circuit appears with valid id, visibility and active status.",
+    nextAction: "Start ingesting items using canonical identifiers.",
   },
   {
-    title: "Enrich with typed events",
-    detail:
-      "Record typed events (item_movement, item_vaccinated, item_weighed…) to build an operational timeline and audit trail.",
+    title: "Create first item with canonical metadata",
+    goal: "Tokenize one item to validate your mapping and deduplication strategy.",
+    commands: `npx @defarm/cli items new \\
+  --value-chain BEEF \\
+  --country BR \\
+  --year 2026 \\
+  --circuit-id <circuit_id> \\
+  --metadata '{"canonical_type":"sisbov","canonical_id":"105500497219983","source":"partner_demo"}'
+
+npx @defarm/cli items list --circuit <circuit_id>`,
+    expected: "A new DFID item appears in the circuit. Metadata contains canonical info.",
+    nextAction: "Add typed events to build timeline and operational proof.",
   },
   {
-    title: "Validate circuit & public view",
-    detail:
-      "Confirm items in the circuit, public/private visibility, shareable URL, and consistency of the public page for demonstration.",
+    title: "Add typed event and verify timeline data",
+    goal: "Attach business events (vaccination, movement, weighing) to the tokenized item.",
+    commands: `npx @defarm/cli events add \\
+  --event-type item_vaccinated \\
+  --source-type partner \\
+  --source-id partner_demo \\
+  --circuit-id <circuit_id> \\
+  --item-id <item_id> \\
+  --payload '{"vaccine":"aftosa","batch":"A1"}'
+
+npx @defarm/cli events list --circuit <circuit_id>`,
+    expected: "Event appears linked to the item/circuit and becomes available for timeline rendering.",
+    nextAction: "Run bulk ingestion and verify public/private presentation.",
   },
   {
-    title: "Tranche evidence package",
-    detail:
-      "Collect receipts, CLI/SDK test outputs, and integration logs from two partners to deliver the Tranche 1 evidence package.",
+    title: "Run bulk ingest and publish evidence",
+    goal: "Move from single-item test to partner-scale flow and generate delivery evidence.",
+    commands: `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
+  -H "x-api-key: <partner_api_key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "circuit_id":"<circuit_id>", "items":[{ "value_chain":"BEEF","country":"BR","year":2026,"identifiers":[{"identifier_type":"sisbov","identifier_value":"105500497219983"}],"metadata":{"source":"partner_bulk"}} ] }'
+
+# Optional UI checks
+# /app/circuitos/<circuit_id>
+# /c/<public_circuit_id>`,
+    expected: "Bulk request returns receipt/success; circuit details and public page reflect new records.",
+    nextAction: "Save command output + screenshots as tranche evidence package.",
   },
 ];
 
@@ -282,8 +326,23 @@ const StellarTranche1 = () => {
                       </CardTitle>
                     </CardHeader>
                     {activeStep === index && (
-                      <CardContent>
-                        <p className="text-muted-foreground pl-10">{step.detail}</p>
+                      <CardContent className="pl-10 space-y-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Goal</p>
+                          <p className="text-sm text-foreground mt-1">{step.goal}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Run in terminal</p>
+                          <CodeBlock code={step.commands} language="bash" />
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Expected result</p>
+                          <p className="text-sm text-foreground mt-1">{step.expected}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">Next action</p>
+                          <p className="text-sm text-foreground mt-1">{step.nextAction}</p>
+                        </div>
                       </CardContent>
                     )}
                   </Card>
