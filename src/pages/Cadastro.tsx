@@ -4,6 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, Loader2, Eye, EyeOff, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
@@ -16,6 +23,7 @@ export default function Cadastro() {
   const [password, setPassword] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceSlug, setWorkspaceSlug] = useState("");
+  const [workspaceType, setWorkspaceType] = useState<"partner" | "producer" | "processor" | "certifier">("producer");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
@@ -54,6 +62,7 @@ export default function Cadastro() {
         full_name: fullName,
         workspace_slug: workspaceSlug || fullName.toLowerCase().replace(/\s+/g, "-"),
         workspace_name: workspaceName || fullName,
+        workspace_type: workspaceType,
       });
       navigate("/app");
     } catch (error) {
@@ -152,6 +161,24 @@ export default function Cadastro() {
                 onChange={(e) => setWorkspaceName(e.target.value)}
                 className="h-12"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workspaceType">Tipo de workspace</Label>
+              <Select value={workspaceType} onValueChange={(value) => setWorkspaceType(value as "partner" | "producer" | "processor" | "certifier")}>
+                <SelectTrigger id="workspaceType" className="h-12">
+                  <SelectValue placeholder="Selecione um tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="producer">Produtor</SelectItem>
+                  <SelectItem value="partner">Parceiro de dados</SelectItem>
+                  <SelectItem value="processor">Processador</SelectItem>
+                  <SelectItem value="certifier">Certificador</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Isso define os recursos iniciais habilitados no seu workspace.
+              </p>
             </div>
 
             <div className="space-y-2">

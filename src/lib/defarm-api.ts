@@ -40,6 +40,7 @@ export interface RegisterRequest {
   full_name: string;
   workspace_slug?: string;
   workspace_name?: string;
+  workspace_type?: "partner" | "producer" | "processor" | "certifier";
 }
 
 export interface AuthUser {
