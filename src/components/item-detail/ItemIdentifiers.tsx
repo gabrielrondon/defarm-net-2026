@@ -1,5 +1,5 @@
 import { Tag, MapPin, Wheat, Calendar, Link2, ExternalLink, Hash, Database } from "lucide-react";
-import { Item, IdentifierResponse, AdapterBlockchainAnchor, AdapterStorageRef } from "@/lib/defarm-api";
+import { Item, IdentifierResponse, AdapterBlockchainAnchor, AdapterStorageRef, ItemVersionInfo } from "@/lib/defarm-api";
 import { formatTime } from "./constants";
 
 interface ItemIdentifiersProps {
@@ -8,6 +8,7 @@ interface ItemIdentifiersProps {
   canonicalIdentifier?: IdentifierResponse | null;
   blockchainAnchors?: AdapterBlockchainAnchor[];
   storageRefs?: AdapterStorageRef[];
+  versions?: ItemVersionInfo[];
 }
 
 function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
@@ -46,7 +47,7 @@ function IpfsLink({ storageRef }: { storageRef: AdapterStorageRef }) {
   );
 }
 
-export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, blockchainAnchors = [], storageRefs = [] }: ItemIdentifiersProps) {
+export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, blockchainAnchors = [], storageRefs = [], versions = [] }: ItemIdentifiersProps) {
   const metadata = item?.metadata || {};
   const metadataEntries = Object.entries(metadata);
   const itemId = item?.id ?? "";
@@ -215,6 +216,36 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
                       Tamanho: {(ref.size_bytes / 1024).toFixed(1)} KB
                     </p>
                   )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {versions.length > 0 && (
+            <div className="space-y-2 mt-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Histórico de CIDs ({versions.length})
+              </h4>
+              {versions.map((version) => (
+                <div key={version.version} className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      v{version.version} {version.is_latest ? "· latest" : ""}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{formatTime(version.uploaded_at)}</span>
+                  </div>
+                  <a
+                    href={version.gateway_url || `https://gateway.pinata.cloud/ipfs/${version.cid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-primary hover:underline font-mono truncate"
+                  >
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                    {version.cid}
+                  </a>
+                  <p className="text-xs text-muted-foreground">
+                    {version.storage_type} · {version.is_pinned ? "pinned" : "not pinned"}
+                  </p>
                 </div>
               ))}
             </div>

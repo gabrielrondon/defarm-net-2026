@@ -56,3 +56,31 @@ export async function getCircuitTimeline(circuitId: string): Promise<TimelineRes
     return { events: [], total_events: 0, sources: [] };
   }
 }
+
+export interface ItemVersionInfo {
+  version: number;
+  cid: string;
+  is_latest: boolean;
+  uploaded_at: string;
+  gateway_url: string;
+  is_pinned: boolean;
+  storage_type: string;
+}
+
+export interface ItemVersionHistoryResponse {
+  dfid: string;
+  item_id: string;
+  versions: ItemVersionInfo[];
+  total_versions: number;
+}
+
+// Get complete version history (all known CIDs) for an item by DFID
+// Endpoint: GET /api/items/{dfid}/versions
+export async function getItemVersions(dfid: string): Promise<ItemVersionHistoryResponse> {
+  try {
+    return await registryRequest<ItemVersionHistoryResponse>(`/items/${dfid}/versions`);
+  } catch (error) {
+    console.warn("[DeFarm API] Versions endpoint not available:", error);
+    return { dfid, item_id: "", versions: [], total_versions: 0 };
+  }
+}

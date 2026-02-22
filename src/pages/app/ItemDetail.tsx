@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Link2, Loader2, Package, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getItem, getItemEvents, getItemAnchors } from "@/lib/defarm-api";
+import { getItem, getItemEvents, getItemAnchors, getItemVersions } from "@/lib/defarm-api";
 import { ItemHeader, ItemIdentifiers, ItemTimeline } from "@/components/item-detail";
 import { addItemPropertyLink, listItemPropertyLinks, unlinkItemProperty } from "@/lib/api/property-links";
 import { useState } from "react";
@@ -50,6 +50,13 @@ export default function ItemDetail() {
     queryKey: ["itemAnchors", id],
     queryFn: () => getItemAnchors(id!),
     enabled: !!id,
+    retry: 0,
+  });
+
+  const { data: versionsData } = useQuery({
+    queryKey: ["itemVersions", item?.dfid],
+    queryFn: () => getItemVersions(item!.dfid),
+    enabled: !!item?.dfid,
     retry: 0,
   });
 
@@ -144,6 +151,7 @@ export default function ItemDetail() {
           canonicalIdentifier={canonicalIdentifier}
           blockchainAnchors={anchorsData?.blockchain_anchors}
           storageRefs={anchorsData?.storage_refs}
+          versions={versionsData?.versions}
         />
         <ItemTimeline events={allEvents} isLoading={isLoadingEvents} />
       </div>

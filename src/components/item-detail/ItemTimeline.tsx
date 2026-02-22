@@ -1,5 +1,4 @@
-import { Activity, Clock, Loader2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Activity, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
 import { eventTypeLabels, eventTypeColors, formatTime } from "./constants";
@@ -36,6 +35,53 @@ function eventSummary(event: Event): string | null {
   return null;
 }
 
+function visibilityLabel(visibility?: string): string {
+  switch (visibility) {
+    case "public":
+      return "Público";
+    case "private":
+      return "Privado";
+    case "circuit_only":
+      return "Circuito";
+    case "selective":
+      return "Seletivo";
+    default:
+      return "Circuito";
+  }
+}
+
+function compactDetails(event: Event): string[] {
+  const details: string[] = [];
+  const payload = event.payload || {};
+  const metadata = event.metadata || {};
+
+  const candidates: Array<[string, unknown]> = [
+    ["property_dfid", payload.property_dfid],
+    ["gta_number", payload.gta_number],
+    ["status", payload.status],
+    ["source", payload.source],
+    ["source_system", payload.source_system],
+    ["occurred_at", payload.occurred_at],
+    ["tx_hash", payload.tx_hash],
+    ["cid", payload.cid],
+  ];
+
+  for (const [key, value] of candidates) {
+    if (value === undefined || value === null || value === "") continue;
+    details.push(`${key}: ${String(value)}`);
+  }
+
+  if (details.length < 3) {
+    for (const [key, value] of Object.entries(metadata)) {
+      if (value === undefined || value === null || value === "") continue;
+      details.push(`${key}: ${typeof value === "object" ? JSON.stringify(value) : String(value)}`);
+      if (details.length >= 4) break;
+    }
+  }
+
+  return details.slice(0, 4);
+}
+
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   return (
     <div className="lg:col-span-2">
@@ -52,10 +98,6 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Evento
-          </Button>
         </div>
 
         {isLoading ? (
@@ -66,6 +108,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
           <div className="space-y-1">
             {events.map((event, index) => {
               const summary = eventSummary(event);
+              const details = compactDetails(event);
               return (
               <div
                 key={event.id}
@@ -94,13 +137,29 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                       >
                         {eventTypeLabels[event.event_type] || event.event_type}
                       </span>
-                      {summary && (
-                        <p className="text-sm text-foreground mt-2">{summary}</p>
-                      )}
-                      {!summary && event.metadata && Object.keys(event.metadata).length > 0 && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {JSON.stringify(event.metadata)}
-                        </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-background border border-border text-muted-foreground">
+                          {visibilityLabel(event.visibility)}
+                        </span>
+                        {event.is_duplicate && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700">
+                            duplicado
+                          </span>
+                        )}
+                      </div>
+                      {summary && <p className="text-sm text-foreground mt-2">{summary}</p>}
+                      {!summary && (
+                        <div className="mt-2 space-y-1">
+                          {details.length > 0 ? (
+                            details.map((line) => (
+                              <p key={line} className="text-xs text-muted-foreground break-all">
+                                {line}
+                              </p>
+                            ))
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Sem detalhes adicionais neste evento.</p>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
@@ -124,10 +183,6 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
             <p className="text-muted-foreground mb-4">
               Eventos aparecerão aqui conforme o item é modificado
             </p>
-            <Button variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Evento
-            </Button>
           </div>
         )}
       </div>
