@@ -128,6 +128,7 @@ components:
       - name
       - slug
       - tier
+      - workspace_type
       - role
       properties:
         id:
@@ -139,6 +140,9 @@ components:
           type: string
         tier:
           type: string
+        workspace_type:
+          type: string
+          enum: [partner, producer, processor, certifier]
         role:
           type: string
           enum:
@@ -151,6 +155,7 @@ components:
       required:
       - id
       - email
+      - email_verified
       - is_admin
       - is_active
       - workspace
@@ -161,6 +166,15 @@ components:
         email:
           type: string
           format: email
+        email_verified:
+          type: boolean
+          description: Whether user has verified ownership of email address.
+          example: false
+        pending_email:
+          type: string
+          format: email
+          nullable: true
+          description: New email awaiting verification, when an email change is in progress.
         full_name:
           type: string
           nullable: true
@@ -201,6 +215,21 @@ components:
           example: 900
         user:
           $ref: '#/components/schemas/UserInfo'
+    LoginChallengeResponse:
+      type: object
+      required:
+      - requires_2fa
+      - twofa_token
+      - message
+      properties:
+        requires_2fa:
+          type: boolean
+          enum: [true]
+        twofa_token:
+          type: string
+          description: One-time login challenge token for POST /auth/login/2fa.
+        message:
+          type: string
     AdminUser:
       description: Admin user record for workspace management.
       type: object
@@ -626,6 +655,322 @@ components:
         refresh_token:
           type: string
           description: Refresh token to revoke.
+    UpdateProfileRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 255
+        avatar_url:
+          type: string
+          format: uri
+      description: At least one field must be provided.
+    ChangePasswordRequest:
+      type: object
+      required:
+      - current_password
+      - new_password
+      properties:
+        current_password:
+          type: string
+          format: password
+        new_password:
+          type: string
+          format: password
+          minLength: 8
+    ForgotPasswordRequest:
+      type: object
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+    ResetPasswordRequest:
+      type: object
+      required:
+      - token
+      - new_password
+      properties:
+        token:
+          type: string
+        new_password:
+          type: string
+          format: password
+          minLength: 8
+    VerifyEmailRequest:
+      type: object
+      required:
+      - token
+      properties:
+        token:
+          type: string
+    ChangeEmailRequest:
+      type: object
+      required:
+      - new_email
+      properties:
+        new_email:
+          type: string
+          format: email
+    ConfirmEmailChangeRequest:
+      type: object
+      required:
+      - token
+      properties:
+        token:
+          type: string
+    VerifyLoginTwoFaRequest:
+      type: object
+      required:
+      - twofa_token
+      - code
+      properties:
+        twofa_token:
+          type: string
+        code:
+          type: string
+          description: 6-digit TOTP code or recovery code.
+    AddWorkspaceMemberRequest:
+      type: object
+      required:
+      - email
+      - role
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, member]
+    UpdateWorkspaceMemberRoleRequest:
+      type: object
+      required:
+      - role
+      properties:
+        role:
+          type: string
+          enum: [owner, admin, member]
+    WorkspaceMemberInfo:
+      type: object
+      required:
+      - user_id
+      - email
+      - role
+      - is_admin
+      - is_active
+      - joined_at
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [owner, admin, member]
+        is_admin:
+          type: boolean
+        is_active:
+          type: boolean
+        joined_at:
+          type: string
+          format: date-time
+    WorkspaceMembersResponse:
+      type: object
+      required:
+      - members
+      - count
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberInfo'
+        count:
+          type: integer
+    NotificationPreferencesResponse:
+      type: object
+      required:
+      - email_notifications
+      - push_notifications
+      - circuit_updates
+      - item_alerts
+      properties:
+        email_notifications:
+          type: boolean
+        push_notifications:
+          type: boolean
+        circuit_updates:
+          type: boolean
+        item_alerts:
+          type: boolean
+    UpdateNotificationPreferencesRequest:
+      type: object
+      required:
+      - email_notifications
+      - push_notifications
+      - circuit_updates
+      - item_alerts
+      properties:
+        email_notifications:
+          type: boolean
+        push_notifications:
+          type: boolean
+        circuit_updates:
+          type: boolean
+        item_alerts:
+          type: boolean
+    TwoFaStatusResponse:
+      type: object
+      required:
+      - enabled
+      - recovery_codes_remaining
+      properties:
+        enabled:
+          type: boolean
+        recovery_codes_remaining:
+          type: integer
+    TwoFaSetupResponse:
+      type: object
+      required:
+      - secret
+      - otpauth_url
+      properties:
+        secret:
+          type: string
+        otpauth_url:
+          type: string
+    TwoFaEnableRequest:
+      type: object
+      required:
+      - code
+      properties:
+        code:
+          type: string
+    TwoFaDisableRequest:
+      type: object
+      required:
+      - current_password
+      properties:
+        current_password:
+          type: string
+          format: password
+    RecoveryCodesResponse:
+      type: object
+      required:
+      - recovery_codes
+      properties:
+        recovery_codes:
+          type: array
+          items:
+            type: string
+    SwitchWorkspaceRequest:
+      type: object
+      required:
+      - workspace_id
+      properties:
+        workspace_id:
+          type: string
+          format: uuid
+    MessageResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+    UserWorkspaceSummary:
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - tier
+      - workspace_type
+      - role
+      - is_default
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        tier:
+          type: string
+        workspace_type:
+          type: string
+          enum: [partner, producer, processor, certifier]
+        role:
+          type: string
+        is_default:
+          type: boolean
+    UserWorkspaceListResponse:
+      type: object
+      required:
+      - workspaces
+      - count
+      properties:
+        workspaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserWorkspaceSummary'
+        count:
+          type: integer
+    UserSessionInfo:
+      type: object
+      required:
+      - id
+      - user_id
+      - started_at
+      - last_activity_at
+      - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        started_at:
+          type: string
+          format: date-time
+        last_activity_at:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+        ended_at:
+          type: string
+          format: date-time
+          nullable: true
+        ip_address:
+          type: string
+          nullable: true
+        session_token:
+          type: string
+          nullable: true
+        user_agent:
+          type: string
+          nullable: true
+    UserSessionsResponse:
+      type: object
+      required:
+      - sessions
+      - count
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSessionInfo'
+        count:
+          type: integer
     DFIDGenerateRequest:
       type: object
       required:
@@ -4352,8 +4697,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+        '202':
+          description: Two-factor authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginChallengeResponse'
         '401':
           description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/login/2fa:
+    post:
+      tags:
+      - Authentication
+      summary: Complete login with TOTP or recovery code
+      description: Validate a two-factor challenge returned by POST /auth/login and issue access/refresh tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyLoginTwoFaRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid challenge or invalid 2FA code
           content:
             application/json:
               schema:
@@ -4462,6 +4838,679 @@ paths:
           description: Successfully logged out
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/me:
+    get:
+      tags:
+      - Authentication
+      summary: Get current authenticated user profile
+      description: Returns the current user profile with workspace context resolved from the JWT.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/profile:
+    patch:
+      tags:
+      - Authentication
+      summary: Update current user profile
+      description: Updates profile fields for the authenticated user.
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/change-password:
+    post:
+      tags:
+      - Authentication
+      summary: Change current password
+      description: Changes password for authenticated user and revokes all active refresh tokens.
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/forgot-password:
+    post:
+      tags:
+      - Authentication
+      summary: Start password reset flow
+      description: Generates a password reset token for the given email if it exists. Always returns success message.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Password reset instructions generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/reset-password:
+    post:
+      tags:
+      - Authentication
+      summary: Complete password reset flow
+      description: Resets password using a valid reset token and revokes all active refresh tokens.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/verify-email/request:
+    post:
+      tags:
+      - Authentication
+      summary: Resend verification email for current user
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Verification email processing result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/verify-email:
+    post:
+      tags:
+      - Authentication
+      summary: Verify email using token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Invalid/expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/email/change/request:
+    post:
+      tags:
+      - Authentication
+      summary: Request email change for authenticated user
+      description: Sets pending_email and sends a verification message to the new email address.
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeEmailRequest'
+      responses:
+        '200':
+          description: Verification message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/email/change/confirm:
+    post:
+      tags:
+      - Authentication
+      summary: Confirm email change token
+      description: Public endpoint used by email link to finalize email change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmEmailChangeRequest'
+      responses:
+        '200':
+          description: Email changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/workspaces:
+    get:
+      tags:
+      - Authentication
+      summary: List authenticated user's workspaces
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: List of available workspaces
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWorkspaceListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/workspace/switch:
+    post:
+      tags:
+      - Authentication
+      summary: Switch current default workspace and issue fresh tokens
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchWorkspaceRequest'
+      responses:
+        '200':
+          description: Tokens and profile for selected workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Workspace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/workspace/members:
+    get:
+      tags:
+      - Authentication
+      summary: List members of current workspace
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Workspace member list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMembersResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+      - Authentication
+      summary: Add existing user to current workspace
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWorkspaceMemberRequest'
+      responses:
+        '200':
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberInfo'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Target user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User already in workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/workspace/members/{member_user_id}/role:
+    patch:
+      tags:
+      - Authentication
+      summary: Update role of workspace member
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: member_user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkspaceMemberRoleRequest'
+      responses:
+        '200':
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Workspace member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/workspace/members/{member_user_id}:
+    delete:
+      tags:
+      - Authentication
+      summary: Remove member from current workspace
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: member_user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Member removed
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Workspace member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/notification-preferences:
+    get:
+      tags:
+      - Authentication
+      summary: Get notification preferences for current user/workspace
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+      - Authentication
+      summary: Update notification preferences for current user/workspace
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationPreferencesRequest'
+      responses:
+        '200':
+          description: Preferences updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferencesResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/2fa/status:
+    get:
+      tags:
+      - Authentication
+      summary: Get 2FA status for current user
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: 2FA status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoFaStatusResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/2fa/setup:
+    post:
+      tags:
+      - Authentication
+      summary: Start or rotate TOTP setup
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Setup secret generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwoFaSetupResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/2fa/enable:
+    post:
+      tags:
+      - Authentication
+      summary: Enable 2FA using authenticator code
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TwoFaEnableRequest'
+      responses:
+        '200':
+          description: 2FA enabled and recovery codes issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryCodesResponse'
+        '401':
+          description: Unauthorized or invalid code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/2fa/disable:
+    post:
+      tags:
+      - Authentication
+      summary: Disable 2FA
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TwoFaDisableRequest'
+      responses:
+        '200':
+          description: 2FA disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Unauthorized or invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/2fa/recovery-codes/regenerate:
+    post:
+      tags:
+      - Authentication
+      summary: Regenerate recovery codes
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TwoFaDisableRequest'
+      responses:
+        '200':
+          description: New recovery codes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryCodesResponse'
+        '401':
+          description: Unauthorized or invalid password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/sessions:
+    get:
+      tags:
+      - Authentication
+      summary: List sessions/devices for current user
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Session list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSessionsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - Authentication
+      summary: Revoke all sessions/devices for current user
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Sessions revoked
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/sessions/{session_id}:
+    delete:
+      tags:
+      - Authentication
+      summary: Revoke one session/device
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Session revoked
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
           content:
             application/json:
               schema:
