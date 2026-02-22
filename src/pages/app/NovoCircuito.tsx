@@ -20,7 +20,7 @@ import { createCircuit, CreateCircuitRequest } from "@/lib/defarm-api";
 export default function NovoCircuito() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [circuitType, setCircuitType] = useState("standard");
+  const [circuitType, setCircuitType] = useState("shared");
   const [visibility, setVisibility] = useState("private");
   
   const navigate = useNavigate();
@@ -49,13 +49,22 @@ export default function NovoCircuito() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user?.id) {
+      toast({
+        title: "Sessão inválida",
+        description: "Faça login novamente para criar um circuito.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     createMutation.mutate({
       name,
       description,
       circuit_type: circuitType,
       visibility,
-      owner_id: user?.id || "anonymous",
+      owner_id: user.id,
     });
   };
 
@@ -119,10 +128,9 @@ export default function NovoCircuito() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="supply_chain">Supply Chain</SelectItem>
-                  <SelectItem value="compliance">Compliance</SelectItem>
-                  <SelectItem value="audit">Auditoria</SelectItem>
+                  <SelectItem value="private">Privado</SelectItem>
+                  <SelectItem value="shared">Compartilhado</SelectItem>
+                  <SelectItem value="public">Público</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -149,7 +157,6 @@ export default function NovoCircuito() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="private">Privado</SelectItem>
-                <SelectItem value="restricted">Restrito (apenas membros)</SelectItem>
                 <SelectItem value="public">Público</SelectItem>
               </SelectContent>
             </Select>
