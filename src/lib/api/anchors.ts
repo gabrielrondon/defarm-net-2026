@@ -43,7 +43,7 @@ export async function getItemTimeline(itemId: string): Promise<TimelineResponse>
     return await registryRequest<TimelineResponse>(`/items/${itemId}/timeline`);
   } catch (error) {
     console.warn("[DeFarm API] Timeline endpoint not available:", error);
-    return { item_id: itemId, events: [] };
+    return { events: [], total_events: 0, sources: [] };
   }
 }
 
@@ -53,6 +53,6 @@ export async function getCircuitTimeline(circuitId: string): Promise<TimelineRes
     return await registryRequest<TimelineResponse>(`/circuits/${circuitId}/timeline`);
   } catch (error) {
     console.warn("[DeFarm API] Circuit timeline endpoint not available:", error);
-    return { item_id: circuitId, events: [] };
+    return { events: [], total_events: 0, sources: [] };
   }
 }

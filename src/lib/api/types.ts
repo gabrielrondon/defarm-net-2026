@@ -992,18 +992,22 @@ export interface AdapterAnchorsResponse {
 export interface TimelineEvent {
   id: string;
   event_type: string;
-  description?: string | null;
-  actor_name?: string | null;
-  created_at: string;
+  source: "event" | "blockchain" | "storage" | string;
+  payload: Record<string, unknown>;
   metadata?: Record<string, unknown> | null;
-  // Anchors associated with this timeline event
-  blockchain_anchor?: AdapterBlockchainAnchor | null;
-  storage_ref?: AdapterStorageRef | null;
+  status: string;
+  timestamp: string;
+  user_id?: string | null;
+  circuit_id?: string | null;
+  item_id?: string | null;
+  entity_type: string;
+  entity_id: string;
 }
 
 export interface TimelineResponse {
-  item_id: string;
   events: TimelineEvent[];
+  total_events: number;
+  sources: string[];
 }
 
 // --- Property Links ---

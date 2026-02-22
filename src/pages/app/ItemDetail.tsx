@@ -65,6 +65,8 @@ export default function ItemDetail() {
       setPropertyDfid("");
       setGtaNumber("");
       queryClient.invalidateQueries({ queryKey: ["itemPropertyLinks", id] });
+      queryClient.invalidateQueries({ queryKey: ["itemEvents", id] });
+      queryClient.invalidateQueries({ queryKey: ["item", id] });
       toast({ title: "Vínculo criado", description: "Item associado à propriedade." });
     },
     onError: (err) => {
@@ -80,6 +82,8 @@ export default function ItemDetail() {
     mutationFn: (linkId: string) => unlinkItemProperty(id!, linkId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["itemPropertyLinks", id] });
+      queryClient.invalidateQueries({ queryKey: ["itemEvents", id] });
+      queryClient.invalidateQueries({ queryKey: ["item", id] });
       toast({ title: "Vínculo removido", description: "O vínculo foi encerrado (soft unlink)." });
     },
     onError: (err) => {

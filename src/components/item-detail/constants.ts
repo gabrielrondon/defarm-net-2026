@@ -15,6 +15,14 @@ export const eventTypeLabels: Record<string, string> = {
   item_updated: "Item Atualizado",
   item_archived: "Item Arquivado",
   item_status_changed: "Status Alterado",
+  item_born: "Nascimento",
+  item_weighed: "Pesagem",
+  item_movement: "Movimentação",
+  item_property_linked: "Vinculado à Propriedade",
+  item_property_unlinked: "Desvinculado da Propriedade",
+  property_registered: "Propriedade Registrada",
+  property_audited: "Propriedade Auditada",
+  property_area_updated: "Área da Propriedade Atualizada",
 };
 
 export const eventTypeColors: Record<string, string> = {
@@ -33,6 +41,14 @@ export const eventTypeColors: Record<string, string> = {
   item_updated: "bg-teal-500/10 text-teal-600",
   item_archived: "bg-gray-500/10 text-gray-600",
   item_status_changed: "bg-amber-500/10 text-amber-600",
+  item_born: "bg-emerald-500/10 text-emerald-700",
+  item_weighed: "bg-cyan-500/10 text-cyan-700",
+  item_movement: "bg-indigo-500/10 text-indigo-700",
+  item_property_linked: "bg-sky-500/10 text-sky-700",
+  item_property_unlinked: "bg-rose-500/10 text-rose-700",
+  property_registered: "bg-lime-500/10 text-lime-700",
+  property_audited: "bg-violet-500/10 text-violet-700",
+  property_area_updated: "bg-orange-500/10 text-orange-700",
 };
 
 export const formatTime = (timestamp?: string | null): string => {

@@ -9,6 +9,33 @@ interface ItemTimelineProps {
   isLoading: boolean;
 }
 
+function eventSummary(event: Event): string | null {
+  const payload = event.payload || {};
+  const property = payload.property_dfid;
+  const gta = payload.gta_number;
+  const weight = payload.weight_kg;
+  const occurredAt = payload.occurred_at;
+
+  if (event.event_type === "item_movement") {
+    const base = typeof property === "string" ? `Propriedade: ${property}` : "Movimentação registrada";
+    return typeof gta === "string" && gta.length > 0 ? `${base} · GTA ${gta}` : base;
+  }
+
+  if (event.event_type === "item_property_linked" || event.event_type === "item_property_unlinked") {
+    return typeof property === "string" ? `Propriedade: ${property}` : null;
+  }
+
+  if (event.event_type === "item_weighed" && typeof weight === "number") {
+    return `${weight} kg${typeof occurredAt === "string" && occurredAt ? ` · ${occurredAt}` : ""}`;
+  }
+
+  if (event.event_type === "item_born" && typeof occurredAt === "string" && occurredAt) {
+    return `Nascimento em ${occurredAt}`;
+  }
+
+  return null;
+}
+
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   return (
     <div className="lg:col-span-2">
@@ -37,7 +64,9 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
           </div>
         ) : events.length > 0 ? (
           <div className="space-y-1">
-            {events.map((event, index) => (
+            {events.map((event, index) => {
+              const summary = eventSummary(event);
+              return (
               <div
                 key={event.id}
                 className={cn(
@@ -65,7 +94,10 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                       >
                         {eventTypeLabels[event.event_type] || event.event_type}
                       </span>
-                      {event.metadata && Object.keys(event.metadata).length > 0 && (
+                      {summary && (
+                        <p className="text-sm text-foreground mt-2">{summary}</p>
+                      )}
+                      {!summary && event.metadata && Object.keys(event.metadata).length > 0 && (
                         <p className="text-sm text-muted-foreground mt-2">
                           {JSON.stringify(event.metadata)}
                         </p>
@@ -80,7 +112,8 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
