@@ -97,16 +97,26 @@ const StellarOverview = () => {
                     DeFarm turns traceability into financial infrastructure. Every item — animal, lot, property, or agri-asset — gets a
                     verifiable identity, an event history, and auditable proofs anchored on the Stellar network.
                   </p>
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Button asChild className="btn-offset">
-                      <Link to="/stellar/tranche1">Tranche 1 deliverables <ArrowRight className="h-4 w-4" /></Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                      <a href="/openapi.yaml" target="_blank" rel="noopener noreferrer">
-                        API Reference <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  </div>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button asChild className="btn-offset">
+                  <Link to="/stellar/tranche1">Tranche 1 deliverables <ArrowRight className="h-4 w-4" /></Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <a href="/openapi.yaml" target="_blank" rel="noopener noreferrer">
+                    API Reference <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button asChild variant="outline">
+                  <a href="https://www.npmjs.com/package/@defarm/cli" target="_blank" rel="noopener noreferrer">
+                    NPM CLI <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button asChild variant="outline">
+                  <a href="https://www.npmjs.com/package/@defarm/sdk" target="_blank" rel="noopener noreferrer">
+                    NPM SDK <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
                 </div>
                 <Card className="border-primary/20 bg-card/90 shadow-md">
                   <CardHeader>

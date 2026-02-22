@@ -71,7 +71,11 @@ const cliSnippet = `# Install & build
 # Option A: no global install
 npx @defarm/cli --help
 
-# Configure + authenticate
+# Preferred for partners (API key auth)
+npx @defarm/cli auth api-key --key '<partner_api_key>'
+npx @defarm/cli circuits list
+
+# Alternative: login/password
 npx @defarm/cli workspace init --gateway https://gateway.defarm.net
 npx @defarm/cli auth login --email partner@example.com --password '••••••'
 
@@ -137,12 +141,12 @@ const sdk = new DefarmSdk({
   gatewayBaseUrl: "https://gateway.defarm.net",
 });
 
-// Authenticate
-const auth = await sdk.auth.login(
-  process.env.DEFARM_EMAIL!,
-  process.env.DEFARM_PASSWORD!,
-);
-sdk.setAccessToken(auth.access_token);
+// Preferred for partners: API key
+sdk.setApiKey(process.env.DEFARM_API_KEY!);
+
+// Alternative: login/password
+// const auth = await sdk.auth.login(process.env.DEFARM_EMAIL!, process.env.DEFARM_PASSWORD!);
+// sdk.setAccessToken(auth.access_token);
 
 // List circuits & pick the first one
 const circuits = await sdk.circuits.list();
@@ -295,7 +299,7 @@ const StellarTranche1 = () => {
             <div className="max-w-5xl mx-auto">
               <h2 className="text-3xl font-bold mb-2">Install on any laptop (real setup)</h2>
               <p className="text-muted-foreground mb-8">
-                The CLI and SDK are already implemented in the DeFarm engines repository. The commands below are executable as-is.
+                Published npm packages. Partners can run directly without cloning DeFarm repositories.
               </p>
 
               <div className="grid lg:grid-cols-3 gap-6 mb-8">
@@ -305,6 +309,7 @@ const StellarTranche1 = () => {
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
                     <code className="text-xs bg-muted px-1 rounded">@defarm/cli</code>
+                    <a className="mt-2 block text-primary hover:underline" href="https://www.npmjs.com/package/@defarm/cli" target="_blank" rel="noopener noreferrer">View on npm</a>
                   </CardContent>
                 </Card>
                 <Card className="border-primary/20">
@@ -313,14 +318,15 @@ const StellarTranche1 = () => {
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
                     <code className="text-xs bg-muted px-1 rounded">@defarm/sdk</code>
+                    <a className="mt-2 block text-primary hover:underline" href="https://www.npmjs.com/package/@defarm/sdk" target="_blank" rel="noopener noreferrer">View on npm</a>
                   </CardContent>
                 </Card>
                 <Card className="border-primary/20">
                   <CardHeader>
-                    <CardTitle className="text-lg">Install mode</CardTitle>
+                    <CardTitle className="text-lg">Auth mode</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
-                    CLI via <code className="text-xs bg-muted px-1 rounded">npx</code> or global install. SDK via <code className="text-xs bg-muted px-1 rounded">npm install</code>.
+                    Partners should prefer API key. Login/password stays available for interactive flows.
                   </CardContent>
                 </Card>
               </div>
