@@ -9023,6 +9023,316 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/search:
+    post:
+      tags:
+      - Items
+      summary: POST /search - Full-text item search
+      description: Search items using PostgreSQL full-text ranking over DFID and metadata fields.
+      operationId: search_items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - query
+              properties:
+                query:
+                  type: string
+                  example: BEEF BR
+                page:
+                  type: integer
+                  default: 1
+                  minimum: 1
+                page_size:
+                  type: integer
+                  default: 20
+                  minimum: 1
+                  maximum: 100
+                filters:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Search results with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - results
+                - total
+                - page
+                - page_size
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+        '400':
+          description: Invalid search request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
+  /api/search/identifier:
+    get:
+      tags:
+      - Items
+      summary: GET /search/identifier - Search by identifier
+      description: Search items by canonical/auxiliary identifiers (e.g. SISBOV, CPF, chip, lote, brinco).
+      operationId: search_by_identifier
+      parameters:
+      - name: identifier_type
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - SISBOV
+          - CPF
+          - chip
+          - lote
+          - brinco
+          - other
+      - name: value
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: circuit_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Items with matching identifier
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+        '400':
+          description: Invalid identifier parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
+  /api/analytics/kpis:
+    get:
+      tags:
+      - Admin
+      summary: GET /analytics/kpis - Real-time KPIs
+      description: Return operational KPIs (active items/circuits, recent events, anchor backlog).
+      operationId: get_kpis
+      responses:
+        '200':
+          description: Real-time KPIs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active_items:
+                    type: integer
+                  items_24h:
+                    type: integer
+                  active_circuits:
+                    type: integer
+                  events_1h:
+                    type: integer
+                  pending_anchors:
+                    type: integer
+                  avg_confirmations:
+                    type: number
+      security:
+      - bearerAuth: []
+  /api/analytics/items/by-value-chain:
+    get:
+      tags:
+      - Admin
+      summary: GET /analytics/items/by-value-chain
+      description: Aggregate item counts grouped by value chain/country/year/status.
+      operationId: get_items_by_value_chain
+      parameters:
+      - name: value_chain
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Aggregated item breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+      security:
+      - bearerAuth: []
+  /api/analytics/blockchain/metrics:
+    get:
+      tags:
+      - Admin
+      summary: GET /analytics/blockchain/metrics
+      description: Return blockchain anchor metrics for a period.
+      operationId: get_blockchain_metrics
+      parameters:
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 30
+      - name: circuit_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Blockchain metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_anchors:
+                    type: integer
+                  confirmed_anchors:
+                    type: integer
+                  failed_anchors:
+                    type: integer
+                  pending_anchors:
+                    type: integer
+                  avg_confirmations:
+                    type: number
+                  success_rate:
+                    type: number
+      security:
+      - bearerAuth: []
+  /api/analytics/storage/metrics:
+    get:
+      tags:
+      - Admin
+      summary: GET /analytics/storage/metrics
+      description: Return storage/IPFS metrics for a period.
+      operationId: get_storage_metrics
+      parameters:
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 30
+      responses:
+        '200':
+          description: Storage metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+      security:
+      - bearerAuth: []
+  /api/analytics/circuits/{circuit_id}/events:
+    get:
+      tags:
+      - Admin
+      summary: GET /analytics/circuits/{circuit_id}/events
+      description: Return event-type distribution for a circuit.
+      operationId: get_circuit_event_stats
+      parameters:
+      - name: circuit_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 30
+      responses:
+        '200':
+          description: Circuit event stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+      security:
+      - bearerAuth: []
+  /api/analytics/circuits/{circuit_id}/members:
+    get:
+      tags:
+      - Admin
+      summary: GET /analytics/circuits/{circuit_id}/members
+      description: Return member distribution by role for a circuit.
+      operationId: get_circuit_member_stats
+      parameters:
+      - name: circuit_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Circuit member stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+      security:
+      - bearerAuth: []
+  /api/analytics/refresh:
+    post:
+      tags:
+      - Admin
+      summary: POST /analytics/refresh
+      description: Trigger manual refresh of analytics materialized views.
+      operationId: refresh_analytics_views
+      responses:
+        '200':
+          description: Views refreshed
+      security:
+      - bearerAuth: []
   /api/events:
     get:
       tags:
