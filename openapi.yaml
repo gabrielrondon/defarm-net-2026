@@ -2098,6 +2098,9 @@ components:
       - circuit_type
       - visibility
       properties:
+        allow_join_requests:
+          type: boolean
+          nullable: true
         circuit_type:
           type: string
           enum:
@@ -2105,6 +2108,9 @@ components:
           - shared
           - public
           - enterprise
+        discovery_enabled:
+          type: boolean
+          nullable: true
         description:
           type: string
           nullable: true
@@ -2126,6 +2132,27 @@ components:
           nullable: true
           description: Optional; ignored if provided. Owner is derived from the authenticated
             user.
+        public_banner_url:
+          type: string
+          nullable: true
+        public_contact_email:
+          type: string
+          nullable: true
+        public_description:
+          type: string
+          nullable: true
+        public_logo_url:
+          type: string
+          nullable: true
+        public_slug:
+          type: string
+          nullable: true
+        public_website:
+          type: string
+          nullable: true
+        searchable:
+          type: boolean
+          nullable: true
         settings:
           nullable: true
         user_id:
@@ -3892,6 +3919,12 @@ components:
         description, metadata, and status.
       type: object
       properties:
+        allow_join_requests:
+          type: boolean
+          nullable: true
+        discovery_enabled:
+          type: boolean
+          nullable: true
         description:
           type: string
           nullable: true
@@ -3902,6 +3935,27 @@ components:
           nullable: true
         name:
           type: string
+          nullable: true
+        public_banner_url:
+          type: string
+          nullable: true
+        public_contact_email:
+          type: string
+          nullable: true
+        public_description:
+          type: string
+          nullable: true
+        public_logo_url:
+          type: string
+          nullable: true
+        public_slug:
+          type: string
+          nullable: true
+        public_website:
+          type: string
+          nullable: true
+        searchable:
+          type: boolean
           nullable: true
         settings:
           nullable: true
@@ -8076,11 +8130,10 @@ paths:
       parameters:
       - name: id
         in: path
-        description: Circuit UUID
+        description: Circuit UUID or public slug
         required: true
         schema:
           type: string
-          format: uuid
       - name: item_id
         in: path
         description: Item UUID to add

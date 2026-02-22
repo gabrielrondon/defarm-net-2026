@@ -39,7 +39,7 @@ export default function PublicCircuit() {
   });
 
   const joinMutation = useMutation({
-    mutationFn: () => createJoinRequest(id!),
+    mutationFn: () => createJoinRequest(portfolio!.circuit.id),
     onSuccess: () => {
       setJoinSent(true);
       toast({
@@ -177,7 +177,7 @@ export default function PublicCircuit() {
             ) : isAuthenticated ? (
               <Button
                 onClick={() => joinMutation.mutate()}
-                disabled={joinMutation.isPending}
+                disabled={joinMutation.isPending || !portfolio?.circuit?.id}
                 className="bg-primary hover:bg-primary text-primary-foreground"
               >
                 {joinMutation.isPending ? (

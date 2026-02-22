@@ -110,7 +110,9 @@ export interface Circuit {
   public_contact_email?: string | null;
   public_description?: string | null;
   public_logo_url?: string | null;
+  public_slug?: string | null;
   public_website?: string | null;
+  allow_join_requests?: boolean | null;
 }
 
 export interface ListCircuitsResponse {
@@ -127,6 +129,15 @@ export interface CreateCircuitRequest {
   metadata?: Record<string, unknown> | null;
   settings?: Record<string, unknown> | null;
   organization_id?: string | null;
+  discovery_enabled?: boolean | null;
+  searchable?: boolean | null;
+  allow_join_requests?: boolean | null;
+  public_slug?: string | null;
+  public_description?: string | null;
+  public_contact_email?: string | null;
+  public_website?: string | null;
+  public_logo_url?: string | null;
+  public_banner_url?: string | null;
   user_id?: string | null;
   ip_address?: string | null;
 }
@@ -138,6 +149,15 @@ export interface UpdateCircuitRequest {
   visibility?: string | null;
   metadata?: Record<string, unknown> | null;
   settings?: Record<string, unknown> | null;
+  discovery_enabled?: boolean | null;
+  searchable?: boolean | null;
+  allow_join_requests?: boolean | null;
+  public_slug?: string | null;
+  public_description?: string | null;
+  public_contact_email?: string | null;
+  public_website?: string | null;
+  public_logo_url?: string | null;
+  public_banner_url?: string | null;
   user_id?: string | null;
   ip_address?: string | null;
 }

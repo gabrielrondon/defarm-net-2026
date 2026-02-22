@@ -16,6 +16,7 @@ import {
 import { ArrowLeft, Save, Loader2, GitBranch, Shield, Globe, Eye, Search as SearchIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuit, updateCircuit } from "@/lib/defarm-api";
+import type { UpdateCircuitRequest } from "@/lib/api/types";
 
 export default function EditarCircuito() {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +29,7 @@ export default function EditarCircuito() {
   const [visibility, setVisibility] = useState<string>("private");
   const [discoveryEnabled, setDiscoveryEnabled] = useState(false);
   const [searchable, setSearchable] = useState(false);
-  const [isPublished, setIsPublished] = useState(false);
+  const [allowJoinRequests, setAllowJoinRequests] = useState(true);
   const [publicDescription, setPublicDescription] = useState("");
   const [publicContactEmail, setPublicContactEmail] = useState("");
   const [publicWebsite, setPublicWebsite] = useState("");
@@ -48,7 +49,7 @@ export default function EditarCircuito() {
       setVisibility(circuit.visibility || "private");
       setDiscoveryEnabled(circuit.discovery_enabled || false);
       setSearchable(circuit.searchable || false);
-      setIsPublished(circuit.is_published || false);
+      setAllowJoinRequests(circuit.allow_join_requests ?? true);
       setPublicDescription(circuit.public_description || "");
       setPublicContactEmail(circuit.public_contact_email || "");
       setPublicWebsite(circuit.public_website || "");
@@ -56,7 +57,7 @@ export default function EditarCircuito() {
   }, [circuit]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: { name?: string; description?: string; visibility?: string; metadata?: Record<string, unknown> }) =>
+    mutationFn: (data: UpdateCircuitRequest) =>
       updateCircuit(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuits"] });
@@ -82,14 +83,12 @@ export default function EditarCircuito() {
       name,
       description,
       visibility,
-      metadata: {
-        discovery_enabled: discoveryEnabled,
-        searchable,
-        is_published: isPublished,
-        public_description: publicDescription,
-        public_contact_email: publicContactEmail,
-        public_website: publicWebsite,
-      },
+      discovery_enabled: visibility === "public" ? discoveryEnabled : false,
+      searchable: visibility === "public" ? searchable : false,
+      allow_join_requests: visibility === "public" ? allowJoinRequests : false,
+      public_description: visibility === "public" ? publicDescription : null,
+      public_contact_email: visibility === "public" ? publicContactEmail : null,
+      public_website: visibility === "public" ? publicWebsite : null,
     });
   };
 
@@ -233,10 +232,10 @@ export default function EditarCircuito() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Publicado</Label>
-                  <p className="text-xs text-muted-foreground">Ativa a página pública do circuito</p>
+                  <Label>Aceitar solicitações de entrada</Label>
+                  <p className="text-xs text-muted-foreground">Permite que visitantes solicitem participação</p>
                 </div>
-                <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+                <Switch checked={allowJoinRequests} onCheckedChange={setAllowJoinRequests} />
               </div>
 
               <div className="space-y-2">
