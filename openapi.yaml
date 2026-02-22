@@ -624,6 +624,11 @@ components:
           type: string
           nullable: true
           description: Optional custom workspace name
+        workspace_type:
+          type: string
+          nullable: true
+          description: Workspace semantic type. Defaults to `producer`.
+          enum: [partner, producer, processor, certifier]
     LoginRequest:
       type: object
       required:
