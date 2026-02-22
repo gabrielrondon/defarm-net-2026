@@ -932,6 +932,27 @@ export interface PublicCircuitsResponse {
   offset: number;
 }
 
+export interface PublicItem {
+  id: string;
+  dfid: string;
+  value_chain: string;
+  country: string;
+  year: number;
+  status: string;
+  metadata?: Record<string, unknown> | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PublicItemEvent {
+  id: string;
+  event_type: string;
+  item_id: string;
+  circuit_id: string;
+  payload?: Record<string, unknown> | null;
+  created_at: string;
+}
+
 // --- Item Relationships ---
 
 export interface ItemRelationshipRecord {

@@ -5,6 +5,8 @@ import type {
   ReviewJoinRequestInput,
   PublicCircuitsResponse,
   PublicCircuitPortfolio,
+  PublicItem,
+  PublicItemEvent,
 } from "./types";
 
 // Public endpoints (no auth required for discovery)
@@ -25,15 +27,15 @@ export async function getPublicCircuit(id: string): Promise<PublicCircuitPortfol
 }
 
 // Public item endpoints (no auth required)
-export async function getPublicItem(dfid: string): Promise<any> {
-  return registryRequest<any>(`/items/${dfid}/public`);
+export async function getPublicItem(dfid: string): Promise<PublicItem> {
+  return registryRequest<PublicItem>(`/items/${dfid}/public`);
 }
 
 export async function getPublicItemEvents(
   dfid: string,
   params?: { event_type?: string; limit?: number; offset?: number }
-): Promise<any[]> {
-  return registryRequest<any[]>(
+): Promise<PublicItemEvent[]> {
+  return registryRequest<PublicItemEvent[]>(
     `/items/${dfid}/events/public${buildQueryString(params as Record<string, any>)}`
   );
 }

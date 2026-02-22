@@ -274,8 +274,9 @@ export default function PublicCircuit() {
             </h2>
             <div className="space-y-2">
               {recentItems.map((item: ItemSummary) => (
-                <div
+                <Link
                   key={item.id}
+                  to={`/i/${encodeURIComponent(item.dfid)}`}
                   className="flex items-center justify-between py-3 border-b border-border last:border-0"
                 >
                   <div className="flex items-center gap-3">
@@ -294,7 +295,7 @@ export default function PublicCircuit() {
                   <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
                     {item.status}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
