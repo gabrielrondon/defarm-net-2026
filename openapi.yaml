@@ -2281,10 +2281,11 @@ components:
           nullable: true
         tree_type:
           type: string
+          description: 'Accepted values: snapshot, circuit, audit_batch, event_batch, item_batch. Legacy aliases are accepted by backend: snapshot_integrity, circuit_integrity, audit_integrity, event_integrity, item_integrity.'
           enum:
           - snapshot
           - circuit
-          - Audit_batch
+          - audit_batch
           - event_batch
           - item_batch
     CreateRestorationRequest:
@@ -2323,7 +2324,6 @@ components:
       - resource_type
       - snapshot_name
       - snapshot_data
-      - created_by
       properties:
         circuit_id:
           type: string
@@ -2332,6 +2332,8 @@ components:
         created_by:
           type: string
           format: uuid
+          nullable: true
+          description: Optional legacy field. Backend derives creator from authenticated user context.
         description:
           type: string
           nullable: true
