@@ -81,7 +81,7 @@ function TabButton({ icon: Icon, label, isActive, onClick }: TabButtonProps) {
 }
 
 export default function Configuracoes() {
-  const { user, logout, setUserData, switchWorkspace } = useAuth();
+  const { user, logout, setUserData, switchWorkspace, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
@@ -124,6 +124,8 @@ export default function Configuracoes() {
   const [memberRole, setMemberRole] = useState<"admin" | "member">("member");
   const [memberActionLoading, setMemberActionLoading] = useState(false);
   const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
+  const canManageWorkspace =
+    !!user?.is_admin || user?.role === "owner" || user?.role === "admin";
 
   const handleViewSessions = async () => {
     setSessionsLoading(true);
@@ -209,6 +211,7 @@ export default function Configuracoes() {
 
     try {
       const res = await requestEmailChange({ new_email: newEmail.trim() });
+      await refreshUser();
       toast({
         title: "Verificação enviada",
         description: res.message,
@@ -224,6 +227,10 @@ export default function Configuracoes() {
   };
 
   const handleLoadWorkspaceMembers = async () => {
+    if (!canManageWorkspace) {
+      setWorkspaceMembers([]);
+      return;
+    }
     setMembersLoading(true);
     try {
       const data = await listWorkspaceMembers();
@@ -240,6 +247,10 @@ export default function Configuracoes() {
   };
 
   const handleAddWorkspaceMember = async () => {
+    if (!canManageWorkspace) {
+      toast({ title: "Permissão insuficiente", description: "Apenas admin/owner pode gerenciar membros.", variant: "destructive" });
+      return;
+    }
     if (!memberEmail.trim()) {
       toast({
         title: "Informe o email do membro",
@@ -267,6 +278,10 @@ export default function Configuracoes() {
   };
 
   const handleUpdateMemberRole = async (memberUserId: string, role: "owner" | "admin" | "member") => {
+    if (!canManageWorkspace) {
+      toast({ title: "Permissão insuficiente", description: "Apenas admin/owner pode gerenciar membros.", variant: "destructive" });
+      return;
+    }
     setMemberActionLoading(true);
     try {
       await updateWorkspaceMemberRole(memberUserId, role);
@@ -284,6 +299,10 @@ export default function Configuracoes() {
   };
 
   const handleRemoveWorkspaceMember = async (memberUserId: string) => {
+    if (!canManageWorkspace) {
+      toast({ title: "Permissão insuficiente", description: "Apenas admin/owner pode gerenciar membros.", variant: "destructive" });
+      return;
+    }
     setMemberActionLoading(true);
     try {
       await removeWorkspaceMember(memberUserId);
@@ -563,7 +582,9 @@ export default function Configuracoes() {
   useEffect(() => {
     if (activeTab === "workspace") {
       handleLoadWorkspaces();
-      handleLoadWorkspaceMembers();
+      if (canManageWorkspace) {
+        handleLoadWorkspaceMembers();
+      }
     }
     if (activeTab === "notificacoes") {
       handleLoadNotificationPreferences();
@@ -571,7 +592,7 @@ export default function Configuracoes() {
     if (activeTab === "seguranca") {
       handleLoadTwoFaStatus();
     }
-  }, [activeTab]);
+  }, [activeTab, canManageWorkspace]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -696,10 +717,17 @@ export default function Configuracoes() {
                   <div>
                     <p className="text-sm font-medium text-foreground">Membros</p>
                     <p className="text-xs text-muted-foreground">
-                      Adicione membros existentes e gerencie papéis
+                      {canManageWorkspace
+                        ? "Adicione membros existentes e gerencie papéis"
+                        : "Somente admins/owners podem alterar membros"}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleLoadWorkspaceMembers} disabled={membersLoading}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLoadWorkspaceMembers}
+                    disabled={membersLoading || !canManageWorkspace}
+                  >
                     {membersLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Atualizar"}
                   </Button>
                 </div>
@@ -711,16 +739,18 @@ export default function Configuracoes() {
                       onChange={(e) => setMemberEmail(e.target.value)}
                       type="email"
                       placeholder="email do membro"
+                      disabled={!canManageWorkspace}
                     />
                     <select
                       value={memberRole}
                       onChange={(e) => setMemberRole(e.target.value as "admin" | "member")}
+                      disabled={!canManageWorkspace}
                       className="h-10 px-3 rounded-md border border-input bg-background text-sm"
                     >
                       <option value="member">member</option>
                       <option value="admin">admin</option>
                     </select>
-                    <Button onClick={handleAddWorkspaceMember} disabled={memberActionLoading || !memberEmail.trim()}>
+                    <Button onClick={handleAddWorkspaceMember} disabled={memberActionLoading || !memberEmail.trim() || !canManageWorkspace}>
                       Adicionar
                     </Button>
                   </div>
