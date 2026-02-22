@@ -214,16 +214,14 @@ export function PartnerIntegration() {
           seu sistema quando eventos ocorrem nos circuitos.
         </p>
         <div className="bg-background rounded-lg p-3 font-mono text-xs text-muted-foreground overflow-x-auto">
-          <pre>{`POST /api/v1/items
+          <pre>{`POST /api/items/bulk
 Authorization: Bearer <sua-api-key>
-Content-Type: application/json
+Content-Type: multipart/form-data
 
-{
-  "value_chain": "bovine",
-  "country": "BR",
-  "year": 2025,
-  "metadata": { "breed": "Nelore" }
-}`}</pre>
+file=@dados.csv
+circuit_id=<uuid-do-circuito>
+
+# Mesmo endpoint usado no upload CSV/JSON do frontend.`}</pre>
         </div>
       </Card>
     </div>

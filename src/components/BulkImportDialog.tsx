@@ -115,31 +115,6 @@ function dedupeHeaders(headers: string[]): string[] {
   });
 }
 
-function parseCsvLine(line: string, delimiter: string): string[] {
-  const fields: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i];
-    if (char === "\"") {
-      const nextChar = line[i + 1];
-      if (inQuotes && nextChar === "\"") {
-        current += "\"";
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === delimiter && !inQuotes) {
-      fields.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  fields.push(current);
-  return fields;
-}
-
 function detectHeaderRow(rows: string[][]): number {
   let bestIndex = -1;
   let bestScore = -1;
@@ -180,11 +155,29 @@ function rowsToCsv(headers: string[], rows: string[][]): string {
 }
 
 function detectDelimiter(lines: string[]): string {
-  const candidate = lines.find((line) => line.trim().length > 0) ?? "";
+  const sample = lines.filter((line) => line.trim().length > 0).slice(0, 20);
+  const countDelim = (line: string, delimiter: string): number => {
+    let inQuotes = false;
+    let count = 0;
+    for (let i = 0; i < line.length; i += 1) {
+      const ch = line[i];
+      if (ch === "\"") {
+        const nextChar = line[i + 1];
+        if (inQuotes && nextChar === "\"") {
+          i += 1;
+          continue;
+        }
+        inQuotes = !inQuotes;
+      } else if (ch === delimiter && !inQuotes) {
+        count += 1;
+      }
+    }
+    return count;
+  };
   const counts = [
-    { d: ";", c: (candidate.match(/;/g) || []).length },
-    { d: ",", c: (candidate.match(/,/g) || []).length },
-    { d: "\t", c: (candidate.match(/\t/g) || []).length },
+    { d: ";", c: sample.reduce((acc, line) => acc + countDelim(line, ";"), 0) },
+    { d: ",", c: sample.reduce((acc, line) => acc + countDelim(line, ","), 0) },
+    { d: "\t", c: sample.reduce((acc, line) => acc + countDelim(line, "\t"), 0) },
   ];
   counts.sort((a, b) => b.c - a.c);
   return counts[0].c > 0 ? counts[0].d : ",";
@@ -207,9 +200,55 @@ function decodeTextFromArrayBuffer(buffer: ArrayBuffer): { text: string; binary:
 }
 
 function parseCsvText(text: string) {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const normalizedText = text.replace(/^\uFEFF/, "");
+  const lines = normalizedText.split(/\r?\n/);
   const delimiter = detectDelimiter(lines);
-  const rows = lines.map((line) => parseCsvLine(line, delimiter));
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < normalizedText.length; i += 1) {
+    const char = normalizedText[i];
+    const nextChar = normalizedText[i + 1];
+
+    if (char === "\"") {
+      if (inQuotes && nextChar === "\"") {
+        current += "\"";
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === delimiter && !inQuotes) {
+      row.push(current);
+      current = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && nextChar === "\n") {
+        i += 1;
+      }
+      row.push(current);
+      if (row.some((cell) => cell.trim().length > 0)) {
+        rows.push(row);
+      }
+      row = [];
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  row.push(current);
+  if (row.some((cell) => cell.trim().length > 0)) {
+    rows.push(row);
+  }
+
   return { rows, delimiter };
 }
 
