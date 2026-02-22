@@ -42,29 +42,30 @@ interface NavItem {
   icon: typeof BookOpen;
   label: string;
   href: string;
-  workspaceTypes?: Array<"partner" | "producer" | "processor" | "certifier">;
 }
+type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
 
-const navItems: NavItem[] = [
-  { icon: BookOpen, label: "Minha Caderneta", href: "/app", workspaceTypes: ["producer", "processor", "certifier"] },
-
-  { icon: GitBranch, label: "Circuitos", href: "/app/circuitos", workspaceTypes: ["producer", "partner", "processor", "certifier"] },
-  { icon: Compass, label: "Descobrir", href: "/app/descobrir", workspaceTypes: ["producer", "processor", "certifier"] },
-  { icon: Package, label: "Itens", href: "/app/itens", workspaceTypes: ["producer", "partner", "processor", "certifier"] },
-  { icon: Users, label: "Minhas Propriedades", href: "/app/claims", workspaceTypes: ["producer", "certifier"] },
-  { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho", workspaceTypes: ["producer", "certifier"] },
-  { icon: Activity, label: "Eventos", href: "/app/eventos", workspaceTypes: ["producer", "partner", "processor", "certifier"] },
-  { icon: Shield, label: "Auditoria", href: "/app/auditoria", workspaceTypes: ["producer", "processor", "certifier"] },
-  { icon: Camera, label: "Snapshots", href: "/app/snapshots", workspaceTypes: ["producer", "certifier"] },
-  { icon: Key, label: "API Keys", href: "/app/api-keys", workspaceTypes: ["partner"] },
-  { icon: Landmark, label: "DeFarm Finance", href: "/app/finance", workspaceTypes: ["producer", "processor"] },
-  { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance", workspaceTypes: ["producer", "processor", "certifier"] },
+const navCatalog: NavItem[] = [
+  { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
+  { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
+  { icon: Key, label: "API Keys", href: "/app/api-keys" },
+  { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
+  { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
+  { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
+  { icon: Package, label: "Itens", href: "/app/itens" },
+  { icon: Activity, label: "Eventos", href: "/app/eventos" },
+  { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
+  { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
+  { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
+  { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
+  { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance" },
 ];
 
-const partnerNavItem: NavItem = {
-  icon: Handshake,
-  label: "Portal Parceiro",
-  href: "/app/parceiro",
+const navByWorkspace: Record<WorkspaceType, string[]> = {
+  partner: ["/app/parceiro", "/app/api-keys", "/app/circuitos", "/app/itens", "/app/eventos"],
+  producer: ["/app", "/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/descobrir", "/app/snapshots", "/app/finance", "/app/compliance"],
+  certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
+  processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
 };
 
 const adminNavItems: NavItem[] = [
@@ -87,6 +88,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [demoSwitchLoading, setDemoSwitchLoading] = useState(false);
   const workspaceType = user?.workspace_type || "producer";
+  const workspaceMenu = navByWorkspace[workspaceType as WorkspaceType] ?? navByWorkspace.producer;
+  const visibleNavItems = user?.is_admin
+    ? navCatalog
+    : workspaceMenu
+        .map((href) => navCatalog.find((item) => item.href === href))
+        .filter((item): item is NavItem => !!item);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -218,9 +225,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems
-            .filter((item) => user?.is_admin || !item.workspaceTypes || item.workspaceTypes.includes(workspaceType))
-            .map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.href || 
               (item.href !== "/app" && location.pathname.startsWith(item.href));
             
@@ -242,34 +247,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
             );
           })}
-
-          {/* Partner Portal - visible to admin and workspace type partner */}
-          {(user?.is_admin || workspaceType === "partner") && (() => {
-            const isActive = location.pathname.startsWith(partnerNavItem.href);
-            return (
-              <>
-                <div className="pt-4 pb-1 px-3">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Parceiro
-                  </span>
-                </div>
-                <Link
-                  to={partnerNavItem.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <partnerNavItem.icon className="h-5 w-5" />
-                  {partnerNavItem.label}
-                  {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-                </Link>
-              </>
-            );
-          })()}
 
           {/* Admin section - only visible to admin users */}
           {user?.is_admin && (

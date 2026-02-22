@@ -112,8 +112,10 @@ function WorkspaceHome() {
   const { isLoading, isAuthenticated, user } = useAuth();
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (user?.workspace_type === "partner" && !user?.is_admin) {
-    return <Navigate to="/app/parceiro" replace />;
+  if (!user?.is_admin) {
+    if (user?.workspace_type === "partner") return <Navigate to="/app/parceiro" replace />;
+    if (user?.workspace_type === "certifier") return <Navigate to="/app/claims" replace />;
+    if (user?.workspace_type === "processor") return <Navigate to="/app/eventos" replace />;
   }
   return <Caderneta />;
 }
