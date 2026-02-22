@@ -46,7 +46,7 @@ const tranches = [
     title: "Tranche 1 — MVP",
     budget: "$24,000",
     month: "Month 3",
-    status: "In progress",
+    status: "Completed",
     goal: "CLI + SDK + core operations + 2 partner integrations with full documentation",
     href: "/stellar/tranche1",
     highlights: ["Auth & workspace management", "Items & events CRUD", "Partner SDK + quickstart"],
@@ -55,9 +55,9 @@ const tranches = [
     title: "Tranche 2 — Testnet",
     budget: "$36,000",
     month: "Month 6",
-    status: "Planned",
+    status: "In progress",
     goal: "Selective disclosure, on-chain receipts, and Soroban governance on testnet",
-    href: "/stellar/tranche1",
+    href: "/stellar/tranche2",
     highlights: ["Soroban contract deployment", "Selective disclosure engine", "Testnet anchoring pipeline"],
   },
   {
@@ -66,7 +66,7 @@ const tranches = [
     month: "Month 9",
     status: "Planned",
     goal: "Go-live on mainnet, miniapp framework, and institutional partner onboarding",
-    href: "/stellar/tranche1",
+    href: "/stellar",
     highlights: ["Mainnet deployment", "Miniapp framework for partners", "Institutional onboarding flow"],
   },
 ];
@@ -99,7 +99,10 @@ const StellarOverview = () => {
                   </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild className="btn-offset">
-                  <Link to="/stellar/tranche1">Tranche 1 deliverables <ArrowRight className="h-4 w-4" /></Link>
+                  <Link to="/stellar/tranche2">Tranche 2 deliverables <ArrowRight className="h-4 w-4" /></Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/stellar/tranche1">Tranche 1 (completed)</Link>
                 </Button>
                 <Button asChild variant="outline">
                   <a href="/openapi.yaml" target="_blank" rel="noopener noreferrer">
@@ -194,7 +197,10 @@ const StellarOverview = () => {
                   <Card key={tranche.title} className="h-full flex flex-col">
                     <CardHeader>
                       <div className="flex items-center justify-between mb-1">
-                        <Badge variant={tranche.status === "In progress" ? "default" : "outline"} className={tranche.status === "In progress" ? "bg-primary text-primary-foreground" : ""}>
+                        <Badge
+                          variant={tranche.status === "In progress" ? "default" : "outline"}
+                          className={tranche.status === "In progress" ? "bg-primary text-primary-foreground" : tranche.status === "Completed" ? "border-emerald-500 text-emerald-700" : ""}
+                        >
                           {tranche.status}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{tranche.month}</span>

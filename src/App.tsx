@@ -25,6 +25,7 @@ import DemoAcessos from "./pages/DemoAcessos";
 import DemoNarrativa from "./pages/DemoNarrativa";
 import StellarOverview from "./pages/StellarOverview";
 import StellarTranche1 from "./pages/StellarTranche1";
+import StellarTranche2 from "./pages/StellarTranche2";
 
 // App pages
 
@@ -158,6 +159,7 @@ const App = () => (
             <Route path="/_demo/narrativa/:actorType" element={<DemoNarrativa />} />
             <Route path="/stellar" element={<StellarOverview />} />
             <Route path="/stellar/tranche1" element={<StellarTranche1 />} />
+            <Route path="/stellar/tranche2" element={<StellarTranche2 />} />
             
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><WorkspaceHome /></AppLayout>} />
