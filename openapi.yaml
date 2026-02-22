@@ -8262,11 +8262,10 @@ paths:
       parameters:
       - name: id
         in: path
-        description: Circuit UUID
+        description: Circuit UUID or public slug
         required: true
         schema:
           type: string
-          format: uuid
       - name: item_id
         in: path
         description: Item UUID to remove
