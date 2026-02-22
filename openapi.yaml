@@ -2560,6 +2560,32 @@ components:
           type: string
           format: uuid
           nullable: true
+    CreateEventRequest:
+      type: object
+      required:
+      - event_type
+      - source_type
+      - payload
+      properties:
+        event_type:
+          type: string
+        source_type:
+          type: string
+        source_id:
+          type: string
+          format: uuid
+          nullable: true
+        circuit_id:
+          type: string
+          format: uuid
+          nullable: true
+        item_id:
+          type: string
+          format: uuid
+          nullable: true
+        payload: {}
+        metadata:
+          nullable: true
     GenerateProofRequest:
       description: Request payload to generate cryptographic proof for data.
       type: object
@@ -2827,6 +2853,130 @@ components:
           description: 'Status: "processing", "completed", "failed", "partial"'
         summary:
           $ref: '#/components/schemas/IngestionSummary'
+    CreateDisclosureRequest:
+      type: object
+      required:
+      - item_id
+      - preset
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        preset:
+          type: string
+          description: 'Allowed presets: finance_basic, audit_basic, public_basic'
+        audience:
+          type: string
+          nullable: true
+        expires_in_days:
+          type: integer
+          format: int64
+          nullable: true
+    CreateDisclosureResponse:
+      type: object
+      required:
+      - receipt_id
+      - preset
+      - proof_hash
+      - disclosed_payload
+      properties:
+        receipt_id:
+          type: string
+          format: uuid
+        preset:
+          type: string
+        audience:
+          type: string
+          nullable: true
+        proof_hash:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        disclosed_payload: {}
+    ReceiptSummary:
+      type: object
+      required:
+      - receipt_id
+      - receipt_type
+      - status
+      - created_at
+      properties:
+        receipt_id:
+          type: string
+          format: uuid
+        receipt_type:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        circuit_id:
+          type: string
+          format: uuid
+          nullable: true
+        item_id:
+          type: string
+          format: uuid
+          nullable: true
+        preset:
+          type: string
+          nullable: true
+        audience:
+          type: string
+          nullable: true
+        proof_hash:
+          type: string
+          nullable: true
+        rows_total:
+          type: integer
+          format: int32
+          nullable: true
+        items_created:
+          type: integer
+          format: int32
+          nullable: true
+        items_updated:
+          type: integer
+          format: int32
+          nullable: true
+        events_created:
+          type: integer
+          format: int32
+          nullable: true
+    ListReceiptsResponse:
+      type: object
+      required:
+      - count
+      - receipts
+      properties:
+        count:
+          type: integer
+          format: int64
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptSummary'
+    ReceiptDetailResponse:
+      type: object
+      required:
+      - receipt
+      properties:
+        receipt:
+          $ref: '#/components/schemas/ReceiptSummary'
+        payload:
+          nullable: true
+        fields_disclosed:
+          type: array
+          items:
+            type: string
+          nullable: true
     IngestionSummary:
       type: object
       description: Statistics for a completed ingestion
@@ -9567,6 +9717,43 @@ paths:
       security:
       - bearerAuth: []
   /api/events:
+    post:
+      tags:
+      - Events
+      summary: Create typed event
+      description: Create a new typed event for an item/circuit (e.g. movement, vaccination).
+      operationId: create_event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Item or circuit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags:
       - Events
@@ -10053,6 +10240,121 @@ paths:
           description: Permission denied
         '500':
           description: Internal server error
+  /api/disclosures:
+    post:
+      tags:
+      - Items
+      summary: Create selective disclosure receipt
+      description: Create a filtered disclosure payload from item metadata and return an auditable receipt.
+      operationId: create_disclosure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDisclosureRequest'
+      responses:
+        '200':
+          description: Disclosure created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateDisclosureResponse'
+        '400':
+          description: Invalid preset or request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Permission denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/receipts:
+    get:
+      tags:
+      - Items
+      summary: List receipts
+      description: List ingestion and disclosure receipts for the authenticated workspace.
+      operationId: list_receipts
+      parameters:
+      - name: receipt_type
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: circuit_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: item_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Receipts list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListReceiptsResponse'
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/receipts/{id}:
+    get:
+      tags:
+      - Items
+      summary: Get receipt detail
+      description: Retrieve ingestion/disclosure receipt detail by ID.
+      operationId: get_receipt
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Receipt detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptDetailResponse'
+        '404':
+          description: Receipt not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/ingestion/templates:
     get:
       tags:
