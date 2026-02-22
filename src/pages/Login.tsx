@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,11 +17,18 @@ export default function Login() {
   const [twofaToken, setTwofaToken] = useState<string | null>(null);
   const [twofaCode, setTwofaCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const { login, verifyLogin2FA } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const demoEmail = searchParams.get("demo_email");
+    const demoPassword = searchParams.get("demo_password");
+    if (demoEmail) setEmail(demoEmail);
+    if (demoPassword) setPassword(demoPassword);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -21,6 +21,7 @@ import EsqueciSenha from "./pages/EsqueciSenha";
 import ResetSenha from "./pages/ResetSenha";
 import VerificarEmail from "./pages/VerificarEmail";
 import NotFound from "./pages/NotFound";
+import DemoAcessos from "./pages/DemoAcessos";
 
 // App pages
 
@@ -126,6 +127,8 @@ const App = () => (
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-senha" element={<ResetSenha />} />
             <Route path="/verificar-email" element={<VerificarEmail />} />
+            <Route path="/_demo/acessos" element={<DemoAcessos />} />
+            <Route path="/_demo/acessos/:actorType" element={<DemoAcessos />} />
             
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><Caderneta /></AppLayout>} />
