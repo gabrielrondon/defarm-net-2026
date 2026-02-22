@@ -103,6 +103,11 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT access token obtained from /auth/login
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Circuit-scoped API key (partner ingestion use case).
   schemas:
     Error:
       description: Standard error response with error code and message.
@@ -10241,6 +10246,9 @@ paths:
           description: Permission denied
         '500':
           description: Internal server error
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
   /api/disclosures:
     post:
       tags:
