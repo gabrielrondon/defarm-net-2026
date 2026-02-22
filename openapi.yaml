@@ -9721,7 +9721,8 @@ paths:
       tags:
       - Events
       summary: Create typed event
-      description: Create a new typed event for an item/circuit (e.g. movement, vaccination).
+      description: '[Advanced / Stellar Tranche 2] Create a new typed event for an item/circuit (e.g. movement, vaccination). Recommended for integrators/SDK/CLI flows.'
+      x-audience: advanced
       operationId: create_event
       requestBody:
         required: true
@@ -10245,7 +10246,8 @@ paths:
       tags:
       - Items
       summary: Create selective disclosure receipt
-      description: Create a filtered disclosure payload from item metadata and return an auditable receipt.
+      description: '[Advanced / Stellar Tranche 2] Create a filtered disclosure payload from item metadata and return an auditable receipt. Intended for privacy/compliance integrations.'
+      x-audience: advanced
       operationId: create_disclosure
       requestBody:
         required: true
@@ -10283,7 +10285,8 @@ paths:
       tags:
       - Items
       summary: List receipts
-      description: List ingestion and disclosure receipts for the authenticated workspace.
+      description: '[Advanced / Stellar Tranche 2] List ingestion and disclosure receipts for the authenticated workspace.'
+      x-audience: advanced
       operationId: list_receipts
       parameters:
       - name: receipt_type
@@ -10333,7 +10336,8 @@ paths:
       tags:
       - Items
       summary: Get receipt detail
-      description: Retrieve ingestion/disclosure receipt detail by ID.
+      description: '[Advanced / Stellar Tranche 2] Retrieve ingestion/disclosure receipt detail by ID.'
+      x-audience: advanced
       operationId: get_receipt
       parameters:
       - name: id
