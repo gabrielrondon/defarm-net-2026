@@ -6,6 +6,12 @@ import { listPropertyItems } from "@/lib/api/property-links";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+function formatAssociationPeriod(linkedAt: string, unlinkedAt?: string | null): string {
+  const start = new Date(linkedAt).toLocaleString("pt-BR");
+  const end = unlinkedAt ? new Date(unlinkedAt).toLocaleString("pt-BR") : "em aberto";
+  return `${start} -> ${end}`;
+}
+
 export default function PropertyHerd() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [propertyDfid, setPropertyDfid] = useState(searchParams.get("property_dfid") || "");
@@ -115,7 +121,7 @@ export default function PropertyHerd() {
                       <th className="px-4 py-2">Status</th>
                       <th className="px-4 py-2">Tipo</th>
                       <th className="px-4 py-2">GTA</th>
-                      <th className="px-4 py-2">Vinculado em</th>
+                      <th className="px-4 py-2">Período de associação</th>
                       <th className="px-4 py-2">Notas</th>
                     </tr>
                   </thead>
@@ -130,7 +136,7 @@ export default function PropertyHerd() {
                         <td className="px-4 py-2">{link.unlinked_at ? "Encerrado" : "Ativo"}</td>
                         <td className="px-4 py-2">{link.is_transfer ? "Transferência" : "Associação"}</td>
                         <td className="px-4 py-2">{link.gta_number || "-"}</td>
-                        <td className="px-4 py-2">{new Date(link.linked_at).toLocaleString("pt-BR")}</td>
+                        <td className="px-4 py-2">{formatAssociationPeriod(link.linked_at, link.unlinked_at)}</td>
                         <td className="px-4 py-2">{link.notes || "-"}</td>
                       </tr>
                     ))}

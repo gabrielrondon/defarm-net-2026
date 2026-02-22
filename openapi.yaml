@@ -11511,7 +11511,7 @@ paths:
       tags:
       - Property Links
       summary: List item's property links (provenance trail)
-      description: Returns all property links for an item, ordered newest first. The ordered collection is the provenance trail — two or more links imply at least one transfer occurred.
+      description: Returns all property links for an item, ordered newest first. The ordered collection is the provenance trail. Each link stores `linked_at` (association start) and `unlinked_at` (association end, null when active), so the full association period is never lost.
       operationId: list_item_property_links
       parameters:
       - name: id
@@ -11538,7 +11538,7 @@ paths:
       tags:
       - Property Links
       summary: Soft-unlink item from property
-      description: Sets `unlinked_at` on the link record. The record is preserved for audit purposes — deletion is always soft.
+      description: Sets `unlinked_at` on the link record (association end). The record is preserved for audit purposes — deletion is always soft, and historical period (`linked_at` -> `unlinked_at`) remains queryable.
       operationId: unlink_item_property
       parameters:
       - name: id
@@ -11569,7 +11569,7 @@ paths:
       tags:
       - Property Links
       summary: List all items linked to a property
-      description: Returns all items (current and historical) that have been annotated as being on this LAND property. Supports `active_only=true` to return only currently linked items.
+      description: Returns all items (current and historical) that have been annotated as being on this LAND property. Each result keeps both association start and end timestamps (`linked_at`, `unlinked_at`). Supports `active_only=true` to return only currently linked items.
       operationId: list_property_items
       parameters:
       - name: property_dfid

@@ -9,6 +9,12 @@ import { addItemPropertyLink, listItemPropertyLinks, unlinkItemProperty } from "
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
+function formatAssociationPeriod(linkedAt: string, unlinkedAt?: string | null): string {
+  const start = new Date(linkedAt).toLocaleString("pt-BR");
+  const end = unlinkedAt ? new Date(unlinkedAt).toLocaleString("pt-BR") : "em aberto";
+  return `${start} -> ${end}`;
+}
+
 export default function ItemDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -193,8 +199,10 @@ export default function ItemDetail() {
                   <p className="text-xs text-muted-foreground">
                     {link.is_transfer ? `Transferência${link.gta_number ? ` · GTA ${link.gta_number}` : ""}` : "Anotação"}
                     {" · "}
-                    {new Date(link.linked_at).toLocaleString("pt-BR")}
-                    {link.unlinked_at ? ` · Encerrado em ${new Date(link.unlinked_at).toLocaleString("pt-BR")}` : " · Ativo"}
+                    {link.unlinked_at ? "Encerrado" : "Ativo"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Período: {formatAssociationPeriod(link.linked_at, link.unlinked_at)}
                   </p>
                 </div>
                 {!link.unlinked_at && (
