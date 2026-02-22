@@ -143,7 +143,7 @@ export default function ItensList() {
         throw new Error("Não foi possível determinar o circuito do item.");
       }
       return updateItemStatus(id, {
-        status: "deprecated",
+        status: "inactive",
         circuit_id: circuitId,
         user_id: user?.id || null,
       });
@@ -167,13 +167,13 @@ export default function ItensList() {
       (item.value_chain || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.country || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || 
-      (statusFilter === "active" && item.status === "Active") ||
-      (statusFilter === "deprecated" && item.status === "Deprecated");
+      (statusFilter === "active" && item.status?.toLowerCase() === "active") ||
+      (statusFilter === "deprecated" && item.status?.toLowerCase() !== "active");
     return matchesSearch && matchesStatus;
   });
 
   const tokenizedCount = items.filter(i => i.dfid?.startsWith("DFID-")).length;
-  const activeCount = items.filter(i => i.status === "Active").length;
+  const activeCount = items.filter(i => i.status?.toLowerCase() === "active").length;
 
   if (isLoading) {
     return (
