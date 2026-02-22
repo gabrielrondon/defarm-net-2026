@@ -210,35 +210,6 @@ export default function CircuitoDetail() {
     }
   };
 
-  const handleCopyPublicUrl = () => {
-    navigator.clipboard.writeText(publicUrl);
-    setCopiedPublicUrl(true);
-    setTimeout(() => setCopiedPublicUrl(false), 2000);
-  };
-
-  const handleNativeShare = async () => {
-    if (!isPublic) return;
-    if (!navigator.share) return;
-    try {
-      await navigator.share({
-        title: `Circuito ${circuit.name} - DeFarm`,
-        text: `Veja o circuito "${circuit.name}" na DeFarm`,
-        url: publicUrl,
-      });
-    } catch {
-      // User cancelled share dialog - no-op
-    }
-  };
-
-  const shareMessage = `Veja o circuito "${circuit.name}" na DeFarm: ${publicUrl}`;
-  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
-  const emailShareUrl = `mailto:?subject=${encodeURIComponent(`Circuito ${circuit.name} - DeFarm`)}&body=${encodeURIComponent(shareMessage)}`;
-  const memberCount = Array.isArray((circuit as any).members)
-    ? (circuit as any).members.length
-    : typeof (circuit as any).member_count === "number"
-    ? (circuit as any).member_count
-    : 1;
-
   const handlePushItem = () => {
     if (selectedItem && id) {
       pushMutation.mutate({ circuitId: id, itemId: selectedItem });
@@ -279,6 +250,34 @@ export default function CircuitoDetail() {
   const publicUrlPlaceholder = "Disponível quando a visibilidade for Público";
   const visibilityLabel = isPublic ? "Público" : "Privado";
   const typeLabel = circuitTypeLabel(circuit.circuit_type);
+  const memberCount = Array.isArray((circuit as any).members)
+    ? (circuit as any).members.length
+    : typeof (circuit as any).member_count === "number"
+    ? (circuit as any).member_count
+    : 1;
+  const shareMessage = `Veja o circuito "${circuit.name}" na DeFarm: ${publicUrl}`;
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+  const emailShareUrl = `mailto:?subject=${encodeURIComponent(`Circuito ${circuit.name} - DeFarm`)}&body=${encodeURIComponent(shareMessage)}`;
+
+  const handleCopyPublicUrl = () => {
+    navigator.clipboard.writeText(publicUrl);
+    setCopiedPublicUrl(true);
+    setTimeout(() => setCopiedPublicUrl(false), 2000);
+  };
+
+  const handleNativeShare = async () => {
+    if (!isPublic) return;
+    if (!navigator.share) return;
+    try {
+      await navigator.share({
+        title: `Circuito ${circuit.name} - DeFarm`,
+        text: `Veja o circuito "${circuit.name}" na DeFarm`,
+        url: publicUrl,
+      });
+    } catch {
+      // User cancelled share dialog - no-op
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
