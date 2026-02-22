@@ -9,6 +9,11 @@ import {
   Clock,
   Loader2,
   RefreshCw,
+  ShieldCheck,
+  Pill,
+  Scale,
+  Beef,
+  Tractor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,32 +25,33 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { getEvents } from "@/lib/defarm-api";
-
-const eventTypeColors: Record<string, string> = {
-  ItemCreated: "bg-blue-500/10 text-blue-600",
-  ItemEnriched: "bg-purple-500/10 text-purple-600",
-  CircuitPush: "bg-primary/10 text-primary",
-  CircuitPull: "bg-orange-500/10 text-orange-600",
-  ItemMerged: "bg-yellow-500/10 text-yellow-600",
-  ItemSplit: "bg-red-500/10 text-red-600",
-};
-
-const eventTypeLabels: Record<string, string> = {
-  ItemCreated: "Item Criado",
-  ItemEnriched: "Item Enriquecido",
-  CircuitPush: "Push para Circuito",
-  CircuitPull: "Pull de Circuito",
-  ItemMerged: "Itens Mesclados",
-  ItemSplit: "Item Dividido",
-};
+import { eventTypeColors, eventTypeLabels } from "@/components/item-detail/constants";
 
 const eventTypeIcons: Record<string, typeof Activity> = {
   ItemCreated: Package,
+  item_created: Package,
   ItemEnriched: Activity,
+  item_enriched: Activity,
   CircuitPush: GitBranch,
+  circuit_push: GitBranch,
   CircuitPull: GitBranch,
+  circuit_pull: GitBranch,
   ItemMerged: Package,
+  item_merged: Package,
   ItemSplit: Package,
+  item_split: Package,
+  item_born: Tractor,
+  item_weighed: Scale,
+  item_vaccinated: ShieldCheck,
+  item_treated: Pill,
+  item_classified: Activity,
+  item_slaughtered: Beef,
+  item_movement: GitBranch,
+  item_property_linked: GitBranch,
+  item_property_unlinked: GitBranch,
+  property_registered: Package,
+  property_audited: ShieldCheck,
+  property_area_updated: Activity,
 };
 
 export default function EventosList() {
