@@ -34,6 +34,14 @@ export interface CreateAdminUserRequest {
   is_admin?: boolean;
 }
 
+export interface CreateAdminUserResponse {
+  message: string;
+  user_id: string;
+  workspace_id: string;
+  role: string;
+  is_admin: boolean;
+}
+
 export interface UpdateUserRoleRequest {
   role: string;
 }
@@ -104,8 +112,8 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
   return Array.isArray(res) ? res : res.users || [];
 }
 
-export async function createAdminUser(data: CreateAdminUserRequest): Promise<AdminUser> {
-  return authRequest<AdminUser>("/api/admin/users", {
+export async function createAdminUser(data: CreateAdminUserRequest): Promise<CreateAdminUserResponse> {
+  return authRequest<CreateAdminUserResponse>("/api/admin/users", {
     method: "POST",
     body: JSON.stringify(data),
   });
