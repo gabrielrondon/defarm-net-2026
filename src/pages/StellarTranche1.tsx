@@ -68,26 +68,23 @@ const steps = [
 /* ── code snippets ─────────────────────────────────────── */
 
 const cliSnippet = `# Install & build
-cd tooling/defarm-sdk && npm install && npm run build
-cd ../defarm-cli && npm install && npm run build
-
-# Option A: expose "defarm" globally
-npm link
+# Option A: no global install
+npx @defarm/cli --help
 
 # Configure + authenticate
-defarm workspace init --gateway https://gateway.defarm.net
-defarm auth login --email partner@example.com --password '••••••'
+npx @defarm/cli workspace init --gateway https://gateway.defarm.net
+npx @defarm/cli auth login --email partner@example.com --password '••••••'
 
 # Explore circuits & items
-defarm circuits list
-defarm items list --circuit <circuit_id>
-defarm items new \\
+npx @defarm/cli circuits list
+npx @defarm/cli items list --circuit <circuit_id>
+npx @defarm/cli items new \\
   --value-chain BEEF --country BR --year 2026 \\
   --circuit-id <circuit_id> \\
   --metadata '{"canonical_type":"sisbov","canonical_id":"105500497219983"}'
 
 # Add an event
-defarm events add \\
+npx @defarm/cli events add \\
   --event-type item_vaccinated \\
   --source-type partner --source-id demo_partner \\
   --circuit-id <circuit_id> --item-id <item_id> \\
@@ -96,23 +93,21 @@ defarm events add \\
 const installSnippet = `# Prerequisites
 # - Node.js 20+
 # - npm 10+
-# - git
+# - account in DeFarm platform
 
-git clone git@github.com:defarm-repo/engines.git
-cd engines/tooling/defarm-sdk
-npm install
-npm run build
+# CLI (no install)
+npx @defarm/cli --help
 
-cd ../defarm-cli
-npm install
-npm run build
-
-# Option A (recommended for demos): global command
-npm link
+# CLI (optional global install)
+npm install -g @defarm/cli
 defarm --help
 
-# Option B (without global install)
-node dist/index.js --help`;
+# SDK install in your project
+npm install @defarm/sdk
+
+# first commands
+defarm workspace init --gateway https://gateway.defarm.net
+defarm auth login --email <partner_email> --password '<partner_password>'`;
 
 const apiSnippet = `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
   -H "Authorization: Bearer <token>" \\
@@ -306,26 +301,26 @@ const StellarTranche1 = () => {
               <div className="grid lg:grid-cols-3 gap-6 mb-8">
                 <Card className="border-primary/20">
                   <CardHeader>
-                    <CardTitle className="text-lg">Repository</CardTitle>
+                    <CardTitle className="text-lg">CLI package</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
-                    <code className="text-xs bg-muted px-1 rounded">github.com:defarm-repo/engines</code>
+                    <code className="text-xs bg-muted px-1 rounded">@defarm/cli</code>
                   </CardContent>
                 </Card>
                 <Card className="border-primary/20">
                   <CardHeader>
-                    <CardTitle className="text-lg">Packages</CardTitle>
+                    <CardTitle className="text-lg">SDK package</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
-                    <code className="text-xs bg-muted px-1 rounded">tooling/defarm-sdk</code> and <code className="text-xs bg-muted px-1 rounded">tooling/defarm-cli</code>
+                    <code className="text-xs bg-muted px-1 rounded">@defarm/sdk</code>
                   </CardContent>
                 </Card>
                 <Card className="border-primary/20">
                   <CardHeader>
-                    <CardTitle className="text-lg">Distribution status</CardTitle>
+                    <CardTitle className="text-lg">Install mode</CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
-                    Usable now via git clone + npm build/link. Public npm publication is the next release step.
+                    CLI via <code className="text-xs bg-muted px-1 rounded">npx</code> or global install. SDK via <code className="text-xs bg-muted px-1 rounded">npm install</code>.
                   </CardContent>
                 </Card>
               </div>
