@@ -2,9 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { useEffect, type ReactNode } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 
 // Public pages
@@ -84,6 +84,26 @@ function TokenAwareIndex() {
   return <Index />;
 }
 
+function RequireAdmin({ children }: { children: ReactNode }) {
+  const { isLoading, isAuthenticated, user } = useAuth();
+
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!user?.is_admin) return <Navigate to="/app" replace />;
+  return children;
+}
+
+function RequirePartnerOrAdmin({ children }: { children: ReactNode }) {
+  const { isLoading, isAuthenticated, user } = useAuth();
+
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!user?.is_admin && user?.workspace_type !== "partner") {
+    return <Navigate to="/app" replace />;
+  }
+  return children;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -134,14 +154,49 @@ const App = () => (
             <Route path="/app/compliance" element={<AppLayout><ComplianceCheck /></AppLayout>} />
             
             <Route path="/app/api-keys" element={<AppLayout><ApiKeys /></AppLayout>} />
-            <Route path="/app/parceiro" element={<AppLayout><PartnerPortal /></AppLayout>} />
+            <Route
+              path="/app/parceiro"
+              element={
+                <RequirePartnerOrAdmin>
+                  <AppLayout><PartnerPortal /></AppLayout>
+                </RequirePartnerOrAdmin>
+              }
+            />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
             
             {/* Admin routes */}
-            <Route path="/app/admin/metricas" element={<AppLayout><AdminMetrics /></AppLayout>} />
-            <Route path="/app/admin/usuarios" element={<AppLayout><AdminUsers /></AppLayout>} />
-            <Route path="/app/admin/identificadores" element={<AppLayout><AdminCanonicalIdentifiers /></AppLayout>} />
-            <Route path="/app/admin/jobs" element={<AppLayout><AdminJobs /></AppLayout>} />
+            <Route
+              path="/app/admin/metricas"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminMetrics /></AppLayout>
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/app/admin/usuarios"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminUsers /></AppLayout>
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/app/admin/identificadores"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminCanonicalIdentifiers /></AppLayout>
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/app/admin/jobs"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminJobs /></AppLayout>
+                </RequireAdmin>
+              }
+            />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
