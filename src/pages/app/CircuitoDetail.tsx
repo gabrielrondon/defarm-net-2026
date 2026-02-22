@@ -198,11 +198,27 @@ export default function CircuitoDetail() {
   const publicPathId = (circuit.public_slug || "").trim() || circuit.id;
   const publicUrl = `${window.location.origin}/c/${publicPathId}`;
   const publicUrlPlaceholder = "Disponível quando a visibilidade for Público";
+  const visibilityLabel = isPublic ? "Público" : "Privado";
+  const typeLabel = circuitTypeLabel(circuit.circuit_type);
 
   const handleCopyPublicUrl = () => {
     navigator.clipboard.writeText(publicUrl);
     setCopiedPublicUrl(true);
     setTimeout(() => setCopiedPublicUrl(false), 2000);
+  };
+
+  const handleNativeShare = async () => {
+    if (!isPublic) return;
+    if (!navigator.share) return;
+    try {
+      await navigator.share({
+        title: `Circuito ${circuit.name} - DeFarm`,
+        text: `Veja o circuito "${circuit.name}" na DeFarm`,
+        url: publicUrl,
+      });
+    } catch {
+      // User cancelled share dialog - no-op
+    }
   };
 
   const shareMessage = `Veja o circuito "${circuit.name}" na DeFarm: ${publicUrl}`;
@@ -475,7 +491,7 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-lg font-bold text-foreground">
-                {isPublic ? "Público" : "Privado"}
+                {visibilityLabel}
               </p>
               <p className="text-sm text-muted-foreground">Visibilidade</p>
             </div>
@@ -488,9 +504,9 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-lg font-bold text-foreground capitalize">
-                {circuitTypeLabel(circuit.circuit_type)}
+                {typeLabel}
               </p>
-              <p className="text-sm text-muted-foreground">Tipo</p>
+              <p className="text-sm text-muted-foreground">Categoria</p>
             </div>
           </div>
         </div>
@@ -503,6 +519,14 @@ export default function CircuitoDetail() {
             {isPublic
               ? "Use este link para compartilhar a página pública do circuito."
               : "Este circuito está privado. Torne público em Editar para gerar uma página compartilhável."}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Estado atual: <span className="font-medium">{visibilityLabel}</span>
+            {isPublic && circuit.public_slug ? (
+              <>
+                {" · "}slug: <span className="font-mono">{circuit.public_slug}</span>
+              </>
+            ) : null}
           </p>
         </div>
         <div className="flex flex-col md:flex-row gap-2 md:items-center">
@@ -539,6 +563,12 @@ export default function CircuitoDetail() {
             <Button variant="outline" disabled>
               <Mail className="h-4 w-4 mr-2" />
               Email
+            </Button>
+          )}
+          {isPublic && (
+            <Button variant="outline" onClick={handleNativeShare} disabled={!navigator.share}>
+              <QrCode className="h-4 w-4 mr-2" />
+              Compartilhar
             </Button>
           )}
           {isPublic && (
