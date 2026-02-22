@@ -258,6 +258,12 @@ function rowsToCsv(headers: string[], rows: string[][]): string {
   return lines.join("\n");
 }
 
+function buildIdempotencyKey(file: File | null, circuitId: string): string {
+  if (!file) return `bulk-${circuitId}-${Date.now()}`;
+  const base = `${circuitId}:${file.name}:${file.size}:${file.lastModified}`;
+  return `bulk-${base}`.slice(0, 120);
+}
+
 function detectDelimiter(lines: string[]): string {
   const sample = lines.filter((line) => line.trim().length > 0).slice(0, 20);
   const countDelim = (line: string, delimiter: string): number => {
@@ -766,6 +772,10 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
 
   const handleConfirmUpload = async () => {
     if (!preview || !circuitId) return;
+    if (!selectedTemplateId) {
+      setError("Selecione um template de mapeamento antes de importar.");
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
@@ -782,7 +792,10 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
         (file?.name || "import.csv").replace(/\.(xls|xlsx|csv|json)$/i, ".csv"),
         { type: "text/csv" }
       );
-      const result = await bulkIngestItems(prepared, circuitId);
+      const result = await bulkIngestItems(prepared, circuitId, {
+        templateId: selectedTemplateId,
+        idempotencyKey: buildIdempotencyKey(file, circuitId),
+      });
       setReceipt(result);
       onSuccess?.();
     } catch (err: any) {
@@ -846,6 +859,27 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
                 <p className="text-muted-foreground mt-1 font-mono text-xs">
                   {receipt.summary.unclassified_fields.join(", ")}
                 </p>
+              </div>
+            )}
+
+            {receipt.quality && (
+              <div className="p-3 rounded-lg bg-muted border border-border text-sm space-y-1">
+                <p className="font-medium text-foreground">
+                  Qualidade do lote: {receipt.quality.score}/100 ({receipt.quality.severity})
+                </p>
+                {receipt.quality.warnings.length > 0 && (
+                  <ul className="list-disc pl-4 text-muted-foreground">
+                    {receipt.quality.warnings.map((w, idx) => (
+                      <li key={idx}>{w}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {receipt.idempotency_replay && (
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm text-primary">
+                Requisição idempotente detectada: este resultado reutilizou um receipt já existente.
               </div>
             )}
 
@@ -917,6 +951,9 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
                   placeholder="Source hint (ex: cowpro)"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Template é obrigatório para upload de parceiro.
+              </p>
             </div>
 
             <div className="space-y-2 rounded-lg border border-border p-3">
@@ -1062,7 +1099,7 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
               <Button variant="outline" onClick={() => setPreview(null)}>
                 Voltar
               </Button>
-              <Button onClick={handleConfirmUpload} disabled={uploading}>
+              <Button onClick={handleConfirmUpload} disabled={uploading || !selectedTemplateId}>
                 {uploading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

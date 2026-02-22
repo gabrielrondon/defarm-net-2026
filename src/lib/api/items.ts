@@ -86,11 +86,21 @@ export async function getCircuitItems(circuitId: string): Promise<Item[]> {
 // Bulk import (CSV or JSON)
 export async function bulkIngestItems(
   file: File,
-  circuitId: string
+  circuitId: string,
+  options?: {
+    templateId?: string;
+    idempotencyKey?: string;
+  }
 ): Promise<IngestionReceipt> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("circuit_id", circuitId);
+  if (options?.templateId) {
+    formData.append("template_id", options.templateId);
+  }
+  if (options?.idempotencyKey) {
+    formData.append("idempotency_key", options.idempotencyKey);
+  }
 
   // Don't set Content-Type header - browser will set it with boundary for multipart
   return registryRequest<IngestionReceipt>("/items/bulk", {

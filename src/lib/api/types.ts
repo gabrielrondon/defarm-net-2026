@@ -610,7 +610,16 @@ export interface IngestionReceipt {
   status: string;
   processing_time_ms: number;
   summary: IngestionSummary;
+  quality?: IngestionQualityReport | null;
+  template_id?: string | null;
+  idempotency_replay?: boolean | null;
   error_message?: string | null;
+}
+
+export interface IngestionQualityReport {
+  score: number;
+  severity: string;
+  warnings: string[];
 }
 
 export interface IngestionTemplate {

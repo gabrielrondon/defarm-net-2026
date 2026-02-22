@@ -2844,11 +2844,19 @@ components:
           type: string
           description: Error message if status is "failed" or "partial"
           nullable: true
+        idempotency_replay:
+          type: boolean
+          description: True when response reused an existing receipt due to idempotency key
+          nullable: true
         processing_time_ms:
           type: integer
           format: int64
           description: Processing time in milliseconds
           minimum: 0
+        quality:
+          allOf:
+          - $ref: '#/components/schemas/IngestionQualityReport'
+          nullable: true
         receipt_id:
           type: string
           format: uuid
@@ -2858,6 +2866,30 @@ components:
           description: 'Status: "processing", "completed", "failed", "partial"'
         summary:
           $ref: '#/components/schemas/IngestionSummary'
+        template_id:
+          type: string
+          format: uuid
+          description: Mapping template used for this ingestion
+          nullable: true
+    IngestionQualityReport:
+      type: object
+      required:
+      - score
+      - severity
+      - warnings
+      properties:
+        score:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100
+        severity:
+          type: string
+          description: low | medium | high
+        warnings:
+          type: array
+          items:
+            type: string
     CreateDisclosureRequest:
       type: object
       required:
@@ -10162,6 +10194,8 @@ paths:
         **CSV Format:**
 
         - Required multipart fields: `file` (CSV) and `circuit_id` (UUID)
+        - Partner template required: `template_id` (UUID) or workspace default template
+        - Optional idempotency field: `idempotency_key` for safe retries
 
         - Required CSV columns: value_chain, country
 
@@ -10231,7 +10265,21 @@ paths:
                 circuit_id:
                   type: string
                   format: uuid
+                template_id:
+                  type: string
+                  format: uuid
+                  description: Active ingestion template for partner workspace
+                idempotency_key:
+                  type: string
+                  description: Optional unique key for safe retry without duplicate processing
+                  maxLength: 128
       responses:
+        '200':
+          description: Idempotent replay; existing receipt returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionReceipt'
         '201':
           description: Ingestion completed successfully
           content:
