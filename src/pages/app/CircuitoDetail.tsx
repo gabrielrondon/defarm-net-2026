@@ -210,13 +210,6 @@ export default function CircuitoDetail() {
     }
   };
 
-  const isPublic = isCircuitPublic(circuit.visibility);
-  const publicPathId = (circuit.public_slug || "").trim() || circuit.id;
-  const publicUrl = `${window.location.origin}/c/${publicPathId}`;
-  const publicUrlPlaceholder = "Disponível quando a visibilidade for Público";
-  const visibilityLabel = isPublic ? "Público" : "Privado";
-  const typeLabel = circuitTypeLabel(circuit.circuit_type);
-
   const handleCopyPublicUrl = () => {
     navigator.clipboard.writeText(publicUrl);
     setCopiedPublicUrl(true);
@@ -279,6 +272,13 @@ export default function CircuitoDetail() {
       </div>
     );
   }
+
+  const isPublic = isCircuitPublic(circuit.visibility);
+  const publicPathId = (circuit.public_slug || "").trim() || circuit.id;
+  const publicUrl = `${window.location.origin}/c/${publicPathId}`;
+  const publicUrlPlaceholder = "Disponível quando a visibilidade for Público";
+  const visibilityLabel = isPublic ? "Público" : "Privado";
+  const typeLabel = circuitTypeLabel(circuit.circuit_type);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
