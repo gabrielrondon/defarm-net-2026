@@ -1854,7 +1854,7 @@ components:
           nullable: true
         key_name:
           type: string
-          description: Human-readable name for the API key
+          description: Human-readable name for the API key (`name` is accepted as legacy alias)
     CreateApiKeyResponse:
       description: API response containing new API key (only shown once for security).
       type: object
