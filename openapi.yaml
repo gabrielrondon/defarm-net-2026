@@ -3510,6 +3510,71 @@ components:
         user_id:
           type: string
           format: uuid
+    TimelineEvent:
+      description: Single event entry in a reconstructed timeline.
+      type: object
+      required:
+      - id
+      - event_type
+      - source
+      - payload
+      - status
+      - timestamp
+      - entity_type
+      - entity_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        source:
+          type: string
+          description: event | blockchain | storage
+        payload: {}
+        metadata:
+          nullable: true
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        circuit_id:
+          type: string
+          format: uuid
+          nullable: true
+        item_id:
+          type: string
+          format: uuid
+          nullable: true
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+          format: uuid
+    Timeline:
+      description: Reconstructed timeline merged from events, blockchain anchors and storage refs.
+      type: object
+      required:
+      - events
+      - total_events
+      - sources
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEvent'
+        total_events:
+          type: integer
+          format: int64
+        sources:
+          type: array
+          items:
+            type: string
     RestorationResponse:
       description: Result of data restoration from snapshot or backup.
       type: object
@@ -6224,11 +6289,12 @@ paths:
       parameters:
       - name: user_id
         in: query
-        description: User ID
-        required: true
+        description: User ID. Defaults to authenticated user when omitted.
+        required: false
         schema:
           type: string
           format: uuid
+          nullable: true
       - name: limit
         in: query
         description: 'Maximum results (default: 10)'
@@ -6293,22 +6359,25 @@ paths:
           nullable: true
       - name: start_date
         in: query
-        description: Start date (YYYY-MM-DD)
-        required: true
+        description: Start date (YYYY-MM-DD). Default: last 30 days.
+        required: false
         schema:
           type: string
+          nullable: true
       - name: end_date
         in: query
-        description: End date (YYYY-MM-DD)
-        required: true
+        description: End date (YYYY-MM-DD). Default: today.
+        required: false
         schema:
           type: string
+          nullable: true
       - name: summary_type
         in: query
-        description: Summary type (daily, weekly, monthly)
-        required: true
+        description: Summary type (daily, weekly, monthly). Default: daily.
+        required: false
         schema:
           type: string
+          nullable: true
       responses:
         '200':
           description: Activity summaries retrieved
@@ -9273,6 +9342,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/items/{id}/timeline:
+    get:
+      tags:
+      - Timeline
+      summary: Get item timeline
+      description: Reconstructs complete item history by merging events, blockchain anchors and storage refs.
+      operationId: get_item_timeline
+      parameters:
+      - name: id
+        in: path
+        description: Item ID (UUID)
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Item timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timeline'
+        '404':
+          description: Item not found
+        '500':
+          description: Internal server error
+  /api/circuits/{id}/timeline:
+    get:
+      tags:
+      - Timeline
+      summary: Get circuit timeline
+      description: Returns recent activity timeline for a circuit.
+      operationId: get_circuit_timeline
+      parameters:
+      - name: id
+        in: path
+        description: Circuit ID (UUID)
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        description: Maximum number of events (default 100)
+        required: false
+        schema:
+          type: integer
+          format: int64
+          nullable: true
+      responses:
+        '200':
+          description: Circuit timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timeline'
+        '404':
+          description: Circuit not found
+        '500':
+          description: Internal server error
   /api/items/bulk:
     post:
       tags:
