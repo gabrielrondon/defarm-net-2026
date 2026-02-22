@@ -68,12 +68,14 @@ export interface CreateItemResponse {
 
 export interface UpdateItemRequest {
   metadata: Record<string, unknown>;
+  circuit_id: string;
   user_id?: string | null;
   ip_address?: string | null;
 }
 
 export interface UpdateItemStatusRequest {
   status: string;
+  circuit_id: string;
   user_id?: string | null;
   ip_address?: string | null;
 }

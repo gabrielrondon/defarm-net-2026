@@ -61,7 +61,7 @@ import {
   getCircuit, 
   getCircuitItems, 
   getJoinRequests,
-  updateItem,
+  addItemToCircuit,
   getItems,
   getItem,
   getItemAnchors,
@@ -149,7 +149,7 @@ export default function CircuitoDetail() {
   // Push item mutation
   const pushMutation = useMutation({
     mutationFn: ({ circuitId, itemId }: { circuitId: string; itemId: string }) =>
-      updateItem(itemId, { metadata: { circuit_id: circuitId } }),
+      addItemToCircuit(circuitId, itemId, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuitItems", id] });
       toast({

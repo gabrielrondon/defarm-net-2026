@@ -136,8 +136,18 @@ export default function ItensList() {
   });
 
   const depreciateMutation = useMutation({
-    mutationFn: ({ id }: { id: string }) =>
-      updateItemStatus(id, { status: "deprecated", user_id: user?.id || null }),
+    mutationFn: ({ id }: { id: string }) => {
+      const itemCircuits = circuitItemsMap[id] || [];
+      const circuitId = itemCircuits[0]?.id;
+      if (!circuitId) {
+        throw new Error("Não foi possível determinar o circuito do item.");
+      }
+      return updateItemStatus(id, {
+        status: "deprecated",
+        circuit_id: circuitId,
+        user_id: user?.id || null,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
       toast({ title: "Item depreciado", description: "O status foi atualizado." });
