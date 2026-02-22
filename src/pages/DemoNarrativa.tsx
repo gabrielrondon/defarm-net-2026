@@ -5,91 +5,71 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, ArrowRight, LogIn } from "lucide-react";
+import { ArrowLeft, ArrowRight, LogIn, Play } from "lucide-react";
+import {
+  DEMO_NARRATIVE_ORDER,
+  type DemoActor,
+  clearDemoNarrativeState,
+  getDemoActorById,
+  writeDemoNarrativeState,
+} from "@/lib/demo-narrative";
 
-type Step = {
+type NarrativeStep = {
   id: string;
-  actor: "producer" | "partner" | "certifier" | "processor" | "admin";
+  actor: DemoActor["id"];
   title: string;
   objective: string;
-  email: string;
-  password: string;
-  landingRoute: string;
   highlights: string[];
+  account: DemoActor;
 };
 
-const steps: Step[] = [
-  {
-    id: "1",
-    actor: "producer",
+const NARRATIVE_META: Record<DemoActor["id"], Omit<NarrativeStep, "id" | "actor" | "account">> = {
+  producer: {
     title: "Etapa 1 - Produtor",
     objective: "Mostrar origem da operacao, propriedades, rebanho e circuitos.",
-    email: "qa.producer.1771760943@defarm.net",
-    password: "QaProducer#2026!",
-    landingRoute: "/app/claims",
     highlights: [
       "Claims de propriedade (CAR/CPF/CNPJ)",
       "Rebanho por propriedade",
       "Circuitos e itens para rastreabilidade",
     ],
   },
-  {
-    id: "2",
-    actor: "partner",
+  partner: {
     title: "Etapa 2 - Parceiro de Dados",
     objective: "Demonstrar ingestao e monitoramento de dados operacionais.",
-    email: "qa.partner.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    landingRoute: "/app/parceiro",
     highlights: [
       "Portal parceiro",
       "Fluxo de ingestao e validacao",
       "Eventos operacionais por circuito",
     ],
   },
-  {
-    id: "3",
-    actor: "certifier",
+  certifier: {
     title: "Etapa 3 - OESA / Certificadora",
     objective: "Reforcar governanca, validacao e trilha de conformidade.",
-    email: "qa.certifier.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    landingRoute: "/app/auditoria",
     highlights: [
       "Claims e validacao",
       "Auditoria e eventos",
       "Rastreabilidade por item e circuito",
     ],
   },
-  {
-    id: "4",
-    actor: "processor",
+  processor: {
     title: "Etapa 4 - Frigorifico / Processador",
     objective: "Mostrar consumo operacional de dados e rastreio de lotes.",
-    email: "qa.processor.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    landingRoute: "/app/eventos",
     highlights: [
       "Eventos de movimentacao",
       "Itens e lote operacional",
       "Circuitos compartilhados",
     ],
   },
-  {
-    id: "5",
-    actor: "admin",
+  admin: {
     title: "Etapa 5 - Administracao DeFarm",
     objective: "Encerrar com governanca da plataforma e operacao central.",
-    email: "qa.admin.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    landingRoute: "/app/admin/usuarios",
     highlights: [
       "Gestao de usuarios e workspaces",
       "Tipo de workspace e controle de acesso",
       "Fila de jobs e observabilidade",
     ],
   },
-];
+};
 
 export default function DemoNarrativa() {
   const { actorType } = useParams<{ actorType?: string }>();
@@ -98,25 +78,40 @@ export default function DemoNarrativa() {
   const { toast } = useToast();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
+  const steps = useMemo<NarrativeStep[]>(() => {
+    return DEMO_NARRATIVE_ORDER.map((actorId, idx) => {
+      const account = getDemoActorById(actorId)!;
+      const meta = NARRATIVE_META[actorId];
+      return {
+        id: String(idx + 1),
+        actor: actorId,
+        account,
+        ...meta,
+      };
+    });
+  }, []);
+
   const filtered = useMemo(() => {
     if (!actorType) return steps;
     return steps.filter((step) => step.actor === actorType);
-  }, [actorType]);
+  }, [actorType, steps]);
 
-  const handleLogin = async (step: Step) => {
+  const loginStep = async (step: NarrativeStep) => {
     setLoadingId(step.id);
     try {
-      const challenge = await login({ email: step.email, password: step.password });
+      const challenge = await login({ email: step.account.email, password: step.account.password });
       if (challenge?.requires_2fa) {
         toast({
           title: "2FA necessario",
           description: "Este usuario exige 2FA. Abra o login preenchido para concluir.",
           variant: "destructive",
         });
-        navigate(`/login?demo_email=${encodeURIComponent(step.email)}&demo_password=${encodeURIComponent(step.password)}`);
+        navigate(
+          `/login?demo_email=${encodeURIComponent(step.account.email)}&demo_password=${encodeURIComponent(step.account.password)}`
+        );
         return;
       }
-      navigate(step.landingRoute);
+      navigate(step.account.defaultRoute);
     } catch (error) {
       toast({
         title: "Falha ao entrar na etapa",
@@ -126,6 +121,14 @@ export default function DemoNarrativa() {
     } finally {
       setLoadingId(null);
     }
+  };
+
+  const startPresentationMode = async () => {
+    const first = steps[0];
+    if (!first) return;
+    clearDemoNarrativeState();
+    writeDemoNarrativeState({ enabled: true, index: 0 });
+    await loginStep(first);
   };
 
   return (
@@ -151,6 +154,12 @@ export default function DemoNarrativa() {
             <Badge variant="secondary">/_demo/narrativa/processor</Badge>
             <Badge variant="secondary">/_demo/narrativa/admin</Badge>
           </div>
+          <div className="mt-3">
+            <Button onClick={startPresentationMode}>
+              <Play className="h-4 w-4 mr-2" />
+              Iniciar modo apresentacao (sequencial)
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -175,22 +184,22 @@ export default function DemoNarrativa() {
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  Conta: <span className="font-mono">{step.email}</span>
+                  Conta: <span className="font-mono">{step.account.email}</span>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => handleLogin(step)} disabled={loadingId === step.id}>
+                  <Button size="sm" onClick={() => loginStep(step)} disabled={loadingId === step.id}>
                     <LogIn className="h-4 w-4 mr-2" />
                     Entrar nesta etapa
                   </Button>
                   <Button size="sm" variant="outline" asChild>
-                    <Link to={step.landingRoute}>
+                    <Link to={step.account.defaultRoute}>
                       Abrir tela-alvo
                     </Link>
                   </Button>
                   <Button size="sm" variant="ghost" asChild>
                     <Link
-                      to={`/login?demo_email=${encodeURIComponent(step.email)}&demo_password=${encodeURIComponent(step.password)}`}
+                      to={`/login?demo_email=${encodeURIComponent(step.account.email)}&demo_password=${encodeURIComponent(step.account.password)}`}
                     >
                       Login preenchido
                     </Link>

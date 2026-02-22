@@ -29,6 +29,12 @@ import logoIcon from "@/assets/logo-icon.png";
 import { useQuery } from "@tanstack/react-query";
 import { getMyJoinRequests, requestEmailVerification } from "@/lib/defarm-api";
 import { useToast } from "@/hooks/use-toast";
+import {
+  clearDemoNarrativeState,
+  getDemoStepByIndex,
+  readDemoNarrativeState,
+  writeDemoNarrativeState,
+} from "@/lib/demo-narrative";
 
 interface NavItem {
   icon: typeof BookOpen;
@@ -70,11 +76,12 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout, login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [demoSwitchLoading, setDemoSwitchLoading] = useState(false);
   const workspaceType = user?.workspace_type || "producer";
 
   useEffect(() => {
@@ -109,6 +116,54 @@ export function AppLayout({ children }: AppLayoutProps) {
         variant: "destructive",
       });
     }
+  };
+
+  const demoState = readDemoNarrativeState();
+  const demoCurrentStep = demoState?.enabled ? getDemoStepByIndex(demoState.index) : undefined;
+  const demoNextStep = demoState?.enabled ? getDemoStepByIndex(demoState.index + 1) : undefined;
+  const isInDemoPresentation = !!demoCurrentStep && user?.email === demoCurrentStep.email;
+
+  const handleDemoNextStep = async () => {
+    if (!demoState || !demoCurrentStep || !demoNextStep) return;
+    setDemoSwitchLoading(true);
+    try {
+      writeDemoNarrativeState({ enabled: true, index: demoState.index + 1 });
+      await logout();
+      const challenge = await login({
+        email: demoNextStep.email,
+        password: demoNextStep.password,
+      });
+
+      if (challenge?.requires_2fa) {
+        toast({
+          title: "2FA necessario",
+          description: "A proxima conta exige 2FA. Complete no login.",
+        });
+        navigate(
+          `/login?demo_email=${encodeURIComponent(demoNextStep.email)}&demo_password=${encodeURIComponent(demoNextStep.password)}`
+        );
+        return;
+      }
+
+      navigate(demoNextStep.defaultRoute);
+    } catch (error) {
+      writeDemoNarrativeState(demoState);
+      toast({
+        title: "Falha ao trocar para proxima etapa",
+        description: error instanceof Error ? error.message : "Erro na troca de conta demo.",
+        variant: "destructive",
+      });
+    } finally {
+      setDemoSwitchLoading(false);
+    }
+  };
+
+  const handleDemoFinish = () => {
+    clearDemoNarrativeState();
+    toast({
+      title: "Narrativa encerrada",
+      description: "Modo apresentacao finalizado.",
+    });
   };
 
   if (isLoading) {
@@ -315,6 +370,34 @@ export function AppLayout({ children }: AppLayoutProps) {
           {myApprovedJoinRequests.length > 0 && (
             <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground">
               Você possui {myApprovedJoinRequests.length} solicitação(ões) de entrada aprovada(s). Acesse seus circuitos para conferir.
+            </div>
+          )}
+          {demoState?.enabled && (
+            <div className="mb-4 rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-900 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="font-semibold">
+                  Modo apresentacao ativo
+                </div>
+                <div>
+                  {isInDemoPresentation
+                    ? `Ator atual: ${demoCurrentStep?.title}`
+                    : "Usuario atual nao corresponde a etapa ativa da narrativa."}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {demoNextStep ? (
+                  <Button size="sm" onClick={handleDemoNextStep} disabled={demoSwitchLoading}>
+                    Proxima etapa
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={handleDemoFinish}>
+                    Finalizar narrativa
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => navigate("/_demo/narrativa")}>
+                  Ver roteiro
+                </Button>
+              </div>
             </div>
           )}
           {children}

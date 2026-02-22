@@ -8,67 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, LogIn, ExternalLink } from "lucide-react";
-
-type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
-type DemoActor = {
-  id: string;
-  title: string;
-  description: string;
-  workspaceType: WorkspaceType;
-  isAdmin?: boolean;
-  email: string;
-  password: string;
-  defaultRoute: string;
-};
-
-const demoActors: DemoActor[] = [
-  {
-    id: "producer",
-    title: "Produtor Rural",
-    description: "Ve claims, propriedades, rebanho e operacao diaria.",
-    workspaceType: "producer",
-    email: "qa.producer.1771760943@defarm.net",
-    password: "QaProducer#2026!",
-    defaultRoute: "/app/claims",
-  },
-  {
-    id: "partner",
-    title: "Parceiro de Dados",
-    description: "Ingestao de dados, fluxo de parceria e monitoramento.",
-    workspaceType: "partner",
-    email: "qa.partner.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    defaultRoute: "/app/parceiro",
-  },
-  {
-    id: "certifier",
-    title: "OESA / Certificadora",
-    description: "Submissao de claims e validacao de conformidade.",
-    workspaceType: "certifier",
-    email: "qa.certifier.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    defaultRoute: "/app/claims",
-  },
-  {
-    id: "processor",
-    title: "Frigorifico / Processador",
-    description: "Acompanhamento de eventos e rastreabilidade operacional.",
-    workspaceType: "processor",
-    email: "qa.processor.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    defaultRoute: "/app/eventos",
-  },
-  {
-    id: "admin",
-    title: "Administrador DeFarm",
-    description: "Gestao de usuarios, workspaces, jobs e governanca.",
-    workspaceType: "producer",
-    isAdmin: true,
-    email: "qa.admin.2026@defarm.net",
-    password: "DeFarmQA#2026!",
-    defaultRoute: "/app/admin/usuarios",
-  },
-];
+import { DEMO_ACTORS, type DemoActor } from "@/lib/demo-narrative";
 
 function ActorCard({ actor }: { actor: DemoActor }) {
   const { login } = useAuth();
@@ -161,8 +101,8 @@ function ActorCard({ actor }: { actor: DemoActor }) {
 export default function DemoAcessos() {
   const { actorType } = useParams<{ actorType?: string }>();
   const selected = useMemo(() => {
-    if (!actorType) return demoActors;
-    return demoActors.filter((actor) => actor.id === actorType || actor.workspaceType === actorType);
+    if (!actorType) return DEMO_ACTORS;
+    return DEMO_ACTORS.filter((actor) => actor.id === actorType || actor.workspaceType === actorType);
   }, [actorType]);
 
   return (
