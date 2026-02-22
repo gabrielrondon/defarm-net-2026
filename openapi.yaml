@@ -8008,10 +8008,11 @@ paths:
       parameters:
       - name: id
         in: path
-        description: Circuit UUID or public slug
+        description: Circuit UUID
         required: true
         schema:
           type: string
+          format: uuid
       requestBody:
         required: true
         content:
@@ -8428,11 +8429,10 @@ paths:
       parameters:
       - name: id
         in: path
-        description: Circuit UUID
+        description: Circuit UUID or public slug
         required: true
         schema:
           type: string
-          format: uuid
       responses:
         '200':
           description: Circuit public portfolio
