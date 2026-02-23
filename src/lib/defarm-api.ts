@@ -49,6 +49,7 @@ export interface AuthUser {
   email_verified?: boolean;
   pending_email?: string | null;
   full_name?: string | null;
+  avatar_url?: string | null;
   is_admin?: boolean;
   is_active?: boolean;
   workspace: {

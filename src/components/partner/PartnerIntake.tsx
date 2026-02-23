@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
 import { Download, FileUp, Loader2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function PartnerIntake() {
   const { toast } = useToast();
@@ -266,8 +267,8 @@ export function PartnerIntake() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                 <p className="text-muted-foreground">Linhas lidas: <span className="text-foreground font-medium">{previewRows}</span></p>
-                <p className="text-muted-foreground">Com identificador: <span className="text-green-700 font-medium">{previewResolvable}</span></p>
-                <p className="text-muted-foreground">Sem identificador: <span className="text-amber-700 font-medium">{previewUnknown}</span></p>
+                <p className="text-muted-foreground">Com identificador: <span className="text-primary font-medium">{previewResolvable}</span></p>
+                <p className="text-muted-foreground">Sem identificador: <span className="text-destructive font-medium">{previewUnknown}</span></p>
               </div>
             )}
           </div>
@@ -283,11 +284,11 @@ export function PartnerIntake() {
           </div>
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Processados com sucesso</p>
-            <p className="text-lg font-semibold text-green-700">{completedCount}</p>
+            <p className="text-lg font-semibold text-primary">{completedCount}</p>
           </div>
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Com falha</p>
-            <p className="text-lg font-semibold text-red-700">{failedCount}</p>
+            <p className="text-lg font-semibold text-destructive">{failedCount}</p>
           </div>
         </div>
 
@@ -313,7 +314,7 @@ export function PartnerIntake() {
         </div>
 
         {filteredHistory.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum payload registrado.</p>
+          <EmptyState icon={FileUp} title="Nenhum payload registrado" description="Envie um arquivo CSV ou JSON acima para começar." />
         ) : (
           <div className="space-y-2">
             {filteredHistory.map((row) => (
@@ -330,18 +331,18 @@ export function PartnerIntake() {
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full border ${
                     row.status === "completed"
-                      ? "bg-green-50 text-green-700 border-green-200"
+                      ? "bg-primary/10 text-primary border-primary/20"
                       : row.status === "partial"
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        ? "bg-muted text-muted-foreground border-border"
                         : row.status === "failed"
-                          ? "bg-red-50 text-red-700 border-red-200"
+                          ? "bg-destructive/10 text-destructive border-destructive/20"
                           : "bg-muted text-muted-foreground border-border"
                   }`}>
                     {row.status}
                   </span>
                 </div>
                 {row.error_message ? (
-                  <p className="text-xs text-red-600 mt-2">
+                  <p className="text-xs text-destructive mt-2">
                     {row.error_message} · Próxima ação: ajustar template/roteamento e reenviar.
                   </p>
                 ) : null}
@@ -412,7 +413,7 @@ export function PartnerIntake() {
                   <p className="text-xs text-muted-foreground">tipo: {formatIssueType(issue.identifier_type)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200 w-fit">
+                  <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
                     {issue.occurrences} ocorrência(s)
                   </span>
                   <Button

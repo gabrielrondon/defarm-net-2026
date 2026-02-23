@@ -68,14 +68,14 @@ export interface CreateItemResponse {
 
 export interface UpdateItemRequest {
   metadata: Record<string, unknown>;
-  circuit_id: string;
+  circuit_id?: string;
   user_id?: string | null;
   ip_address?: string | null;
 }
 
 export interface UpdateItemStatusRequest {
   status: string;
-  circuit_id: string;
+  circuit_id?: string;
   user_id?: string | null;
   ip_address?: string | null;
 }
@@ -934,8 +934,11 @@ export interface PublicCircuitInfo {
   created_at: string;
   description?: string | null;
   public_slug?: string | null;
+  public_description?: string | null;
   public_banner_url?: string | null;
   public_logo_url?: string | null;
+  public_contact_email?: string | null;
+  public_website?: string | null;
 }
 
 export interface CircuitStats {
