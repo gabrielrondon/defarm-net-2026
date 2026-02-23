@@ -82,6 +82,10 @@ tags:
   description: Admin-only operations (API keys, canonical identifiers).
 - name: Partner API Keys
   description: Partner API key issuance and usage metrics.
+- name: Partner Routing
+  description: Intelligent partner intake, routing rules, and raw payload history.
+- name: Embed
+  description: Short-lived embed tokens and portfolio retrieval for partner/client UX.
 - name: Webhooks
   description: Webhook subscriptions, deliveries, retries, and stats.
 - name: Activity
@@ -2058,6 +2062,259 @@ components:
           type: integer
           format: int32
           nullable: true
+    UpsertRoutingRuleRequest:
+      type: object
+      required:
+      - identifier_type
+      - identifier_value
+      - circuit_id
+      properties:
+        identifier_type:
+          type: string
+          enum:
+          - car
+          - cnpj
+          - cpf
+          - incra
+          - nirf
+          - land_dfid
+        identifier_value:
+          type: string
+        circuit_id:
+          type: string
+          format: uuid
+        notes:
+          type: string
+          nullable: true
+    RoutingRuleResponse:
+      type: object
+      required:
+      - id
+      - workspace_id
+      - identifier_type
+      - identifier_value
+      - identifier_value_normalized
+      - circuit_id
+      - is_active
+      - auto_created
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        identifier_type:
+          type: string
+        identifier_value:
+          type: string
+        identifier_value_normalized:
+          type: string
+        circuit_id:
+          type: string
+          format: uuid
+        is_active:
+          type: boolean
+        auto_created:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    RawPayloadSummary:
+      type: object
+      required:
+      - id
+      - workspace_id
+      - intake_mode
+      - payload_size_bytes
+      - payload_sha256
+      - status
+      - metadata
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        source_circuit_id:
+          type: string
+          format: uuid
+          nullable: true
+        intake_mode:
+          type: string
+        content_type:
+          type: string
+          nullable: true
+        file_name:
+          type: string
+          nullable: true
+        payload_size_bytes:
+          type: integer
+          format: int32
+        payload_sha256:
+          type: string
+        status:
+          type: string
+        error_message:
+          type: string
+          nullable: true
+        metadata: {}
+        created_at:
+          type: string
+        processed_at:
+          type: string
+          nullable: true
+    ListRawPayloadsResponse:
+      type: object
+      required:
+      - rows
+      - count
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawPayloadSummary'
+        count:
+          type: integer
+          format: int32
+    IntakeBatchResult:
+      type: object
+      required:
+      - identifier_type
+      - identifier_value
+      - circuit_id
+      - rows
+      - status
+      properties:
+        identifier_type:
+          type: string
+        identifier_value:
+          type: string
+        circuit_id:
+          type: string
+          format: uuid
+        rows:
+          type: integer
+          format: int32
+        receipt_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+        error_message:
+          type: string
+          nullable: true
+    PartnerIntakeResponse:
+      type: object
+      required:
+      - raw_payload_id
+      - source_circuit_id
+      - workspace_id
+      - total_rows
+      - routed_batches
+      - unresolved_rows
+      - created_circuits
+      - status
+      properties:
+        raw_payload_id:
+          type: string
+          format: uuid
+        source_circuit_id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        total_rows:
+          type: integer
+          format: int32
+        routed_batches:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntakeBatchResult'
+        unresolved_rows:
+          type: integer
+          format: int32
+        created_circuits:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          type: string
+    CreateEmbedTokenRequest:
+      type: object
+      required:
+      - circuit_id
+      properties:
+        circuit_id:
+          type: string
+          format: uuid
+        expires_in_minutes:
+          type: integer
+          format: int64
+          nullable: true
+    CreateEmbedTokenResponse:
+      type: object
+      required:
+      - token
+      - expires_at
+      - embed_url
+      properties:
+        token:
+          type: string
+        expires_at:
+          type: string
+        embed_url:
+          type: string
+    EmbedEventProof:
+      type: object
+      required:
+      - id
+      - event_type
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        item_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+        stellar_tx_hash:
+          type: string
+          nullable: true
+        ipfs_cid:
+          type: string
+          nullable: true
+    EmbedPortfolioResponse:
+      type: object
+      required:
+      - portfolio
+      - recent_event_proofs
+      properties:
+        portfolio: {}
+        recent_event_proofs:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmbedEventProof'
     CreateCanonicalIdentifierRequest:
       description: Request payload to create a canonical identifier type.
       type: object
@@ -7535,6 +7792,166 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
+  /api/partner/routing-rules:
+    get:
+      tags:
+      - Partner Routing
+      summary: List partner routing rules
+      description: List active routing rules that map partner identifiers (CAR/CPF/CNPJ/LAND DFID) to destination circuits.
+      operationId: list_partner_routing_rules
+      parameters:
+      - name: identifier_type
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Routing rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoutingRuleResponse'
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Partner Routing
+      summary: Upsert partner routing rule
+      description: Create or update a routing rule for partner intelligent intake.
+      operationId: upsert_partner_routing_rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertRoutingRuleRequest'
+      responses:
+        '201':
+          description: Routing rule upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingRuleResponse'
+      security:
+      - bearerAuth: []
+  /api/partner/routing-rules/{id}:
+    delete:
+      tags:
+      - Partner Routing
+      summary: Deactivate partner routing rule
+      operationId: delete_partner_routing_rule
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Routing rule deactivated
+      security:
+      - bearerAuth: []
+  /api/partner/ingestion/raw:
+    get:
+      tags:
+      - Partner Routing
+      summary: List raw ingestion payloads
+      description: List persisted raw CSV/JSON payloads received through partner intake.
+      operationId: list_partner_ingestion_raw
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Raw payload history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListRawPayloadsResponse'
+      security:
+      - bearerAuth: []
+  /api/partner/ingestion/intake:
+    post:
+      tags:
+      - Partner Routing
+      summary: Intelligent partner intake (CSV/JSON)
+      description: Persist payload bruto, resolver roteamento por identificador e ingerir por circuito automaticamente.
+      operationId: partner_intake
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              - source_circuit_id
+              properties:
+                file:
+                  type: string
+                  format: binary
+                source_circuit_id:
+                  type: string
+                  format: uuid
+                auto_create_circuit:
+                  type: boolean
+      responses:
+        '201':
+          description: Intake processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerIntakeResponse'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+  /api/embed/tokens:
+    post:
+      tags:
+      - Embed
+      summary: Create short-lived embed token
+      operationId: create_embed_token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmbedTokenRequest'
+      responses:
+        '201':
+          description: Embed token created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEmbedTokenResponse'
+      security:
+      - bearerAuth: []
+  /api/embed/portfolio:
+    get:
+      tags:
+      - Embed
+      summary: Resolve embed token and return portfolio
+      operationId: get_embed_portfolio
+      parameters:
+      - name: token
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Embed portfolio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbedPortfolioResponse'
   /api/audit:
     get:
       tags:

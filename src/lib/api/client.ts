@@ -186,3 +186,31 @@ export async function authRequest<T>(
 
   return response.json();
 }
+
+// Public registry request helper (no bearer auth)
+export async function registryPublicRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  const url = `${REGISTRY_API_BASE}${endpoint}`;
+  const response = await fetch(url, { ...options, headers });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      response.status,
+      errorData.error || "PUBLIC_REQUEST_ERROR",
+      errorData.message || `Request failed with status ${response.status}`
+    );
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json();
+}
