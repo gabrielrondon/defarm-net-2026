@@ -30,6 +30,13 @@ export function PartnerIntake() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchText, setSearchText] = useState("");
 
+  const formatIssueType = (identifierType: string) => {
+    if (identifierType === "unknown") {
+      return "Sem identificador de roteamento (CAR/CPF/CNPJ/INCRA/NIRF/LAND DFID)";
+    }
+    return identifierType.toUpperCase();
+  };
+
   const circuitNameMap = useMemo(() => new Map(circuits.map((c) => [c.id, c.name])), [circuits]);
 
   const load = useCallback(async () => {
@@ -272,7 +279,7 @@ export function PartnerIntake() {
               >
                 <div>
                   <p className="font-medium text-sm">{issue.identifier_value}</p>
-                  <p className="text-xs text-muted-foreground">tipo: {issue.identifier_type}</p>
+                  <p className="text-xs text-muted-foreground">tipo: {formatIssueType(issue.identifier_type)}</p>
                 </div>
                 <span className="text-xs px-2 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200 w-fit">
                   {issue.occurrences} ocorrência(s)
