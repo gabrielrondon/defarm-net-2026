@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Code2, Copy, ExternalLink, TerminalSquare } from "lucide-react";
+import { CheckCircle2, Code2, Copy, TerminalSquare } from "lucide-react";
 
 const CLI_SNIPPET = `# sem instalar globalmente
 npx @defarm/cli --help
@@ -20,24 +20,6 @@ sdk.setApiKey(process.env.DEFARM_API_KEY!);
 const circuits = await sdk.circuits.list();
 console.log(circuits.length);`;
 
-function DevHeader() {
-  return (
-    <Card className="p-5 space-y-3">
-      <h3 className="text-base font-semibold">Ferramentas para desenvolvedor parceiro</h3>
-      <p className="text-sm text-muted-foreground">
-        Use CLI e SDK quando quiser integrar direto no sistema do parceiro, sem depender da interface web.
-      </p>
-      <div className="flex flex-wrap gap-3">
-        <a className="text-sm text-primary hover:underline inline-flex items-center gap-1" href="https://www.npmjs.com/package/@defarm/cli" target="_blank" rel="noopener noreferrer">
-          @defarm/cli <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-        <a className="text-sm text-primary hover:underline inline-flex items-center gap-1" href="https://www.npmjs.com/package/@defarm/sdk" target="_blank" rel="noopener noreferrer">
-          @defarm/sdk <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </div>
-    </Card>
-  );
-}
 
 export function PartnerCliTools() {
   const [copied, setCopied] = useState<"none" | "cli">("none");
@@ -50,8 +32,6 @@ export function PartnerCliTools() {
 
   return (
     <div className="space-y-6">
-      <DevHeader />
-
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h4 className="font-semibold text-foreground inline-flex items-center gap-2">
@@ -80,7 +60,6 @@ export function PartnerSdkTools() {
 
   return (
     <div className="space-y-6">
-      <DevHeader />
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h4 className="font-semibold text-foreground inline-flex items-center gap-2">

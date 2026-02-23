@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { CheckCircle2, Copy, FileText, Link2, Loader2, Rocket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createIngestionTemplate, listIngestionTemplates } from "@/lib/api/ingestion-templates";
@@ -143,12 +143,6 @@ export function PartnerKit() {
           Envie CSV/JSON para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/partner/upload</code>.
           Payload bruto persistido, roteamento automático por identificador.
         </p>
-        <div className="flex flex-wrap gap-1.5 mt-3">
-          <Badge variant="outline" className="text-xs">1 endpoint</Badge>
-          <Badge variant="outline" className="text-xs">payload persistido</Badge>
-          <Badge variant="outline" className="text-xs">roteamento auto</Badge>
-          <Badge variant="outline" className="text-xs">tokenização</Badge>
-        </div>
       </div>
 
       {/* Quick actions */}

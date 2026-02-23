@@ -33,8 +33,7 @@ export function HeroSection() {
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-8">
-            <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            Plataforma #1 em Rastreabilidade
+            Rastreabilidade ponta a ponta
           </div>
 
           {/* Headline with rotating text */}
@@ -79,22 +78,18 @@ export function HeroSection() {
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-8 border-t border-border">
+          <div className="grid grid-cols-3 gap-8 pt-8 border-t border-border">
             <div>
-              <p className="text-3xl sm:text-4xl font-bold text-foreground">20.000+</p>
-              <p className="text-muted-foreground mt-1">Gados rastreados</p>
+              <p className="text-3xl sm:text-4xl font-bold text-foreground">20k+</p>
+              <p className="text-muted-foreground mt-1">Animais rastreados</p>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-bold text-foreground">143</p>
-              <p className="text-muted-foreground mt-1">Produtores ativos</p>
+              <p className="text-3xl sm:text-4xl font-bold text-foreground">140+</p>
+              <p className="text-muted-foreground mt-1">Produtores</p>
             </div>
             <div>
-              <p className="text-3xl sm:text-4xl font-bold text-foreground">98%</p>
-              <p className="text-muted-foreground mt-1">Satisfação</p>
-            </div>
-            <div>
-              <p className="text-3xl sm:text-4xl font-bold text-foreground">24/7</p>
-              <p className="text-muted-foreground mt-1">Suporte dedicado</p>
+              <p className="text-3xl sm:text-4xl font-bold text-foreground">5</p>
+              <p className="text-muted-foreground mt-1">Parceiros integrados</p>
             </div>
           </div>
         </div>

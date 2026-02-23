@@ -217,25 +217,6 @@ export function PartnerIntegration() {
         </Card>
       </div>
 
-      {/* Inline docs */}
-      <Card className="p-6 bg-muted/30">
-        <h3 className="text-sm font-semibold text-foreground mb-2">Documentação Rápida</h3>
-        <p className="text-sm text-muted-foreground mb-3">
-          Para parceiros, use <code>/api/partner/ingestion/intake</code> como padrão. O endpoint de
-          lote <code>/api/items/bulk</code> fica como modo avançado por circuito.
-        </p>
-        <div className="bg-background rounded-lg p-3 font-mono text-xs text-muted-foreground overflow-x-auto">
-          <pre>{`POST /api/partner/ingestion/intake
-x-api-key: <sua-api-key>
-Content-Type: multipart/form-data
-
-file=@dados.csv
-auto_create_circuit=true
-
-# Com key scope=workspace_ingestion, o staging circuit vem da propria chave.
-# Com JWT (portal), informe source_circuit_id no form-data.`}</pre>
-        </div>
-      </Card>
     </div>
   );
 }

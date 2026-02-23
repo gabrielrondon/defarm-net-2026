@@ -1,5 +1,4 @@
-import { Factory, Store, Leaf, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Factory, Store, Leaf } from "lucide-react";
 
 const stakeholders = [
   {
@@ -12,8 +11,8 @@ const stakeholders = [
       "Certificados automáticos",
       "Acesso a novos mercados",
     ],
-    color: "bg-green-50",
-    iconColor: "text-green-600",
+    color: "bg-primary/10",
+    iconColor: "text-primary",
   },
   {
     icon: Factory,
@@ -25,8 +24,8 @@ const stakeholders = [
       "Relatórios automáticos",
       "Integração com sistemas",
     ],
-    color: "bg-blue-50",
-    iconColor: "text-blue-600",
+    color: "bg-primary/10",
+    iconColor: "text-primary",
   },
   {
     icon: Store,
@@ -38,8 +37,8 @@ const stakeholders = [
       "Marketing sustentável",
       "Fidelização de clientes",
     ],
-    color: "bg-purple-50",
-    iconColor: "text-purple-600",
+    color: "bg-primary/10",
+    iconColor: "text-primary",
   },
 ];
 
@@ -89,11 +88,6 @@ export function BenefitsSection() {
                 ))}
               </ul>
 
-              {/* CTA */}
-              <Button variant="ghost" className="p-0 h-auto font-semibold text-primary hover:text-primary/80">
-                Saiba mais
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
             </div>
           ))}
         </div>
