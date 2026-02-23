@@ -8,12 +8,10 @@ const KIT_TEMPLATE = `value_chain,country,year,sisbov,chip,ear_tag,birth_date,se
 BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,gerbov
 BEEF,UY,2026,,982000000000001,UY000004,2022-11-09,female,Vacas cria,C3,cowpro`;
 
-const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
+const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/ingestion/intake" \\
   -H "x-api-key: <PARTNER_API_KEY>" \\
   -F "file=@dados.csv" \\
-  -F "circuit_id=<UUID_DO_CIRCUITO>" \\
-  -F "template_id=<UUID_DO_TEMPLATE>" \\
-  -F "idempotency_key=<CHAVE_UNICA_DO_LOTE>"`;
+  -F "auto_create_circuit=true"`;
 
 const TEMPLATE_API_EXAMPLE = `# 1) Criar template do parceiro (uma vez)
 curl -X POST "https://gateway.defarm.net/api/ingestion/templates" \\
@@ -69,13 +67,13 @@ export function PartnerKit() {
       <Card className="p-5 space-y-3">
         <h2 className="text-lg font-semibold text-foreground">Kit Parceiro (go-live rápido)</h2>
         <p className="text-sm text-muted-foreground">
-          O portal e a API usam o mesmo endpoint de lote (<code>/api/items/bulk</code>), mas agora com
-          mapeamento explícito por template para garantir ingestão consistente entre parceiros.
+          O fluxo recomendado é enviar CSV/JSON para <code>/api/partner/ingestion/intake</code>.
+          A DeFarm persiste payload bruto, resolve roteamento por identificador e distribui por circuito automaticamente.
         </p>
         <div className="flex flex-wrap gap-2">
-          <Badge className="bg-primary/10 text-primary border-primary/20">1 endpoint</Badge>
-          <Badge variant="outline">template_id obrigatório</Badge>
-          <Badge variant="outline">idempotency_key (retry seguro)</Badge>
+          <Badge className="bg-primary/10 text-primary border-primary/20">1 endpoint de intake</Badge>
+          <Badge variant="outline">payload bruto persistido</Badge>
+          <Badge variant="outline">roteamento automático</Badge>
           <Badge variant="outline">Tokenização automática</Badge>
         </div>
       </Card>
@@ -105,7 +103,7 @@ export function PartnerKit() {
         </div>
         <p className="text-xs text-muted-foreground">
           O template define o mapeamento de colunas do seu sistema para o padrão DeFarm. Sem template
-          (ou default), o lote é rejeitado com <code>400</code>.
+          (ou default), o lote é rejeitado com <code>400</code>. Depois de criado, o intake já usa o template automaticamente.
         </p>
         <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{TEMPLATE_API_EXAMPLE}</pre>
       </Card>
@@ -124,10 +122,10 @@ export function PartnerKit() {
       <Card className="p-5 space-y-2">
         <h3 className="font-semibold text-foreground">Checklist mínimo para produção</h3>
         <p className="text-sm text-muted-foreground">1. Criar template do parceiro (ou marcar template default).</p>
-        <p className="text-sm text-muted-foreground">2. Gerar API Key por circuito.</p>
-        <p className="text-sm text-muted-foreground">3. Enviar lote CSV/JSON para <code>/api/items/bulk</code> com <code>template_id</code> + <code>idempotency_key</code>.</p>
-        <p className="text-sm text-muted-foreground">4. Validar <code>ingestion_receipt</code> (status, quality, warnings, replay idempotente).</p>
-        <p className="text-sm text-muted-foreground">5. Opcional: configurar webhook para retorno operacional.</p>
+        <p className="text-sm text-muted-foreground">2. Gerar API Key <code>workspace_ingestion</code> com circuito de staging.</p>
+        <p className="text-sm text-muted-foreground">3. Enviar lote CSV/JSON para <code>/api/partner/ingestion/intake</code>.</p>
+        <p className="text-sm text-muted-foreground">4. Resolver pendências em <code>Roteamento</code> e acompanhar <code>Histórico de Payload Bruto</code>.</p>
+        <p className="text-sm text-muted-foreground">5. Opcional: usar <code>/api/items/bulk</code> para integração avançada circuito a circuito.</p>
         <a href="/app/api-keys" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
           <Link2 className="h-4 w-4" />
           Ir para API Keys

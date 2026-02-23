@@ -55,7 +55,7 @@ export interface IntakeBatchResult {
 
 export interface PartnerIntakeResponse {
   raw_payload_id: string;
-  source_circuit_id: string;
+  source_circuit_id?: string | null;
   workspace_id: string;
   total_rows: number;
   routed_batches: IntakeBatchResult[];
@@ -128,12 +128,14 @@ export async function listRawPayloads(limit = 50): Promise<ListRawPayloadsRespon
 
 export async function partnerIntake(
   file: File,
-  sourceCircuitId: string,
+  sourceCircuitId?: string,
   autoCreateCircuit = true
 ): Promise<PartnerIntakeResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("source_circuit_id", sourceCircuitId);
+  if (sourceCircuitId) {
+    formData.append("source_circuit_id", sourceCircuitId);
+  }
   formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
 
   return registryRequest<PartnerIntakeResponse>("/partner/ingestion/intake", {

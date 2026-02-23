@@ -62,7 +62,7 @@ const navCatalog: NavItem[] = [
 ];
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
-  partner: ["/app/parceiro", "/app/api-keys", "/app/circuitos", "/app/itens", "/app/eventos"],
+  partner: ["/app/parceiro", "/app/api-keys"],
   producer: ["/app", "/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/descobrir", "/app/snapshots", "/app/finance", "/app/compliance"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],

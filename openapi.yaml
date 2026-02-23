@@ -111,7 +111,7 @@ components:
       type: apiKey
       in: header
       name: x-api-key
-      description: Circuit-scoped API key (partner ingestion use case).
+      description: Partner API key (`scope=circuit` or `scope=workspace_ingestion`).
   schemas:
     Error:
       description: Standard error response with error code and message.
@@ -1954,7 +1954,7 @@ components:
           description: Human-readable name for the API key
         scope:
           type: string
-          description: API key scope
+          description: API key scope (`circuit` for direct circuit ops, `workspace_ingestion` for intelligent intake)
           enum:
           - circuit
           - workspace_ingestion
@@ -7720,7 +7720,7 @@ paths:
       tags:
       - Partner API Keys
       summary: POST /api/partner/api-keys
-      description: 'Create a new API key for your circuit.
+      description: 'Create a new API key for partner integrations.
 
 
         The secret key value is shown only once at creation time. Store it securely.
@@ -7728,9 +7728,9 @@ paths:
 
         **Use cases:**
 
-        - Allow partner systems to write events/items
+        - `scope=circuit`: direct read/write in one circuit
 
-        - Integrate external ERPs or data pipelines'
+        - `scope=workspace_ingestion`: intelligent intake with workspace-level routing'
       operationId: create_partner_api_key
       requestBody:
         content:
@@ -7951,7 +7951,7 @@ paths:
       tags:
       - Partner Routing
       summary: Intelligent partner intake (CSV/JSON)
-      description: Persist payload bruto, resolver roteamento por identificador e ingerir por circuito automaticamente.
+      description: Persist payload bruto, resolver roteamento por identificador e ingerir por circuito automaticamente. Com JWT (portal), envie `source_circuit_id`. Com `x-api-key` de escopo `workspace_ingestion`, `source_circuit_id` é opcional e o staging é inferido da key.
       operationId: partner_intake
       requestBody:
         required: true
@@ -7961,7 +7961,6 @@ paths:
               type: object
               required:
               - file
-              - source_circuit_id
               properties:
                 file:
                   type: string
@@ -7969,8 +7968,10 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
+                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
                 auto_create_circuit:
                   type: boolean
+                  description: Auto-create destination circuit when no routing rule matches.
       responses:
         '201':
           description: Intake processed

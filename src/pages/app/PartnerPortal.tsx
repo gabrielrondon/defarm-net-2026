@@ -2,13 +2,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PartnerOverview,
   PartnerIntegration,
-  PartnerDataFlow,
-  PartnerAdapters,
   PartnerKit,
   PartnerRouting,
   PartnerIntake,
 } from "@/components/partner";
-import { BarChart3, Key, ArrowRightLeft, Plug, PackageOpen, Route, Database } from "lucide-react";
+import { BarChart3, Key, PackageOpen, Route, Database } from "lucide-react";
 
 const tabs = [
   { value: "overview", label: "Visão Geral", icon: BarChart3 },
@@ -16,8 +14,6 @@ const tabs = [
   { value: "integration", label: "Integração", icon: Key },
   { value: "routing", label: "Roteamento", icon: Route },
   { value: "intake", label: "Intake", icon: Database },
-  { value: "dataflow", label: "Fluxo de Dados", icon: ArrowRightLeft },
-  { value: "adapters", label: "Adaptadores", icon: Plug },
 ] as const;
 
 export default function PartnerPortal() {
@@ -28,7 +24,7 @@ export default function PartnerPortal() {
           Portal do Parceiro
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Gerencie sua integração, monitore dados e configure adaptadores.
+          Envie dados, acompanhe processamento e mantenha o roteamento dos seus clientes.
         </p>
       </div>
 
@@ -51,8 +47,6 @@ export default function PartnerPortal() {
         <TabsContent value="integration"><PartnerIntegration /></TabsContent>
         <TabsContent value="routing"><PartnerRouting /></TabsContent>
         <TabsContent value="intake"><PartnerIntake /></TabsContent>
-        <TabsContent value="dataflow"><PartnerDataFlow /></TabsContent>
-        <TabsContent value="adapters"><PartnerAdapters /></TabsContent>
       </Tabs>
     </div>
   );
