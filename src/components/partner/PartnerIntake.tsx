@@ -220,10 +220,6 @@ export function PartnerIntake() {
         <p className="text-sm text-muted-foreground">
           Envie CSV/JSON uma única vez. A DeFarm persiste payload bruto, resolve cliente por identificador e roteia para os circuitos corretos.
         </p>
-        <p className="text-xs text-muted-foreground">
-          Endpoint recomendado para integração: <code>/api/partner/upload</code>
-        </p>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
             <SelectTrigger><SelectValue placeholder="Circuito de staging" /></SelectTrigger>

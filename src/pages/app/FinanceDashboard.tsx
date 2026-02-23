@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { getCurrentIndicators, listCreditLines } from "@/lib/finance-api";
 
@@ -70,9 +71,6 @@ export default function FinanceDashboard() {
                 <span className="text-sm font-medium text-muted-foreground">
                   {ind.indicator_type}
                 </span>
-                <Badge variant="outline" className="text-xs">
-                  {ind.source}
-                </Badge>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-foreground">
