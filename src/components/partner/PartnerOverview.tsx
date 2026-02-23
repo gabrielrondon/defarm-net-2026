@@ -1,12 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
-  Package,
-  Activity,
-  AlertTriangle,
-  Wifi,
-  Clock,
   Loader2,
   CheckCircle2,
   Circle,
@@ -134,19 +128,13 @@ export function PartnerOverview() {
   return (
     <div className="space-y-8">
       {/* Organization header — flat, no card */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-foreground">
-            {user?.username || "Organização Parceira"}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Parceiro de dados integrado via API
-          </p>
-        </div>
-        <Badge variant="outline" className="gap-1.5 text-primary border-primary/20 bg-primary/5">
-          <Wifi className="h-3 w-3" />
-          Conectado
-        </Badge>
+      <div>
+        <h2 className="text-foreground">
+          {user?.username || "Organização Parceira"}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Parceiro de dados integrado via API
+        </p>
       </div>
 
       {/* Metrics — minimal grid, no icons inside */}
