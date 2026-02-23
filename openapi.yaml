@@ -1948,15 +1948,27 @@ components:
       type: object
       required:
       - key_name
-      - circuit_id
       properties:
         key_name:
           type: string
           description: Human-readable name for the API key
+        scope:
+          type: string
+          description: API key scope
+          enum:
+          - circuit
+          - workspace_ingestion
+          nullable: true
         circuit_id:
           type: string
           format: uuid
-          description: Circuit ID this key grants access to
+          description: Circuit ID for scope=circuit
+          nullable: true
+        staging_circuit_id:
+          type: string
+          format: uuid
+          description: Staging circuit for scope=workspace_ingestion
+          nullable: true
         description:
           type: string
           description: Optional description of key purpose
@@ -1972,7 +1984,8 @@ components:
       required:
       - id
       - key_name
-      - circuit_id
+      - scope
+      - workspace_id
       - is_active
       - created_at
       properties:
@@ -1983,10 +1996,23 @@ components:
         key_name:
           type: string
           description: Name of the API key
+        scope:
+          type: string
+          description: Key scope
+        workspace_id:
+          type: string
+          format: uuid
+          description: Workspace this key belongs to
         circuit_id:
           type: string
           format: uuid
-          description: Circuit this key grants access to
+          description: Circuit this key grants access to (scope=circuit)
+          nullable: true
+        staging_circuit_id:
+          type: string
+          format: uuid
+          description: Staging circuit used by workspace_ingestion scope
+          nullable: true
         api_key:
           type: string
           description: The actual API key (only shown once at creation)
@@ -2273,13 +2299,13 @@ components:
       type: object
       required:
       - issues
-      - total
+      - count
       properties:
         issues:
           type: array
           items:
             $ref: '#/components/schemas/RoutingIssueSummary'
-        total:
+        count:
           type: integer
           format: int32
     CreateEmbedTokenRequest:

@@ -116,7 +116,7 @@ export function PartnerIntegration() {
                     <TableCell className="font-medium">{key.key_name}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-mono text-xs">
-                        {getCircuitName(key.circuit_id)}
+                        {key.circuit_id ? getCircuitName(key.circuit_id) : "workspace"}
                       </Badge>
                     </TableCell>
                     <TableCell>

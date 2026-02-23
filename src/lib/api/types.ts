@@ -768,7 +768,10 @@ export interface CreateApiKeyResponse {
 export interface PartnerApiKeyResponse {
   id: string;
   key_name: string;
-  circuit_id: string;
+  scope: "circuit" | "workspace_ingestion";
+  workspace_id: string;
+  circuit_id?: string | null;
+  staging_circuit_id?: string | null;
   is_active: boolean;
   created_at: string;
   api_key?: string | null;
@@ -781,7 +784,9 @@ export interface PartnerApiKeyResponse {
 
 export interface CreatePartnerApiKeyRequest {
   key_name: string;
-  circuit_id: string;
+  scope?: "circuit" | "workspace_ingestion";
+  circuit_id?: string | null;
+  staging_circuit_id?: string | null;
   description?: string | null;
   expires_in_days?: number | null;
 }

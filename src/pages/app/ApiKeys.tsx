@@ -70,7 +70,9 @@ export default function ApiKeys() {
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyScope, setNewKeyScope] = useState<"circuit" | "workspace_ingestion">("circuit");
   const [newKeyCircuit, setNewKeyCircuit] = useState("");
+  const [newKeyStagingCircuit, setNewKeyStagingCircuit] = useState("");
   const [newKeyDescription, setNewKeyDescription] = useState("");
   const [newKeyExpiry, setNewKeyExpiry] = useState("");
 
@@ -114,12 +116,16 @@ export default function ApiKeys() {
   }, [fetchData]);
 
   const handleCreate = async () => {
-    if (!newKeyName || !newKeyCircuit) return;
+    if (!newKeyName) return;
+    if (newKeyScope === "circuit" && !newKeyCircuit) return;
+    if (newKeyScope === "workspace_ingestion" && !newKeyStagingCircuit) return;
     setCreating(true);
     try {
       const result = await createPartnerApiKey({
         key_name: newKeyName,
-        circuit_id: newKeyCircuit,
+        scope: newKeyScope,
+        circuit_id: newKeyScope === "circuit" ? newKeyCircuit : undefined,
+        staging_circuit_id: newKeyScope === "workspace_ingestion" ? newKeyStagingCircuit : undefined,
         description: newKeyDescription || undefined,
         expires_in_days: newKeyExpiry ? parseInt(newKeyExpiry) : undefined,
       });
@@ -131,6 +137,8 @@ export default function ApiKeys() {
       setNewKeyDescription("");
       setNewKeyExpiry("");
       setNewKeyCircuit("");
+      setNewKeyStagingCircuit("");
+      setNewKeyScope("circuit");
       toast({
         title: "API Key criada",
         description: result?.message || "Chave criada com sucesso.",
@@ -250,7 +258,7 @@ export default function ApiKeys() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Circuito</TableHead>
+                <TableHead>Escopo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criada em</TableHead>
                 <TableHead>Último uso</TableHead>
@@ -269,9 +277,23 @@ export default function ApiKeys() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="font-mono text-xs">
-                      {getCircuitName(key.circuit_id)}
-                    </Badge>
+                    {key.scope === "workspace_ingestion" ? (
+                      <div className="space-y-1">
+                        <Badge variant="outline" className="font-mono text-xs">workspace_ingestion</Badge>
+                        {key.staging_circuit_id ? (
+                          <p className="text-xs text-muted-foreground">
+                            staging: {getCircuitName(key.staging_circuit_id)}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Badge variant="outline" className="font-mono text-xs">circuit</Badge>
+                        {key.circuit_id ? (
+                          <p className="text-xs text-muted-foreground">{getCircuitName(key.circuit_id)}</p>
+                        ) : null}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     {key.is_active ? (
@@ -345,20 +367,51 @@ export default function ApiKeys() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Circuito *</Label>
-              <Select value={newKeyCircuit} onValueChange={setNewKeyCircuit}>
+              <Label>Escopo *</Label>
+              <Select value={newKeyScope} onValueChange={(v: "circuit" | "workspace_ingestion") => setNewKeyScope(v)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um circuito" />
+                  <SelectValue placeholder="Selecione o escopo" />
                 </SelectTrigger>
                 <SelectContent>
-                  {circuits.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="circuit">circuit (chave por cliente/circuito)</SelectItem>
+                  <SelectItem value="workspace_ingestion">workspace_ingestion (intake inteligente)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {newKeyScope === "circuit" ? (
+              <div className="space-y-2">
+                <Label>Circuito *</Label>
+                <Select value={newKeyCircuit} onValueChange={setNewKeyCircuit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um circuito" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {circuits.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+            {newKeyScope === "workspace_ingestion" ? (
+              <div className="space-y-2">
+                <Label>Circuito de staging *</Label>
+                <Select value={newKeyStagingCircuit} onValueChange={setNewKeyStagingCircuit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o circuito staging" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {circuits.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="keyDesc">Descrição (opcional)</Label>
               <Input
@@ -385,7 +438,12 @@ export default function ApiKeys() {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={creating || !newKeyName || !newKeyCircuit}
+              disabled={
+                creating ||
+                !newKeyName ||
+                (newKeyScope === "circuit" && !newKeyCircuit) ||
+                (newKeyScope === "workspace_ingestion" && !newKeyStagingCircuit)
+              }
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Criar chave

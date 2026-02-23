@@ -72,7 +72,7 @@ export interface RoutingIssueSummary {
 
 export interface RoutingIssuesResponse {
   issues: RoutingIssueSummary[];
-  total: number;
+  count: number;
 }
 
 export interface CreateEmbedTokenRequest {
