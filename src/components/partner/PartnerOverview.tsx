@@ -9,7 +9,8 @@ import {
   Clock,
   Loader2,
   CheckCircle2,
-  CircleDashed,
+  Circle,
+  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCircuits } from "@/lib/api/circuits";
@@ -29,6 +30,14 @@ interface OverviewMetrics {
   hasUpload: boolean;
   hasRoutingPending: boolean;
 }
+
+const ONBOARDING_STEPS = [
+  { key: "apiKey", label: "Criar API key operacional" },
+  { key: "template", label: "Criar template padrão" },
+  { key: "upload", label: "Enviar primeiro arquivo" },
+  { key: "routing", label: "Resolver pendências de roteamento" },
+  { key: "validate", label: "Validar recebimento no cliente" },
+] as const;
 
 export function PartnerOverview() {
   const { user } = useAuth();
@@ -59,7 +68,6 @@ export function PartnerOverview() {
 
         const activeKeys = keys.filter((k: PartnerApiKeyResponse) => k.is_active);
 
-        // Aggregate metrics from all keys
         let totalRequests = 0;
         let requestsLast24h = 0;
         let errorsLast24h = 0;
@@ -113,110 +121,113 @@ export function PartnerOverview() {
     );
   }
 
-  const cards = [
-    {
-      label: "Circuitos Ativos",
-      value: metrics.activeCircuits,
-      icon: Package,
-      color: "text-primary",
-    },
-    {
-      label: "API Keys Ativas",
-      value: metrics.activeKeys,
-      icon: Activity,
-      color: "text-primary",
-    },
-    {
-      label: "Requests (24h)",
-      value: metrics.requestsLast24h.toLocaleString("pt-BR"),
-      icon: Clock,
-      color: "text-primary",
-    },
-    {
-      label: "Erros (24h)",
-      value: metrics.errorsLast24h,
-      icon: AlertTriangle,
-      color: "text-destructive",
-    },
-  ];
+  const stepDone = {
+    apiKey: metrics.activeKeys > 0,
+    template: metrics.hasDefaultTemplate,
+    upload: metrics.hasUpload,
+    routing: !metrics.hasRoutingPending,
+    validate: metrics.totalRequests > 0,
+  };
+
+  const completedSteps = Object.values(stepDone).filter(Boolean).length;
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <h3 className="text-base font-semibold text-foreground mb-2">Onboarding em 5 minutos</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Siga estes passos para sair de zero até primeira integração.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-          <div className="rounded-lg border p-3 flex items-center gap-2">
-            {metrics.activeKeys > 0 ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
-            <span>1. Criar API key operacional</span>
-          </div>
-          <div className="rounded-lg border p-3 flex items-center gap-2">
-            {metrics.hasDefaultTemplate ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
-            <span>2. Criar template padrão</span>
-          </div>
-          <div className="rounded-lg border p-3 flex items-center gap-2">
-            {metrics.hasUpload ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
-            <span>3. Enviar primeiro arquivo</span>
-          </div>
-          <div className="rounded-lg border p-3 flex items-center gap-2">
-            {!metrics.hasRoutingPending ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-amber-600" />}
-            <span>4. Resolver pendências de roteamento</span>
-          </div>
-          <div className="rounded-lg border p-3 flex items-center gap-2 md:col-span-2">
-            {metrics.totalRequests > 0 ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
-            <span>5. Validar recebimento no cliente (link/iframe)</span>
-          </div>
+    <div className="space-y-8">
+      {/* Organization header — flat, no card */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-foreground">
+            {user?.username || "Organização Parceira"}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Parceiro de dados integrado via API
+          </p>
         </div>
-      </Card>
+        <Badge variant="outline" className="gap-1.5 text-primary border-primary/20 bg-primary/5">
+          <Wifi className="h-3 w-3" />
+          Conectado
+        </Badge>
+      </div>
 
-      {/* Organization header */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              {user?.username || "Organização Parceira"}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Parceiro de dados integrado via API
+      {/* Metrics — minimal grid, no icons inside */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Circuitos", value: metrics.activeCircuits },
+          { label: "API keys", value: metrics.activeKeys },
+          { label: "Req. 24h", value: metrics.requestsLast24h.toLocaleString("pt-BR") },
+          { label: "Erros 24h", value: metrics.errorsLast24h, warn: metrics.errorsLast24h > 0 },
+        ].map((m) => (
+          <div key={m.label} className="rounded-xl bg-muted/40 p-4">
+            <p className="metric-label">{m.label}</p>
+            <p className={`metric-value mt-1 ${m.warn ? "text-destructive" : "text-foreground"}`}>
+              {m.value}
             </p>
           </div>
-          <Badge className="bg-primary/10 text-primary border-primary/20">
-            <Wifi className="h-3 w-3 mr-1" />
-            Conectado
-          </Badge>
-        </div>
-        {metrics.lastUsedAt && (
-          <p className="text-xs text-muted-foreground mt-3">
-            Última atividade:{" "}
-            {new Date(metrics.lastUsedAt).toLocaleString("pt-BR")}
-          </p>
-        )}
-      </Card>
-
-      {/* Metrics grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((card) => (
-          <Card key={card.label} className="p-4 space-y-2">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-              <span className="text-xs font-medium">{card.label}</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{card.value}</p>
-          </Card>
         ))}
       </div>
 
-      {/* Total requests */}
-      <Card className="p-6">
-        <h3 className="text-sm font-medium text-muted-foreground mb-1">
-          Total de Requests (todas as chaves)
-        </h3>
-        <p className="text-3xl font-bold text-foreground">
-          {metrics.totalRequests.toLocaleString("pt-BR")}
-        </p>
+      {/* Onboarding — accent left card */}
+      <Card className="card-accent-left p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="section-label">Setup</p>
+            <h3 className="text-foreground mt-1">Onboarding rápido</h3>
+          </div>
+          <span className="text-xs font-medium text-muted-foreground">
+            {completedSteps}/{ONBOARDING_STEPS.length}
+          </span>
+        </div>
+        {/* Progress bar */}
+        <div className="h-1 rounded-full bg-muted mb-4 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-500"
+            style={{ width: `${(completedSteps / ONBOARDING_STEPS.length) * 100}%` }}
+          />
+        </div>
+        <div className="space-y-2">
+          {ONBOARDING_STEPS.map((step) => {
+            const done = stepDone[step.key];
+            return (
+              <div
+                key={step.key}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  done ? "text-muted-foreground" : "text-foreground bg-muted/30"
+                }`}
+              >
+                {done ? (
+                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
+                )}
+                <span className={done ? "line-through decoration-muted-foreground/40" : ""}>
+                  {step.label}
+                </span>
+                {!done && (
+                  <ArrowRight className="h-3 w-3 ml-auto text-muted-foreground/40" />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </Card>
+
+      {/* Total + last activity — subtle card */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-xl bg-muted/40 p-5">
+          <p className="metric-label">Total de requests</p>
+          <p className="metric-value mt-1 text-foreground">
+            {metrics.totalRequests.toLocaleString("pt-BR")}
+          </p>
+        </div>
+        <div className="rounded-xl bg-muted/40 p-5">
+          <p className="metric-label">Última atividade</p>
+          <p className="text-sm font-medium text-foreground mt-2">
+            {metrics.lastUsedAt
+              ? new Date(metrics.lastUsedAt).toLocaleString("pt-BR")
+              : "Nenhuma atividade registrada"}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -135,99 +135,113 @@ export function PartnerKit() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="p-5 space-y-3">
-        <h2 className="text-lg font-semibold text-foreground">Kit Parceiro (go-live rápido)</h2>
-        <p className="text-sm text-muted-foreground">
-          O fluxo recomendado é enviar CSV/JSON para <code>/api/partner/upload</code>.
-          A DeFarm persiste payload bruto, resolve roteamento por identificador e distribui por circuito automaticamente.
+    <div className="space-y-8">
+      {/* Hero intro — flat, no card */}
+      <div>
+        <h2 className="text-foreground">Kit Parceiro</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-lg">
+          Envie CSV/JSON para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/partner/upload</code>.
+          Payload bruto persistido, roteamento automático por identificador.
         </p>
-        <div className="flex flex-wrap gap-2">
-          <Badge className="bg-primary/10 text-primary border-primary/20">1 endpoint de intake</Badge>
-          <Badge variant="outline">payload bruto persistido</Badge>
-          <Badge variant="outline">roteamento automático</Badge>
-          <Badge variant="outline">Tokenização automática</Badge>
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          <Badge variant="outline" className="text-xs">1 endpoint</Badge>
+          <Badge variant="outline" className="text-xs">payload persistido</Badge>
+          <Badge variant="outline" className="text-xs">roteamento auto</Badge>
+          <Badge variant="outline" className="text-xs">tokenização</Badge>
         </div>
-      </Card>
+      </div>
 
-      <Card className="p-5 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-foreground">Template oficial (CSV)</h3>
+      {/* Quick actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Card className="card-accent-left p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">Template CSV</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Baixar modelo oficial</p>
+          </div>
           <Button size="sm" variant="outline" onClick={() => downloadTemplate(KIT_TEMPLATE, "partner-template.csv")}>
-            <FileText className="h-4 w-4 mr-2" />
-            Baixar template
+            <FileText className="h-4 w-4 mr-1.5" />
+            Baixar
           </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Regra: cada linha é um item rastreável. Envie ao menos um identificador canônico
-          (<code>sisbov</code> ou <code>chip</code>/<code>ear_tag</code> conforme contrato).
-        </p>
-        <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{KIT_TEMPLATE}</pre>
-      </Card>
+        </Card>
 
-      <Card className="p-5 space-y-3">
-        <h3 className="font-semibold text-foreground">Conexao rapida (JWT para setup)</h3>
-        <p className="text-sm text-muted-foreground">
-          URL base da API: <code>{GATEWAY_BASE}</code>
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Use JWT para configuracao (templates). Use API key para operacao diaria de upload.
-        </p>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={copyJwt}>
-            {copied === "jwt" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            Copiar login JWT
-          </Button>
+        <Card className="card-accent-left p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">Template padrão</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {defaultTemplateExists ? "Ativo" : "Criar mapeamento default"}
+            </p>
+          </div>
           <Button
             size="sm"
             onClick={createDefaultTemplateNow}
             disabled={creatingDefault || defaultTemplateExists}
+            variant={defaultTemplateExists ? "outline" : "default"}
           >
-            {creatingDefault ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
-            {defaultTemplateExists ? "Template padrao ja existe" : "Criar template padrao agora"}
+            {creatingDefault ? <Loader2 className="h-4 w-4 animate-spin" /> : defaultTemplateExists ? <CheckCircle2 className="h-4 w-4 mr-1.5" /> : <Rocket className="h-4 w-4 mr-1.5" />}
+            {defaultTemplateExists ? "Criado" : "Criar"}
           </Button>
-        </div>
-        <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{JWT_LOGIN_EXAMPLE}</pre>
-      </Card>
+        </Card>
+      </div>
 
-      <Card className="p-5 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-foreground">Template por parceiro</h3>
-          <Button size="sm" variant="outline" onClick={copyTemplateApi}>
-            {copied === "template" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            Copiar
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          O template define o mapeamento de colunas do seu sistema para o padrão DeFarm. Sem template
-          (ou default), o lote é rejeitado com <code>400</code>. Depois de criado, o intake já usa o template automaticamente.
-        </p>
-        <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{TEMPLATE_API_EXAMPLE}</pre>
-      </Card>
+      {/* Code examples — collapsible sections */}
+      <div className="space-y-4">
+        <p className="section-label">Referência de integração</p>
 
-      <Card className="p-5 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-foreground">Exemplo de integração (cURL)</h3>
-          <Button size="sm" variant="outline" onClick={copyCurl}>
-            {copied === "curl" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            Copiar
-          </Button>
-        </div>
-        <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{CURL_EXAMPLE}</pre>
-      </Card>
+        <Card className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">Login JWT (setup)</p>
+            <Button size="sm" variant="ghost" onClick={copyJwt} className="h-7 px-2 text-xs">
+              {copied === "jwt" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+              {copied === "jwt" ? "Copiado" : "Copiar"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Use JWT para configuração. API key para operação diária.
+          </p>
+          <pre className="code-block">{JWT_LOGIN_EXAMPLE}</pre>
+        </Card>
 
-      <Card className="p-5 space-y-2">
-        <h3 className="font-semibold text-foreground">Checklist mínimo para produção</h3>
-        <p className="text-sm text-muted-foreground">1. Criar template do parceiro (ou marcar template default).</p>
-        <p className="text-sm text-muted-foreground">2. Gerar API Key <code>workspace_ingestion</code> com circuito de staging.</p>
-        <p className="text-sm text-muted-foreground">3. Enviar lote CSV/JSON para <code>/api/partner/upload</code>.</p>
-        <p className="text-sm text-muted-foreground">4. Resolver pendências em <code>Roteamento</code> e acompanhar <code>Histórico de Payload Bruto</code>.</p>
-        <p className="text-sm text-muted-foreground">5. Opcional: usar <code>/api/items/bulk</code> para integração avançada circuito a circuito.</p>
-        <a href="/app/api-keys" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
-          <Link2 className="h-4 w-4" />
+        <Card className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">Upload via cURL</p>
+            <Button size="sm" variant="ghost" onClick={copyCurl} className="h-7 px-2 text-xs">
+              {copied === "curl" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+              {copied === "curl" ? "Copiado" : "Copiar"}
+            </Button>
+          </div>
+          <pre className="code-block">{CURL_EXAMPLE}</pre>
+        </Card>
+
+        <Card className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">Template por parceiro</p>
+            <Button size="sm" variant="ghost" onClick={copyTemplateApi} className="h-7 px-2 text-xs">
+              {copied === "template" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+              {copied === "template" ? "Copiado" : "Copiar"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sem template (ou default), o lote é rejeitado com <code className="text-xs bg-muted px-1 py-0.5 rounded">400</code>.
+          </p>
+          <pre className="code-block">{TEMPLATE_API_EXAMPLE}</pre>
+        </Card>
+      </div>
+
+      {/* Checklist — flat list, no card */}
+      <div>
+        <p className="section-label mb-3">Checklist para produção</p>
+        <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside marker:text-muted-foreground/40">
+          <li>Criar template do parceiro (ou marcar template default).</li>
+          <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> com circuito de staging.</li>
+          <li>Enviar lote CSV/JSON para <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>.</li>
+          <li>Resolver pendências em Roteamento.</li>
+          <li>Opcional: usar <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/items/bulk</code> para integração avançada.</li>
+        </ol>
+        <a href="/app/api-keys" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-3">
+          <Link2 className="h-3.5 w-3.5" />
           Ir para API Keys
         </a>
-      </Card>
+      </div>
     </div>
   );
 }

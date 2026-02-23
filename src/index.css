@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@500;600;700&display=swap');
 
 /* DeFarm Design System */
 
@@ -99,8 +99,23 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', 'Inter', sans-serif;
     @apply font-bold tracking-tight;
+  }
+
+  h1 {
+    @apply text-2xl sm:text-3xl leading-tight;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-xl sm:text-2xl leading-snug;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    @apply text-base sm:text-lg leading-snug;
+    letter-spacing: -0.015em;
   }
 }
 
@@ -127,5 +142,48 @@
   .btn-offset:active {
     box-shadow: 0 0 0 0 hsl(0 0% 10%);
     transform: translate(4px, 4px);
+  }
+
+  /* Card variants for visual hierarchy */
+  .card-flat {
+    @apply bg-transparent border-0 shadow-none p-0;
+  }
+
+  .card-subtle {
+    @apply bg-muted/40 border-0 shadow-none;
+  }
+
+  .card-accent-left {
+    @apply border-l-2 border-l-primary rounded-l-none;
+  }
+
+  .card-elevated {
+    box-shadow: 0 4px 24px -4px hsl(0 0% 0% / 0.06), 0 0 0 1px hsl(0 0% 0% / 0.03);
+    @apply border-0;
+  }
+
+  /* Metric value styling */
+  .metric-value {
+    font-family: 'DM Sans', 'Inter', sans-serif;
+    @apply text-2xl sm:text-3xl font-bold tracking-tight;
+    letter-spacing: -0.03em;
+  }
+
+  .metric-label {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wider;
+  }
+
+  /* Section divider */
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  }
+
+  /* Code blocks */
+  .code-block {
+    @apply bg-foreground/[0.03] rounded-lg p-3 overflow-x-auto text-xs font-mono text-muted-foreground border border-border/50;
+  }
+
+  .dark .code-block {
+    @apply bg-foreground/[0.06];
   }
 }
