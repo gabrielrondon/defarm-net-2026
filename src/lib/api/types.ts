@@ -769,7 +769,7 @@ export interface PartnerApiKeyResponse {
   id: string;
   key_name: string;
   scope: "circuit" | "workspace_ingestion";
-  workspace_id: string;
+  workspace_id?: string | null;
   circuit_id?: string | null;
   staging_circuit_id?: string | null;
   is_active: boolean;
