@@ -61,6 +61,7 @@ export default function ApiKeys() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isPartnerWorkspace = user?.workspace_type === "partner";
 
   const [keys, setKeys] = useState<PartnerApiKeyResponse[]>([]);
   const [circuits, setCircuits] = useState<Circuit[]>([]);
@@ -70,7 +71,9 @@ export default function ApiKeys() {
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
-  const [newKeyScope, setNewKeyScope] = useState<"circuit" | "workspace_ingestion">("circuit");
+  const [newKeyScope, setNewKeyScope] = useState<"circuit" | "workspace_ingestion">(
+    isPartnerWorkspace ? "workspace_ingestion" : "circuit"
+  );
   const [newKeyCircuit, setNewKeyCircuit] = useState("");
   const [newKeyStagingCircuit, setNewKeyStagingCircuit] = useState("");
   const [newKeyDescription, setNewKeyDescription] = useState("");
@@ -211,12 +214,17 @@ export default function ApiKeys() {
     return circuits.find((c) => c.id === circuitId)?.name || circuitId.slice(0, 8);
   };
 
+  const getDefaultStagingCircuit = () => {
+    const tagged = circuits.find((c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true");
+    return tagged?.id || circuits[0]?.id || "";
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate("/app/configuracoes")}
+          onClick={() => navigate(isPartnerWorkspace ? "/app/parceiro" : "/app/configuracoes")}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -232,7 +240,18 @@ export default function ApiKeys() {
               <p className="text-muted-foreground">Gerencie suas chaves de acesso para integração</p>
             </div>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="btn-offset">
+          <Button
+            onClick={() => {
+              if (isPartnerWorkspace) {
+                setNewKeyScope("workspace_ingestion");
+                if (!newKeyStagingCircuit) setNewKeyStagingCircuit(getDefaultStagingCircuit());
+              } else {
+                setNewKeyScope("circuit");
+              }
+              setCreateOpen(true);
+            }}
+            className="btn-offset"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Nova API Key
           </Button>
@@ -377,6 +396,9 @@ export default function ApiKeys() {
                   <SelectItem value="workspace_ingestion">workspace_ingestion (intake inteligente)</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Recomendado para parceiro: <code>workspace_ingestion</code>.
+              </p>
             </div>
             {newKeyScope === "circuit" ? (
               <div className="space-y-2">
