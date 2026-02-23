@@ -60,6 +60,8 @@ import AdminJobs from "./pages/app/AdminJobs";
 import AdminSearchAnalytics from "./pages/app/AdminSearchAnalytics";
 import PartnerPortal from "./pages/app/PartnerPortal";
 import WebhooksPage from "./pages/app/Webhooks";
+import PartnerCliPage from "./pages/app/PartnerCli";
+import PartnerSdkPage from "./pages/app/PartnerSdk";
 import OwnershipClaims from "./pages/app/OwnershipClaims";
 import PropertyHerd from "./pages/app/PropertyHerd";
 
@@ -351,6 +353,22 @@ const App = () => (
               element={
                 <RequireWorkspaceAccess allowed={["partner"]}>
                   <AppLayout><WebhooksPage /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/cli"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerCliPage /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/sdk"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerSdkPage /></AppLayout>
                 </RequireWorkspaceAccess>
               }
             />

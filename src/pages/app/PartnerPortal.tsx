@@ -4,14 +4,12 @@ import {
   PartnerKit,
   PartnerRouting,
   PartnerIntake,
-  PartnerDevTools,
 } from "@/components/partner";
-import { BarChart3, PackageOpen, Route, Database, TerminalSquare } from "lucide-react";
+import { BarChart3, PackageOpen, Route, Database } from "lucide-react";
 
 const tabs = [
   { value: "overview", label: "Visão Geral", icon: BarChart3 },
   { value: "kit", label: "Kit Parceiro", icon: PackageOpen },
-  { value: "devtools", label: "CLI/SDK", icon: TerminalSquare },
   { value: "routing", label: "Roteamento", icon: Route },
   { value: "intake", label: "Intake", icon: Database },
 ] as const;
@@ -44,7 +42,6 @@ export default function PartnerPortal() {
 
         <TabsContent value="overview"><PartnerOverview /></TabsContent>
         <TabsContent value="kit"><PartnerKit /></TabsContent>
-        <TabsContent value="devtools"><PartnerDevTools /></TabsContent>
         <TabsContent value="routing"><PartnerRouting /></TabsContent>
         <TabsContent value="intake"><PartnerIntake /></TabsContent>
       </Tabs>
