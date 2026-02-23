@@ -10,6 +10,7 @@ export const REGISTRY_API_BASE = `${GATEWAY_BASE}/api`;
 
 // Auth endpoints live at the gateway root
 export const AUTH_API_BASE = GATEWAY_BASE;
+const DEBUG_API_LOGS = Boolean(import.meta.env.DEV);
 
 export class ApiError extends Error {
   constructor(
@@ -111,14 +112,18 @@ export async function registryRequest<T>(
   }
 
   const url = `${REGISTRY_API_BASE}${endpoint}`;
-  console.log(`[DeFarm API] ${options.method || "GET"} ${url}`);
+  if (DEBUG_API_LOGS) {
+    console.log(`[DeFarm API] ${options.method || "GET"} ${url}`);
+  }
 
   try {
     let response = await fetch(url, { ...options, headers });
 
     // If 401, try to refresh token and retry once
     if (response.status === 401 && token) {
-      console.log("[DeFarm API] Token expired, attempting refresh...");
+      if (DEBUG_API_LOGS) {
+        console.log("[DeFarm API] Token expired, attempting refresh...");
+      }
       const newToken = await refreshAccessToken();
       if (newToken) {
         headers["Authorization"] = `Bearer ${newToken}`;
@@ -126,11 +131,15 @@ export async function registryRequest<T>(
       }
     }
 
-    console.log(`[DeFarm API] Response status: ${response.status}`);
+    if (DEBUG_API_LOGS) {
+      console.log(`[DeFarm API] Response status: ${response.status}`);
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error(`[DeFarm API] Error:`, errorData);
+      if (DEBUG_API_LOGS) {
+        console.error(`[DeFarm API] Error:`, errorData);
+      }
       throw new ApiError(
         response.status,
         errorData.error || "UNKNOWN_ERROR",
@@ -146,7 +155,9 @@ export async function registryRequest<T>(
     return response.json();
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    console.error(`[DeFarm API] Network error:`, error);
+    if (DEBUG_API_LOGS) {
+      console.error(`[DeFarm API] Network error:`, error);
+    }
     throw error;
   }
 }
@@ -167,7 +178,9 @@ export async function authRequest<T>(
   }
 
   const url = `${AUTH_API_BASE}${endpoint}`;
-  console.log(`[DeFarm Auth] ${options.method || "GET"} ${url}`);
+  if (DEBUG_API_LOGS) {
+    console.log(`[DeFarm Auth] ${options.method || "GET"} ${url}`);
+  }
 
   const response = await fetch(url, { ...options, headers });
 

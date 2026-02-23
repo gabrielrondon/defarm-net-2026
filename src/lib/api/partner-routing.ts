@@ -145,14 +145,30 @@ export async function partnerIntake(
   });
 }
 
-export async function downloadRawPayload(id: string): Promise<{ blob: Blob; fileName: string }> {
+function inferExtension(contentType?: string, blobType?: string): string {
+  const ct = (contentType || blobType || "").toLowerCase();
+  if (ct.includes("json")) return "json";
+  if (ct.includes("csv")) return "csv";
+  return "txt";
+}
+
+export async function downloadRawPayload(
+  id: string,
+  options?: { suggestedFileName?: string | null; contentType?: string | null }
+): Promise<{ blob: Blob; fileName: string }> {
   const response = await registryFileRequest(`/partner/ingestion/raw/${id}/download`);
   const blob = await response.blob();
   const contentDisposition = response.headers.get("content-disposition") || "";
   const fileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+  const fallbackExt = inferExtension(options?.contentType || undefined, blob.type);
+  const fallbackName =
+    options?.suggestedFileName && options.suggestedFileName.trim().length > 0
+      ? options.suggestedFileName
+      : `payload-${id}.${fallbackExt}`;
+
   return {
     blob,
-    fileName: fileNameMatch?.[1] || `payload-${id}.txt`,
+    fileName: fileNameMatch?.[1] || fallbackName,
   };
 }
 

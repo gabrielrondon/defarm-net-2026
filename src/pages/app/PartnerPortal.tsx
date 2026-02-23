@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 import {
   PartnerOverview,
   PartnerKit,
@@ -15,6 +16,8 @@ const tabs = [
 ] as const;
 
 export default function PartnerPortal() {
+  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["value"]>("overview");
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
@@ -26,7 +29,7 @@ export default function PartnerPortal() {
         </p>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as (typeof tabs)[number]["value"])} className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto flex-nowrap h-auto p-1 bg-muted rounded-xl mb-6">
           {tabs.map((tab) => (
             <TabsTrigger
@@ -40,10 +43,12 @@ export default function PartnerPortal() {
           ))}
         </TabsList>
 
-        <TabsContent value="overview"><PartnerOverview /></TabsContent>
-        <TabsContent value="kit"><PartnerKit /></TabsContent>
-        <TabsContent value="routing"><PartnerRouting /></TabsContent>
-        <TabsContent value="intake"><PartnerIntake /></TabsContent>
+        <TabsContent value={activeTab}>
+          {activeTab === "overview" ? <PartnerOverview /> : null}
+          {activeTab === "kit" ? <PartnerKit /> : null}
+          {activeTab === "routing" ? <PartnerRouting /> : null}
+          {activeTab === "intake" ? <PartnerIntake /> : null}
+        </TabsContent>
       </Tabs>
     </div>
   );

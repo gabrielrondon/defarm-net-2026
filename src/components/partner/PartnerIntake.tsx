@@ -227,7 +227,10 @@ export function PartnerIntake() {
                     size="sm"
                     onClick={async () => {
                       try {
-                        const { blob, fileName } = await downloadRawPayload(row.id);
+                        const { blob, fileName } = await downloadRawPayload(row.id, {
+                          suggestedFileName: row.file_name,
+                          contentType: row.content_type,
+                        });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
