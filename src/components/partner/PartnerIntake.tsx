@@ -11,6 +11,7 @@ import {
   listRawPayloads,
   listRoutingIssues,
   partnerIntake,
+  upsertRoutingRule,
   type RawPayloadSummary,
   type RoutingIssueSummary,
 } from "@/lib/api/partner-routing";
@@ -29,6 +30,100 @@ export function PartnerIntake() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchText, setSearchText] = useState("");
+  const [issueTargetCircuitId, setIssueTargetCircuitId] = useState("");
+  const [issueSavingKey, setIssueSavingKey] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewRows, setPreviewRows] = useState(0);
+  const [previewResolvable, setPreviewResolvable] = useState(0);
+  const [previewUnknown, setPreviewUnknown] = useState(0);
+
+  const detectIdentifier = (row: Record<string, string>): { type: string; value: string } | null => {
+    const read = (...keys: string[]) => keys.map((k) => row[k]).find((v) => (v || "").trim().length > 0) || "";
+    const land = read("land_dfid", "property_dfid", "fazenda_dfid");
+    if (land) return { type: "land_dfid", value: land.trim() };
+    const car = read("car", "origin_car", "car_origem");
+    if (car) return { type: "car", value: car.trim() };
+    const cnpj = read("cnpj");
+    if (cnpj) return { type: "cnpj", value: cnpj.trim() };
+    const cpf = read("cpf");
+    if (cpf) return { type: "cpf", value: cpf.trim() };
+    const incra = read("incra");
+    if (incra) return { type: "incra", value: incra.trim() };
+    const nirf = read("nirf");
+    if (nirf) return { type: "nirf", value: nirf.trim() };
+    return null;
+  };
+
+  const parseCsvLine = (line: string): string[] => {
+    const out: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i += 1) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === "," && !inQuotes) {
+        out.push(current);
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+    out.push(current);
+    return out.map((s) => s.trim());
+  };
+
+  const buildPreValidation = async (selectedFile: File | null) => {
+    setPreviewRows(0);
+    setPreviewResolvable(0);
+    setPreviewUnknown(0);
+    if (!selectedFile) return;
+    setPreviewing(true);
+    try {
+      const text = await selectedFile.text();
+      const trimmed = text.trim();
+      let rows: Record<string, string>[] = [];
+
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        const parsed = JSON.parse(trimmed);
+        const array = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.items) ? parsed.items : [];
+        rows = array
+          .filter((r) => r && typeof r === "object")
+          .map((r) =>
+            Object.fromEntries(
+              Object.entries(r).map(([k, v]) => [k.toLowerCase().trim().replace(/\s+/g, "_"), String(v ?? "")])
+            )
+          );
+      } else {
+        const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        if (lines.length >= 2) {
+          const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().trim().replace(/\s+/g, "_"));
+          rows = lines.slice(1).map((line) => {
+            const values = parseCsvLine(line);
+            const row: Record<string, string> = {};
+            headers.forEach((h, idx) => {
+              row[h] = values[idx] || "";
+            });
+            return row;
+          });
+        }
+      }
+
+      const resolvable = rows.filter((r) => !!detectIdentifier(r)).length;
+      setPreviewRows(rows.length);
+      setPreviewResolvable(resolvable);
+      setPreviewUnknown(Math.max(0, rows.length - resolvable));
+    } catch {
+      // keep zeroed preview
+    } finally {
+      setPreviewing(false);
+    }
+  };
 
   const formatIssueType = (identifierType: string) => {
     if (identifierType === "unknown") {
@@ -53,6 +148,9 @@ export function PartnerIntake() {
       if (!sourceCircuitId && circuitsData[0]) {
         const staging = circuitsData.find((c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true");
         setSourceCircuitId(staging?.id || circuitsData[0].id);
+      }
+      if (!issueTargetCircuitId && circuitsData[0]) {
+        setIssueTargetCircuitId(circuitsData[0].id);
       }
     } catch {
       toast({
@@ -142,7 +240,11 @@ export function PartnerIntake() {
               type="file"
               className="hidden"
               accept=".csv,.json,text/csv,application/json"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={async (e) => {
+                const selected = e.target.files?.[0] || null;
+                setFile(selected);
+                await buildPreValidation(selected);
+              }}
             />
           </label>
 
@@ -155,6 +257,21 @@ export function PartnerIntake() {
           <Switch checked={autoCreate} onCheckedChange={setAutoCreate} id="auto-create" />
           <Label htmlFor="auto-create">Criar circuito automaticamente quando identificador não existir</Label>
         </div>
+
+        {file ? (
+          <div className="rounded-lg border p-3 bg-muted/30">
+            <p className="text-xs font-medium text-foreground mb-2">Pré-validação do arquivo (antes do envio)</p>
+            {previewing ? (
+              <p className="text-xs text-muted-foreground">Analisando arquivo...</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <p className="text-muted-foreground">Linhas lidas: <span className="text-foreground font-medium">{previewRows}</span></p>
+                <p className="text-muted-foreground">Com identificador: <span className="text-green-700 font-medium">{previewResolvable}</span></p>
+                <p className="text-muted-foreground">Sem identificador: <span className="text-amber-700 font-medium">{previewUnknown}</span></p>
+              </div>
+            )}
+          </div>
+        ) : null}
       </Card>
 
       <Card className="p-5 space-y-4">
@@ -268,6 +385,19 @@ export function PartnerIntake() {
         <p className="text-sm text-muted-foreground">
           Identificadores sem regra de roteamento nos últimos payloads processados.
         </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Select value={issueTargetCircuitId} onValueChange={setIssueTargetCircuitId}>
+            <SelectTrigger><SelectValue placeholder="Circuito destino para resolução rápida" /></SelectTrigger>
+            <SelectContent>
+              {circuits.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground self-center">
+            Ação rápida: cria regra já vinculando a pendência ao circuito escolhido.
+          </p>
+        </div>
         {issues.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma pendência no momento.</p>
         ) : (
@@ -281,9 +411,47 @@ export function PartnerIntake() {
                   <p className="font-medium text-sm">{issue.identifier_value}</p>
                   <p className="text-xs text-muted-foreground">tipo: {formatIssueType(issue.identifier_type)}</p>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200 w-fit">
-                  {issue.occurrences} ocorrência(s)
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200 w-fit">
+                    {issue.occurrences} ocorrência(s)
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      !issueTargetCircuitId ||
+                      issue.identifier_type === "unknown" ||
+                      !issue.identifier_value ||
+                      issueSavingKey === `${issue.identifier_type}:${issue.identifier_value}`
+                    }
+                    onClick={async () => {
+                      const key = `${issue.identifier_type}:${issue.identifier_value}`;
+                      setIssueSavingKey(key);
+                      try {
+                        await upsertRoutingRule({
+                          identifier_type: issue.identifier_type as any,
+                          identifier_value: issue.identifier_value,
+                          circuit_id: issueTargetCircuitId,
+                        });
+                        toast({ title: "Regra criada", description: "Pendência vinculada ao circuito selecionado." });
+                        await load();
+                      } catch {
+                        toast({
+                          title: "Falha ao criar regra",
+                          description: "Não foi possível resolver essa pendência automaticamente.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIssueSavingKey(null);
+                      }
+                    }}
+                  >
+                    {issueSavingKey === `${issue.identifier_type}:${issue.identifier_value}` ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    Criar regra
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

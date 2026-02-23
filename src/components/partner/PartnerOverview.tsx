@@ -8,10 +8,14 @@ import {
   Wifi,
   Clock,
   Loader2,
+  CheckCircle2,
+  CircleDashed,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCircuits } from "@/lib/api/circuits";
 import { listPartnerApiKeys, getPartnerApiKeyMetrics } from "@/lib/api/admin";
+import { listIngestionTemplates } from "@/lib/api/ingestion-templates";
+import { listRawPayloads, listRoutingIssues } from "@/lib/api/partner-routing";
 import type { Circuit, PartnerApiKeyResponse } from "@/lib/api/types";
 
 interface OverviewMetrics {
@@ -21,6 +25,9 @@ interface OverviewMetrics {
   requestsLast24h: number;
   errorsLast24h: number;
   lastUsedAt: string | null;
+  hasDefaultTemplate: boolean;
+  hasUpload: boolean;
+  hasRoutingPending: boolean;
 }
 
 export function PartnerOverview() {
@@ -33,15 +40,21 @@ export function PartnerOverview() {
     requestsLast24h: 0,
     errorsLast24h: 0,
     lastUsedAt: null,
+    hasDefaultTemplate: false,
+    hasUpload: false,
+    hasRoutingPending: false,
   });
 
   useEffect(() => {
     async function fetchMetrics() {
       setLoading(true);
       try {
-        const [circuits, keys] = await Promise.all([
+        const [circuits, keys, templates, rawHistory, routingIssues] = await Promise.all([
           getCircuits(),
           listPartnerApiKeys(),
+          listIngestionTemplates(),
+          listRawPayloads(5),
+          listRoutingIssues(),
         ]);
 
         const activeKeys = keys.filter((k: PartnerApiKeyResponse) => k.is_active);
@@ -52,19 +65,24 @@ export function PartnerOverview() {
         let errorsLast24h = 0;
         let lastUsedAt: string | null = null;
 
-        for (const key of activeKeys) {
-          try {
-            const m = await getPartnerApiKeyMetrics(key.id);
-            totalRequests += m.requests_total;
-            requestsLast24h += m.requests_last_24h;
-            errorsLast24h += m.errors_last_24h;
-            if (m.last_used_at && (!lastUsedAt || m.last_used_at > lastUsedAt)) {
-              lastUsedAt = m.last_used_at;
+        const keyMetrics = await Promise.all(
+          activeKeys.map(async (key) => {
+            try {
+              return await getPartnerApiKeyMetrics(key.id);
+            } catch {
+              return null;
             }
-          } catch {
-            // Metrics not available for this key
+          })
+        );
+        keyMetrics.forEach((m) => {
+          if (!m) return;
+          totalRequests += m.requests_total;
+          requestsLast24h += m.requests_last_24h;
+          errorsLast24h += m.errors_last_24h;
+          if (m.last_used_at && (!lastUsedAt || m.last_used_at > lastUsedAt)) {
+            lastUsedAt = m.last_used_at;
           }
-        }
+        });
 
         setMetrics({
           activeCircuits: circuits.length,
@@ -73,6 +91,9 @@ export function PartnerOverview() {
           requestsLast24h,
           errorsLast24h,
           lastUsedAt,
+          hasDefaultTemplate: templates.some((t) => t.is_default),
+          hasUpload: rawHistory.rows.length > 0,
+          hasRoutingPending: routingIssues.count > 0,
         });
       } catch (err) {
         console.error("Failed to fetch partner metrics:", err);
@@ -121,6 +142,35 @@ export function PartnerOverview() {
 
   return (
     <div className="space-y-6">
+      <Card className="p-6">
+        <h3 className="text-base font-semibold text-foreground mb-2">Onboarding em 5 minutos</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Siga estes passos para sair de zero até primeira integração.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="rounded-lg border p-3 flex items-center gap-2">
+            {metrics.activeKeys > 0 ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
+            <span>1. Criar API key operacional</span>
+          </div>
+          <div className="rounded-lg border p-3 flex items-center gap-2">
+            {metrics.hasDefaultTemplate ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
+            <span>2. Criar template padrão</span>
+          </div>
+          <div className="rounded-lg border p-3 flex items-center gap-2">
+            {metrics.hasUpload ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
+            <span>3. Enviar primeiro arquivo</span>
+          </div>
+          <div className="rounded-lg border p-3 flex items-center gap-2">
+            {!metrics.hasRoutingPending ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-amber-600" />}
+            <span>4. Resolver pendências de roteamento</span>
+          </div>
+          <div className="rounded-lg border p-3 flex items-center gap-2 md:col-span-2">
+            {metrics.totalRequests > 0 ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
+            <span>5. Validar recebimento no cliente (link/iframe)</span>
+          </div>
+        </div>
+      </Card>
+
       {/* Organization header */}
       <Card className="p-6">
         <div className="flex items-center justify-between">

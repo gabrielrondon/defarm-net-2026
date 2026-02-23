@@ -104,7 +104,7 @@ export function PartnerRouting() {
       await navigator.clipboard.writeText(response.embed_url);
       toast({
         title: "Link da página do cliente gerado",
-        description: "Link copiado para a área de transferência.",
+        description: "Link copiado para a área de transferência. Você também pode copiar o snippet de embed.",
       });
     } catch {
       toast({
@@ -181,6 +181,11 @@ export function PartnerRouting() {
                       {new Date(shareLinks[rule.circuit_id].expiresAt).toLocaleString("pt-BR")}.
                     </p>
                   ) : null}
+                  {shareLinks[rule.circuit_id] ? (
+                    <p className="text-xs text-muted-foreground break-all">
+                      URL do cliente: {shareLinks[rule.circuit_id].url}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => onGenerateEmbed(rule.circuit_id)}>
@@ -195,6 +200,20 @@ export function PartnerRouting() {
                     >
                       <ExternalLink className="h-4 w-4 mr-1" />
                       Abrir página
+                    </Button>
+                  ) : null}
+                  {shareLinks[rule.circuit_id] ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const snippet = `<iframe src="${shareLinks[rule.circuit_id].url}" width="100%" height="720" style="border:0;border-radius:12px;" loading="lazy"></iframe>`;
+                        await navigator.clipboard.writeText(snippet);
+                        toast({ title: "Snippet copiado", description: "Cole no portal do seu cliente." });
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copiar embed
                     </Button>
                   ) : null}
                   <Button
