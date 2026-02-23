@@ -1,3 +1,26 @@
+import {
+  Baby,
+  Weight,
+  Syringe,
+  Pill,
+  Tags,
+  Truck,
+  MapPin,
+  MapPinOff,
+  Plus,
+  Sparkles,
+  ArrowRightLeft,
+  ArrowDownToLine,
+  Scissors,
+  Merge,
+  Archive,
+  RefreshCw,
+  FileCheck,
+  Ruler,
+  Beef,
+  type LucideIcon,
+} from "lucide-react";
+
 // Support both PascalCase and snake_case event types from API
 export const eventTypeLabels: Record<string, string> = {
   ItemCreated: "Item Criado",
@@ -59,6 +82,60 @@ export const eventTypeColors: Record<string, string> = {
   property_area_updated: "bg-orange-500/10 text-orange-700",
 };
 
+/** Icon per event type for richer timeline */
+export const eventTypeIcons: Record<string, LucideIcon> = {
+  item_created: Plus,
+  ItemCreated: Plus,
+  item_enriched: Sparkles,
+  ItemEnriched: Sparkles,
+  circuit_push: ArrowRightLeft,
+  CircuitPush: ArrowRightLeft,
+  circuit_pull: ArrowDownToLine,
+  CircuitPull: ArrowDownToLine,
+  item_merged: Merge,
+  ItemMerged: Merge,
+  item_split: Scissors,
+  ItemSplit: Scissors,
+  item_updated: RefreshCw,
+  item_archived: Archive,
+  item_status_changed: RefreshCw,
+  item_born: Baby,
+  item_weighed: Weight,
+  item_vaccinated: Syringe,
+  item_treated: Pill,
+  item_classified: Tags,
+  item_slaughtered: Beef,
+  item_movement: Truck,
+  item_property_linked: MapPin,
+  item_property_unlinked: MapPinOff,
+  property_registered: FileCheck,
+  property_audited: FileCheck,
+  property_area_updated: Ruler,
+};
+
+/**
+ * "Real-life" events that a producer cares about.
+ * Everything else is considered "operational" (blockchain anchors, circuit sync, etc.)
+ */
+export const REAL_LIFE_EVENT_TYPES = new Set([
+  "item_created",
+  "ItemCreated",
+  "item_born",
+  "item_weighed",
+  "item_vaccinated",
+  "item_treated",
+  "item_classified",
+  "item_slaughtered",
+  "item_movement",
+  "item_property_linked",
+  "item_property_unlinked",
+  "item_status_changed",
+  "item_updated",
+  "property_registered",
+  "property_audited",
+  "property_area_updated",
+]);
+
 export const formatTime = (timestamp?: string | null): string => {
   if (!timestamp) return "-";
   const date = new Date(timestamp);
@@ -69,5 +146,16 @@ export const formatTime = (timestamp?: string | null): string => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+};
+
+export const formatDateShort = (timestamp?: string | null): string => {
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 };
