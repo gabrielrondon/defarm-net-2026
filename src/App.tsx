@@ -59,6 +59,7 @@ import AdminCanonicalIdentifiers from "./pages/app/AdminCanonicalIdentifiers";
 import AdminJobs from "./pages/app/AdminJobs";
 import AdminSearchAnalytics from "./pages/app/AdminSearchAnalytics";
 import PartnerPortal from "./pages/app/PartnerPortal";
+import WebhooksPage from "./pages/app/Webhooks";
 import OwnershipClaims from "./pages/app/OwnershipClaims";
 import PropertyHerd from "./pages/app/PropertyHerd";
 
@@ -342,6 +343,14 @@ const App = () => (
               element={
                 <RequireWorkspaceAccess allowed={["partner"]}>
                   <AppLayout><PartnerPortal /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/webhooks"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><WebhooksPage /></AppLayout>
                 </RequireWorkspaceAccess>
               }
             />

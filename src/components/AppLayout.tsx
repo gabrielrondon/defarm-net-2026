@@ -24,6 +24,7 @@ import {
   Handshake,
   Search,
   Key,
+  Webhook,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -49,6 +50,7 @@ const navCatalog: NavItem[] = [
   { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
   { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
   { icon: Key, label: "API Keys", href: "/app/api-keys" },
+  { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
@@ -62,7 +64,7 @@ const navCatalog: NavItem[] = [
 ];
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
-  partner: ["/app/parceiro", "/app/api-keys"],
+  partner: ["/app/parceiro", "/app/api-keys", "/app/webhooks"],
   producer: ["/app", "/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/descobrir", "/app/snapshots", "/app/finance", "/app/compliance"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],

@@ -28,6 +28,7 @@ export function PartnerRouting() {
   const [identifierValue, setIdentifierValue] = useState("");
   const [circuitId, setCircuitId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [shareLinks, setShareLinks] = useState<Record<string, { url: string; expiresAt: string }>>({});
 
   const circuitNameMap = useMemo(
     () => new Map(circuits.map((c) => [c.id, c.name])),
@@ -96,16 +97,19 @@ export function PartnerRouting() {
   const onGenerateEmbed = async (targetCircuitId: string) => {
     try {
       const response = await createEmbedToken({ circuit_id: targetCircuitId, expires_in_minutes: 60 });
+      setShareLinks((prev) => ({
+        ...prev,
+        [targetCircuitId]: { url: response.embed_url, expiresAt: response.expires_at },
+      }));
       await navigator.clipboard.writeText(response.embed_url);
       toast({
-        title: "Link embed gerado",
-        description: "URL copiada para a área de transferência.",
+        title: "Link da página do cliente gerado",
+        description: "Link copiado para a área de transferência.",
       });
-      window.open(response.embed_url, "_blank", "noopener,noreferrer");
     } catch {
       toast({
-        title: "Erro ao gerar embed",
-        description: "Não foi possível gerar link embed para este circuito.",
+        title: "Erro ao gerar link",
+        description: "Não foi possível gerar a página compartilhável deste cliente.",
         variant: "destructive",
       });
     }
@@ -124,7 +128,7 @@ export function PartnerRouting() {
       <Card className="p-5 space-y-4">
         <h3 className="text-base font-semibold">Roteamento por Cliente</h3>
         <p className="text-sm text-muted-foreground">
-          Mapeie identificadores (CAR/CPF/CNPJ/LAND DFID) para o circuito de destino.
+          Defina para qual cliente cada identificador deve ir. Isso evita mistura de dados entre clientes.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <Select value={identifierType} onValueChange={setIdentifierType}>
@@ -171,23 +175,39 @@ export function PartnerRouting() {
                   <p className="text-sm text-muted-foreground">
                     Destino: <span className="text-foreground">{circuitNameMap.get(rule.circuit_id) || rule.circuit_id}</span>
                   </p>
+                  {shareLinks[rule.circuit_id] ? (
+                    <p className="text-xs text-muted-foreground">
+                      Link da página do cliente válido até{" "}
+                      {new Date(shareLinks[rule.circuit_id].expiresAt).toLocaleString("pt-BR")}.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => onGenerateEmbed(rule.circuit_id)}>
                     <ExternalLink className="h-4 w-4 mr-1" />
-                    Embed
+                    Gerar página do cliente
                   </Button>
+                  {shareLinks[rule.circuit_id] ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(shareLinks[rule.circuit_id].url, "_blank", "noopener,noreferrer")}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Abrir página
+                    </Button>
+                  ) : null}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={async () => {
-                      const link = `${window.location.origin}/app/circuitos/${rule.circuit_id}`;
+                      const link = shareLinks[rule.circuit_id]?.url || `${window.location.origin}/app/circuitos/${rule.circuit_id}`;
                       await navigator.clipboard.writeText(link);
-                      toast({ title: "Link copiado", description: "URL do circuito copiada." });
+                      toast({ title: "Link copiado", description: "Link do cliente copiado." });
                     }}
                   >
                     <Copy className="h-4 w-4 mr-1" />
-                    Copiar URL
+                    Copiar link
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => onDelete(rule.id)}>
                     <Trash2 className="h-4 w-4 mr-1" />

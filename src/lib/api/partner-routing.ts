@@ -1,4 +1,4 @@
-import { buildQueryString, registryPublicRequest, registryRequest } from "./client";
+import { buildQueryString, registryFileRequest, registryPublicRequest, registryRequest } from "./client";
 
 export interface RoutingRule {
   id: string;
@@ -138,11 +138,22 @@ export async function partnerIntake(
   }
   formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
 
-  return registryRequest<PartnerIntakeResponse>("/partner/ingestion/intake", {
+  return registryRequest<PartnerIntakeResponse>("/partner/upload", {
     method: "POST",
     headers: {},
     body: formData as unknown as BodyInit,
   });
+}
+
+export async function downloadRawPayload(id: string): Promise<{ blob: Blob; fileName: string }> {
+  const response = await registryFileRequest(`/partner/ingestion/raw/${id}/download`);
+  const blob = await response.blob();
+  const contentDisposition = response.headers.get("content-disposition") || "";
+  const fileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+  return {
+    blob,
+    fileName: fileNameMatch?.[1] || `payload-${id}.txt`,
+  };
 }
 
 export async function listRoutingIssues(): Promise<RoutingIssuesResponse> {

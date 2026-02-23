@@ -7930,6 +7930,32 @@ paths:
                 $ref: '#/components/schemas/ListRawPayloadsResponse'
       security:
       - bearerAuth: []
+  /api/partner/ingestion/raw/{id}/download:
+    get:
+      tags:
+      - Partner Routing
+      summary: Download raw ingestion payload
+      description: Download the original CSV/JSON payload for troubleshooting and replay.
+      operationId: download_partner_ingestion_raw
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Raw payload file
+          content:
+            text/csv:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+      security:
+      - bearerAuth: []
   /api/partner/ingestion/issues:
     get:
       tags:
@@ -7975,6 +8001,42 @@ paths:
       responses:
         '201':
           description: Intake processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerIntakeResponse'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+  /api/partner/upload:
+    post:
+      tags:
+      - Partner Routing
+      summary: Partner upload (alias for intelligent intake)
+      description: Recommended alias for intelligent partner upload. Same behavior as /api/partner/ingestion/intake.
+      operationId: partner_upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                source_circuit_id:
+                  type: string
+                  format: uuid
+                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
+                auto_create_circuit:
+                  type: boolean
+                  description: Auto-create destination circuit when no routing rule matches.
+      responses:
+        '201':
+          description: Upload processed
           content:
             application/json:
               schema:

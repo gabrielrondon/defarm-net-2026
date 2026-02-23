@@ -214,3 +214,45 @@ export async function registryPublicRequest<T>(
 
   return response.json();
 }
+
+// Binary/file request helper (with bearer auth and refresh)
+export async function registryFileRequest(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const url = `${REGISTRY_API_BASE}${endpoint}`;
+  let response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401 && token) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      headers["Authorization"] = `Bearer ${newToken}`;
+      response = await fetch(url, { ...options, headers });
+    }
+  }
+
+  if (!response.ok) {
+    let errorData: any = {};
+    try {
+      errorData = await response.json();
+    } catch {
+      // no-op
+    }
+    throw new ApiError(
+      response.status,
+      errorData.error || "FILE_REQUEST_ERROR",
+      errorData.message || `Request failed with status ${response.status}`
+    );
+  }
+
+  return response;
+}

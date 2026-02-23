@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Copy, FileText, Link2 } from "lucide-react";
 
 const KIT_TEMPLATE = `value_chain,country,year,sisbov,chip,ear_tag,birth_date,sex,lot_name,zone_name,source_system
-BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,gerbov
-BEEF,UY,2026,,982000000000001,UY000004,2022-11-09,female,Vacas cria,C3,cowpro`;
+BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,parceiro_a
+BEEF,UY,2026,,982000000000001,UY000004,2022-11-09,female,Vacas cria,C3,parceiro_b`;
 
-const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/ingestion/intake" \\
+const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/upload" \\
   -H "x-api-key: <PARTNER_API_KEY>" \\
   -F "file=@dados.csv" \\
   -F "auto_create_circuit=true"`;
@@ -67,7 +67,7 @@ export function PartnerKit() {
       <Card className="p-5 space-y-3">
         <h2 className="text-lg font-semibold text-foreground">Kit Parceiro (go-live rápido)</h2>
         <p className="text-sm text-muted-foreground">
-          O fluxo recomendado é enviar CSV/JSON para <code>/api/partner/ingestion/intake</code>.
+          O fluxo recomendado é enviar CSV/JSON para <code>/api/partner/upload</code>.
           A DeFarm persiste payload bruto, resolve roteamento por identificador e distribui por circuito automaticamente.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -123,7 +123,7 @@ export function PartnerKit() {
         <h3 className="font-semibold text-foreground">Checklist mínimo para produção</h3>
         <p className="text-sm text-muted-foreground">1. Criar template do parceiro (ou marcar template default).</p>
         <p className="text-sm text-muted-foreground">2. Gerar API Key <code>workspace_ingestion</code> com circuito de staging.</p>
-        <p className="text-sm text-muted-foreground">3. Enviar lote CSV/JSON para <code>/api/partner/ingestion/intake</code>.</p>
+        <p className="text-sm text-muted-foreground">3. Enviar lote CSV/JSON para <code>/api/partner/upload</code>.</p>
         <p className="text-sm text-muted-foreground">4. Resolver pendências em <code>Roteamento</code> e acompanhar <code>Histórico de Payload Bruto</code>.</p>
         <p className="text-sm text-muted-foreground">5. Opcional: usar <code>/api/items/bulk</code> para integração avançada circuito a circuito.</p>
         <a href="/app/api-keys" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
