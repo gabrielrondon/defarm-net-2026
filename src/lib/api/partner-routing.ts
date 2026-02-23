@@ -64,6 +64,17 @@ export interface PartnerIntakeResponse {
   status: string;
 }
 
+export interface RoutingIssueSummary {
+  identifier_type: string;
+  identifier_value: string;
+  occurrences: number;
+}
+
+export interface RoutingIssuesResponse {
+  issues: RoutingIssueSummary[];
+  total: number;
+}
+
 export interface CreateEmbedTokenRequest {
   circuit_id: string;
   expires_in_minutes?: number;
@@ -130,6 +141,10 @@ export async function partnerIntake(
     headers: {},
     body: formData as unknown as BodyInit,
   });
+}
+
+export async function listRoutingIssues(): Promise<RoutingIssuesResponse> {
+  return registryRequest<RoutingIssuesResponse>("/partner/ingestion/issues");
 }
 
 export async function createEmbedToken(

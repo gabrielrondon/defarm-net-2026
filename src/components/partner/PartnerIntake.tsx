@@ -6,7 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
-import { listRawPayloads, partnerIntake, type RawPayloadSummary } from "@/lib/api/partner-routing";
+import {
+  listRawPayloads,
+  listRoutingIssues,
+  partnerIntake,
+  type RawPayloadSummary,
+  type RoutingIssueSummary,
+} from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
 import { FileUp, Loader2 } from "lucide-react";
 
@@ -18,6 +24,7 @@ export function PartnerIntake() {
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState<RawPayloadSummary[]>([]);
+  const [issues, setIssues] = useState<RoutingIssueSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   const circuitNameMap = useMemo(() => new Map(circuits.map((c) => [c.id, c.name])), [circuits]);
@@ -25,9 +32,14 @@ export function PartnerIntake() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [circuitsData, rawData] = await Promise.all([getCircuits(), listRawPayloads(40)]);
+      const [circuitsData, rawData, issuesData] = await Promise.all([
+        getCircuits(),
+        listRawPayloads(40),
+        listRoutingIssues(),
+      ]);
       setCircuits(circuitsData);
       setHistory(rawData.rows);
+      setIssues(issuesData.issues);
       if (!sourceCircuitId && circuitsData[0]) setSourceCircuitId(circuitsData[0].id);
     } catch {
       toast({
@@ -147,6 +159,33 @@ export function PartnerIntake() {
                 {row.error_message ? (
                   <p className="text-xs text-red-600 mt-2">{row.error_message}</p>
                 ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <h3 className="text-base font-semibold">Pendências de Roteamento</h3>
+        <p className="text-sm text-muted-foreground">
+          Identificadores sem regra de roteamento nos últimos payloads processados.
+        </p>
+        {issues.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma pendência no momento.</p>
+        ) : (
+          <div className="space-y-2">
+            {issues.map((issue) => (
+              <div
+                key={`${issue.identifier_type}:${issue.identifier_value}`}
+                className="rounded-lg border p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+              >
+                <div>
+                  <p className="font-medium text-sm">{issue.identifier_value}</p>
+                  <p className="text-xs text-muted-foreground">tipo: {issue.identifier_type}</p>
+                </div>
+                <span className="text-xs px-2 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200 w-fit">
+                  {issue.occurrences} ocorrência(s)
+                </span>
               </div>
             ))}
           </div>

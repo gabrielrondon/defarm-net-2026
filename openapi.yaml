@@ -2255,6 +2255,33 @@ components:
             format: uuid
         status:
           type: string
+    RoutingIssueSummary:
+      type: object
+      required:
+      - identifier_type
+      - identifier_value
+      - occurrences
+      properties:
+        identifier_type:
+          type: string
+        identifier_value:
+          type: string
+        occurrences:
+          type: integer
+          format: int64
+    RoutingIssuesResponse:
+      type: object
+      required:
+      - issues
+      - total
+      properties:
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutingIssueSummary'
+        total:
+          type: integer
+          format: int32
     CreateEmbedTokenRequest:
       type: object
       required:
@@ -7875,6 +7902,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListRawPayloadsResponse'
+      security:
+      - bearerAuth: []
+  /api/partner/ingestion/issues:
+    get:
+      tags:
+      - Partner Routing
+      summary: List unresolved routing issues
+      description: Aggregate unresolved identifiers detected during partner intake for triage.
+      operationId: list_partner_ingestion_issues
+      responses:
+        '200':
+          description: Routing issues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingIssuesResponse'
       security:
       - bearerAuth: []
   /api/partner/ingestion/intake:
