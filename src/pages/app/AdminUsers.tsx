@@ -121,6 +121,13 @@ export default function AdminUsers() {
             : "Convite solicitado, mas o e-mail não foi enviado."
           : "Senha inicial definida manualmente.",
       });
+      if (res.admin_notification_sent === false) {
+        toast({
+          title: "Aviso",
+          description: "Usuário criado, mas o e-mail de resumo para o admin não foi enviado.",
+          variant: "destructive",
+        });
+      }
       setNewUser({
         full_name: "",
         email: "",

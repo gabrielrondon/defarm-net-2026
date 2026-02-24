@@ -43,6 +43,7 @@ export interface CreateAdminUserResponse {
   is_admin: boolean;
   set_password_email_requested?: boolean;
   set_password_email_sent?: boolean;
+  admin_notification_sent?: boolean;
 }
 
 export interface UpdateUserRoleRequest {
