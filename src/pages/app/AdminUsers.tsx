@@ -121,6 +121,16 @@ export default function AdminUsers() {
             : "Convite solicitado, mas o e-mail não foi enviado."
           : "Senha inicial definida manualmente.",
       });
+      if (newUser.role === "partner" && res.workspace_type !== "partner") {
+        toast({
+          title: "Atenção de visibilidade",
+          description:
+            "Este usuário foi criado com role partner, mas o workspace é " +
+            (res.workspace_type || "desconhecido") +
+            ". O portal parceiro só aparece com workspace_type=partner.",
+          variant: "destructive",
+        });
+      }
       if (res.admin_notification_sent === false) {
         toast({
           title: "Aviso",

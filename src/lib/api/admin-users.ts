@@ -39,6 +39,7 @@ export interface CreateAdminUserResponse {
   message: string;
   user_id: string;
   workspace_id: string;
+  workspace_type?: "partner" | "producer" | "processor" | "certifier";
   role: string;
   is_admin: boolean;
   set_password_email_requested?: boolean;
