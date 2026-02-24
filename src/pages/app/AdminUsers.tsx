@@ -89,9 +89,33 @@ export default function AdminUsers() {
     () => users.map((u) => ({ id: u.id, label: `${u.email} (${u.full_name || "Sem nome"})` })),
     [users]
   );
+  const isPartnerRole = newUser.role === "partner";
+  const selectableWorkspaces = useMemo(
+    () => (isPartnerRole ? workspaces.filter((w) => w.workspace_type === "partner") : workspaces),
+    [workspaces, isPartnerRole]
+  );
 
   const handleCreateUser = async () => {
     if (!newUser.email) return;
+    if (createMode === "existing" && !newUser.workspace_id) {
+      toast({
+        title: "Workspace obrigatório",
+        description: "Selecione um workspace existente ou mude para 'Criar novo'.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (createMode === "existing" && isPartnerRole) {
+      const selectedWorkspace = workspaces.find((w) => w.id === newUser.workspace_id);
+      if (!selectedWorkspace || selectedWorkspace.workspace_type !== "partner") {
+        toast({
+          title: "Workspace incompatível",
+          description: "Usuário com role partner deve entrar em workspace do tipo partner.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     if (!newUser.send_set_password_email && newUser.password.length < 8) {
       toast({
         title: "Senha inválida",
@@ -287,7 +311,22 @@ export default function AdminUsers() {
             </div>
             <div>
               <Label>Role no Workspace</Label>
-              <Select value={newUser.role} onValueChange={(v) => setNewUser((p) => ({ ...p, role: v }))}>
+              <Select
+                value={newUser.role}
+                onValueChange={(v) =>
+                  setNewUser((p) => ({
+                    ...p,
+                    role: v,
+                    workspace_type: v === "partner" ? "partner" : p.workspace_type,
+                    workspace_id:
+                      v === "partner" && createMode === "existing"
+                        ? (workspaces.find((w) => w.id === p.workspace_id && w.workspace_type === "partner")
+                            ? p.workspace_id
+                            : "")
+                        : p.workspace_id,
+                  }))
+                }
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {USER_ROLES.map((role) => (
@@ -352,7 +391,7 @@ export default function AdminUsers() {
                   value={newUser.workspace_type}
                   onValueChange={(v: AdminWorkspace["workspace_type"]) => setNewUser((p) => ({ ...p, workspace_type: v }))}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger disabled={isPartnerRole}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {WORKSPACE_TYPES.map((t) => (
                       <SelectItem key={t} value={t}>{t}</SelectItem>
@@ -370,13 +409,18 @@ export default function AdminUsers() {
               >
                 <SelectTrigger><SelectValue placeholder="Selecione workspace" /></SelectTrigger>
                 <SelectContent>
-                  {workspaces.map((w) => (
+                  {selectableWorkspaces.map((w) => (
                     <SelectItem key={w.id} value={w.id}>
                       {w.name} ({w.workspace_type})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {isPartnerRole && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Para role partner, apenas workspaces partner são permitidos.
+                </p>
+              )}
             </div>
           )}
 
