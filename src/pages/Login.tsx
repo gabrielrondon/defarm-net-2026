@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,11 @@ import { register as apiRegister, storeAuth } from "@/lib/defarm-api";
 import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
 
-export default function Login() {
+interface LoginProps {
+  forcedMode?: "default" | "partner";
+}
+
+export default function Login({ forcedMode = "default" }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +26,16 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const isPartnerHost =
+    typeof window !== "undefined" &&
+    window.location.hostname.toLowerCase() === "partners.defarm.net";
+  const isPartnerMode = useMemo(() => {
+    if (forcedMode === "partner") return true;
+    if (isPartnerHost) return true;
+    const mode = (searchParams.get("mode") || "").toLowerCase();
+    const workspace = (searchParams.get("workspace") || "").toLowerCase();
+    return mode === "partner" || workspace === "partner";
+  }, [forcedMode, isPartnerHost, searchParams]);
 
   useEffect(() => {
     const demoEmail = searchParams.get("demo_email");
@@ -37,7 +51,7 @@ export default function Login() {
     try {
       if (twofaToken) {
         await verifyLogin2FA(twofaToken, twofaCode);
-        navigate("/app");
+        navigate(isPartnerMode ? "/app/parceiro" : "/app");
       } else {
         const challenge = await login({ email, password });
         if (challenge?.requires_2fa) {
@@ -48,7 +62,7 @@ export default function Login() {
           });
           return;
         }
-        navigate("/app");
+        navigate(isPartnerMode ? "/app/parceiro" : "/app");
       }
     } catch (error) {
       toast({
@@ -86,10 +100,18 @@ export default function Login() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {twofaToken ? "Verificação em duas etapas" : t("login.welcome")}
+              {twofaToken
+                ? "Verificação em duas etapas"
+                : isPartnerMode
+                ? "Portal de Parceiros"
+                : t("login.welcome")}
             </h1>
             <p className="text-muted-foreground">
-              {twofaToken ? "Informe o código de 6 dígitos do autenticador ou um recovery code." : t("login.subtitle")}
+              {twofaToken
+                ? "Informe o código de 6 dígitos do autenticador ou um recovery code."
+                : isPartnerMode
+                ? "Acesse com sua conta de parceiro para enviar dados e acompanhar integrações."
+                : t("login.subtitle")}
             </p>
           </div>
 
@@ -188,6 +210,14 @@ export default function Login() {
               {t("login.createAccount")}
             </Link>
           </p>
+          {!isPartnerMode && (
+            <p className="text-center text-muted-foreground mt-2 text-sm">
+              É parceiro?{" "}
+              <Link to="/partner-login" className="text-primary font-medium hover:underline">
+                Entrar no portal parceiro
+              </Link>
+            </p>
+          )}
           </div>
         </div>
       </div>

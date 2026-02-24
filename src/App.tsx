@@ -90,6 +90,14 @@ function TokenAwareIndex() {
 
     if (emailChangeToken) {
       navigate(`/verificar-email?email_change_token=${encodeURIComponent(emailChangeToken)}`, { replace: true });
+      return;
+    }
+
+    const isPartnerHost =
+      typeof window !== "undefined" &&
+      window.location.hostname.toLowerCase() === "partners.defarm.net";
+    if (isPartnerHost) {
+      navigate("/partner-login", { replace: true });
     }
   }, [location.search, navigate]);
 
@@ -154,6 +162,9 @@ const App = () => (
             <Route path="/i/:dfid" element={<PublicItem />} />
             <Route path="/embed/portfolio" element={<EmbedPortfolio />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/entrar" element={<Navigate to="/login" replace />} />
+            <Route path="/partner-login" element={<Login forcedMode="partner" />} />
+            <Route path="/parceiros/login" element={<Login forcedMode="partner" />} />
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-senha" element={<ResetSenha />} />
