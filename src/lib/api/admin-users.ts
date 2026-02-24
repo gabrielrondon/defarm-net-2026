@@ -24,7 +24,8 @@ export type ListAdminUsersResponse = { users: AdminUser[]; count?: number } | Ad
 
 export interface CreateAdminUserRequest {
   email: string;
-  password: string;
+  password?: string;
+  send_set_password_email?: boolean;
   full_name?: string;
   role?: string;
   workspace_id?: string;
@@ -40,6 +41,8 @@ export interface CreateAdminUserResponse {
   workspace_id: string;
   role: string;
   is_admin: boolean;
+  set_password_email_requested?: boolean;
+  set_password_email_sent?: boolean;
 }
 
 export interface UpdateUserRoleRequest {

@@ -42,6 +42,7 @@ export default function AdminUsers() {
     full_name: "",
     email: "",
     password: "",
+    send_set_password_email: true,
     role: "owner",
     is_admin: false,
     workspace_id: "",
@@ -90,11 +91,20 @@ export default function AdminUsers() {
   );
 
   const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.password) return;
+    if (!newUser.email) return;
+    if (!newUser.send_set_password_email && newUser.password.length < 8) {
+      toast({
+        title: "Senha inválida",
+        description: "Informe uma senha inicial com no mínimo 8 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
-      await createAdminUser({
+      const res = await createAdminUser({
         email: newUser.email.trim(),
-        password: newUser.password,
+        password: newUser.send_set_password_email ? undefined : newUser.password,
+        send_set_password_email: newUser.send_set_password_email,
         full_name: newUser.full_name.trim() || undefined,
         role: newUser.role,
         is_admin: newUser.is_admin,
@@ -103,11 +113,19 @@ export default function AdminUsers() {
         workspace_slug: createMode === "new" ? newUser.workspace_slug || undefined : undefined,
         workspace_type: createMode === "new" ? newUser.workspace_type : undefined,
       });
-      toast({ title: "Usuário criado com sucesso" });
+      toast({
+        title: "Usuário criado com sucesso",
+        description: newUser.send_set_password_email
+          ? res.set_password_email_sent
+            ? "Convite enviado por e-mail para definição de senha."
+            : "Convite solicitado, mas o e-mail não foi enviado."
+          : "Senha inicial definida manualmente.",
+      });
       setNewUser({
         full_name: "",
         email: "",
         password: "",
+        send_set_password_email: true,
         role: "owner",
         is_admin: false,
         workspace_id: "",
@@ -246,7 +264,8 @@ export default function AdminUsers() {
                 type="password"
                 value={newUser.password}
                 onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))}
-                placeholder="********"
+                placeholder={newUser.send_set_password_email ? "Opcional (será enviado link)" : "********"}
+                disabled={newUser.send_set_password_email}
               />
             </div>
             <div>
@@ -269,6 +288,15 @@ export default function AdminUsers() {
               onChange={(e) => setNewUser((p) => ({ ...p, is_admin: e.target.checked }))}
             />
             <Label>Tornar usuário administrador do sistema</Label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={newUser.send_set_password_email}
+              onChange={(e) => setNewUser((p) => ({ ...p, send_set_password_email: e.target.checked }))}
+            />
+            <Label>Enviar link por e-mail para definir senha (recomendado)</Label>
           </div>
 
           <div className="flex items-center gap-4">

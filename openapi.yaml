@@ -300,14 +300,18 @@ components:
       type: object
       required:
       - email
-      - password
       properties:
         email:
           type: string
           format: email
         password:
           type: string
-          description: Minimum 8 characters
+          description: Minimum 8 characters when send_set_password_email=false
+          nullable: true
+        send_set_password_email:
+          type: boolean
+          description: If true, sends an email with reset-link for first password setup
+          nullable: true
         full_name:
           type: string
           nullable: true
