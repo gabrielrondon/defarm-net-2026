@@ -167,6 +167,9 @@ export function PartnerIntake() {
         <p className="text-sm text-muted-foreground">
           Envie CSV/JSON uma única vez. A DeFarm persiste payload bruto, resolve cliente por identificador e roteia para os circuitos corretos.
         </p>
+        <p className="text-xs text-muted-foreground">
+          Recomendado em produção: enviar em chunks de 50-150 linhas por request.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
             <SelectTrigger><SelectValue placeholder="Circuito de staging" /></SelectTrigger>
@@ -252,6 +255,40 @@ export function PartnerIntake() {
                       </a>
                     </Button>
                     <p className="text-[11px] text-muted-foreground">{link.circuit_id}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {lastResult.routed_batches?.some((batch) => (batch.item_links?.length || 0) > 0) ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Itens resolvidos no upload (DFID + identificadores + referência enviada):
+                </p>
+                {lastResult.routed_batches.flatMap((batch) => batch.item_links || []).slice(0, 20).map((item) => (
+                  <div key={item.item_id} className="rounded border p-2 bg-background/60">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={item.app_url} target="_blank" rel="noopener noreferrer">
+                          Abrir item <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={item.public_url} target="_blank" rel="noopener noreferrer">
+                          Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </a>
+                      </Button>
+                      <p className="text-[11px] text-muted-foreground">{item.dfid}</p>
+                    </div>
+                    {item.input_references?.length ? (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        referência enviada: {item.input_references.map((r) => `${r.field}=${r.value}`).join(" · ")}
+                      </p>
+                    ) : null}
+                    {item.identifiers?.length ? (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        identificadores: {item.identifiers.map((id) => `${id.identifier_type}:${id.value}`).join(" · ")}
+                      </p>
+                    ) : null}
                   </div>
                 ))}
               </div>

@@ -51,6 +51,22 @@ export interface IntakeBatchResult {
   receipt_id?: string | null;
   status: string;
   error_message?: string | null;
+  item_links?: {
+    item_id: string;
+    dfid: string;
+    circuit_id: string;
+    app_url: string;
+    public_url: string;
+    identifiers: {
+      identifier_type: string;
+      value: string;
+      is_canonical: boolean;
+    }[];
+    input_references: {
+      field: string;
+      value: string;
+    }[];
+  }[];
 }
 
 export interface PartnerIntakeResponse {

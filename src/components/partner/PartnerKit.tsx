@@ -24,7 +24,28 @@ const PREVIEW_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/up
 const RESPONSE_EXAMPLE = `{
   "raw_payload_id": "uuid",
   "status": "completed",
-  "routed_batches": [ ... ],
+  "routed_batches": [
+    {
+      "identifier_type": "cnpj",
+      "identifier_value": "12345678000190",
+      "rows": 2,
+      "status": "completed",
+      "item_links": [
+        {
+          "item_id": "uuid",
+          "dfid": "DFID-BEEF-BR-2026-000123-abc123",
+          "app_url": "https://defarm.net/app/itens/<item_id>",
+          "public_url": "https://defarm.net/i/<dfid>",
+          "identifiers": [
+            { "identifier_type": "SISBOV", "value": "105500497219983", "is_canonical": true }
+          ],
+          "input_references": [
+            { "field": "external_id", "value": "cowpro-0001" }
+          ]
+        }
+      ]
+    }
+  ],
   "circuit_links": [
     {
       "circuit_id": "uuid",
@@ -250,7 +271,8 @@ export function PartnerKit() {
         <Card className="p-4 space-y-3">
           <p className="text-sm font-medium text-foreground">Resposta útil para navegação</p>
           <p className="text-xs text-muted-foreground">
-            Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">circuit_links</code> para abrir direto os animais/circuitos processados.
+            Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">routed_batches.item_links</code> para abrir item por item (DFID + identificadores) e
+            <code className="text-xs bg-muted px-1 py-0.5 rounded ml-1">circuit_links</code> para portfólio por cliente.
           </p>
           <pre className="code-block">{RESPONSE_EXAMPLE}</pre>
         </Card>
@@ -262,7 +284,7 @@ export function PartnerKit() {
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside marker:text-muted-foreground/40">
           <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> com circuito de staging.</li>
           <li>Opcional: rodar preview em <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para validar o lote.</li>
-          <li>Enviar lote CSV/JSON para <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>.</li>
+          <li>Enviar em chunks (recomendado 50-150 linhas por request) para <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>.</li>
           <li>Resolver pendências em Roteamento.</li>
           <li>Abrir <code className="text-xs bg-muted px-1 py-0.5 rounded">circuit_links</code> retornados para ver o portfólio imediatamente.</li>
           <li>Opcional: usar templates + <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/items/bulk</code> para casos avançados.</li>
