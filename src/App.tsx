@@ -271,7 +271,7 @@ const App = () => (
             <Route
               path="/app/propriedades/rebanho"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["certifier"]}>
                   <AppLayout><PropertyHerd /></AppLayout>
                 </RequireWorkspaceAccess>
               }

@@ -77,7 +77,7 @@ const navCatalog: NavItem[] = [
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
   partner: ["/app/parceiro", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
-  producer: ["/app", "/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/descobrir", "/app/snapshots", "/app/finance", "/app/compliance"],
+  producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
 };

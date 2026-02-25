@@ -33,7 +33,7 @@ export default function Caderneta() {
   };
 
   const profileDescriptions: Record<string, string> = {
-    producer: "Consolide rebanho, propriedades e rastreabilidade para acelerar decisao no campo.",
+    producer: "Acompanhe seus ativos, circuitos e rastreabilidade de forma simples e segura.",
     partner: "Ingerir dados com qualidade e comprovar valor operacional para seus clientes.",
     certifier: "Validar claims, acompanhar movimentacoes e fortalecer governanca dos dados.",
     processor: "Acompanhar eventos e lotes com trilha rastreavel ponta a ponta.",
@@ -65,8 +65,8 @@ export default function Caderneta() {
             ]
           : [
               { label: "Minhas propriedades", href: "/app/claims" },
-              { label: "Rebanho por propriedade", href: "/app/propriedades/rebanho" },
               { label: "Circuitos", href: "/app/circuitos" },
+              { label: "Itens", href: "/app/itens" },
             ];
 
   return (
