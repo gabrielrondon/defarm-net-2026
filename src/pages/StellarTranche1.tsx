@@ -172,7 +172,7 @@ const apiSnippet = `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
             "identifier_value": "105500497219983" }
         ],
         "metadata": {
-          "source": "gerbov",
+          "source": "partner",
           "lot": "Calves - Serra"
         }
       }
@@ -205,7 +205,7 @@ const item = await sdk.items.create({
   metadata: {
     canonical_type: "sisbov",
     canonical_id: "105500497219983",
-    source: "gerbov",
+    source: "partner",
   },
 });
 
@@ -213,7 +213,7 @@ const item = await sdk.items.create({
 await sdk.events.add({
   event_type: "item_vaccinated",
   source_type: "partner",
-  source_id: "gerbov",
+  source_id: "partner",
   circuit_id: circuit.id,
   item_id: item.id,
   payload: { vaccine: "aftosa" },

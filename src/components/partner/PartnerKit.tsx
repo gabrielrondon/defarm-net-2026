@@ -70,8 +70,8 @@ curl -X POST "https://gateway.defarm.net/api/ingestion/templates" \\
   -H "Authorization: Bearer <JWT_DO_USUARIO_PARCEIRO>" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "name": "GerBov v1",
-    "source_hint": "gerbov",
+    "name": "Parceiro v1",
+    "source_hint": "partner",
     "canonical_type": "sisbov",
     "canonical_column": "sisbov",
     "mapping": {
