@@ -235,8 +235,13 @@ export function PartnerIntake() {
         {lastResult ? (
           <div className="rounded-lg border p-3 bg-muted/20 space-y-3">
             <p className="text-xs font-medium text-foreground">
-              Último processamento: {lastResult.status} · {lastResult.total_rows} linha(s)
+              Último processamento: {lastResult.summary?.status || lastResult.status} · {lastResult.summary?.total_rows ?? lastResult.total_rows} linha(s)
             </p>
+            {lastResult.summary ? (
+              <p className="text-[11px] text-muted-foreground">
+                lotes: {lastResult.summary.routed_batches} · itens com link: {lastResult.summary.items_linked} · pendências: {lastResult.summary.unresolved_rows}
+              </p>
+            ) : null}
             {lastResult.circuit_links?.length ? (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">

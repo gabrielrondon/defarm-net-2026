@@ -70,6 +70,15 @@ export interface IntakeBatchResult {
 }
 
 export interface PartnerIntakeResponse {
+  summary: {
+    status: string;
+    total_rows: number;
+    unresolved_rows: number;
+    routed_batches: number;
+    items_linked: number;
+    created_circuits: number;
+    circuits_linked: number;
+  };
   raw_payload_id: string;
   source_circuit_id?: string | null;
   workspace_id: string;

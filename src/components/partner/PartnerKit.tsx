@@ -22,6 +22,15 @@ const PREVIEW_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/up
   -F "auto_create_circuit=true"`;
 
 const RESPONSE_EXAMPLE = `{
+  "summary": {
+    "status": "completed",
+    "total_rows": 2,
+    "unresolved_rows": 0,
+    "routed_batches": 1,
+    "items_linked": 2,
+    "created_circuits": 0,
+    "circuits_linked": 1
+  },
   "raw_payload_id": "uuid",
   "status": "completed",
   "routed_batches": [
