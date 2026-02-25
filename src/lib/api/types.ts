@@ -1150,6 +1150,17 @@ export interface SubmitClaimRequest {
   identifier_type: "car" | "cnpj" | "cpf" | "incra";
   identifier_value: string;
   notes?: string | null;
+  claim_details?: ClaimDetails | null;
+}
+
+export interface ClaimDetails {
+  farm_name?: string | null;
+  municipio?: string | null;
+  uf?: string | null;
+  area_hectares?: number | null;
+  role_no_imovel?: "proprietario" | "arrendatario" | "gestor" | null;
+  telefone_contato?: string | null;
+  documento_comprovante_url?: string | null;
 }
 
 export interface OwnershipClaim {
@@ -1163,6 +1174,7 @@ export interface OwnershipClaim {
   rejected_at?: string | null;
   rejection_reason?: string | null;
   notes?: string | null;
+  claim_details?: ClaimDetails | null;
   circuit_id?: string | null;
   items_surfaced: number;
   created_at: string;

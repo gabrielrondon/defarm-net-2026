@@ -13,12 +13,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import type { ClaimDetails } from "@/lib/api/types";
 
 const IDENTIFIER_TYPES = [
   { value: "car", label: "CAR" },
   { value: "cpf", label: "CPF" },
   { value: "cnpj", label: "CNPJ" },
   { value: "incra", label: "INCRA" },
+] as const;
+
+const ROLE_OPTIONS: NonNullable<ClaimDetails["role_no_imovel"]>[] = ["proprietario", "arrendatario", "gestor"];
+const UF_OPTIONS = [
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
+  "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
 ] as const;
 
 export default function OwnershipClaims() {
@@ -28,6 +35,13 @@ export default function OwnershipClaims() {
   const [identifierType, setIdentifierType] = useState<(typeof IDENTIFIER_TYPES)[number]["value"]>("car");
   const [identifierValue, setIdentifierValue] = useState("");
   const [notes, setNotes] = useState("");
+  const [farmName, setFarmName] = useState("");
+  const [municipio, setMunicipio] = useState("");
+  const [uf, setUf] = useState("");
+  const [areaHectares, setAreaHectares] = useState("");
+  const [roleNoImovel, setRoleNoImovel] = useState<NonNullable<ClaimDetails["role_no_imovel"] | "">("");
+  const [telefoneContato, setTelefoneContato] = useState("");
+  const [documentoComprovanteUrl, setDocumentoComprovanteUrl] = useState("");
 
   const isAdmin = !!user?.is_admin;
   const workspaceType = user?.workspace_type || "producer";
@@ -50,10 +64,26 @@ export default function OwnershipClaims() {
         identifier_type: identifierType,
         identifier_value: identifierValue.trim(),
         notes: notes.trim() || undefined,
+        claim_details: {
+          farm_name: farmName.trim() || null,
+          municipio: municipio.trim() || null,
+          uf: uf || null,
+          area_hectares: areaHectares.trim() ? Number(areaHectares) : null,
+          role_no_imovel: roleNoImovel || null,
+          telefone_contato: telefoneContato.trim() || null,
+          documento_comprovante_url: documentoComprovanteUrl.trim() || null,
+        },
       }),
     onSuccess: () => {
       setIdentifierValue("");
       setNotes("");
+      setFarmName("");
+      setMunicipio("");
+      setUf("");
+      setAreaHectares("");
+      setRoleNoImovel("");
+      setTelefoneContato("");
+      setDocumentoComprovanteUrl("");
       queryClient.invalidateQueries({ queryKey: ["my-claims"] });
       toast({ title: "Claim enviado", description: "Seu claim foi registrado e aguarda validação do admin." });
     },
@@ -144,6 +174,44 @@ export default function OwnershipClaims() {
               {submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar claim"}
             </Button>
           </div>
+          <Input placeholder="Nome da fazenda (opcional)" value={farmName} onChange={(e) => setFarmName(e.target.value)} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input placeholder="Município (opcional)" value={municipio} onChange={(e) => setMunicipio(e.target.value)} />
+            <select
+              className="h-10 px-3 rounded-md border border-input bg-background"
+              value={uf}
+              onChange={(e) => setUf(e.target.value)}
+            >
+              <option value="">UF (opcional)</option>
+              {UF_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+            <Input
+              placeholder="Área em hectares (opcional)"
+              value={areaHectares}
+              onChange={(e) => setAreaHectares(e.target.value)}
+              inputMode="decimal"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select
+              className="h-10 px-3 rounded-md border border-input bg-background"
+              value={roleNoImovel}
+              onChange={(e) => setRoleNoImovel(e.target.value as NonNullable<ClaimDetails["role_no_imovel"]>)}
+            >
+              <option value="">Papel no imóvel (opcional)</option>
+              {ROLE_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+            <Input placeholder="Telefone de contato (opcional)" value={telefoneContato} onChange={(e) => setTelefoneContato(e.target.value)} />
+            <Input placeholder="URL do comprovante (opcional)" value={documentoComprovanteUrl} onChange={(e) => setDocumentoComprovanteUrl(e.target.value)} />
+          </div>
           <Input placeholder="Observações (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </section>
       )}
@@ -165,6 +233,12 @@ export default function OwnershipClaims() {
                   <p className="text-xs text-muted-foreground">
                     {new Date(claim.created_at).toLocaleString("pt-BR")} · {claim.items_surfaced || 0} itens
                   </p>
+                  {(claim.claim_details?.farm_name || claim.claim_details?.municipio || claim.claim_details?.uf) && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {claim.claim_details?.farm_name ? `${claim.claim_details.farm_name} · ` : ""}
+                      {claim.claim_details?.municipio || "-"}{claim.claim_details?.uf ? `/${claim.claim_details.uf}` : ""}
+                    </p>
+                  )}
                 </div>
                 <Badge variant={claim.status === "verified" ? "default" : claim.status === "rejected" ? "destructive" : "secondary"}>
                   {claim.status}

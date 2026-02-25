@@ -13147,6 +13147,35 @@ paths:
                 notes:
                   type: string
                   nullable: true
+                claim_details:
+                  type: object
+                  nullable: true
+                  properties:
+                    farm_name:
+                      type: string
+                      nullable: true
+                    municipio:
+                      type: string
+                      nullable: true
+                    uf:
+                      type: string
+                      nullable: true
+                      example: MT
+                    area_hectares:
+                      type: number
+                      format: double
+                      nullable: true
+                    role_no_imovel:
+                      type: string
+                      nullable: true
+                      enum: [proprietario, arrendatario, gestor]
+                    telefone_contato:
+                      type: string
+                      nullable: true
+                    documento_comprovante_url:
+                      type: string
+                      nullable: true
+                      format: uri
       responses:
         '201':
           description: Claim submitted, awaiting admin review
