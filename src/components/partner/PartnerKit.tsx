@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle2, Copy, FileText, Link2, Loader2, Rocket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { createIngestionTemplate, listIngestionTemplates } from "@/lib/api/ingestion-templates";
-import { GATEWAY_BASE } from "@/lib/api/client";
 
 const KIT_TEMPLATE = `value_chain,country,year,sisbov,chip,ear_tag,birth_date,sex,lot_name,zone_name,source_system
 BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,parceiro_a
@@ -63,6 +62,26 @@ const RESPONSE_EXAMPLE = `{
       "public_url": "https://defarm.net/c/<uuid>"
     }
   ]
+}`;
+
+const PARTNER_CLIENT_EXAMPLE = `npm install @defarm/partner-client
+
+import { DefarmPartnerClient } from "@defarm/partner-client";
+
+const client = new DefarmPartnerClient({
+  gatewayBaseUrl: "https://gateway.defarm.net",
+  apiKey: process.env.DEFARM_PARTNER_KEY,
+});
+
+const result = await client.upload({
+  file: "/tmp/dados.csv",
+  autoCreateCircuit: true,
+});
+
+for (const batch of result.routed_batches) {
+  for (const item of batch.item_links) {
+    console.log(item.dfid, item.public_url, item.is_public);
+  }
 }`;
 
 const TEMPLATE_API_EXAMPLE = `# 1) Criar template do parceiro (uma vez)
@@ -211,7 +230,7 @@ export function PartnerKit() {
           <div>
             <p className="text-sm font-medium text-foreground">Template padrão</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {defaultTemplateExists ? "Ativo" : "Criar mapeamento default"}
+              {defaultTemplateExists ? "Ativo para fallback no /api/items/bulk" : "Opcional: fallback para /api/items/bulk"}
             </p>
           </div>
           <Button
@@ -221,14 +240,30 @@ export function PartnerKit() {
             variant={defaultTemplateExists ? "outline" : "default"}
           >
             {creatingDefault ? <Loader2 className="h-4 w-4 animate-spin" /> : defaultTemplateExists ? <CheckCircle2 className="h-4 w-4 mr-1.5" /> : <Rocket className="h-4 w-4 mr-1.5" />}
-            {defaultTemplateExists ? "Criado" : "Criar"}
+            {defaultTemplateExists ? "Ativo" : "Criar"}
           </Button>
         </Card>
       </div>
 
+      <p className="text-xs text-muted-foreground -mt-4">
+        Importante: o endpoint <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code> já faz roteamento inteligente e não exige template.
+      </p>
+
       {/* Code examples — collapsible sections */}
       <div className="space-y-4">
         <p className="section-label">Referência de integração</p>
+
+        <Card className="p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">Cliente oficial para parceiro (recomendado)</p>
+          <p className="text-xs text-muted-foreground">
+            Use <code className="text-xs bg-muted px-1 py-0.5 rounded">@defarm/partner-client</code> para enviar arquivos,
+            interpretar resposta e reconciliar links por referência do parceiro.
+          </p>
+          <pre className="code-block">{PARTNER_CLIENT_EXAMPLE}</pre>
+          <p className="text-xs text-muted-foreground">
+            Kit para IA/copilot disponível em <code className="text-xs bg-muted px-1 py-0.5 rounded">docs/partner/ai-skill-kit.md</code>.
+          </p>
+        </Card>
 
         <Card className="p-4 space-y-3">
           <div className="flex items-center justify-between">
