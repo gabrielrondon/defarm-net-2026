@@ -57,6 +57,7 @@ export interface IntakeBatchResult {
     circuit_id: string;
     app_url: string;
     public_url: string;
+    is_public?: boolean;
     identifiers: {
       identifier_type: string;
       value: string;
@@ -94,6 +95,7 @@ export interface PartnerIntakeResponse {
     circuit_id: string;
     app_url: string;
     public_url: string;
+    is_public?: boolean;
   }[];
   status: string;
 }

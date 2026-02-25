@@ -261,11 +261,17 @@ export function PartnerIntake() {
                         Abrir no app <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </a>
                     </Button>
-                    <Button size="sm" variant="ghost" asChild>
-                      <a href={link.public_url} target="_blank" rel="noopener noreferrer">
-                        Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                      </a>
-                    </Button>
+                    {link.is_public !== false ? (
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={link.public_url} target="_blank" rel="noopener noreferrer">
+                          Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        Circuito privado (publique para compartilhar link público)
+                      </span>
+                    )}
                     <p className="text-[11px] text-muted-foreground">{link.circuit_id}</p>
                   </div>
                 ))}
@@ -284,11 +290,17 @@ export function PartnerIntake() {
                           Abrir item <ExternalLink className="h-3.5 w-3.5 ml-1" />
                         </a>
                       </Button>
-                      <Button size="sm" variant="ghost" asChild>
-                        <a href={item.public_url} target="_blank" rel="noopener noreferrer">
-                          Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                        </a>
-                      </Button>
+                      {item.is_public !== false ? (
+                        <Button size="sm" variant="ghost" asChild>
+                          <a href={item.public_url} target="_blank" rel="noopener noreferrer">
+                            Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                          </a>
+                        </Button>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">
+                          Item em circuito privado (link público indisponível)
+                        </span>
+                      )}
                       <p className="text-[11px] text-muted-foreground">{item.dfid}</p>
                     </div>
                     {item.input_references?.length ? (
