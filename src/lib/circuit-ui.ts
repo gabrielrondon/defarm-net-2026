@@ -14,11 +14,12 @@ export function circuitStatusLabel(raw?: string | null): string {
 
 export function circuitTypeLabel(raw?: string | null): string {
   const value = (raw || "").trim().toLowerCase();
-  if (!value || value === "standard" || value === "private") return "Padrão";
+  if (!value || value === "standard") return "Standard";
+  if (value === "private") return "Privado";
   if (value === "supply_chain") return "Cadeia de suprimentos";
   if (value === "compliance") return "Compliance";
   if (value === "audit") return "Auditoria";
-  return raw || "Padrão";
+  return raw || "Standard";
 }
 
 export function isCircuitPublic(visibility?: string | null): boolean {

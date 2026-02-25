@@ -5,7 +5,6 @@ import {
   Plus, 
   Search, 
   GitBranch, 
-  Users, 
   Package,
   MoreHorizontal,
   Globe,
@@ -13,6 +12,7 @@ import {
   ArrowRight,
   Loader2,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,6 +167,14 @@ export default function CircuitosList() {
                       <DropdownMenuItem asChild>
                         <Link to={`/app/circuitos/${circuit.id}`}>Gerenciar membros</Link>
                       </DropdownMenuItem>
+                      {isPublic && (
+                        <DropdownMenuItem asChild>
+                          <a href={`/c/${circuit.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Página pública
+                          </a>
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
