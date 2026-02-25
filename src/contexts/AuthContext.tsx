@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import {
   User,
+  AuthUser,
   AuthResponse,
   LoginChallengeResponse,
   LoginResponse,
@@ -70,20 +71,70 @@ function mapAuthUser(response: AuthResponse, fallbackName: string, fallbackEmail
   };
 }
 
+function mapMeToUser(me: AuthUser): User {
+  return {
+    id: me.id,
+    username: me.full_name || me.email,
+    full_name: me.full_name || undefined,
+    avatar_url: me.avatar_url || null,
+    email: me.email,
+    email_verified: me.email_verified || false,
+    pending_email: me.pending_email || null,
+    workspace_id: me.workspace.id,
+    workspace_name: me.workspace.name,
+    workspace_slug: me.workspace.slug,
+    workspace_type: me.workspace.workspace_type,
+    role: me.workspace.role,
+    is_admin: me.is_admin || false,
+    is_active: me.is_active ?? true,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount
-    const token = getStoredToken();
-    const storedUser = getStoredUser();
-    
-    if (token && storedUser) {
-      setUser(storedUser);
-    }
-    
-    setIsLoading(false);
+    let cancelled = false;
+
+    const bootstrapAuth = async () => {
+      const token = getStoredToken();
+      const storedUser = getStoredUser();
+
+      if (!token) {
+        if (!cancelled) setIsLoading(false);
+        return;
+      }
+
+      if (storedUser) {
+        if (!cancelled) {
+          setUser(storedUser);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      // Token exists but user snapshot is missing (new tab / cleared local user key).
+      // Rebuild auth state from /auth/me to avoid forcing a fresh login.
+      try {
+        const me = await apiGetMe();
+        const recovered = mapMeToUser(me);
+        setStoredUser(recovered);
+        if (!cancelled) setUser(recovered);
+      } catch (err) {
+        console.warn("[DeFarm Auth] Failed to recover session from token:", err);
+        clearAuth();
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    bootstrapAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Ensure the user has at least one circuit (required for RBAC permissions)
