@@ -16,6 +16,11 @@ const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/uploa
   -F "file=@dados.csv" \\
   -F "auto_create_circuit=true"`;
 
+const PREVIEW_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/upload/preview" \\
+  -H "x-api-key: <PARTNER_API_KEY>" \\
+  -F "file=@dados.csv" \\
+  -F "auto_create_circuit=true"`;
+
 const RESPONSE_EXAMPLE = `{
   "raw_payload_id": "uuid",
   "status": "completed",
@@ -220,6 +225,14 @@ export function PartnerKit() {
         </Card>
 
         <Card className="p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">Preview (dry-run) antes do envio real</p>
+          <p className="text-xs text-muted-foreground">
+            Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para simular roteamento sem tokenizar.
+          </p>
+          <pre className="code-block">{PREVIEW_EXAMPLE}</pre>
+        </Card>
+
+        <Card className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-foreground">Template por parceiro</p>
             <Button size="sm" variant="ghost" onClick={copyTemplateApi} className="h-7 px-2 text-xs">
@@ -248,6 +261,7 @@ export function PartnerKit() {
         <p className="section-label mb-3">Checklist para produção</p>
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside marker:text-muted-foreground/40">
           <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> com circuito de staging.</li>
+          <li>Opcional: rodar preview em <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para validar o lote.</li>
           <li>Enviar lote CSV/JSON para <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>.</li>
           <li>Resolver pendências em Roteamento.</li>
           <li>Abrir <code className="text-xs bg-muted px-1 py-0.5 rounded">circuit_links</code> retornados para ver o portfólio imediatamente.</li>

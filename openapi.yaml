@@ -2290,6 +2290,74 @@ components:
             $ref: '#/components/schemas/PartnerCircuitLink'
         status:
           type: string
+    PartnerIntakePreviewPlanItem:
+      type: object
+      required:
+      - identifier_type
+      - identifier_value
+      - identifier_value_normalized
+      - rows
+      - status
+      properties:
+        identifier_type:
+          type: string
+        identifier_value:
+          type: string
+        identifier_value_normalized:
+          type: string
+        rows:
+          type: integer
+          format: int32
+        circuit_id:
+          type: string
+          format: uuid
+          nullable: true
+        status:
+          type: string
+        reason:
+          type: string
+          nullable: true
+    PartnerIntakePreviewResponse:
+      type: object
+      required:
+      - source_circuit_id
+      - workspace_id
+      - total_rows
+      - resolvable_rows
+      - unresolved_rows
+      - matched_rows
+      - would_auto_create_rows
+      - unresolved_identifiers
+      - routing_plan
+      properties:
+        source_circuit_id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        total_rows:
+          type: integer
+          format: int32
+        resolvable_rows:
+          type: integer
+          format: int32
+        unresolved_rows:
+          type: integer
+          format: int32
+        matched_rows:
+          type: integer
+          format: int32
+        would_auto_create_rows:
+          type: integer
+          format: int32
+        unresolved_identifiers:
+          type: array
+          items: {}
+        routing_plan:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerIntakePreviewPlanItem'
     PartnerCircuitLink:
       type: object
       required:
@@ -8064,6 +8132,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerIntakeResponse'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+  /api/partner/ingestion/intake/preview:
+    post:
+      tags:
+      - Partner Routing
+      summary: Preview intelligent intake (no side effects)
+      description: Validates CSV/JSON and simulates routing outcomes without storing payload, creating circuits, or tokenizing items.
+      operationId: partner_intake_preview
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                source_circuit_id:
+                  type: string
+                  format: uuid
+                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
+                auto_create_circuit:
+                  type: boolean
+                  description: Simulate auto-creation when no routing rule matches.
+      responses:
+        '200':
+          description: Preview generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerIntakePreviewResponse'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+  /api/partner/upload/preview:
+    post:
+      tags:
+      - Partner Routing
+      summary: Partner upload preview (alias)
+      description: Recommended alias for intake preview. Same behavior as /api/partner/ingestion/intake/preview.
+      operationId: partner_upload_preview
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                source_circuit_id:
+                  type: string
+                  format: uuid
+                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
+                auto_create_circuit:
+                  type: boolean
+                  description: Simulate auto-creation when no routing rule matches.
+      responses:
+        '200':
+          description: Preview generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerIntakePreviewResponse'
       security:
       - bearerAuth: []
       - apiKeyAuth: []

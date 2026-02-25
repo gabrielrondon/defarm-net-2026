@@ -11,8 +11,10 @@ import {
   listRawPayloads,
   listRoutingIssues,
   partnerIntake,
+  partnerIntakePreview,
   upsertRoutingRule,
   type PartnerIntakeResponse,
+  type PartnerIntakePreviewResponse,
   type RawPayloadSummary,
   type RoutingIssueSummary,
 } from "@/lib/api/partner-routing";
@@ -38,91 +40,27 @@ export function PartnerIntake() {
   const [previewRows, setPreviewRows] = useState(0);
   const [previewResolvable, setPreviewResolvable] = useState(0);
   const [previewUnknown, setPreviewUnknown] = useState(0);
+  const [previewResult, setPreviewResult] = useState<PartnerIntakePreviewResponse | null>(null);
   const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
 
-  const detectIdentifier = (row: Record<string, string>): { type: string; value: string } | null => {
-    const read = (...keys: string[]) => keys.map((k) => row[k]).find((v) => (v || "").trim().length > 0) || "";
-    const land = read("land_dfid", "property_dfid", "fazenda_dfid");
-    if (land) return { type: "land_dfid", value: land.trim() };
-    const car = read("car", "origin_car", "car_origem");
-    if (car) return { type: "car", value: car.trim() };
-    const cnpj = read("cnpj");
-    if (cnpj) return { type: "cnpj", value: cnpj.trim() };
-    const cpf = read("cpf");
-    if (cpf) return { type: "cpf", value: cpf.trim() };
-    const incra = read("incra");
-    if (incra) return { type: "incra", value: incra.trim() };
-    const nirf = read("nirf");
-    if (nirf) return { type: "nirf", value: nirf.trim() };
-    return null;
-  };
-
-  const parseCsvLine = (line: string): string[] => {
-    const out: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i += 1) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i += 1;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (ch === "," && !inQuotes) {
-        out.push(current);
-        current = "";
-      } else {
-        current += ch;
-      }
-    }
-    out.push(current);
-    return out.map((s) => s.trim());
-  };
-
-  const buildPreValidation = async (selectedFile: File | null) => {
+  const buildPreValidation = async (selectedFile: File | null, selectedSourceCircuitId: string) => {
     setPreviewRows(0);
     setPreviewResolvable(0);
     setPreviewUnknown(0);
+    setPreviewResult(null);
     if (!selectedFile) return;
     setPreviewing(true);
     try {
-      const text = await selectedFile.text();
-      const trimmed = text.trim();
-      let rows: Record<string, string>[] = [];
-
-      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        const parsed = JSON.parse(trimmed);
-        const array = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.items) ? parsed.items : [];
-        rows = array
-          .filter((r) => r && typeof r === "object")
-          .map((r) =>
-            Object.fromEntries(
-              Object.entries(r).map(([k, v]) => [k.toLowerCase().trim().replace(/\s+/g, "_"), String(v ?? "")])
-            )
-          );
-      } else {
-        const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-        if (lines.length >= 2) {
-          const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase().trim().replace(/\s+/g, "_"));
-          rows = lines.slice(1).map((line) => {
-            const values = parseCsvLine(line);
-            const row: Record<string, string> = {};
-            headers.forEach((h, idx) => {
-              row[h] = values[idx] || "";
-            });
-            return row;
-          });
-        }
-      }
-
-      const resolvable = rows.filter((r) => !!detectIdentifier(r)).length;
-      setPreviewRows(rows.length);
-      setPreviewResolvable(resolvable);
-      setPreviewUnknown(Math.max(0, rows.length - resolvable));
+      const preview = await partnerIntakePreview(selectedFile, selectedSourceCircuitId, autoCreate);
+      setPreviewRows(preview.total_rows);
+      setPreviewResolvable(preview.resolvable_rows);
+      setPreviewUnknown(preview.unresolved_rows);
+      setPreviewResult(preview);
     } catch {
-      // keep zeroed preview
+      setPreviewRows(0);
+      setPreviewResolvable(0);
+      setPreviewUnknown(0);
+      setPreviewResult(null);
     } finally {
       setPreviewing(false);
     }
@@ -170,6 +108,11 @@ export function PartnerIntake() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!file || !sourceCircuitId) return;
+    void buildPreValidation(file, sourceCircuitId);
+  }, [file, sourceCircuitId, autoCreate]);
+
   const onSubmit = async () => {
     if (!file || !sourceCircuitId) return;
     setSending(true);
@@ -180,6 +123,7 @@ export function PartnerIntake() {
         title: "Intake processado",
         description: `Status: ${result.status}. Lotes roteados: ${result.routed_batches.length}.`,
       });
+      setPreviewResult(null);
       setFile(null);
       await load();
     } catch {
@@ -243,7 +187,9 @@ export function PartnerIntake() {
               onChange={async (e) => {
                 const selected = e.target.files?.[0] || null;
                 setFile(selected);
-                await buildPreValidation(selected);
+                if (selected && sourceCircuitId) {
+                  await buildPreValidation(selected, sourceCircuitId);
+                }
               }}
             />
           </label>
@@ -260,16 +206,26 @@ export function PartnerIntake() {
 
         {file ? (
           <div className="rounded-lg border p-3 bg-muted/30">
-            <p className="text-xs font-medium text-foreground mb-2">Pré-validação do arquivo (antes do envio)</p>
+            <p className="text-xs font-medium text-foreground mb-2">Prévia real de roteamento (sem tokenizar)</p>
             {previewing ? (
               <p className="text-xs text-muted-foreground">Analisando arquivo...</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
                 <p className="text-muted-foreground">Linhas lidas: <span className="text-foreground font-medium">{previewRows}</span></p>
                 <p className="text-muted-foreground">Com identificador: <span className="text-primary font-medium">{previewResolvable}</span></p>
                 <p className="text-muted-foreground">Sem identificador: <span className="text-destructive font-medium">{previewUnknown}</span></p>
+                <p className="text-muted-foreground">Auto-criação prevista: <span className="text-foreground font-medium">{previewResult?.would_auto_create_rows ?? 0}</span></p>
               </div>
             )}
+            {!previewing && previewResult?.routing_plan?.length ? (
+              <div className="mt-3 space-y-1">
+                {previewResult.routing_plan.slice(0, 6).map((plan) => (
+                  <p key={`${plan.identifier_type}-${plan.identifier_value}-${plan.circuit_id || "none"}`} className="text-[11px] text-muted-foreground">
+                    {plan.identifier_type.toUpperCase()} {plan.identifier_value} · {plan.rows} linha(s) · {plan.status === "routed_existing" ? `roteia para ${circuitNameMap.get(plan.circuit_id || "") || plan.circuit_id}` : plan.status === "would_auto_create" ? "criaria circuito automaticamente" : "ficará pendente"}
+                  </p>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
 

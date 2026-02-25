@@ -69,6 +69,32 @@ export interface PartnerIntakeResponse {
   status: string;
 }
 
+export interface PartnerIntakePreviewPlanItem {
+  identifier_type: string;
+  identifier_value: string;
+  identifier_value_normalized: string;
+  rows: number;
+  circuit_id?: string | null;
+  status: "routed_existing" | "would_auto_create" | "unresolved";
+  reason?: string | null;
+}
+
+export interface PartnerIntakePreviewResponse {
+  source_circuit_id: string;
+  workspace_id: string;
+  total_rows: number;
+  resolvable_rows: number;
+  unresolved_rows: number;
+  matched_rows: number;
+  would_auto_create_rows: number;
+  unresolved_identifiers: {
+    identifier_type: string;
+    identifier_value: string;
+    reason: string;
+  }[];
+  routing_plan: PartnerIntakePreviewPlanItem[];
+}
+
 export interface RoutingIssueSummary {
   identifier_type: string;
   identifier_value: string;
@@ -144,6 +170,25 @@ export async function partnerIntake(
   formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
 
   return registryRequest<PartnerIntakeResponse>("/partner/upload", {
+    method: "POST",
+    headers: {},
+    body: formData as unknown as BodyInit,
+  });
+}
+
+export async function partnerIntakePreview(
+  file: File,
+  sourceCircuitId?: string,
+  autoCreateCircuit = true
+): Promise<PartnerIntakePreviewResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (sourceCircuitId) {
+    formData.append("source_circuit_id", sourceCircuitId);
+  }
+  formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
+
+  return registryRequest<PartnerIntakePreviewResponse>("/partner/upload/preview", {
     method: "POST",
     headers: {},
     body: formData as unknown as BodyInit,
