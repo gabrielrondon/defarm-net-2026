@@ -1,7 +1,8 @@
-import { Activity, Clock, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Activity, Clock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
-import { eventTypeLabels, eventTypeColors, formatTime } from "./constants";
+import { eventTypeLabels, eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
 
 interface ItemTimelineProps {
   events: Event[];
@@ -83,6 +84,23 @@ function compactDetails(event: Event): string[] {
 }
 
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
+  const [showOperational, setShowOperational] = useState(false);
+
+  const { realEvents, operationalCount } = useMemo(() => {
+    let opCount = 0;
+    const real: Event[] = [];
+    for (const e of events) {
+      if (REAL_LIFE_EVENT_TYPES.has(e.event_type)) {
+        real.push(e);
+      } else {
+        opCount++;
+      }
+    }
+    return { realEvents: real, operationalCount: opCount };
+  }, [events]);
+
+  const visibleEvents = showOperational ? events : realEvents;
+
   return (
     <div className="lg:col-span-2">
       <div className="bg-background border border-border rounded-2xl p-6">
@@ -94,19 +112,43 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
             <div>
               <h2 className="text-lg font-semibold text-foreground">Histórico</h2>
               <p className="text-sm text-muted-foreground">
-                {events.length} evento(s)
+                {realEvents.length} evento{realEvents.length !== 1 ? "s" : ""} de manejo
+                {operationalCount > 0 && (
+                  <span className="text-muted-foreground/60"> · {operationalCount} operacional(is)</span>
+                )}
               </p>
             </div>
           </div>
+
+          {operationalCount > 0 && (
+            <button
+              onClick={() => setShowOperational((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border hover:bg-muted/50"
+            >
+              {showOperational ? (
+                <>
+                  <EyeOff className="h-3.5 w-3.5" />
+                  Ocultar técnicos
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3.5 w-3.5" />
+                  Mostrar blockchain/IPFS
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
-        ) : events.length > 0 ? (
+        ) : visibleEvents.length > 0 ? (
           <div className="space-y-1">
-            {events.map((event, index) => {
+            {visibleEvents.map((event, index) => {
+              const Icon = eventTypeIcons[event.event_type] || Activity;
+              const isOperational = !REAL_LIFE_EVENT_TYPES.has(event.event_type);
               const summary = eventSummary(event);
               const details = compactDetails(event);
               return (
@@ -114,7 +156,8 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                 key={event.id}
                 className={cn(
                   "relative pl-8 pb-6",
-                  index !== events.length - 1 && "border-l-2 border-border ml-3"
+                  index !== visibleEvents.length - 1 && "border-l-2 border-border ml-3",
+                  isOperational && "opacity-60"
                 )}
               >
                 <div
@@ -123,7 +166,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                     eventTypeColors[event.event_type] || "bg-muted"
                   )}
                 >
-                  <Activity className="h-3.5 w-3.5" />
+                  <Icon className="h-3.5 w-3.5" />
                 </div>
 
                 <div className="bg-muted/50 rounded-xl p-4 ml-4">
