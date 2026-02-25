@@ -5,12 +5,15 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { LanguageToggle } from "./LanguageToggle";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.png";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
+  const ctaHref = isAuthenticated ? "/app/caderneta" : "/onboarding";
 
   const navItems = [
     { name: t("nav.solutions"), href: "/solucoes" },
@@ -45,7 +48,7 @@ export function Header() {
         {/* CTA + Language */}
         <div className="hidden md:flex items-center gap-3">
           <LanguageToggle />
-          <Link to="/onboarding">
+          <Link to={ctaHref}>
             <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-6 rounded-lg">
               {t("nav.getStarted")}
             </Button>
@@ -85,7 +88,7 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
-            <Link to="/onboarding" onClick={() => setMobileMenuOpen(false)}>
+            <Link to={ctaHref} onClick={() => setMobileMenuOpen(false)}>
               <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
                 {t("nav.getStarted")}
               </Button>

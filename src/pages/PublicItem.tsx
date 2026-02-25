@@ -29,6 +29,7 @@ import {
   REAL_LIFE_EVENT_TYPES,
 } from "@/components/item-detail/constants";
 import logoIcon from "@/assets/logo-icon.png";
+import { AssetQRCode } from "@/components/AssetQRCode";
 import type { PublicItemEvent } from "@/lib/api/types";
 
 /* ── helpers ─────────────────────────────────── */
@@ -285,6 +286,9 @@ export default function PublicItem() {
             </div>
           </div>
         </div>
+
+        {/* ── QR code card ── */}
+        {item.dfid && <AssetQRCode dfid={item.dfid} />}
 
         {/* ── metadata ── */}
         {visibleMetadataEntries.length > 0 && (

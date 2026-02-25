@@ -163,27 +163,37 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                 </div>
               </>
             ) : (
-              <div className="space-y-2">
-                <Label htmlFor="twofa">Código 2FA</Label>
-                <Input
-                  id="twofa"
-                  type="text"
-                  placeholder="123456 ou XXXX-XXXX"
-                  value={twofaCode}
-                  onChange={(e) => setTwofaCode(e.target.value)}
-                  required
-                  className="h-12"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setTwofaToken(null);
-                    setTwofaCode("");
-                  }}
-                >
-                  Voltar para login e senha
-                </Button>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="twofa">Código 2FA</Label>
+                  <Input
+                    id="twofa"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    placeholder="123456 ou XXXX-XXXX"
+                    value={twofaCode}
+                    onChange={(e) => setTwofaCode(e.target.value)}
+                    required
+                    className="h-12 text-center text-lg tracking-widest font-mono"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Abra o seu app autenticador e insira o código de 6 dígitos.
+                </p>
+                <div className="pt-2 border-t border-border">
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => {
+                      setTwofaToken(null);
+                      setTwofaCode("");
+                    }}
+                  >
+                    ← Voltar para login e senha
+                  </button>
+                </div>
               </div>
             )}
 
