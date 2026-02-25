@@ -10,7 +10,7 @@ import {
   CalendarDays,
   Globe,
   Wheat,
-  Beef,
+  Fingerprint,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -258,11 +258,7 @@ export default function PublicItem() {
         <div className="rounded-2xl bg-gradient-to-br from-primary/8 via-background to-primary/4 border border-primary/10 p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              {(item.value_chain || "").toUpperCase().includes("BEEF") || (item.value_chain || "").toLowerCase().includes("bovino") ? (
-                <Beef className="h-7 w-7 text-primary" />
-              ) : (
-                <Wheat className="h-7 w-7 text-primary" />
-              )}
+              <Fingerprint className="h-7 w-7 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground font-mono tracking-tight break-all">
