@@ -78,6 +78,10 @@ export interface PartnerIntakeResponse {
     items_linked: number;
     created_circuits: number;
     circuits_linked: number;
+    partner_reference?: {
+      field: string;
+      value: string;
+    } | null;
   };
   raw_payload_id: string;
   source_circuit_id?: string | null;

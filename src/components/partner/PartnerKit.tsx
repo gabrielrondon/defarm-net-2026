@@ -29,7 +29,8 @@ const RESPONSE_EXAMPLE = `{
     "routed_batches": 1,
     "items_linked": 2,
     "created_circuits": 0,
-    "circuits_linked": 1
+    "circuits_linked": 1,
+    "partner_reference": { "field": "external_id", "value": "cowpro-0001" }
   },
   "raw_payload_id": "uuid",
   "status": "completed",

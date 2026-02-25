@@ -238,9 +238,16 @@ export function PartnerIntake() {
               Último processamento: {lastResult.summary?.status || lastResult.status} · {lastResult.summary?.total_rows ?? lastResult.total_rows} linha(s)
             </p>
             {lastResult.summary ? (
-              <p className="text-[11px] text-muted-foreground">
-                lotes: {lastResult.summary.routed_batches} · itens com link: {lastResult.summary.items_linked} · pendências: {lastResult.summary.unresolved_rows}
-              </p>
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">
+                  lotes: {lastResult.summary.routed_batches} · itens com link: {lastResult.summary.items_linked} · pendências: {lastResult.summary.unresolved_rows}
+                </p>
+                {lastResult.summary.partner_reference ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    referência parceira: {lastResult.summary.partner_reference.field}={lastResult.summary.partner_reference.value}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
             {lastResult.circuit_links?.length ? (
               <div className="space-y-2">
