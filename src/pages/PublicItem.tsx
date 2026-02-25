@@ -15,6 +15,8 @@ import {
   Eye,
   EyeOff,
   Activity,
+  Database,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getPublicItem, getPublicItemEvents } from "@/lib/defarm-api";
@@ -64,6 +66,65 @@ function eventSummary(event: PublicItemEvent): string | null {
   return null;
 }
 
+type TechnicalProof = {
+  eventId: string;
+  createdAt: string;
+  eventType: string;
+  txHash?: string;
+  stellarUrl?: string;
+  network?: string;
+  cid?: string;
+  gatewayUrl?: string;
+  pinStatus?: string;
+};
+
+function readString(record: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function extractTechnicalProof(event: PublicItemEvent): TechnicalProof | null {
+  const anyEvent = event as PublicItemEvent & { metadata?: Record<string, unknown> | null };
+  const payload = (event.payload || {}) as Record<string, unknown>;
+  const metadata = (anyEvent.metadata || {}) as Record<string, unknown>;
+  const merged = { ...metadata, ...payload };
+
+  const txHash = readString(merged, ["transaction_hash", "stellar_tx_hash", "tx_hash"]);
+  const cid = readString(merged, ["ipfs_cid", "content_id", "cid"]);
+  if (!txHash && !cid) return null;
+
+  const stellarUrl = readString(merged, ["stellar_url"]);
+  const gatewayUrl = readString(merged, ["gateway_url", "ipfs_gateway_url"]);
+  const network = readString(merged, ["network", "stellar_network"]);
+  const pinStatus = readString(merged, ["pin_status", "status"]);
+
+  return {
+    eventId: event.id,
+    createdAt: event.created_at,
+    eventType: event.event_type,
+    txHash,
+    stellarUrl,
+    network,
+    cid,
+    gatewayUrl,
+    pinStatus,
+  };
+}
+
+function compactJson(value: unknown): string {
+  if (value === null || value === undefined) return "-";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
 /* ── main component ──────────────────────────── */
 
 export default function PublicItem() {
@@ -94,6 +155,45 @@ export default function PublicItem() {
     }
     return { realEvents: real, operationalEvents: ops };
   }, [events]);
+
+  const technicalProofs = useMemo(() => {
+    const proofs = events
+      .map(extractTechnicalProof)
+      .filter((proof): proof is TechnicalProof => !!proof)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const seenTx = new Set<string>();
+    const seenCid = new Set<string>();
+    const unique: TechnicalProof[] = [];
+    for (const proof of proofs) {
+      const txKey = proof.txHash || "";
+      const cidKey = proof.cid || "";
+      if (txKey && seenTx.has(txKey) && cidKey && seenCid.has(cidKey)) continue;
+      if (txKey && seenTx.has(txKey) && !cidKey) continue;
+      if (!txKey && cidKey && seenCid.has(cidKey)) continue;
+      if (txKey) seenTx.add(txKey);
+      if (cidKey) seenCid.add(cidKey);
+      unique.push(proof);
+    }
+    return unique;
+  }, [events]);
+
+  const visibleMetadataEntries = useMemo(() => {
+    const technicalKeys = new Set([
+      "stellar_tx_hash",
+      "tx_hash",
+      "transaction_hash",
+      "ipfs_cid",
+      "cid",
+      "content_id",
+      "stellar_url",
+      "gateway_url",
+      "ipfs_gateway_url",
+      "blockchain_anchors",
+      "storage_refs",
+    ]);
+    const metadata = (item?.metadata || {}) as Record<string, unknown>;
+    return Object.entries(metadata).filter(([key]) => !technicalKeys.has(key));
+  }, [item?.metadata]);
 
   const visibleEvents = showOperational ? events : realEvents;
 
@@ -187,16 +287,82 @@ export default function PublicItem() {
         </div>
 
         {/* ── metadata ── */}
-        {item.metadata && Object.keys(item.metadata).length > 0 && (
+        {visibleMetadataEntries.length > 0 && (
           <section className="rounded-xl border border-border p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Metadados públicos</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Object.entries(item.metadata).map(([key, value]) => (
+              {visibleMetadataEntries.map(([key, value]) => (
                 <div key={key} className="bg-muted/40 rounded-lg p-3">
                   <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{key.replace(/_/g, " ")}</p>
-                  <p className="text-sm font-medium text-foreground mt-0.5 break-words">
-                    {typeof value === "object" ? JSON.stringify(value) : String(value ?? "-")}
-                  </p>
+                  {typeof value === "object" ? (
+                    <pre className="text-xs text-foreground mt-1 overflow-x-auto whitespace-pre-wrap break-words">
+                      {compactJson(value)}
+                    </pre>
+                  ) : (
+                    <p className="text-sm font-medium text-foreground mt-0.5 break-words">
+                      {String(value ?? "-")}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {technicalProofs.length > 0 && (
+          <section className="rounded-xl border border-border p-5 space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Database className="h-4.5 w-4.5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Provas Técnicas (Stellar + IPFS)</h2>
+                <p className="text-xs text-muted-foreground">
+                  {technicalProofs.length} registro(s) públicos de ancoragem/versionamento
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {technicalProofs.slice(0, 8).map((proof) => (
+                <div key={proof.eventId} className="rounded-lg border border-border bg-muted/20 p-3">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{eventTypeLabels[proof.eventType] || proof.eventType}</span>
+                    <span>·</span>
+                    <span>{formatDateShort(proof.createdAt)}</span>
+                    {proof.network ? (
+                      <>
+                        <span>·</span>
+                        <span>{proof.network}</span>
+                      </>
+                    ) : null}
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {proof.txHash ? (
+                      <a
+                        href={proof.stellarUrl || `https://stellar.expert/explorer/public/tx/${proof.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-mono"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Stellar: {proof.txHash}
+                      </a>
+                    ) : null}
+                    {proof.cid ? (
+                      <a
+                        href={proof.gatewayUrl || `https://gateway.pinata.cloud/ipfs/${proof.cid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-mono"
+                      >
+                        <Link2 className="h-3 w-3" />
+                        IPFS CID: {proof.cid}
+                      </a>
+                    ) : null}
+                    {proof.pinStatus ? (
+                      <p className="text-[11px] text-muted-foreground">Status IPFS: {proof.pinStatus}</p>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
@@ -215,7 +381,7 @@ export default function PublicItem() {
                 <p className="text-xs text-muted-foreground">
                   {realEvents.length} evento{realEvents.length !== 1 ? "s" : ""} de manejo
                   {operationalEvents.length > 0 && (
-                    <span> · {operationalEvents.length} operacional(is)</span>
+                    <span> · {operationalEvents.length} técnico/operacional(is)</span>
                   )}
                 </p>
               </div>
@@ -234,7 +400,7 @@ export default function PublicItem() {
                 ) : (
                   <>
                     <Eye className="h-3.5 w-3.5" />
-                    Mostrar operacionais
+                    Mostrar técnicos
                   </>
                 )}
               </button>

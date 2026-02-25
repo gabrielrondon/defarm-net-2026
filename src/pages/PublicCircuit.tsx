@@ -272,6 +272,9 @@ export default function PublicCircuit() {
               <Package className="h-5 w-5 text-primary" />
               Itens Recentes
             </h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Abra um item para ver timeline completa, hashes Stellar e histórico de CIDs no IPFS.
+            </p>
             <div className="space-y-2">
               {recentItems.map((item: ItemSummary) => (
                 <Link
@@ -293,7 +296,7 @@ export default function PublicCircuit() {
                     </div>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-                    {item.status}
+                    {item.status} · detalhes
                   </span>
                 </Link>
               ))}

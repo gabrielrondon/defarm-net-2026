@@ -18,6 +18,8 @@ import {
   FileCheck,
   Ruler,
   Beef,
+  Database,
+  Link2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,6 +52,11 @@ export const eventTypeLabels: Record<string, string> = {
   property_registered: "Propriedade Registrada",
   property_audited: "Propriedade Auditada",
   property_area_updated: "Área da Propriedade Atualizada",
+  blockchain_anchor_created: "Âncora Blockchain Criada",
+  blockchain_anchor_confirmed: "Âncora Blockchain Confirmada",
+  blockchain_anchor: "Âncora Blockchain",
+  ipfs_upload_completed: "Upload IPFS Concluído",
+  ipfs_upload: "Upload IPFS",
 };
 
 export const eventTypeColors: Record<string, string> = {
@@ -80,6 +87,11 @@ export const eventTypeColors: Record<string, string> = {
   property_registered: "bg-lime-500/10 text-lime-700",
   property_audited: "bg-violet-500/10 text-violet-700",
   property_area_updated: "bg-orange-500/10 text-orange-700",
+  blockchain_anchor_created: "bg-indigo-500/10 text-indigo-700",
+  blockchain_anchor_confirmed: "bg-indigo-500/10 text-indigo-700",
+  blockchain_anchor: "bg-indigo-500/10 text-indigo-700",
+  ipfs_upload_completed: "bg-sky-500/10 text-sky-700",
+  ipfs_upload: "bg-sky-500/10 text-sky-700",
 };
 
 /** Icon per event type for richer timeline */
@@ -111,6 +123,11 @@ export const eventTypeIcons: Record<string, LucideIcon> = {
   property_registered: FileCheck,
   property_audited: FileCheck,
   property_area_updated: Ruler,
+  blockchain_anchor_created: Database,
+  blockchain_anchor_confirmed: Database,
+  blockchain_anchor: Database,
+  ipfs_upload_completed: Link2,
+  ipfs_upload: Link2,
 };
 
 /**
