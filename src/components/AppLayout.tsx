@@ -388,10 +388,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                   Quando houver vínculo confirmado (por propriedade/identificador), o portfólio passa a aparecer
                   automaticamente.
                 </p>
+                <p>
+                  Você pode enviar agora uma solicitação de vínculo de propriedade (claim). Ela entra na fila de
+                  validação do admin.
+                </p>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => navigate("/app/claims")}>
-                  Informar propriedade
+                  Solicitar vínculo de propriedade
                 </Button>
                 <Button onClick={dismissProducerHint}>Entendi</Button>
               </DialogFooter>
