@@ -2200,6 +2200,10 @@ components:
         error_message:
           type: string
           nullable: true
+        item_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerItemLink'
         metadata: {}
         created_at:
           type: string
@@ -2250,6 +2254,7 @@ components:
     PartnerIntakeResponse:
       type: object
       required:
+      - summary
       - raw_payload_id
       - source_circuit_id
       - workspace_id
@@ -2260,6 +2265,8 @@ components:
       - circuit_links
       - status
       properties:
+        summary:
+          $ref: '#/components/schemas/PartnerIntakeSummary'
         raw_payload_id:
           type: string
           format: uuid
@@ -2290,6 +2297,41 @@ components:
             $ref: '#/components/schemas/PartnerCircuitLink'
         status:
           type: string
+    PartnerIntakeSummary:
+      type: object
+      required:
+      - status
+      - total_rows
+      - unresolved_rows
+      - routed_batches
+      - items_linked
+      - created_circuits
+      - circuits_linked
+      properties:
+        status:
+          type: string
+        total_rows:
+          type: integer
+          format: int32
+        unresolved_rows:
+          type: integer
+          format: int32
+        routed_batches:
+          type: integer
+          format: int32
+        items_linked:
+          type: integer
+          format: int32
+        created_circuits:
+          type: integer
+          format: int32
+        circuits_linked:
+          type: integer
+          format: int32
+        partner_reference:
+          allOf:
+          - $ref: '#/components/schemas/PartnerInputReference'
+          nullable: true
     PartnerIntakePreviewPlanItem:
       type: object
       required:
@@ -2372,6 +2414,60 @@ components:
           type: string
         public_url:
           type: string
+    PartnerItemIdentifier:
+      type: object
+      required:
+      - identifier_type
+      - value
+      - is_canonical
+      properties:
+        identifier_type:
+          type: string
+        value:
+          type: string
+        is_canonical:
+          type: boolean
+    PartnerInputReference:
+      type: object
+      required:
+      - field
+      - value
+      properties:
+        field:
+          type: string
+        value:
+          type: string
+    PartnerItemLink:
+      type: object
+      required:
+      - item_id
+      - dfid
+      - circuit_id
+      - app_url
+      - public_url
+      - identifiers
+      - input_references
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        dfid:
+          type: string
+        circuit_id:
+          type: string
+          format: uuid
+        app_url:
+          type: string
+        public_url:
+          type: string
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerItemIdentifier'
+        input_references:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerInputReference'
     RoutingIssueSummary:
       type: object
       required:
@@ -10906,7 +11002,7 @@ paths:
         **CSV Format:**
 
         - Required multipart fields: `file` (CSV) and `circuit_id` (UUID)
-        - Partner template required: `template_id` (UUID) or workspace default template
+        - Template is optional: uses `template_id` when provided; otherwise auto-uses workspace default and falls back to an Official DeFarm template
         - Optional idempotency field: `idempotency_key` for safe retries
 
         - Required CSV columns: value_chain, country
