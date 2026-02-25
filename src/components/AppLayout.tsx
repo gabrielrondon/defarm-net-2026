@@ -120,8 +120,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     if (!isAuthenticated || isLoading || !user) return;
     if (user.is_admin) return;
     if (workspaceType !== "producer") return;
-    const hintKey = `defarm:producer-hint:${user.workspace_id}`;
-    if (localStorage.getItem(hintKey) === "1") return;
     setShowProducerHint(true);
   }, [isAuthenticated, isLoading, user, workspaceType]);
 
@@ -130,12 +128,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     navigate("/");
   };
 
-  const dismissProducerHint = () => {
-    if (user?.workspace_id) {
-      localStorage.setItem(`defarm:producer-hint:${user.workspace_id}`, "1");
-    }
-    setShowProducerHint(false);
-  };
+  const dismissProducerHint = () => setShowProducerHint(false);
 
   const { data: myApprovedJoinRequests = [] } = useQuery({
     queryKey: ["myJoinRequestsApproved"],
@@ -371,7 +364,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          <Dialog open={showProducerHint} onOpenChange={(open) => (!open ? dismissProducerHint() : setShowProducerHint(true))}>
+          <Dialog open={showProducerHint} onOpenChange={setShowProducerHint}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>Bem-vindo à DeFarm</DialogTitle>
@@ -394,7 +387,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </p>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => navigate("/app/claims")}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowProducerHint(false);
+                    navigate("/app/claims");
+                  }}
+                >
                   Solicitar vínculo de propriedade
                 </Button>
                 <Button onClick={dismissProducerHint}>Entendi</Button>
