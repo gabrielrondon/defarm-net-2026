@@ -8,7 +8,7 @@ interface AssetQRCodeProps {
 }
 
 function buildQrUrl(dfid: string, size = 480): string {
-  const publicUrl = `https://ms.defarm.net/${dfid}`;
+  const publicUrl = `https://defarm.net/i/${dfid}`;
   return `https://quickchart.io/qr?text=${encodeURIComponent(publicUrl)}&size=${size}&margin=0&dark=27C268&light=ffffff`;
 }
 
@@ -25,7 +25,7 @@ function DiamondQR({ dfid, size = 120 }: { dfid: string; size?: number }) {
 
 export function AssetQRCode({ dfid, className = "" }: AssetQRCodeProps) {
   const [fullscreen, setFullscreen] = useState(false);
-  const publicUrl = `https://ms.defarm.net/${dfid}`;
+  const publicUrl = `https://defarm.net/i/${dfid}`;
 
   const handleShare = async () => {
     const shareData = {
