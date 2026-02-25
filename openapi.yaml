@@ -49,7 +49,7 @@ info:
   version: 1.0.0
   contact:
     name: DeFarm Support
-    email: support@defarm.com
+    email: contact@defarm.net
 servers:
 - url: https://gateway.defarm.net
   description: Production (Custom Domain)
