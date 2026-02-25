@@ -13,7 +13,7 @@ export function Header() {
   const location = useLocation();
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
-  const ctaHref = isAuthenticated ? "/app/caderneta" : "/onboarding";
+  const ctaHref = isAuthenticated ? "/app/caderneta" : "/login";
 
   const navItems = [
     { name: t("nav.solutions"), href: "/solucoes" },
