@@ -27,6 +27,8 @@ import {
   clearTokens,
   getAccessToken,
   getRefreshToken,
+  GATEWAY_BASE,
+  ApiError,
 } from "./api/client";
 
 export interface LoginRequest {
@@ -132,10 +134,29 @@ export function setStoredUser(user: User): void {
 
 // Auth endpoints (via Gateway)
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  return authRequest<LoginResponse>("/auth/login", {
+  const url = `${GATEWAY_BASE}/auth/login`;
+  const response = await fetch(url, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
+
+  const body = await response.json().catch(() => ({}));
+
+  // Handle 2FA challenge (API may return 401/403 with requires_2fa)
+  if (body.requires_2fa && body.twofa_token) {
+    return body as LoginChallengeResponse;
+  }
+
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      body.error || "AUTH_ERROR",
+      body.message || `Login failed with status ${response.status}`,
+    );
+  }
+
+  return body as AuthResponse;
 }
 
 export async function verifyLogin2FA(twofa_token: string, code: string): Promise<AuthResponse> {
