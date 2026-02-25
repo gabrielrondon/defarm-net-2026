@@ -61,6 +61,11 @@ export interface PartnerIntakeResponse {
   routed_batches: IntakeBatchResult[];
   unresolved_rows: number;
   created_circuits: string[];
+  circuit_links?: {
+    circuit_id: string;
+    app_url: string;
+    public_url: string;
+  }[];
   status: string;
 }
 

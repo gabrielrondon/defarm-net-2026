@@ -2257,6 +2257,7 @@ components:
       - routed_batches
       - unresolved_rows
       - created_circuits
+      - circuit_links
       - status
       properties:
         raw_payload_id:
@@ -2283,7 +2284,25 @@ components:
           items:
             type: string
             format: uuid
+        circuit_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerCircuitLink'
         status:
+          type: string
+    PartnerCircuitLink:
+      type: object
+      required:
+      - circuit_id
+      - app_url
+      - public_url
+      properties:
+        circuit_id:
+          type: string
+          format: uuid
+        app_url:
+          type: string
+        public_url:
           type: string
     RoutingIssueSummary:
       type: object

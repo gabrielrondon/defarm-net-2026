@@ -16,6 +16,19 @@ const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/uploa
   -F "file=@dados.csv" \\
   -F "auto_create_circuit=true"`;
 
+const RESPONSE_EXAMPLE = `{
+  "raw_payload_id": "uuid",
+  "status": "completed",
+  "routed_batches": [ ... ],
+  "circuit_links": [
+    {
+      "circuit_id": "uuid",
+      "app_url": "https://defarm.net/app/circuitos/<uuid>",
+      "public_url": "https://defarm.net/c/<uuid>"
+    }
+  ]
+}`;
+
 const TEMPLATE_API_EXAMPLE = `# 1) Criar template do parceiro (uma vez)
 curl -X POST "https://gateway.defarm.net/api/ingestion/templates" \\
   -H "Authorization: Bearer <JWT_DO_USUARIO_PARCEIRO>" \\
@@ -215,9 +228,18 @@ export function PartnerKit() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Sem template (ou default), o lote é rejeitado com <code className="text-xs bg-muted px-1 py-0.5 rounded">400</code>.
+            Opcional para integrações avançadas. O endpoint <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>
+            já faz detecção automática de colunas sem exigir template.
           </p>
           <pre className="code-block">{TEMPLATE_API_EXAMPLE}</pre>
+        </Card>
+
+        <Card className="p-4 space-y-3">
+          <p className="text-sm font-medium text-foreground">Resposta útil para navegação</p>
+          <p className="text-xs text-muted-foreground">
+            Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">circuit_links</code> para abrir direto os animais/circuitos processados.
+          </p>
+          <pre className="code-block">{RESPONSE_EXAMPLE}</pre>
         </Card>
       </div>
 
@@ -225,11 +247,11 @@ export function PartnerKit() {
       <div>
         <p className="section-label mb-3">Checklist para produção</p>
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside marker:text-muted-foreground/40">
-          <li>Criar template do parceiro (ou marcar template default).</li>
           <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> com circuito de staging.</li>
           <li>Enviar lote CSV/JSON para <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>.</li>
           <li>Resolver pendências em Roteamento.</li>
-          <li>Opcional: usar <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/items/bulk</code> para integração avançada.</li>
+          <li>Abrir <code className="text-xs bg-muted px-1 py-0.5 rounded">circuit_links</code> retornados para ver o portfólio imediatamente.</li>
+          <li>Opcional: usar templates + <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/items/bulk</code> para casos avançados.</li>
         </ol>
         <a href="/app/api-keys" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-3">
           <Link2 className="h-3.5 w-3.5" />

@@ -12,11 +12,12 @@ import {
   listRoutingIssues,
   partnerIntake,
   upsertRoutingRule,
+  type PartnerIntakeResponse,
   type RawPayloadSummary,
   type RoutingIssueSummary,
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
-import { Download, FileUp, Loader2 } from "lucide-react";
+import { Download, ExternalLink, FileUp, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export function PartnerIntake() {
@@ -37,6 +38,7 @@ export function PartnerIntake() {
   const [previewRows, setPreviewRows] = useState(0);
   const [previewResolvable, setPreviewResolvable] = useState(0);
   const [previewUnknown, setPreviewUnknown] = useState(0);
+  const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
 
   const detectIdentifier = (row: Record<string, string>): { type: string; value: string } | null => {
     const read = (...keys: string[]) => keys.map((k) => row[k]).find((v) => (v || "").trim().length > 0) || "";
@@ -173,6 +175,7 @@ export function PartnerIntake() {
     setSending(true);
     try {
       const result = await partnerIntake(file, sourceCircuitId, autoCreate);
+      setLastResult(result);
       toast({
         title: "Intake processado",
         description: `Status: ${result.status}. Lotes roteados: ${result.routed_batches.length}.`,
@@ -267,6 +270,36 @@ export function PartnerIntake() {
                 <p className="text-muted-foreground">Sem identificador: <span className="text-destructive font-medium">{previewUnknown}</span></p>
               </div>
             )}
+          </div>
+        ) : null}
+
+        {lastResult ? (
+          <div className="rounded-lg border p-3 bg-muted/20 space-y-3">
+            <p className="text-xs font-medium text-foreground">
+              Último processamento: {lastResult.status} · {lastResult.total_rows} linha(s)
+            </p>
+            {lastResult.circuit_links?.length ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Links diretos para os circuitos com os itens roteados:
+                </p>
+                {lastResult.circuit_links.map((link) => (
+                  <div key={link.circuit_id} className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={link.app_url} target="_blank" rel="noopener noreferrer">
+                        Abrir no app <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                      </a>
+                    </Button>
+                    <Button size="sm" variant="ghost" asChild>
+                      <a href={link.public_url} target="_blank" rel="noopener noreferrer">
+                        Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                      </a>
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground">{link.circuit_id}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </Card>
