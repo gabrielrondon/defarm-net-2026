@@ -81,17 +81,23 @@ export function ItemHeader({ item }: ItemHeaderProps) {
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    item.status === "Active"
+                    item.status === "Active" || item.status === "active"
                       ? "bg-primary/10 text-primary"
+                      : item.status === "archived" || item.status === "deprecated"
+                      ? "bg-muted text-muted-foreground"
                       : "bg-muted text-muted-foreground"
                   )}
                 >
-                  {item.status === "Active" ? (
+                  {item.status === "Active" || item.status === "active" ? (
                     <CheckCircle2 className="h-3 w-3" />
                   ) : (
                     <XCircle className="h-3 w-3" />
                   )}
-                  {item.status === "Active" ? "Ativo" : item.status}
+                  {item.status === "Active" || item.status === "active"
+                    ? "Vivo"
+                    : item.status === "archived"
+                    ? "Arquivado"
+                    : item.status}
                 </span>
                 <span
                   className={cn(

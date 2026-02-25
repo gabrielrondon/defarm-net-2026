@@ -106,35 +106,12 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
         </div>
       </div>
 
-      {/* Canonical Identifier */}
-      {canonicalIdentifier && (
+      {/* Identifiers (unified: canonical highlighted + others) */}
+      {identifiers.length > 0 && (
         <div className="bg-background border border-border rounded-2xl p-6">
           <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
             <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center">
               <Hash className="h-5 w-5 text-amber-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Identificador Canônico</h2>
-              <p className="text-sm text-muted-foreground">Identificador primário</p>
-            </div>
-          </div>
-          <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
-            <div className="text-xs font-medium text-muted-foreground uppercase mb-1">
-              {canonicalIdentifier.identifier_type}
-            </div>
-            <p className="text-sm font-bold text-foreground font-mono">
-              {canonicalIdentifier.value}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* All Identifiers */}
-      {identifiers.length > 0 && (
-        <div className="bg-background border border-border rounded-2xl p-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-border mb-4">
-            <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
-              <Link2 className="h-5 w-5 text-blue-600" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">Identificadores</h2>
@@ -142,19 +119,32 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
             </div>
           </div>
           <div className="space-y-2">
-            {identifiers.map((ident, i) => (
-              <div key={i} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded-lg">
-                <span className="text-muted-foreground flex items-center gap-1.5">
-                  {ident.is_canonical && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  )}
-                  {ident.identifier_type}
-                </span>
-                <span className="text-foreground font-mono text-xs">
-                  {ident.value.length > 20 ? `${ident.value.slice(0, 20)}...` : ident.value}
-                </span>
-              </div>
-            ))}
+            {identifiers.map((ident, i) => {
+              const isCan = ident.is_canonical || (canonicalIdentifier && ident.value === canonicalIdentifier.value);
+              return (
+                <div
+                  key={i}
+                  className={`p-3 rounded-lg ${
+                    isCan
+                      ? "bg-amber-500/5 border border-amber-500/20"
+                      : "bg-muted/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {isCan && <span className="text-amber-500 text-xs">★</span>}
+                    <span className="text-xs font-medium text-muted-foreground uppercase">
+                      {ident.identifier_type}
+                    </span>
+                    {isCan && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium">
+                        canônico
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-bold text-foreground font-mono">{ident.value}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -199,55 +189,70 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
             </div>
           )}
 
-          {storageRefs.length > 0 && (
+          {/* Unified IPFS / CID History */}
+          {(storageRefs.length > 0 || versions.length > 0) && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                IPFS ({storageRefs.length})
+                Histórico de CIDs ({storageRefs.length + versions.length})
               </h4>
-              {storageRefs.map((ref, i) => (
-                <div key={i} className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{ref.pin_status || "pinned"}</span>
-                    <span className="text-[10px] text-muted-foreground">{formatTime(ref.created_at)}</span>
-                  </div>
-                  <IpfsLink storageRef={ref} />
-                  {ref.size_bytes && (
-                    <p className="text-xs text-muted-foreground">
-                      Tamanho: {(ref.size_bytes / 1024).toFixed(1)} KB
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {versions.length > 0 && (
-            <div className="space-y-2 mt-4">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Histórico de CIDs ({versions.length})
-              </h4>
-              {versions.map((version) => (
-                <div key={version.version} className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      v{version.version} {version.is_latest ? "· latest" : ""}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">{formatTime(version.uploaded_at)}</span>
-                  </div>
-                  <a
-                    href={version.gateway_url || `https://gateway.pinata.cloud/ipfs/${version.cid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-primary hover:underline font-mono truncate"
+              {/* Show versions first (they have version numbers), then storageRefs as fallback */}
+              {versions.length > 0 ? (
+                versions.map((version) => (
+                  <div
+                    key={version.version}
+                    className={`p-3 rounded-lg space-y-1 ${
+                      version.is_latest
+                        ? "bg-primary/5 border border-primary/20"
+                        : "bg-muted/30 border border-border"
+                    }`}
                   >
-                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                    {version.cid}
-                  </a>
-                  <p className="text-xs text-muted-foreground">
-                    {version.storage_type} · {version.is_pinned ? "pinned" : "not pinned"}
-                  </p>
-                </div>
-              ))}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        v{version.version}
+                        {version.is_latest && (
+                          <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                            atual
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{formatTime(version.uploaded_at)}</span>
+                    </div>
+                    <a
+                      href={version.gateway_url || `https://gateway.pinata.cloud/ipfs/${version.cid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-primary hover:underline font-mono truncate"
+                    >
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                      {version.cid}
+                    </a>
+                    <p className="text-xs text-muted-foreground">
+                      {version.storage_type} · {version.is_pinned ? "pinned" : "not pinned"}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                storageRefs.map((ref, i) => (
+                  <div key={i} className={`p-3 rounded-lg space-y-1 ${
+                    i === 0
+                      ? "bg-primary/5 border border-primary/20"
+                      : "bg-muted/30 border border-border"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        {ref.pin_status || "pinned"}
+                        {i === 0 && (
+                          <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                            atual
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{formatTime(ref.created_at)}</span>
+                    </div>
+                    <IpfsLink storageRef={ref} />
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>
