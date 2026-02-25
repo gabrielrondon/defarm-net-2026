@@ -267,6 +267,41 @@ export default function OwnershipClaims() {
                   <div>
                     <p className="font-medium">{claim.identifier_type.toUpperCase()}: {claim.identifier_value}</p>
                     <p className="text-xs text-muted-foreground">User: {claim.user_id} · Workspace: {claim.workspace_id}</p>
+                    {claim.claim_details && (
+                      <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                        <p className="font-medium text-foreground/90">Contexto do claim</p>
+                        {(claim.claim_details.farm_name || claim.claim_details.municipio || claim.claim_details.uf) && (
+                          <p>
+                            {claim.claim_details.farm_name ? `${claim.claim_details.farm_name} · ` : ""}
+                            {claim.claim_details.municipio || "-"}
+                            {claim.claim_details.uf ? `/${claim.claim_details.uf}` : ""}
+                          </p>
+                        )}
+                        {(claim.claim_details.role_no_imovel || claim.claim_details.area_hectares != null) && (
+                          <p>
+                            {claim.claim_details.role_no_imovel ? `Papel: ${claim.claim_details.role_no_imovel}` : ""}
+                            {claim.claim_details.role_no_imovel && claim.claim_details.area_hectares != null ? " · " : ""}
+                            {claim.claim_details.area_hectares != null ? `Área: ${claim.claim_details.area_hectares} ha` : ""}
+                          </p>
+                        )}
+                        {claim.claim_details.telefone_contato && (
+                          <p>Contato: {claim.claim_details.telefone_contato}</p>
+                        )}
+                        {claim.claim_details.documento_comprovante_url && (
+                          <p>
+                            Comprovante:{" "}
+                            <a
+                              href={claim.claim_details.documento_comprovante_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              abrir documento
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => verifyMutation.mutate(claim.id)} disabled={hasPendingMutation}>
