@@ -73,7 +73,7 @@ export function PartnerIntake() {
 
   const formatIssueType = (identifierType: string) => {
     if (identifierType === "unknown") {
-      return "Sem identificador de roteamento (CAR/CPF/CNPJ/INCRA/NIRF/LAND DFID)";
+      return "Sem identificador de roteamento (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF)";
     }
     return identifierType.toUpperCase();
   };

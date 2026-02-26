@@ -16,7 +16,17 @@ export interface RoutingRule {
 }
 
 export interface UpsertRoutingRuleRequest {
-  identifier_type: "car" | "cnpj" | "cpf" | "incra" | "nirf" | "land_dfid";
+  identifier_type:
+    | "car"
+    | "ccir"
+    | "incra"
+    | "nirf"
+    | "cib"
+    | "matricula"
+    | "georef"
+    | "land_dfid"
+    | "cnpj"
+    | "cpf";
   identifier_value: string;
   circuit_id: string;
   notes?: string;

@@ -16,10 +16,16 @@ import { Badge } from "@/components/ui/badge";
 import type { ClaimDetails } from "@/lib/api/types";
 
 const IDENTIFIER_TYPES = [
+  { value: "land_dfid", label: "LAND DFID (propriedade)" },
   { value: "car", label: "CAR" },
-  { value: "cpf", label: "CPF" },
-  { value: "cnpj", label: "CNPJ" },
+  { value: "ccir", label: "CCIR" },
   { value: "incra", label: "INCRA" },
+  { value: "nirf", label: "NIRF" },
+  { value: "cib", label: "CIB" },
+  { value: "matricula", label: "Matrícula (cartório)" },
+  { value: "georef", label: "Georreferência (município/UF)" },
+  { value: "cpf", label: "CPF (legado)" },
+  { value: "cnpj", label: "CNPJ (legado)" },
 ] as const;
 
 const ROLE_OPTIONS: NonNullable<ClaimDetails["role_no_imovel"]>[] = ["proprietario", "arrendatario", "gestor"];
@@ -142,7 +148,7 @@ export default function OwnershipClaims() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Propriedades & Claims</h1>
         <p className="text-muted-foreground mt-1">
-          Registre o identificador da propriedade (CAR/CPF/CNPJ/INCRA) e acompanhe validação.
+          Registre o identificador da propriedade (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF). CPF/CNPJ permanece como modo legado.
         </p>
       </div>
 

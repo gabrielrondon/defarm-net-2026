@@ -1147,7 +1147,17 @@ export interface ListPropertyLinksResponse {
 // --- Ownership Claims ---
 
 export interface SubmitClaimRequest {
-  identifier_type: "car" | "cnpj" | "cpf" | "incra";
+  identifier_type:
+    | "land_dfid"
+    | "car"
+    | "ccir"
+    | "incra"
+    | "nirf"
+    | "cib"
+    | "matricula"
+    | "georef"
+    | "cnpj"
+    | "cpf";
   identifier_value: string;
   notes?: string | null;
   claim_details?: ClaimDetails | null;

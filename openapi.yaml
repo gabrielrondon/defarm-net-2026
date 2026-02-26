@@ -97,9 +97,11 @@ tags:
 - name: Compliance
   description: Compliance checks and external data sources (proxy).
 - name: Ownership Claims
-  description: User-submitted property ownership claims (CAR/CNPJ/CPF/INCRA) and admin verification with auto-circuit surfacing.
+  description: User-submitted property claims (property-first identifiers recommended) and admin verification with auto-circuit surfacing.
 - name: Property Links
   description: Item-to-property provenance annotations forming a custody/movement trail (item_property_links).
+- name: Property Party Roles
+  description: Temporal relationship model between LAND properties and parties (owner/operator/manager).
 components:
   securitySchemes:
     bearerAuth:
@@ -2625,6 +2627,152 @@ components:
           format: uuid
         status:
           type: string
+    CreatePropertyPartyRoleRequest:
+      type: object
+      required:
+      - party_identifier_type
+      - party_identifier_value
+      - role
+      properties:
+        party_identifier_type:
+          type: string
+          enum: [cpf, cnpj]
+        party_identifier_value:
+          type: string
+        role:
+          type: string
+          enum: [owner, operator, manager]
+        property_identifier_type:
+          type: string
+          nullable: true
+          enum: [land_dfid, car, ccir, incra, nirf, cib, matricula, georef]
+        property_identifier_value:
+          type: string
+          nullable: true
+        valid_from:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        evidence_source:
+          type: string
+          nullable: true
+        evidence_ref:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+    ReviewPropertyPartyRoleRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
+    PropertyPartyRoleResponse:
+      type: object
+      required:
+      - id
+      - workspace_id
+      - property_dfid
+      - party_identifier_type
+      - party_identifier_value
+      - role
+      - status
+      - valid_from
+      - metadata
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        property_dfid:
+          type: string
+        property_identifier_type:
+          type: string
+          nullable: true
+        property_identifier_value:
+          type: string
+          nullable: true
+        party_identifier_type:
+          type: string
+        party_identifier_value:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        valid_from:
+          type: string
+        valid_to:
+          type: string
+          nullable: true
+        evidence_source:
+          type: string
+          nullable: true
+        evidence_ref:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        submitted_by:
+          type: string
+          format: uuid
+          nullable: true
+        verified_by:
+          type: string
+          format: uuid
+          nullable: true
+        verified_at:
+          type: string
+          nullable: true
+        rejected_by:
+          type: string
+          format: uuid
+          nullable: true
+        rejected_at:
+          type: string
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
+        ended_by:
+          type: string
+          format: uuid
+          nullable: true
+        ended_at:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    ListPropertyPartyRolesResponse:
+      type: object
+      required:
+      - rows
+      - count
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyPartyRoleResponse'
+        count:
+          type: integer
+          format: int32
     CreateEmbedTokenRequest:
       type: object
       required:
@@ -13470,7 +13618,7 @@ paths:
       tags:
       - Ownership Claims
       summary: Submit property ownership claim
-      description: 'Declare ownership of a rural property via its CAR, CNPJ, CPF, or INCRA number. The claim starts as `pending` and becomes effective only after admin verification. Only `producer` and `certifier` workspace types may submit claims.'
+      description: 'Declare ownership/operation context for a rural property. Preferred identifiers are property-first (`land_dfid`, `car`, `ccir`, `incra`, `nirf`, `cib`, `matricula`, `georef`). Legacy party-only identifiers (`cpf`, `cnpj`) remain accepted for backward compatibility. The claim starts as `pending` and becomes effective only after admin verification. Only `producer` and `certifier` workspace types may submit claims.'
       operationId: submit_ownership_claim
       requestBody:
         required: true
@@ -13482,7 +13630,7 @@ paths:
               properties:
                 identifier_type:
                   type: string
-                  enum: [car, cnpj, cpf, incra]
+                  enum: [land_dfid, car, ccir, incra, nirf, cib, matricula, georef, cnpj, cpf]
                   example: car
                 identifier_value:
                   type: string
@@ -13866,6 +14014,209 @@ paths:
           description: List of item property links
         '401':
           description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/properties/{property_dfid}/parties:
+    post:
+      tags:
+      - Property Party Roles
+      summary: Submit property-party relationship
+      description: Submit pending relationship between a LAND property and a party (owner/operator). Producer and certifier workspaces can submit; admin can review.
+      operationId: create_property_party_role
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePropertyPartyRoleRequest'
+      responses:
+        '201':
+          description: Relationship submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyPartyRoleResponse'
+      security:
+      - bearerAuth: []
+    get:
+      tags:
+      - Property Party Roles
+      summary: List property-party relationships
+      operationId: list_property_party_roles
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Relationship list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPropertyPartyRolesResponse'
+      security:
+      - bearerAuth: []
+  /api/property-party-roles/my:
+    get:
+      tags:
+      - Property Party Roles
+      summary: List my submitted relationships
+      operationId: list_my_property_party_roles
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Relationship list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPropertyPartyRolesResponse'
+      security:
+      - bearerAuth: []
+  /api/admin/property-party-roles/{id}/verify:
+    put:
+      tags:
+      - Property Party Roles
+      summary: Admin verify property-party relationship
+      operationId: admin_verify_property_party_role
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewPropertyPartyRoleRequest'
+      responses:
+        '200':
+          description: Relationship verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyPartyRoleResponse'
+      security:
+      - bearerAuth: []
+  /api/admin/property-party-roles/{id}/reject:
+    put:
+      tags:
+      - Property Party Roles
+      summary: Admin reject property-party relationship
+      operationId: admin_reject_property_party_role
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewPropertyPartyRoleRequest'
+      responses:
+        '200':
+          description: Relationship rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyPartyRoleResponse'
+      security:
+      - bearerAuth: []
+  /api/properties/{property_dfid}/parties/{id}/end:
+    put:
+      tags:
+      - Property Party Roles
+      summary: End property-party relationship
+      operationId: end_property_party_role
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewPropertyPartyRoleRequest'
+      responses:
+        '200':
+          description: Relationship ended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyPartyRoleResponse'
       security:
       - bearerAuth: []
   /api/compliance/check:

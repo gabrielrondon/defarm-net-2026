@@ -13,10 +13,14 @@ import { Copy, ExternalLink, Loader2, Route, Trash2 } from "lucide-react";
 const IDENTIFIERS = [
   { value: "land_dfid", label: "LAND DFID" },
   { value: "car", label: "CAR" },
+  { value: "ccir", label: "CCIR" },
+  { value: "cib", label: "CIB" },
   { value: "cnpj", label: "CNPJ" },
   { value: "cpf", label: "CPF" },
   { value: "incra", label: "INCRA" },
   { value: "nirf", label: "NIRF" },
+  { value: "matricula", label: "MATRÍCULA" },
+  { value: "georef", label: "GEOREF (município/UF ou referência geográfica)" },
 ] as const;
 
 export function PartnerRouting() {
