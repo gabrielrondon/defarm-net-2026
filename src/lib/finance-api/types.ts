@@ -33,7 +33,7 @@ export interface CreditLine {
   eligible_activities?: string[] | null;
   available_regions?: string[] | null;
   source_url?: string | null;
-  data_source: "bcb_api" | "bndes_structured" | "bb_structured" | "caixa_structured" | "santander_agro" | "itau_agro" | "sicredi_coop" | "sicoob_coop" | "brou_api";
+  data_source: "bcb_api" | "bndes_structured" | "bb_structured" | "caixa_structured" | "santander_agro" | "itau_agro" | "sicredi_coop" | "sicoob_coop" | "bnb_fne" | "basa_fno" | "brou_api";
   last_verified_at?: string | null;
   is_active: boolean;
   created_at: string;
