@@ -7,34 +7,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
 import {
+  assignRoutingIssue,
   downloadRawPayload,
   listRawPayloads,
-  listRoutingIssues,
+  listRoutingIssueItems,
   partnerIntake,
   partnerIntakePreview,
-  upsertRoutingRule,
+  resolveRoutingIssue,
   type PartnerIntakeResponse,
   type PartnerIntakePreviewResponse,
   type RawPayloadSummary,
-  type RoutingIssueSummary,
+  type RoutingIssueItem,
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
 import { Download, ExternalLink, FileUp, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function PartnerIntake() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [circuits, setCircuits] = useState<Circuit[]>([]);
   const [sourceCircuitId, setSourceCircuitId] = useState("");
   const [autoCreate, setAutoCreate] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState<RawPayloadSummary[]>([]);
-  const [issues, setIssues] = useState<RoutingIssueSummary[]>([]);
+  const [issues, setIssues] = useState<RoutingIssueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchText, setSearchText] = useState("");
   const [issueTargetCircuitId, setIssueTargetCircuitId] = useState("");
+  const [issueStatusFilter, setIssueStatusFilter] = useState<string>("open,in_review");
+  const [issueAssignedToMe, setIssueAssignedToMe] = useState(false);
   const [issueSavingKey, setIssueSavingKey] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [previewRows, setPreviewRows] = useState(0);
@@ -81,13 +86,15 @@ export function PartnerIntake() {
       const [circuitsData, rawData, issuesData] = await Promise.all([
         getCircuits(),
         listRawPayloads(40),
-        listRoutingIssues(),
+        listRoutingIssueItems({ status: issueStatusFilter, assigned_to_me: issueAssignedToMe, limit: 200 }),
       ]);
       setCircuits(circuitsData);
       setHistory(rawData.rows);
       setIssues(issuesData.issues);
       if (!sourceCircuitId && circuitsData[0]) {
-        const staging = circuitsData.find((c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true");
+        const staging = circuitsData.find(
+          (c) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true"
+        );
         setSourceCircuitId(staging?.id || circuitsData[0].id);
       }
       if (!issueTargetCircuitId && circuitsData[0]) {
@@ -102,7 +109,7 @@ export function PartnerIntake() {
     } finally {
       setLoading(false);
     }
-  }, [toast, sourceCircuitId]);
+  }, [toast, sourceCircuitId, issueTargetCircuitId, issueStatusFilter, issueAssignedToMe]);
 
   useEffect(() => {
     load();
@@ -159,6 +166,18 @@ export function PartnerIntake() {
 
   const completedCount = history.filter((h) => h.status === "completed").length;
   const failedCount = history.filter((h) => h.status === "failed").length;
+  const openIssueCount = issues.filter((i) => i.status === "open").length;
+  const inReviewIssueCount = issues.filter((i) => i.status === "in_review").length;
+
+  const formatIssueReason = (reason: string) => {
+    if (reason === "missing_identifier") return "sem identificador";
+    if (reason === "empty_after_normalization") return "identificador inválido";
+    if (reason === "no_routing_rule") return "sem regra de roteamento";
+    return reason;
+  };
+
+  const canAutoResolveWithRule = (issue: RoutingIssueItem) =>
+    issue.identifier_type !== "unknown" && issue.identifier_value.trim().length > 0;
 
   return (
     <div className="space-y-6">
@@ -430,8 +449,22 @@ export function PartnerIntake() {
       <Card className="p-5 space-y-4">
         <h3 className="text-base font-semibold">Pendências de Roteamento</h3>
         <p className="text-sm text-muted-foreground">
-          Identificadores sem regra de roteamento nos últimos payloads processados.
+          Pendências detectadas no intake. Assuma e resolva com regra para evitar recorrência.
         </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Total listado</p>
+            <p className="text-lg font-semibold">{issues.length}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Abertas</p>
+            <p className="text-lg font-semibold">{openIssueCount}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Em revisão</p>
+            <p className="text-lg font-semibold">{inReviewIssueCount}</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Select value={issueTargetCircuitId} onValueChange={setIssueTargetCircuitId}>
             <SelectTrigger><SelectValue placeholder="Circuito destino para resolução rápida" /></SelectTrigger>
@@ -445,47 +478,86 @@ export function PartnerIntake() {
             Ação rápida: cria regra já vinculando a pendência ao circuito escolhido.
           </p>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Select
+            value={issueStatusFilter}
+            onValueChange={(value) => {
+              setIssueStatusFilter(value);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Status da pendência" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open,in_review">Abertas + em revisão</SelectItem>
+              <SelectItem value="open">Só abertas</SelectItem>
+              <SelectItem value="in_review">Só em revisão</SelectItem>
+              <SelectItem value="resolved">Resolvidas</SelectItem>
+              <SelectItem value="rejected">Rejeitadas</SelectItem>
+            </SelectContent>
+          </Select>
+          <label className="md:col-span-2 flex items-center gap-3 text-sm border rounded-md px-3 py-2">
+            <Switch
+              checked={issueAssignedToMe}
+              onCheckedChange={(checked) => setIssueAssignedToMe(Boolean(checked))}
+              id="issue-assigned-to-me"
+            />
+            <Label htmlFor="issue-assigned-to-me">Mostrar apenas atribuídas para mim</Label>
+          </label>
+        </div>
+        <div>
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Atualizar pendências
+          </Button>
+        </div>
         {issues.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma pendência no momento.</p>
         ) : (
           <div className="space-y-2">
             {issues.map((issue) => (
               <div
-                key={`${issue.identifier_type}:${issue.identifier_value}`}
-                className="rounded-lg border p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+                key={issue.id}
+                className="rounded-lg border p-3 space-y-2"
               >
-                <div>
-                  <p className="font-medium text-sm">{issue.identifier_value}</p>
-                  <p className="text-xs text-muted-foreground">tipo: {formatIssueType(issue.identifier_type)}</p>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-sm">{issue.identifier_value || "(vazio)"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      tipo: {formatIssueType(issue.identifier_type)} · motivo: {formatIssueReason(issue.reason)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      último evento: {new Date(issue.last_seen_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
+                      {issue.occurrences} ocorrência(s)
+                    </span>
+                    <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
+                      {issue.status}
+                    </span>
+                    {issue.assigned_to ? (
+                      <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
+                        atribuída
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
-                    {issue.occurrences} ocorrência(s)
-                  </span>
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={
-                      !issueTargetCircuitId ||
-                      issue.identifier_type === "unknown" ||
-                      !issue.identifier_value ||
-                      issueSavingKey === `${issue.identifier_type}:${issue.identifier_value}`
-                    }
+                    disabled={issueSavingKey === `assign:${issue.id}` || issue.assigned_to === user?.id}
                     onClick={async () => {
-                      const key = `${issue.identifier_type}:${issue.identifier_value}`;
-                      setIssueSavingKey(key);
+                      setIssueSavingKey(`assign:${issue.id}`);
                       try {
-                        await upsertRoutingRule({
-                          identifier_type: issue.identifier_type as any,
-                          identifier_value: issue.identifier_value,
-                          circuit_id: issueTargetCircuitId,
-                        });
-                        toast({ title: "Regra criada", description: "Pendência vinculada ao circuito selecionado." });
+                        await assignRoutingIssue(issue.id, {});
+                        toast({ title: "Pendência assumida", description: "Agora ela está em revisão para seu usuário." });
                         await load();
                       } catch {
                         toast({
-                          title: "Falha ao criar regra",
-                          description: "Não foi possível resolver essa pendência automaticamente.",
+                          title: "Falha ao assumir pendência",
+                          description: "Não foi possível atribuir a pendência.",
                           variant: "destructive",
                         });
                       } finally {
@@ -493,10 +565,76 @@ export function PartnerIntake() {
                       }
                     }}
                   >
-                    {issueSavingKey === `${issue.identifier_type}:${issue.identifier_value}` ? (
+                    {issueSavingKey === `assign:${issue.id}` ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />
                     ) : null}
-                    Criar regra
+                    Assumir
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      !issueTargetCircuitId ||
+                      !canAutoResolveWithRule(issue) ||
+                      !issue.can_resolve ||
+                      issueSavingKey === `resolve:${issue.id}`
+                    }
+                    onClick={async () => {
+                      setIssueSavingKey(`resolve:${issue.id}`);
+                      try {
+                        await resolveRoutingIssue(issue.id, {
+                          resolution_action: "rule_created",
+                          resolution_notes: "Resolvido no Partner Portal",
+                          create_rule: true,
+                          circuit_id: issueTargetCircuitId,
+                        });
+                        toast({ title: "Pendência resolvida", description: "Regra criada e pendência encerrada." });
+                        await load();
+                      } catch {
+                        toast({
+                          title: "Falha ao resolver pendência",
+                          description: "Não foi possível criar regra e resolver automaticamente.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIssueSavingKey(null);
+                      }
+                    }}
+                  >
+                    {issueSavingKey === `resolve:${issue.id}` ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    Resolver com regra
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!issue.can_resolve || issueSavingKey === `resolve-manual:${issue.id}`}
+                    onClick={async () => {
+                      setIssueSavingKey(`resolve-manual:${issue.id}`);
+                      try {
+                        await resolveRoutingIssue(issue.id, {
+                          resolution_action: "manual_resolution",
+                          resolution_notes: "Resolvido manualmente no Partner Portal",
+                          create_rule: false,
+                        });
+                        toast({ title: "Pendência encerrada", description: "Marcada como resolvida manualmente." });
+                        await load();
+                      } catch {
+                        toast({
+                          title: "Falha ao encerrar pendência",
+                          description: "Não foi possível marcar como resolvida.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIssueSavingKey(null);
+                      }
+                    }}
+                  >
+                    {issueSavingKey === `resolve-manual:${issue.id}` ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    Resolver manual
                   </Button>
                 </div>
               </div>

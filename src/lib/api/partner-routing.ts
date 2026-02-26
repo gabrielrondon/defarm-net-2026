@@ -137,6 +137,35 @@ export interface RoutingIssuesResponse {
   count: number;
 }
 
+export interface RoutingIssueItem {
+  id: string;
+  workspace_id: string;
+  raw_payload_id?: string | null;
+  source_circuit_id?: string | null;
+  identifier_type: string;
+  identifier_value: string;
+  reason: string;
+  severity: "low" | "medium" | "high";
+  status: "open" | "in_review" | "resolved" | "rejected";
+  occurrences: number;
+  reported_by?: string | null;
+  assigned_to?: string | null;
+  resolved_by?: string | null;
+  resolved_at?: string | null;
+  resolution_action?: string | null;
+  resolution_notes?: string | null;
+  resolved_rule_id?: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  updated_at: string;
+  can_resolve: boolean;
+}
+
+export interface RoutingIssueItemsResponse {
+  issues: RoutingIssueItem[];
+  count: number;
+}
+
 export interface CreateEmbedTokenRequest {
   circuit_id: string;
   expires_in_minutes?: number;
@@ -255,6 +284,40 @@ export async function downloadRawPayload(
 
 export async function listRoutingIssues(): Promise<RoutingIssuesResponse> {
   return registryRequest<RoutingIssuesResponse>("/partner/ingestion/issues");
+}
+
+export async function listRoutingIssueItems(params?: {
+  status?: string;
+  assigned_to_me?: boolean;
+  limit?: number;
+}): Promise<RoutingIssueItemsResponse> {
+  const query = buildQueryString(params);
+  return registryRequest<RoutingIssueItemsResponse>(`/partner/ingestion/issues/items${query}`);
+}
+
+export async function assignRoutingIssue(
+  issueId: string,
+  payload?: { assigned_to_user_id?: string | null }
+): Promise<{ message: string; issue_id: string; status: string }> {
+  return registryRequest(`/partner/ingestion/issues/${issueId}/assign`, {
+    method: "PATCH",
+    body: JSON.stringify(payload ?? {}),
+  });
+}
+
+export async function resolveRoutingIssue(
+  issueId: string,
+  payload: {
+    resolution_action: string;
+    resolution_notes?: string;
+    create_rule?: boolean;
+    circuit_id?: string;
+  }
+): Promise<{ message: string; issue_id: string; status: string }> {
+  return registryRequest(`/partner/ingestion/issues/${issueId}/resolve`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function createEmbedToken(
