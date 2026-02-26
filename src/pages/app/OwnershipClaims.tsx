@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import type { ClaimDetails } from "@/lib/api/types";
 
 const IDENTIFIER_TYPES = [
   { value: "land_dfid", label: "LAND DFID (propriedade)" },
@@ -33,7 +32,8 @@ const IDENTIFIER_TYPES = [
   { value: "cnpj", label: "CNPJ (legado)" },
 ] as const;
 
-const ROLE_OPTIONS: NonNullable<ClaimDetails["role_no_imovel"]>[] = ["proprietario", "arrendatario", "gestor"];
+type RoleNoImovel = "proprietario" | "arrendatario" | "gestor";
+const ROLE_OPTIONS: RoleNoImovel[] = ["proprietario", "arrendatario", "gestor"];
 const UF_OPTIONS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
   "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
@@ -61,7 +61,7 @@ export default function OwnershipClaims() {
   const [municipio, setMunicipio] = useState("");
   const [uf, setUf] = useState("");
   const [areaHectares, setAreaHectares] = useState("");
-  const [roleNoImovel, setRoleNoImovel] = useState<NonNullable<ClaimDetails["role_no_imovel"] | "">("");
+  const [roleNoImovel, setRoleNoImovel] = useState<RoleNoImovel | "">("");
   const [telefoneContato, setTelefoneContato] = useState("");
   const [documentoComprovanteUrl, setDocumentoComprovanteUrl] = useState("");
   const [propertyDfid, setPropertyDfid] = useState("");
@@ -306,7 +306,7 @@ export default function OwnershipClaims() {
             <select
               className="h-10 px-3 rounded-md border border-input bg-background"
               value={roleNoImovel}
-              onChange={(e) => setRoleNoImovel(e.target.value as NonNullable<ClaimDetails["role_no_imovel"]>)}
+              onChange={(e) => setRoleNoImovel(e.target.value as RoleNoImovel)}
             >
               <option value="">Papel no imóvel (opcional)</option>
               {ROLE_OPTIONS.map((value) => (
