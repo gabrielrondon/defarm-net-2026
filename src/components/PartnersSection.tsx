@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import esalqtecLogo from "@/assets/partners/esalqtec.png";
 import stellarLogo from "@/assets/partners/stellar.png";
 import rbbLogo from "@/assets/partners/rbb.png";
+import cowproLogo from "@/assets/partners/cowpro.png";
 import {
   Tooltip,
   TooltipContent,
@@ -13,6 +14,7 @@ const partners = [
   { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: undefined },
   { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined },
   { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net" },
+  { name: "Cow Pro", logo: cowproLogo, relationKey: "cowpro" as const, url: undefined },
 ];
 
 export function PartnersSection() {
