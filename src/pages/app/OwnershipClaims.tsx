@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import { CheckCircle2, Link2, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import {
   adminListOwnershipClaims,
   adminRejectOwnershipClaim,
   adminVerifyOwnershipClaim,
+  adminListPropertyPartyRoles,
+  adminRejectPropertyPartyRole,
+  adminVerifyPropertyPartyRole,
+  createPropertyPartyRole,
+  listMyPropertyPartyRoles,
   listMyOwnershipClaims,
   submitOwnershipClaim,
 } from "@/lib/defarm-api";
@@ -34,6 +39,17 @@ const UF_OPTIONS = [
   "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
 ] as const;
 
+const PARTY_TYPE_OPTIONS = [
+  { value: "cpf", label: "CPF" },
+  { value: "cnpj", label: "CNPJ" },
+] as const;
+
+const PROPERTY_PARTY_ROLE_OPTIONS = [
+  { value: "owner", label: "Proprietário legal" },
+  { value: "operator", label: "Operador / Produtor" },
+  { value: "manager", label: "Gestor" },
+] as const;
+
 export default function OwnershipClaims() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -48,6 +64,11 @@ export default function OwnershipClaims() {
   const [roleNoImovel, setRoleNoImovel] = useState<NonNullable<ClaimDetails["role_no_imovel"] | "">("");
   const [telefoneContato, setTelefoneContato] = useState("");
   const [documentoComprovanteUrl, setDocumentoComprovanteUrl] = useState("");
+  const [propertyDfid, setPropertyDfid] = useState("");
+  const [partyType, setPartyType] = useState<(typeof PARTY_TYPE_OPTIONS)[number]["value"]>("cpf");
+  const [partyValue, setPartyValue] = useState("");
+  const [propertyPartyRole, setPropertyPartyRole] = useState<(typeof PROPERTY_PARTY_ROLE_OPTIONS)[number]["value"]>("owner");
+  const [propertyPartyNotes, setPropertyPartyNotes] = useState("");
 
   const isAdmin = !!user?.is_admin;
   const workspaceType = user?.workspace_type || "producer";
@@ -61,6 +82,17 @@ export default function OwnershipClaims() {
   const adminClaimsQuery = useQuery({
     queryKey: ["admin-claims"],
     queryFn: () => adminListOwnershipClaims({ status: "pending", limit: 200 }),
+    enabled: isAdmin,
+  });
+
+  const myPropertyPartyQuery = useQuery({
+    queryKey: ["my-property-party-roles"],
+    queryFn: () => listMyPropertyPartyRoles({ limit: 100, active_only: false }),
+  });
+
+  const adminPropertyPartyQuery = useQuery({
+    queryKey: ["admin-property-party-roles"],
+    queryFn: () => adminListPropertyPartyRoles({ status: "pending", limit: 200, active_only: false }),
     enabled: isAdmin,
   });
 
@@ -118,6 +150,66 @@ export default function OwnershipClaims() {
     },
   });
 
+  const submitPropertyPartyMutation = useMutation({
+    mutationFn: () =>
+      createPropertyPartyRole(propertyDfid.trim(), {
+        party_identifier_type: partyType,
+        party_identifier_value: partyValue.trim(),
+        role: propertyPartyRole,
+        notes: propertyPartyNotes.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setPropertyDfid("");
+      setPartyValue("");
+      setPropertyPartyNotes("");
+      queryClient.invalidateQueries({ queryKey: ["my-property-party-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-property-party-roles"] });
+      toast({
+        title: "Vínculo enviado",
+        description: "Relação propriedade↔parte registrada como pendente para validação.",
+      });
+    },
+    onError: (err) => {
+      toast({
+        title: "Falha ao criar vínculo",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyPropertyPartyMutation = useMutation({
+    mutationFn: (id: string) => adminVerifyPropertyPartyRole(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-property-party-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["my-property-party-roles"] });
+      toast({ title: "Vínculo verificado" });
+    },
+    onError: (err) => {
+      toast({
+        title: "Falha ao verificar vínculo",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectPropertyPartyMutation = useMutation({
+    mutationFn: (id: string) => adminRejectPropertyPartyRole(id, { rejection_reason: "Rejeitado pelo admin" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-property-party-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["my-property-party-roles"] });
+      toast({ title: "Vínculo rejeitado" });
+    },
+    onError: (err) => {
+      toast({
+        title: "Falha ao rejeitar vínculo",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const rejectMutation = useMutation({
     mutationFn: (id: string) => adminRejectOwnershipClaim(id, "Rejeitado pelo admin"),
     onSuccess: () => {
@@ -136,7 +228,15 @@ export default function OwnershipClaims() {
 
   const myClaims = myClaimsQuery.data?.claims || [];
   const pendingAdmin = adminClaimsQuery.data?.claims || [];
-  const hasPendingMutation = submitMutation.isPending || verifyMutation.isPending || rejectMutation.isPending;
+  const myPropertyParty = myPropertyPartyQuery.data?.rows || [];
+  const pendingPropertyPartyAdmin = adminPropertyPartyQuery.data?.rows || [];
+  const hasPendingMutation =
+    submitMutation.isPending ||
+    verifyMutation.isPending ||
+    rejectMutation.isPending ||
+    submitPropertyPartyMutation.isPending ||
+    verifyPropertyPartyMutation.isPending ||
+    rejectPropertyPartyMutation.isPending;
 
   const sortedMyClaims = useMemo(
     () => [...myClaims].sort((a, b) => b.created_at.localeCompare(a.created_at)),
@@ -222,6 +322,62 @@ export default function OwnershipClaims() {
         </section>
       )}
 
+      {canSubmit && (
+        <section className="bg-background border border-border rounded-xl p-4 space-y-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Link2 className="h-5 w-5" /> Vínculo Propriedade ↔ Parte (novo modelo)
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Registre quem é o titular/operador de uma propriedade LAND. Isso reduz ambiguidade entre CAR/CPF/CNPJ.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <Input
+              placeholder="DFID-LAND-..."
+              value={propertyDfid}
+              onChange={(e) => setPropertyDfid(e.target.value)}
+              className="md:col-span-2"
+            />
+            <select
+              className="h-10 px-3 rounded-md border border-input bg-background"
+              value={partyType}
+              onChange={(e) => setPartyType(e.target.value as (typeof PARTY_TYPE_OPTIONS)[number]["value"])}
+            >
+              {PARTY_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <Input placeholder="CPF/CNPJ" value={partyValue} onChange={(e) => setPartyValue(e.target.value)} />
+            <select
+              className="h-10 px-3 rounded-md border border-input bg-background"
+              value={propertyPartyRole}
+              onChange={(e) => setPropertyPartyRole(e.target.value as (typeof PROPERTY_PARTY_ROLE_OPTIONS)[number]["value"])}
+            >
+              {PROPERTY_PARTY_ROLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <Input
+              placeholder="Observações (opcional)"
+              value={propertyPartyNotes}
+              onChange={(e) => setPropertyPartyNotes(e.target.value)}
+              className="md:col-span-4"
+            />
+            <Button
+              onClick={() => submitPropertyPartyMutation.mutate()}
+              disabled={!propertyDfid.trim() || !partyValue.trim() || hasPendingMutation}
+            >
+              {submitPropertyPartyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar vínculo"}
+            </Button>
+          </div>
+        </section>
+      )}
+
       <section className="bg-background border border-border rounded-xl p-4 space-y-3">
         <h2 className="text-lg font-semibold">Meus claims</h2>
         {myClaimsQuery.isLoading ? (
@@ -248,6 +404,43 @@ export default function OwnershipClaims() {
                 </div>
                 <Badge variant={claim.status === "verified" ? "default" : claim.status === "rejected" ? "destructive" : "secondary"}>
                   {claim.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="bg-background border border-border rounded-xl p-4 space-y-3">
+        <h2 className="text-lg font-semibold">Meus vínculos Propriedade ↔ Parte</h2>
+        {myPropertyPartyQuery.isLoading ? (
+          <div className="py-6 flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+          </div>
+        ) : myPropertyParty.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum vínculo enviado.</p>
+        ) : (
+          <div className="space-y-2">
+            {myPropertyParty.map((row) => (
+              <div key={row.id} className="border border-border rounded-lg p-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">{row.property_dfid}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {row.party_identifier_type.toUpperCase()}: {row.party_identifier_value} · papel: {row.role}
+                  </p>
+                </div>
+                <Badge
+                  variant={
+                    row.status === "verified"
+                      ? "default"
+                      : row.status === "rejected"
+                        ? "destructive"
+                        : row.status === "ended"
+                          ? "outline"
+                          : "secondary"
+                  }
+                >
+                  {row.status}
                 </Badge>
               </div>
             ))}
@@ -314,6 +507,45 @@ export default function OwnershipClaims() {
                       <CheckCircle2 className="h-4 w-4 mr-1" /> Verificar
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => rejectMutation.mutate(claim.id)} disabled={hasPendingMutation}>
+                      <XCircle className="h-4 w-4 mr-1" /> Rejeitar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {isAdmin && (
+        <section className="bg-background border border-border rounded-xl p-4 space-y-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5" /> Admin: vínculos pendentes Propriedade ↔ Parte
+          </h2>
+          {adminPropertyPartyQuery.isLoading ? (
+            <div className="py-6 flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+            </div>
+          ) : pendingPropertyPartyAdmin.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum vínculo pendente.</p>
+          ) : (
+            <div className="space-y-2">
+              {pendingPropertyPartyAdmin.map((row) => (
+                <div key={row.id} className="border border-border rounded-lg p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{row.property_dfid}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {row.party_identifier_type.toUpperCase()}: {row.party_identifier_value} · papel: {row.role}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Workspace: {row.workspace_id} · Submetido em {new Date(row.created_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => verifyPropertyPartyMutation.mutate(row.id)} disabled={hasPendingMutation}>
+                      <CheckCircle2 className="h-4 w-4 mr-1" /> Verificar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => rejectPropertyPartyMutation.mutate(row.id)} disabled={hasPendingMutation}>
                       <XCircle className="h-4 w-4 mr-1" /> Rejeitar
                     </Button>
                   </div>

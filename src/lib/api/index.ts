@@ -19,6 +19,7 @@ export * from "./canonical-identifiers";
 export * from "./anchors";
 export * from "./ownership-claims";
 export * from "./property-links";
+export * from "./property-party-roles";
 export * from "./search-analytics";
 export * from "./ingestion-templates";
 export * from "./partner-routing";

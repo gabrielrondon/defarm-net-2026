@@ -14130,6 +14130,52 @@ paths:
                 $ref: '#/components/schemas/ListPropertyPartyRolesResponse'
       security:
       - bearerAuth: []
+  /api/admin/property-party-roles:
+    get:
+      tags:
+      - Property Party Roles
+      summary: Admin list property-party relationships
+      operationId: admin_list_property_party_roles
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: property_dfid
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Relationship list for admin queue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPropertyPartyRolesResponse'
+      security:
+      - bearerAuth: []
   /api/admin/property-party-roles/{id}/verify:
     put:
       tags:
