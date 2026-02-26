@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const partners = [
-  { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: undefined },
+  { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: "https://esalqtec.com.br/incubadas-e-associadas/" },
   { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined },
   { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net" },
   { name: "Cow Pro", logo: cowproLogo, relationKey: "cowpro" as const, url: undefined },
