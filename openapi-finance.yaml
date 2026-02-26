@@ -2,17 +2,22 @@ openapi: 3.0.3
 
 info:
   title: DeFarm Finance API
-  version: 1.0.0
+  version: 2.0.0
+  x-last-updated: 2026-02-18
   description: |
     # DeFarm Finance API - Agricultural Financing Platform
 
-    **Comprehensive API for agricultural financing in Brazil**
+    **Comprehensive API for agricultural financing in Brazil and Uruguay (multi-country: BR + UY)**
 
     This API provides access to agricultural credit lines from multiple sources including:
     - 🏦 **BCB SICOR** - Banco Central do Brasil agricultural credit data
     - 🌾 **Pronaf** - Family farming financing program
     - 🚜 **Pronamp** - Medium-scale producer financing
     - 🏢 **Public and Private Banks** - Various financial institutions
+    - 🇺🇾 **BROU** - Banco República Oriental del Uruguay (9 agricultural programs)
+    - 📊 **BCU** - Banco Central del Uruguay (TPM, IPC, USD/UYU indicators)
+
+    **Multi-Country Support**: This API serves both Brazil (BR) and Uruguay (UY). Use the `country` query parameter to filter by country. Defaults to BR for backwards compatibility.
 
     ## Features
 
@@ -69,7 +74,7 @@ info:
 
 servers:
   - url: https://finance-go-production.up.railway.app
-    description: Production server
+    description: Production (Railway) — Brazil + Uruguay
   - url: http://localhost:3000
     description: Local development
 
@@ -185,6 +190,20 @@ paths:
       tags:
         - Credit Lines
       parameters:
+        - name: data_source
+          in: query
+          description: Filter by upstream source identifier
+          schema:
+            type: string
+            enum:
+              - bcb_api
+              - bndes_structured
+              - bb_structured
+              - caixa_structured
+              - santander_agro
+              - itau_agro
+              - brou_api
+          example: bndes_structured
         - name: program_type
           in: query
           description: Type of financing program
@@ -283,6 +302,18 @@ paths:
             maximum: 100
             default: 20
           example: 20
+        - name: country
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [BR, UY]
+            default: BR
+          description: |
+            Country code filter (ISO 3166-1 alpha-2).
+            Defaults to BR for backwards compatibility.
+            - BR: Brazil (52+ credit lines from BCB, BNDES, BB, Caixa, Itaú, Santander)
+            - UY: Uruguay (9 BROU programs)
       responses:
         '200':
           description: Successful response with credit lines
@@ -320,6 +351,7 @@ paths:
                     available_regions: ["RS", "SP", "MG"]
                     data_source: "bcb_api"
                     is_active: true
+                    country: "BR"
                 pagination:
                   total: 9
                   page: 1
@@ -919,10 +951,10 @@ paths:
         - name: ids
           in: query
           required: true
-          description: Comma-separated list of credit line UUIDs to compare
           schema:
             type: string
-          example: "a1f3e781-7f36-49dc-986d-00eb4391bd08,a8a7fe68-3360-49e6-a82b-d652d79e7711"
+          description: Comma-separated list of credit line UUIDs to compare (e.g. "uuid1,uuid2")
+          example: "a5a9a962-2112-42d8-909b-e7062d121bbe,ad2b4bc5-5da7-497c-b4dd-efcbdb944a28"
         - name: start_date
           in: query
           required: false
@@ -1062,6 +1094,91 @@ paths:
                   - "organic_farming"
                   - "family_farming"
 
+  /api/v1/metadata/sources:
+    get:
+      summary: List Data Sources
+      description: |
+        Catalog of credit line data sources with freshness and latest sync status.
+        Use this endpoint to verify source health and drift by country.
+      tags:
+        - Metadata
+      parameters:
+        - name: country
+          in: query
+          description: Optional country filter (BR, UY)
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 2
+          example: BR
+      responses:
+        '200':
+          description: Source catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  country_filter:
+                    type: string
+                    nullable: true
+                  total_sources:
+                    type: integer
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        data_source:
+                          type: string
+                        sync_sources:
+                          type: array
+                          items:
+                            type: string
+                        expected_frequency:
+                          type: string
+                          example: weekly
+                        stale_after_hours:
+                          type: integer
+                          example: 192
+                        total_records:
+                          type: integer
+                        last_verified_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        last_sync_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        sync_success_rate:
+                          type: number
+                          format: float
+                          nullable: true
+                        health_status:
+                          type: string
+                          enum: [healthy, stale, down]
+                        staleness_hours:
+                          type: number
+                          format: float
+                        latest_sync_status:
+                          type: array
+                          items:
+                            type: string
+                        country_stats:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              country:
+                                type: string
+                              record_count:
+                                type: integer
+                              last_verified_at:
+                                type: string
+                                format: date-time
+                                nullable: true
+
   /api/v1/metadata/states:
     get:
       summary: List Brazilian States
@@ -1117,17 +1234,27 @@ paths:
     get:
       summary: Get Current Market Indicators
       description: |
-        Retrieve latest values for all Brazilian market economic indicators tracked by the system.
+        Retrieve latest values for all market economic indicators tracked by the system (Brazil and Uruguay).
 
-        Currently tracking three key indicators from Banco Central do Brasil (BCB):
+        Currently tracking indicators from multiple central banks:
+
+        **Brazil (BCB - Banco Central do Brasil):**
         - **CDI** (Certificado de Depósito Interbancário) - Interbank deposit rate
         - **SELIC** (Sistema Especial de Liquidação e Custódia) - Base interest rate
         - **IPCA** (Índice Nacional de Preços ao Consumidor Amplo) - Consumer price index
+
+        **Uruguay (BCU - Banco Central del Uruguay):**
+        - **TPM** (Tasa de Política Monetaria) - Uruguay's monetary policy rate (~8.75%)
+        - **IPC** (Índice de Precios al Consumo) - Uruguay inflation rate
+        - **USD_UYU** - Official USD/Uruguayan Peso exchange rate via BCU SOAP
 
         **What Are These Indicators?**
         - **CDI**: Daily rate used as benchmark for investments and loans. Very close to SELIC.
         - **SELIC**: Brazil's base interest rate, set by the Central Bank. Influences all other rates.
         - **IPCA**: Official inflation measure. Used to calculate real returns and adjust credit rates.
+        - **TPM**: Uruguay's benchmark monetary policy rate, set by BCU.
+        - **IPC**: Uruguay's consumer price index, used to track inflation.
+        - **USD_UYU**: Official exchange rate between USD and Uruguayan Peso (UYU).
 
         **Use Cases:**
         - **Rate Benchmarking**: Compare credit line rates against CDI/SELIC to assess competitiveness
@@ -1183,21 +1310,42 @@ paths:
               example:
                 indicators:
                   - indicator_type: "CDI"
-                    rate_value: 13.65
+                    rate_value: 0.5
                     reference_date: "2026-02-05"
                     recorded_at: "2026-02-06T08:30:00Z"
                     source: "BCB API 4391"
+                    country: "BR"
                   - indicator_type: "SELIC"
-                    rate_value: 13.75
+                    rate_value: 0.0551
                     reference_date: "2026-02-05"
                     recorded_at: "2026-02-06T08:30:00Z"
                     source: "BCB API 11"
+                    country: "BR"
                   - indicator_type: "IPCA"
-                    rate_value: 4.83
+                    rate_value: 0.33
                     reference_date: "2026-01-31"
                     recorded_at: "2026-02-06T08:30:00Z"
                     source: "BCB API 433"
-                total: 3
+                    country: "BR"
+                  - indicator_type: "TPM"
+                    rate_value: 8.75
+                    reference_date: "2026-02-05"
+                    recorded_at: "2026-02-06T08:30:00Z"
+                    source: "BCU - Banco Central del Uruguay"
+                    country: "UY"
+                  - indicator_type: "IPC"
+                    rate_value: 5.1
+                    reference_date: "2026-01-31"
+                    recorded_at: "2026-02-06T08:30:00Z"
+                    source: "INE - Instituto Nacional de Estadística Uruguay"
+                    country: "UY"
+                  - indicator_type: "USD_UYU"
+                    rate_value: 38.841
+                    reference_date: "2026-02-05"
+                    recorded_at: "2026-02-06T08:30:00Z"
+                    source: "BCU - Banco Central del Uruguay"
+                    country: "UY"
+                total: 6
         '500':
           description: Failed to retrieve current indicators
           content:
@@ -2123,6 +2271,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /api/v1/instruments/lca:
+    get:
+      summary: List Available LCAs
+      description: Alias for /api/v1/instruments/lca/list — returns same result.
+      operationId: listLCAsRoot
+      tags: [Instruments]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of LCA instruments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LCAListResponse'
 
   /api/v1/instruments/cra/list:
     get:
@@ -4315,6 +4488,8 @@ paths:
       tags:
         - Admin
         - Market Indicators
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Market indicators synced successfully
@@ -4352,6 +4527,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4378,6 +4555,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4404,6 +4583,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4430,6 +4611,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4454,6 +4637,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4467,6 +4652,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4480,6 +4667,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4493,6 +4682,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync started successfully
@@ -4508,6 +4699,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: All syncs started successfully
@@ -4521,9 +4714,128 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: All instrument syncs started successfully
+
+  /api/v1/admin/sync-brou:
+    post:
+      summary: Sync BROU credit lines (Uruguay)
+      description: |
+        Triggers synchronization of BROU (Banco República Oriental del Uruguay) credit line programs.
+        Syncs 9 agricultural credit programs in USD.
+        Runs asynchronously in background.
+      operationId: syncBROUData
+      tags: [Admin]
+      security:
+        - AdminAPIKey: []
+      responses:
+        '200':
+          description: Sync started
+          content:
+            application/json:
+              example:
+                status: processing
+                message: "BROU data sync started (Uruguay)"
+                country: UY
+                source: "Banco República Oriental del Uruguay"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: Admin access not configured (ADMIN_API_KEY not set)
+
+  /api/v1/admin/sync-bcu-indicators:
+    post:
+      summary: Sync BCU market indicators (Uruguay)
+      description: |
+        Triggers synchronization of BCU (Banco Central del Uruguay) market indicators:
+        - TPM (Tasa de Política Monetaria) — Uruguay's monetary policy rate (~8.75%)
+        - IPC (Índice de Precios al Consumo) — Uruguay inflation rate
+        - USD_UYU — Official USD/Uruguayan Peso exchange rate via BCU SOAP
+      operationId: syncBCUIndicators
+      tags: [Admin]
+      security:
+        - AdminAPIKey: []
+      responses:
+        '200':
+          description: Sync started
+          content:
+            application/json:
+              example:
+                status: processing
+                message: "BCU market indicators sync started (Uruguay)"
+                country: UY
+                indicators: [TPM, IPC, USD_UYU]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/sync-uruguay:
+    post:
+      summary: Sync all Uruguay data sources
+      description: Triggers sync of both BROU credit lines and BCU market indicators.
+      operationId: syncUruguayData
+      tags: [Admin]
+      security:
+        - AdminAPIKey: []
+      responses:
+        '200':
+          description: Sync started
+          content:
+            application/json:
+              example:
+                status: processing
+                country: UY
+                sources: [BROU, BCU]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/scheduler/jobs:
+    get:
+      summary: List scheduled jobs
+      description: Returns all configured scheduler jobs with their next run times.
+      operationId: getSchedulerJobs
+      tags: [Admin]
+      security:
+        - AdminAPIKey: []
+      responses:
+        '200':
+          description: List of scheduler jobs
+          content:
+            application/json:
+              example:
+                total: 11
+                enabled: true
+                jobs:
+                  - name: brou_sync
+                    tags: [data_sync, brou, uruguay]
+                    next_run: "2026-02-23T03:00:00Z"
+                  - name: bcu_indicators_sync
+                    tags: [data_sync, market_indicators, bcu, uruguay]
+                    next_run: "2026-02-19T06:30:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/scheduler/run:
+    post:
+      summary: Manually trigger a scheduled job
+      operationId: runScheduledJob
+      tags: [Admin]
+      security:
+        - AdminAPIKey: []
+      parameters:
+        - name: job_name
+          in: query
+          required: true
+          schema:
+            type: string
+          example: brou_sync
+      responses:
+        '200':
+          description: Job triggered
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /api/v1/admin/sync-status:
     get:
@@ -4536,6 +4848,8 @@ paths:
         **Note**: This endpoint should be protected with admin authentication in production.
       tags:
         - Admin
+      security:
+        - AdminAPIKey: []
       responses:
         '200':
           description: Sync status retrieved successfully
@@ -4551,10 +4865,10 @@ paths:
                       properties:
                         source_name:
                           type: string
-                          example: "itau_programs"
+                          example: "itau_agro"
                         status:
                           type: string
-                          enum: [pending, running, success, failed, completed]
+                          enum: [pending, running, success, failed, completed, partial]
                           example: "completed"
                         records_processed:
                           type: integer
@@ -4570,6 +4884,16 @@ paths:
                           example: ""
 
 components:
+  responses:
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+
   securitySchemes:
     BearerAuth:
       type: http
@@ -4587,6 +4911,15 @@ components:
 
         Token contains: user_id, email, user_type
         Valid for: 24 hours
+
+    AdminAPIKey:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Admin API key for protected admin endpoints.
+        Format: `Authorization: Bearer <ADMIN_API_KEY>`
+        Set the ADMIN_API_KEY environment variable in Railway to enable.
 
   schemas:
     # ========== MARKETPLACE SCHEMAS ==========
@@ -5473,17 +5806,15 @@ components:
           description: Original source URL for this credit line information
         data_source:
           type: string
-          description: |
-            Source of data:
-            - `bcb_api`: Banco Central do Brasil API
-            - `bndes_api`: BNDES API
-            - `web_scraping`: Scraped from institution website
-            - `manual`: Manually entered
+          description: Canonical source identifier for this credit line
           enum:
             - bcb_api
-            - bndes_api
-            - web_scraping
-            - manual
+            - bndes_structured
+            - bb_structured
+            - caixa_structured
+            - santander_agro
+            - itau_agro
+            - brou_api
           example: "bcb_api"
         last_verified_at:
           type: string
@@ -5643,3 +5974,43 @@ components:
           type: string
           description: Error message describing what went wrong
           example: "Invalid credit line ID"
+
+    LCAListResponse:
+      type: object
+      description: Response containing a list of LCA instruments
+      properties:
+        total:
+          type: integer
+          description: Total number of LCAs returned
+        lcas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              issuer:
+                type: string
+                description: Bank name
+              product_name:
+                type: string
+              min_investment:
+                type: number
+              interest_type:
+                type: string
+                enum: [pre, pos, hybrid]
+              annual_rate:
+                type: number
+                nullable: true
+              index_type:
+                type: string
+                nullable: true
+              index_percentage:
+                type: number
+                nullable: true
+              maturity_months:
+                type: integer
+              last_updated:
+                type: string
+                format: date-time

@@ -33,7 +33,14 @@ export interface CreditLine {
   eligible_activities?: string[] | null;
   available_regions?: string[] | null;
   source_url?: string | null;
-  data_source: "bcb_api" | "bndes_api" | "web_scraping" | "manual";
+  data_source:
+    | "bcb_api"
+    | "bndes_structured"
+    | "bb_structured"
+    | "caixa_structured"
+    | "santander_agro"
+    | "itau_agro"
+    | "brou_api";
   last_verified_at?: string | null;
   is_active: boolean;
   created_at: string;
@@ -46,6 +53,8 @@ export interface PaginatedCreditLines {
 }
 
 export interface CreditLineFilters {
+  country?: string;
+  data_source?: CreditLine["data_source"];
   program_type?: string;
   target_audience?: string;
   min_amount?: number;
@@ -57,6 +66,33 @@ export interface CreditLineFilters {
   sort?: string;
   page?: number;
   limit?: number;
+}
+
+export interface SourceCatalogCountryStats {
+  country: string;
+  record_count: number;
+  last_verified_at?: string | null;
+}
+
+export interface SourceCatalogItem {
+  data_source: CreditLine["data_source"];
+  sync_sources: string[];
+  expected_frequency?: string;
+  stale_after_hours?: number;
+  total_records: number;
+  last_verified_at?: string | null;
+  last_sync_at?: string | null;
+  sync_success_rate?: number;
+  health_status?: "healthy" | "stale" | "down";
+  staleness_hours?: number;
+  latest_sync_status?: string[];
+  country_stats: SourceCatalogCountryStats[];
+}
+
+export interface SourceCatalogResponse {
+  country_filter?: string | null;
+  total_sources: number;
+  sources: SourceCatalogItem[];
 }
 
 export interface UserProfile {
