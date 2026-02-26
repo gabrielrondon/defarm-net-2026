@@ -15,6 +15,7 @@ import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
 import Privacidade from "./pages/Privacidade";
 import Termos from "./pages/Termos";
+import LogoPack from "./pages/LogoPack";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
 import EsqueciSenha from "./pages/EsqueciSenha";
@@ -158,6 +159,7 @@ const App = () => (
             <Route path="/contato" element={<Contato />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/termos" element={<Termos />} />
+            <Route path="/logo-pack" element={<LogoPack />} />
             <Route path="/c/:id" element={<PublicCircuit />} />
             <Route path="/i/:dfid" element={<PublicItem />} />
             <Route path="/embed/portfolio" element={<EmbedPortfolio />} />

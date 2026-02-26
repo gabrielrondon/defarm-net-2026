@@ -113,9 +113,22 @@
     "company": "Company",
     "aboutUs": "About Us",
     "contact": "Contact",
+    "logoPack": "Logo Pack",
     "rights": "© 2026 DeFarm. All rights reserved.",
     "privacy": "Privacy Policy",
     "terms": "Terms of Use"
+  },
+  "logopack": {
+    "title": "Logo Pack",
+    "description": "Download the official DeFarm logos for use in marketing materials, presentations and integrations.",
+    "icon": "Icon",
+    "lockup": "Full lockup",
+    "download": "Download PNG",
+    "guidelinesTitle": "Usage guidelines",
+    "rule1": "Do not alter logo colors or proportions.",
+    "rule2": "Keep a minimum clear space around the logo.",
+    "rule3": "Do not place the logo on low-contrast backgrounds.",
+    "rule4": "Always use the official files provided here."
   },
   "privacy": {
     "lastUpdated": "Last updated: February 2026",

@@ -15,6 +15,7 @@ export function Footer() {
     empresa: [
       { name: t("footer.aboutUs"), href: "/sobre" },
       { name: t("footer.contact"), href: "/contato" },
+      { name: t("footer.logoPack"), href: "/logo-pack" },
     ],
   };
 
