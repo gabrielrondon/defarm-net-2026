@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Link2, Loader2, Plus, ShieldCheck, XCircle } from "lucide-react";
@@ -257,6 +258,13 @@ export default function OwnershipClaims() {
   );
   const pendingClaimsCount = sortedMyClaims.filter((c) => c.status === "pending").length;
   const verifiedClaimsCount = sortedMyClaims.filter((c) => c.status === "verified").length;
+  const verifiedClaims = useMemo(
+    () =>
+      sortedMyClaims
+        .filter((c) => c.status === "verified")
+        .sort((a, b) => (b.verified_at || b.created_at).localeCompare(a.verified_at || a.created_at)),
+    [sortedMyClaims]
+  );
 
   const renderClaimStatus = (status: string) => {
     const normalized = status.toLowerCase();
@@ -299,6 +307,45 @@ export default function OwnershipClaims() {
           <p className="text-xs text-muted-foreground">Vínculos</p>
           <p className="text-xl font-semibold">{myPropertyParty.length}</p>
         </div>
+      </section>
+
+      <section className="bg-background border border-border rounded-xl p-4 space-y-3">
+        <h2 className="text-lg font-semibold">Minhas propriedades verificadas</h2>
+        {verifiedClaims.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma propriedade verificada ainda. Quando um claim for aprovado, ela aparece aqui.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {verifiedClaims.map((claim) => (
+              <div
+                key={claim.id}
+                className="border border-border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+              >
+                <div>
+                  <p className="font-medium">
+                    {claim.identifier_type.toUpperCase()}: {claim.identifier_value}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Verificado em{" "}
+                    {new Date(claim.verified_at || claim.created_at).toLocaleString("pt-BR")} ·{" "}
+                    {claim.items_surfaced || 0} itens associados
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="default">Verificado</Badge>
+                  {claim.circuit_id ? (
+                    <Link to={`/app/circuitos/${claim.circuit_id}`}>
+                      <Button size="sm" variant="outline">
+                        Abrir circuito
+                      </Button>
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {canSubmit && (
