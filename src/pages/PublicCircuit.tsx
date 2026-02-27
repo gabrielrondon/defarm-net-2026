@@ -9,7 +9,6 @@ import {
   ExternalLink,
   Mail,
   Loader2,
-  ArrowLeft,
   UserPlus,
   CheckCircle2,
   BarChart3,
@@ -77,12 +76,6 @@ export default function PublicCircuit() {
           <p className="text-muted-foreground mb-6">
             Este circuito não existe ou não está disponível publicamente.
           </p>
-          <Link to="/">
-            <Button>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar ao início
-            </Button>
-          </Link>
         </div>
       </div>
     );

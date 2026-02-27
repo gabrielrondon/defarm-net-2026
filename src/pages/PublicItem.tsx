@@ -219,6 +219,17 @@ export default function PublicItem() {
     return Object.entries(metadata).filter(([key]) => !technicalKeys.has(key));
   }, [item?.metadata]);
 
+  const publicCircuitId = useMemo(() => {
+    for (const event of events) {
+      if (typeof event.circuit_id === "string" && event.circuit_id) {
+        return event.circuit_id;
+      }
+    }
+    return null;
+  }, [events]);
+  const publicCircuitUrl = publicCircuitId ? `/c/${publicCircuitId}` : "/circuitos/publicos";
+  const publicBackLabel = publicCircuitId ? "Voltar ao circuito" : "Voltar aos circuitos";
+
   const visibleEvents = showOperational ? events : realEvents;
 
   const toggleExpanded = (id: string) => {
@@ -251,10 +262,10 @@ export default function PublicItem() {
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
             Este item não existe ou não está disponível publicamente.
           </p>
-          <Link to="/" className="mt-6">
+          <Link to={publicCircuitUrl} className="mt-6">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Voltar ao início
+              {publicBackLabel}
             </Button>
           </Link>
         </div>
@@ -269,11 +280,11 @@ export default function PublicItem() {
       <div className="space-y-6">
         {/* ── breadcrumb ── */}
         <Link
-          to="/"
+          to={publicCircuitUrl}
           className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-          Início
+          {publicBackLabel}
         </Link>
 
         {/* ── item hero card ── */}
