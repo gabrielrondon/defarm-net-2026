@@ -25,6 +25,7 @@ export interface UpsertRoutingRuleRequest {
     | "matricula"
     | "georef"
     | "land_dfid"
+    | "inscricao_estadual"
     | "cnpj"
     | "cpf";
   identifier_value: string;
@@ -93,6 +94,7 @@ export interface PartnerIntakeResponse {
       field: string;
       value: string;
     } | null;
+    warnings?: string[];
   };
   raw_payload_id: string;
   source_circuit_id?: string | null;

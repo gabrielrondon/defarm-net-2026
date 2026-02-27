@@ -20,10 +20,16 @@ import {
   type RoutingIssueItem,
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
-import { Download, ExternalLink, FileUp, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, FileUp, Loader2, ScrollText, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/lib/api/client";
+import {
+  clearLog,
+  getLogEntries,
+  subscribeLog,
+  type PartnerRequestLogEntry,
+} from "@/lib/api/partner-request-log";
 
 export function PartnerIntake() {
   const { toast } = useToast();
@@ -49,6 +55,12 @@ export function PartnerIntake() {
   const [previewResult, setPreviewResult] = useState<PartnerIntakePreviewResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
+  const [logEntries, setLogEntries] = useState<PartnerRequestLogEntry[]>(getLogEntries);
+  const [logExpanded, setLogExpanded] = useState(false);
+
+  useEffect(() => {
+    return subscribeLog(() => setLogEntries(getLogEntries()));
+  }, []);
 
   const formatClientError = (err: unknown, fallback: string) => {
     if (err instanceof ApiError) {
@@ -99,7 +111,7 @@ export function PartnerIntake() {
 
   const formatIssueType = (identifierType: string) => {
     if (identifierType === "unknown") {
-      return "Sem identificador de roteamento (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF)";
+      return "Sem identificador de roteamento (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/IE)";
     }
     return identifierType.toUpperCase();
   };
@@ -295,6 +307,16 @@ export function PartnerIntake() {
                   <p className="text-[11px] text-muted-foreground">
                     referência parceira: {lastResult.summary.partner_reference.field}={lastResult.summary.partner_reference.value}
                   </p>
+                ) : null}
+                {lastResult.summary.warnings?.length ? (
+                  <div className="mt-2 rounded border border-yellow-500/30 bg-yellow-500/5 p-2 space-y-1">
+                    {lastResult.summary.warnings.map((w, i) => (
+                      <p key={i} className="text-[11px] text-yellow-700 dark:text-yellow-400 flex items-start gap-1.5">
+                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                        {w}
+                      </p>
+                    ))}
+                  </div>
                 ) : null}
               </div>
             ) : null}
@@ -667,6 +689,87 @@ export function PartnerIntake() {
                     Resolver manual
                   </Button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ScrollText className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-base font-semibold">Log de Requisições da API</h3>
+            <span className="text-xs text-muted-foreground">({logEntries.length})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {logEntries.length > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { clearLog(); setLogEntries([]); }}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Limpar
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLogExpanded(!logExpanded)}
+            >
+              {logExpanded ? "Recolher" : "Expandir"}
+            </Button>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Todas as chamadas feitas para endpoints de parceiro nesta sessão. Útil para depuração e verificação.
+        </p>
+        {logEntries.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Nenhuma requisição registrada nesta sessão.</p>
+        ) : (
+          <div className={`space-y-1 ${logExpanded ? "" : "max-h-[320px] overflow-y-auto"}`}>
+            {logEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded border px-3 py-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs"
+              >
+                <span className="text-muted-foreground shrink-0 w-[140px]">
+                  {new Date(entry.timestamp).toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "2-digit" })}
+                </span>
+                <span className="font-mono font-medium shrink-0">
+                  {entry.method}
+                </span>
+                <span className="font-mono text-muted-foreground truncate flex-1" title={entry.endpoint}>
+                  {entry.endpoint}
+                </span>
+                {entry.status != null ? (
+                  <span className={`shrink-0 px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                    entry.status >= 200 && entry.status < 300
+                      ? "bg-primary/10 text-primary"
+                      : entry.status >= 400
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-muted text-muted-foreground"
+                  }`}>
+                    {entry.status}
+                  </span>
+                ) : (
+                  <span className="shrink-0 px-1.5 py-0.5 rounded text-[11px] font-medium bg-destructive/10 text-destructive">
+                    REDE
+                  </span>
+                )}
+                <span className="text-muted-foreground shrink-0 w-[60px] text-right">
+                  {entry.durationMs}ms
+                </span>
+                {entry.errorCode ? (
+                  <span className="text-destructive truncate" title={entry.errorMessage || undefined}>
+                    {entry.errorCode}{entry.errorMessage ? `: ${entry.errorMessage}` : ""}
+                  </span>
+                ) : entry.responseSummary ? (
+                  <span className="text-muted-foreground truncate" title={entry.responseSummary}>
+                    {entry.responseSummary}
+                  </span>
+                ) : null}
               </div>
             ))}
           </div>

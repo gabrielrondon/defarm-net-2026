@@ -1227,6 +1227,7 @@ export interface SubmitClaimRequest {
     | "cib"
     | "matricula"
     | "georef"
+    | "inscricao_estadual"
     | "cnpj"
     | "cpf";
   identifier_value: string;
