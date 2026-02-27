@@ -415,9 +415,9 @@ export default function PublicItem() {
                 <Activity className="h-4.5 w-4.5 text-primary" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-foreground">Histórico do animal</h2>
+                <h2 className="text-base font-semibold text-foreground">Histórico</h2>
                 <p className="text-xs text-muted-foreground">
-                  {realEvents.length} evento{realEvents.length !== 1 ? "s" : ""} de manejo
+                  {realEvents.length} evento{realEvents.length !== 1 ? "s" : ""} registrado{realEvents.length !== 1 ? "s" : ""}
                   {operationalEvents.length > 0 && (
                     <span> · {operationalEvents.length} técnico/operacional(is)</span>
                   )}
