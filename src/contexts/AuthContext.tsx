@@ -137,8 +137,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const buildDefaultCircuitName = (userData: User): string => {
+    const base = "Meu Circuito";
+    const context = (userData.workspace_name || userData.workspace_slug || userData.email || "")
+      .toString()
+      .trim();
+    if (!context) return base;
+    const full = `${base} • ${context}`;
+    return full.length > 100 ? full.slice(0, 100) : full;
+  };
+
   // Ensure the user has at least one circuit (required for RBAC permissions)
-  const ensureDefaultCircuit = async (userId: string) => {
+  const ensureDefaultCircuit = async (userData: User) => {
     try {
       // Try listing circuits first
       const circuits = await getCircuits();
@@ -154,11 +164,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Create a default circuit so the user gets RBAC permissions
     try {
       await createCircuit({
-        name: "Meu Circuito",
+        name: buildDefaultCircuitName(userData),
         description: "Circuito padrão criado automaticamente",
         circuit_type: "private",
         visibility: "private",
-        owner_id: userId,
+        owner_id: userData.id,
       });
       console.log("[DeFarm Auth] Default circuit created ✅");
 
@@ -181,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const completeLogin = async (response: AuthResponse, fallbackName: string, fallbackEmail: string) => {
     const userData = mapAuthUser(response, fallbackName, fallbackEmail);
     storeAuth(response.access_token, userData, response.refresh_token);
-    await ensureDefaultCircuit(userData.id);
+    await ensureDefaultCircuit(userData);
     setUser(userData);
   };
 
