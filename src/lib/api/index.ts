@@ -20,6 +20,7 @@ export * from "./anchors";
 export * from "./ownership-claims";
 export * from "./property-links";
 export * from "./property-party-roles";
+export * from "./property-compliance";
 export * from "./search-analytics";
 export * from "./ingestion-templates";
 export * from "./partner-routing";

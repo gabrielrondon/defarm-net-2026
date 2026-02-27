@@ -1195,6 +1195,26 @@ export interface ListPropertyLinksResponse {
   count: number;
 }
 
+// --- Property Compliance ---
+
+export interface PropertyCompliance {
+  property_dfid: string;
+  car?: string | null;
+  status: "ok" | "warning" | "blocked" | "unknown" | string;
+  score?: number | null;
+  summary?: string | null;
+  details_json?: Record<string, unknown> | null;
+  checked_at?: string | null;
+  expires_at?: string | null;
+  source: string;
+}
+
+export interface CircuitComplianceListResponse {
+  circuit_id: string;
+  count: number;
+  properties: PropertyCompliance[];
+}
+
 // --- Ownership Claims ---
 
 export interface SubmitClaimRequest {

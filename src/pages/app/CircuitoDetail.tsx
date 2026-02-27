@@ -24,6 +24,8 @@ import {
   Trash2,
   UserPlus,
   Database,
+  ClipboardCheck,
+  RefreshCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +72,11 @@ import {
   getItemAnchors,
   Item, 
 } from "@/lib/defarm-api";
+import {
+  getCircuitPropertyCompliance,
+  refreshPropertyCompliance,
+  type PropertyCompliance,
+} from "@/lib/api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import CircuitAdaptersPanel from "@/components/circuit/CircuitAdaptersPanel";
 import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
@@ -86,6 +93,7 @@ export default function CircuitoDetail() {
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
+  const [refreshingProperty, setRefreshingProperty] = useState<string | null>(null);
 
   // Fetch circuit details
   const { data: circuit, isLoading: isLoadingCircuit, error: circuitError } = useQuery({
@@ -149,6 +157,12 @@ export default function CircuitoDetail() {
   const { data: pendingJoinRequests = [] } = useQuery({
     queryKey: ["joinRequestsPendingCount", id],
     queryFn: () => getJoinRequests(id!, "pending"),
+    enabled: !!id,
+  });
+
+  const { data: circuitCompliance } = useQuery({
+    queryKey: ["circuitPropertyCompliance", id],
+    queryFn: () => getCircuitPropertyCompliance(id!, { active_only: true }),
     enabled: !!id,
   });
 
@@ -276,6 +290,31 @@ export default function CircuitoDetail() {
       });
     } catch {
       // User cancelled share dialog - no-op
+    }
+  };
+
+  const complianceBadge = (status?: string) => {
+    const s = (status || "unknown").toLowerCase();
+    if (s === "ok") return "bg-emerald-500/10 text-emerald-700";
+    if (s === "warning") return "bg-amber-500/10 text-amber-700";
+    if (s === "blocked") return "bg-rose-500/10 text-rose-700";
+    return "bg-muted text-muted-foreground";
+  };
+
+  const refreshCompliance = async (property: PropertyCompliance) => {
+    try {
+      setRefreshingProperty(property.property_dfid);
+      await refreshPropertyCompliance(property.property_dfid, true);
+      await queryClient.invalidateQueries({ queryKey: ["circuitPropertyCompliance", id] });
+      toast({ title: "Compliance atualizado", description: property.property_dfid });
+    } catch (error) {
+      toast({
+        title: "Falha ao atualizar compliance",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshingProperty(null);
     }
   };
 
@@ -603,6 +642,59 @@ export default function CircuitoDetail() {
             </Link>
           )}
         </div>
+      </div>
+
+      <div className="bg-background border border-border rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4 text-primary" />
+              Compliance por propriedade (LAND)
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Verificações simples por LAND/CAR vinculadas aos itens deste circuito.
+            </p>
+          </div>
+        </div>
+        {!circuitCompliance || circuitCompliance.properties.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem propriedades LAND vinculadas no circuito.</p>
+        ) : (
+          <div className="space-y-2">
+            {circuitCompliance.properties.map((property) => (
+              <div
+                key={property.property_dfid}
+                className="border border-border rounded-lg p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2"
+              >
+                <div>
+                  <p className="font-mono text-sm">{property.property_dfid}</p>
+                  <p className="text-xs text-muted-foreground">
+                    CAR: {property.car || "não informado"} · Última checagem:{" "}
+                    {property.checked_at ? new Date(property.checked_at).toLocaleString("pt-BR") : "n/d"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-xs px-2 py-1 rounded-full font-medium", complianceBadge(property.status))}>
+                    {(property.status || "unknown").toUpperCase()}
+                    {typeof property.score === "number" ? ` · ${property.score}` : ""}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => refreshCompliance(property)}
+                    disabled={refreshingProperty === property.property_dfid}
+                  >
+                    {refreshingProperty === property.property_dfid ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="h-3.5 w-3.5 mr-2" />
+                    )}
+                    Atualizar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Items table */}

@@ -4,26 +4,26 @@ import {
   GitBranch,
   Globe,
   Package,
-  Eye,
   Users,
-  ExternalLink,
-  Mail,
   Loader2,
   UserPlus,
   CheckCircle2,
-  BarChart3,
   MapPin,
   Layers,
   Activity,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicCircuit, createJoinRequest } from "@/lib/defarm-api";
+import { ApiError } from "@/lib/api/client";
+import { getPublicCircuitPropertyCompliance } from "@/lib/api/property-compliance";
 import type { PublicCircuitPortfolio, ItemSummary } from "@/lib/api/types";
 import { useAuth } from "@/contexts/AuthContext";
 import logoIcon from "@/assets/logo-icon.png";
 import { useState } from "react";
 import { circuitTypeLabel } from "@/lib/circuit-ui";
+import { cn } from "@/lib/utils";
 
 export default function PublicCircuit() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +36,21 @@ export default function PublicCircuit() {
     queryFn: () => getPublicCircuit(id!),
     enabled: !!id,
     retry: 1,
+  });
+  const { data: publicCompliance } = useQuery({
+    queryKey: ["publicCircuitCompliance", id],
+    queryFn: async () => {
+      try {
+        return await getPublicCircuitPropertyCompliance(id!);
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+          return null;
+        }
+        throw err;
+      }
+    },
+    enabled: !!id,
+    retry: 0,
   });
 
   const joinMutation = useMutation({
@@ -84,6 +99,13 @@ export default function PublicCircuit() {
   const circuit = portfolio.circuit;
   const stats = portfolio.stats;
   const recentItems = portfolio.recent_items;
+  const complianceBadge = (status?: string) => {
+    const s = (status || "unknown").toLowerCase();
+    if (s === "ok") return "bg-emerald-500/10 text-emerald-700";
+    if (s === "warning") return "bg-amber-500/10 text-amber-700";
+    if (s === "blocked") return "bg-rose-500/10 text-rose-700";
+    return "bg-muted text-muted-foreground";
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -255,6 +277,34 @@ export default function PublicCircuit() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {publicCompliance && publicCompliance.properties.length > 0 && (
+          <div className="bg-background border border-border rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-primary" />
+              Compliance por propriedade (LAND)
+            </h2>
+            <div className="space-y-2">
+              {publicCompliance.properties.map((property) => (
+                <div key={property.property_dfid} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border border-border rounded-lg p-3">
+                  <div>
+                    <p className="font-mono text-sm">{property.property_dfid}</p>
+                    <p className="text-xs text-muted-foreground">
+                      CAR: {property.car || "não informado"} ·{" "}
+                      {property.checked_at
+                        ? `Checado em ${new Date(property.checked_at).toLocaleDateString("pt-BR")}`
+                        : "Sem checagem recente"}
+                    </p>
+                  </div>
+                  <span className={cn("text-xs px-2 py-1 rounded-full font-medium w-fit", complianceBadge(property.status))}>
+                    {property.status.toUpperCase()}
+                    {typeof property.score === "number" ? ` · ${property.score}` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

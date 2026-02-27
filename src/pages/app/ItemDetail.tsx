@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Link2, Loader2, Package, Unlink } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Link2, Loader2, Package, RefreshCcw, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getItem, getItemEvents, getItemAnchors, getItemVersions } from "@/lib/defarm-api";
@@ -8,6 +8,8 @@ import { ItemHeader, ItemIdentifiers, ItemTimeline } from "@/components/item-det
 import { addItemPropertyLink, listItemPropertyLinks, unlinkItemProperty } from "@/lib/api/property-links";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { getPropertyCompliance, refreshPropertyCompliance, type PropertyCompliance } from "@/lib/api";
 
 function formatAssociationPeriod(linkedAt: string, unlinkedAt?: string | null): string {
   const start = new Date(linkedAt).toLocaleString("pt-BR");
@@ -22,6 +24,7 @@ export default function ItemDetail() {
   const [propertyDfid, setPropertyDfid] = useState("");
   const [gtaNumber, setGtaNumber] = useState("");
   const [isTransfer, setIsTransfer] = useState(true);
+  const [refreshingProperty, setRefreshingProperty] = useState<string | null>(null);
 
   // Fetch item details (includes identifiers and events)
   const { data: itemDetails, isLoading: isLoadingItem, error: itemError } = useQuery({
@@ -139,6 +142,65 @@ export default function ItemDetail() {
   // Merge events from detail response + separate query
   const allEvents = itemDetails?.events?.length ? itemDetails.events : events;
   const propertyLinks = propertyLinksData?.links || [];
+  const activePropertyDfids = Array.from(
+    new Set(
+      propertyLinks
+        .filter((link) => !link.unlinked_at)
+        .map((link) => link.property_dfid)
+        .filter(Boolean)
+    )
+  );
+
+  const { data: propertyComplianceMap = {}, isLoading: isLoadingCompliance } = useQuery({
+    queryKey: ["itemPropertyComplianceMap", id, activePropertyDfids.join(",")],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        activePropertyDfids.map(async (dfid) => {
+          try {
+            const compliance = await getPropertyCompliance(dfid);
+            return [dfid, compliance] as const;
+          } catch {
+            return [
+              dfid,
+              {
+                property_dfid: dfid,
+                status: "unknown",
+                source: "defarm_compliance_api",
+                summary: "Sem dados de compliance disponíveis.",
+              } satisfies PropertyCompliance,
+            ] as const;
+          }
+        })
+      );
+      return Object.fromEntries(entries) as Record<string, PropertyCompliance>;
+    },
+    enabled: activePropertyDfids.length > 0,
+  });
+
+  const complianceBadge = (status?: string) => {
+    const s = (status || "unknown").toLowerCase();
+    if (s === "ok") return "bg-emerald-500/10 text-emerald-700";
+    if (s === "warning") return "bg-amber-500/10 text-amber-700";
+    if (s === "blocked") return "bg-rose-500/10 text-rose-700";
+    return "bg-muted text-muted-foreground";
+  };
+
+  const handleRefreshCompliance = async (dfid: string) => {
+    try {
+      setRefreshingProperty(dfid);
+      await refreshPropertyCompliance(dfid, true);
+      await queryClient.invalidateQueries({ queryKey: ["itemPropertyComplianceMap", id] });
+      toast({ title: "Compliance atualizado", description: dfid });
+    } catch (error) {
+      toast({
+        title: "Falha ao atualizar compliance",
+        description: error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshingProperty(null);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -221,6 +283,63 @@ export default function ItemDetail() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="bg-background border border-border rounded-xl p-4 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4 text-primary" />
+            Compliance das propriedades LAND ativas
+          </h2>
+          <p className="text-sm text-muted-foreground">Resumo de verificação por propriedade vinculada e ativa.</p>
+        </div>
+
+        {isLoadingCompliance ? (
+          <div className="py-4 text-sm text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando compliance...
+          </div>
+        ) : activePropertyDfids.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem propriedades LAND ativas para verificar.</p>
+        ) : (
+          <div className="space-y-2">
+            {activePropertyDfids.map((dfid) => {
+              const compliance = propertyComplianceMap[dfid];
+              return (
+                <div key={dfid} className="border border-border rounded-lg p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div>
+                    <p className="font-mono text-sm">{dfid}</p>
+                    <p className="text-xs text-muted-foreground">
+                      CAR: {compliance?.car || "não informado"} ·
+                      {" "}Última checagem: {compliance?.checked_at ? new Date(compliance.checked_at).toLocaleString("pt-BR") : "n/d"}
+                    </p>
+                    {compliance?.summary ? (
+                      <p className="text-xs text-muted-foreground mt-1">{compliance.summary}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-xs px-2 py-1 rounded-full font-medium", complianceBadge(compliance?.status))}>
+                      {(compliance?.status || "unknown").toUpperCase()}
+                      {typeof compliance?.score === "number" ? ` · ${compliance.score}` : ""}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleRefreshCompliance(dfid)}
+                      disabled={refreshingProperty === dfid}
+                    >
+                      {refreshingProperty === dfid ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCcw className="h-3.5 w-3.5 mr-2" />
+                      )}
+                      Atualizar
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

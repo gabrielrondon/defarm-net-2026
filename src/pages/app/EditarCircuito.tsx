@@ -36,6 +36,7 @@ export default function EditarCircuito() {
   const [publicDescription, setPublicDescription] = useState("");
   const [publicContactEmail, setPublicContactEmail] = useState("");
   const [publicWebsite, setPublicWebsite] = useState("");
+  const [publicShowCompliance, setPublicShowCompliance] = useState(false);
 
   // Fetch circuit data
   const { data: circuit, isLoading: isLoadingCircuit } = useQuery({
@@ -58,6 +59,8 @@ export default function EditarCircuito() {
       setPublicDescription(circuit.public_description || "");
       setPublicContactEmail(circuit.public_contact_email || "");
       setPublicWebsite(circuit.public_website || "");
+      const showCompliance = (circuit.settings as Record<string, unknown> | null | undefined)?.public_show_compliance;
+      setPublicShowCompliance(showCompliance === true);
     }
   }, [circuit]);
 
@@ -85,6 +88,10 @@ export default function EditarCircuito() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate({
+      settings: {
+        ...((circuit?.settings as Record<string, unknown> | null) || {}),
+        public_show_compliance: publicShowCompliance,
+      },
       name,
       description,
       status,
@@ -261,6 +268,16 @@ export default function EditarCircuito() {
                   <p className="text-xs text-muted-foreground">Permite que visitantes solicitem participação</p>
                 </div>
                 <Switch checked={allowJoinRequests} onCheckedChange={setAllowJoinRequests} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Exibir Compliance publicamente</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando ligado, a página pública mostra o status de compliance das propriedades LAND do circuito.
+                  </p>
+                </div>
+                <Switch checked={publicShowCompliance} onCheckedChange={setPublicShowCompliance} />
               </div>
 
               <div className="space-y-2">
