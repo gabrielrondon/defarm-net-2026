@@ -16,9 +16,15 @@ export default function ResetSenha() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showManualToken, setShowManualToken] = useState(false);
+  const [tokenRejected, setTokenRejected] = useState(false);
 
-  const tokenFromQuery = params.get("token") || "";
-  const token = useMemo(() => tokenFromQuery || tokenInput.trim(), [tokenFromQuery, tokenInput]);
+  const tokenFromQueryRaw = params.get("token") || params.get("reset_token") || "";
+  const tokenFromQuery = useMemo(() => tokenFromQueryRaw.trim(), [tokenFromQueryRaw]);
+  const token = useMemo(
+    () => (tokenFromQuery && !showManualToken ? tokenFromQuery : tokenInput.trim()),
+    [tokenFromQuery, tokenInput, showManualToken]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,15 +40,21 @@ export default function ResetSenha() {
     setIsLoading(true);
     try {
       const res = await resetPassword({ token, new_password: password });
+      setTokenRejected(false);
       toast({
         title: "Senha redefinida",
         description: res.message,
       });
       navigate("/login");
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Tente novamente.";
+      const rejected = /invalid or expired reset token/i.test(message);
+      setTokenRejected(rejected);
       toast({
         title: "Falha ao redefinir senha",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description: rejected
+          ? "Este link expirou ou já foi usado. Solicite um novo link de recuperação."
+          : message,
         variant: "destructive",
       });
     } finally {
@@ -86,7 +98,37 @@ export default function ResetSenha() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {!tokenFromQuery && (
+              {tokenRejected && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                  <p className="font-medium text-destructive">Link inválido ou expirado</p>
+                  <p className="text-muted-foreground mt-1">
+                    O link de recuperação é de uso único e expira em 1 hora.
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => navigate("/esqueci-senha")}>
+                      Solicitar novo link
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setShowManualToken(true);
+                        setTokenRejected(false);
+                      }}
+                    >
+                      Usar outro token
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {!showManualToken && tokenFromQuery && (
+                <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+                  Token detectado no link. Se ele estiver expirado, use "Solicitar novo link" ou "Usar outro token".
+                </div>
+              )}
+
+              {(!tokenFromQuery || showManualToken) && (
                 <div className="space-y-2">
                   <Label htmlFor="token">Token de recuperação</Label>
                   <Input
