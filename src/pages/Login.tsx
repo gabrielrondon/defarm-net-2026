@@ -29,6 +29,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [twofaToken, setTwofaToken] = useState<string | null>(null);
+  const [isTwofaStep, setIsTwofaStep] = useState(false);
   const [twofaCode, setTwofaCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login, verifyLogin2FA, isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
@@ -73,12 +74,29 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
         return;
       }
       setTwofaToken(parsed.token);
+      setIsTwofaStep(true);
       if (parsed.email) setEmail(parsed.email);
     } catch {
       sessionStorage.removeItem(PENDING_2FA_KEY);
       localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
     }
   }, []);
+
+  const getPendingTwofaToken = (): string | null => {
+    if (twofaToken?.trim()) return twofaToken.trim();
+    try {
+      const raw =
+        sessionStorage.getItem(PENDING_2FA_KEY) ||
+        localStorage.getItem(PENDING_2FA_FALLBACK_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Pending2FA;
+      if (!parsed?.token || !parsed?.created_at) return null;
+      if (Date.now() - parsed.created_at > PENDING_2FA_TTL_MS) return null;
+      return parsed.token;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (isAuthLoading || !isAuthenticated) return;
@@ -115,14 +133,21 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
     setIsLoading(true);
 
     try {
-      if (twofaToken) {
+      if (isTwofaStep) {
+        const effectiveToken = getPendingTwofaToken();
+        if (!effectiveToken) {
+          throw new Error("Desafio 2FA expirou. Entre novamente com email e senha.");
+        }
         const normalizedCode = twofaCode.trim().replace(/\s+/g, "");
-        await verifyLogin2FA(twofaToken, normalizedCode);
+        await verifyLogin2FA(effectiveToken, normalizedCode);
         clearPending2FA();
+        setIsTwofaStep(false);
       } else {
         const challenge = await login({ email, password });
         if (challenge?.requires_2fa) {
           setTwofaToken(challenge.twofa_token);
+          setIsTwofaStep(true);
+          setTwofaCode("");
           persistPending2FA(challenge.twofa_token, email.trim());
           toast({
             title: "2FA necessário",
@@ -167,14 +192,14 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {twofaToken
+              {isTwofaStep
                 ? "Verificação em duas etapas"
                 : isPartnerMode
                 ? "Portal de Parceiros"
                 : t("login.welcome")}
             </h1>
             <p className="text-muted-foreground">
-              {twofaToken
+              {isTwofaStep
                 ? "Informe o código de 6 dígitos do autenticador ou um recovery code."
                 : isPartnerMode
                 ? "Acesse com sua conta de parceiro para enviar dados e acompanhar integrações."
@@ -184,7 +209,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {!twofaToken ? (
+            {!isTwofaStep ? (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="email">{t("login.email")}</Label>
@@ -262,6 +287,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                     onClick={() => {
                       clearPending2FA();
                       setTwofaToken(null);
+                      setIsTwofaStep(false);
                       setTwofaCode("");
                     }}
                   >
@@ -273,14 +299,14 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
             <Button
               type="submit"
-              disabled={isLoading || (twofaToken ? !twofaCode.trim() : false)}
+              disabled={isLoading || (isTwofaStep ? !twofaCode.trim() : false)}
               className="w-full h-12 btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold text-lg"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  {twofaToken ? "Validar 2FA" : t("login.signIn")}
+                  {isTwofaStep ? "Validar 2FA" : t("login.signIn")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
