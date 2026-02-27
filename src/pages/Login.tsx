@@ -14,6 +14,15 @@ interface LoginProps {
   forcedMode?: "default" | "partner";
 }
 
+const PENDING_2FA_KEY = "defarm_pending_2fa";
+const PENDING_2FA_TTL_MS = 10 * 60 * 1000;
+
+type Pending2FA = {
+  token: string;
+  email: string;
+  created_at: number;
+};
+
 export default function Login({ forcedMode = "default" }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,18 +53,55 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
     if (demoPassword) setPassword(demoPassword);
   }, [searchParams]);
 
+  useEffect(() => {
+    // Recover pending 2FA challenge to avoid falling back to credentials on reload/remount.
+    try {
+      const raw = sessionStorage.getItem(PENDING_2FA_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Pending2FA;
+      if (!parsed?.token || !parsed?.created_at) {
+        sessionStorage.removeItem(PENDING_2FA_KEY);
+        return;
+      }
+      if (Date.now() - parsed.created_at > PENDING_2FA_TTL_MS) {
+        sessionStorage.removeItem(PENDING_2FA_KEY);
+        return;
+      }
+      setTwofaToken(parsed.token);
+      if (parsed.email) setEmail(parsed.email);
+    } catch {
+      sessionStorage.removeItem(PENDING_2FA_KEY);
+    }
+  }, []);
+
+  const persistPending2FA = (token: string, accountEmail: string) => {
+    const payload: Pending2FA = {
+      token,
+      email: accountEmail,
+      created_at: Date.now(),
+    };
+    sessionStorage.setItem(PENDING_2FA_KEY, JSON.stringify(payload));
+  };
+
+  const clearPending2FA = () => {
+    sessionStorage.removeItem(PENDING_2FA_KEY);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       if (twofaToken) {
-        await verifyLogin2FA(twofaToken, twofaCode);
+        const normalizedCode = twofaCode.trim().replace(/\s+/g, "");
+        await verifyLogin2FA(twofaToken, normalizedCode);
+        clearPending2FA();
         navigate(isPartnerMode ? "/app/parceiro" : "/app");
       } else {
         const challenge = await login({ email, password });
         if (challenge?.requires_2fa) {
           setTwofaToken(challenge.twofa_token);
+          persistPending2FA(challenge.twofa_token, email.trim());
           toast({
             title: "2FA necessário",
             description: "Digite o código do seu app autenticador para continuar.",
@@ -123,7 +169,9 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                   <Label htmlFor="email">{t("login.email")}</Label>
                   <Input
                     id="email"
-                    type="text"
+                    name="email"
+                    type="email"
+                    autoComplete="email username"
                     placeholder={t("register.emailPlaceholder")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -145,7 +193,9 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                   <div className="relative">
                     <Input
                       id="password"
+                      name="password"
                       type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -168,9 +218,11 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                   <Label htmlFor="twofa">Código 2FA</Label>
                   <Input
                     id="twofa"
+                    name="one-time-code"
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
+                    enterKeyHint="done"
                     autoFocus
                     placeholder="123456 ou XXXX-XXXX"
                     value={twofaCode}
@@ -187,6 +239,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                     type="button"
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     onClick={() => {
+                      clearPending2FA();
                       setTwofaToken(null);
                       setTwofaCode("");
                     }}
