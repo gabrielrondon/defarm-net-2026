@@ -230,6 +230,8 @@ export interface Event {
   content_hash?: string | null;
   original_event_id?: string | null;
   visible_to_roles?: Record<string, unknown> | null;
+  event_owner_workspace_id?: string | null;
+  event_owner_user_id?: string | null;
 }
 
 export interface ListEventsResponse {
@@ -240,6 +242,43 @@ export interface ListEventsResponse {
 export interface UpdateEventStatusRequest {
   status: string;
   error_message?: string | null;
+}
+
+export interface UpdateEventVisibilityRequest {
+  visibility: "public" | "private" | "circuit_only" | "selective" | string;
+  visible_to_roles?: string[] | null;
+}
+
+export interface GrantEventDelegationRequest {
+  delegate_workspace_id: string;
+  can_manage_visibility?: boolean;
+  can_manage_disclosure?: boolean;
+  notes?: string | null;
+  expires_at?: string | null;
+}
+
+export interface EventDelegation {
+  id: string;
+  event_id: string;
+  owner_workspace_id: string;
+  delegate_workspace_id: string;
+  granted_by_user_id?: string | null;
+  can_manage_visibility: boolean;
+  can_manage_disclosure: boolean;
+  notes?: string | null;
+  created_at: string;
+  expires_at?: string | null;
+  revoked_at?: string | null;
+  revoked_by_user_id?: string | null;
+}
+
+export interface EventGovernanceResponse {
+  event_id: string;
+  event_owner_workspace_id?: string | null;
+  event_owner_user_id?: string | null;
+  caller_can_manage_visibility: boolean;
+  caller_can_manage_disclosure: boolean;
+  delegations: EventDelegation[];
 }
 
 // --- Activity ---

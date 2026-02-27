@@ -3,6 +3,10 @@ import type {
   Event,
   ListEventsResponse,
   UpdateEventStatusRequest,
+  UpdateEventVisibilityRequest,
+  GrantEventDelegationRequest,
+  EventDelegation,
+  EventGovernanceResponse,
   EventFilters,
 } from "./types";
 
@@ -24,6 +28,36 @@ export async function updateEventStatus(
   await registryRequest(`/events/${id}/status`, {
     method: "PUT",
     body: JSON.stringify(data),
+  });
+}
+
+export async function updateEventVisibility(
+  id: string,
+  data: UpdateEventVisibilityRequest
+): Promise<Event> {
+  return registryRequest<Event>(`/events/${id}/visibility`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getEventGovernance(id: string): Promise<EventGovernanceResponse> {
+  return registryRequest<EventGovernanceResponse>(`/events/${id}/governance`);
+}
+
+export async function grantEventDelegation(
+  id: string,
+  data: GrantEventDelegationRequest
+): Promise<EventDelegation> {
+  return registryRequest<EventDelegation>(`/events/${id}/delegations`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function revokeEventDelegation(id: string, delegationId: string): Promise<void> {
+  await registryRequest(`/events/${id}/delegations/${delegationId}`, {
+    method: "DELETE",
   });
 }
 

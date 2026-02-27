@@ -3,6 +3,12 @@ import { Activity, Clock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
 import { eventTypeLabels, eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getEventGovernance,
+  grantEventDelegation,
+  updateEventVisibility,
+} from "@/lib/api/events";
 
 interface ItemTimelineProps {
   events: Event[];
@@ -85,6 +91,12 @@ function compactDetails(event: Event): string[] {
 
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   const [showOperational, setShowOperational] = useState(false);
+  const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
+  const [governanceByEvent, setGovernanceByEvent] = useState<Record<string, {
+    canManageVisibility: boolean;
+    canManageDisclosure: boolean;
+  }>>({});
+  const { user } = useAuth();
 
   const { realEvents, operationalCount } = useMemo(() => {
     let opCount = 0;
@@ -100,6 +112,49 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   }, [events]);
 
   const visibleEvents = showOperational ? events : realEvents;
+
+  const loadGovernance = async (eventId: string) => {
+    setLoadingEventId(eventId);
+    try {
+      const g = await getEventGovernance(eventId);
+      setGovernanceByEvent((prev) => ({
+        ...prev,
+        [eventId]: {
+          canManageVisibility: g.caller_can_manage_visibility,
+          canManageDisclosure: g.caller_can_manage_disclosure,
+        },
+      }));
+    } finally {
+      setLoadingEventId(null);
+    }
+  };
+
+  const changeVisibility = async (eventId: string, visibility: "public" | "circuit_only" | "private") => {
+    setLoadingEventId(eventId);
+    try {
+      await updateEventVisibility(eventId, { visibility });
+      window.location.reload();
+    } finally {
+      setLoadingEventId(null);
+    }
+  };
+
+  const delegateManagement = async (eventId: string) => {
+    const workspaceId = window.prompt("Informe o workspace_id que receberá delegação:");
+    if (!workspaceId) return;
+    setLoadingEventId(eventId);
+    try {
+      await grantEventDelegation(eventId, {
+        delegate_workspace_id: workspaceId.trim(),
+        can_manage_visibility: true,
+        can_manage_disclosure: true,
+      });
+      await loadGovernance(eventId);
+      window.alert("Delegação registrada.");
+    } finally {
+      setLoadingEventId(null);
+    }
+  };
 
   return (
     <div className="lg:col-span-2">
@@ -151,6 +206,9 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
               const isOperational = !REAL_LIFE_EVENT_TYPES.has(event.event_type);
               const summary = eventSummary(event);
               const details = compactDetails(event);
+              const isOwner = !!event.event_owner_workspace_id && event.event_owner_workspace_id === user?.workspace_id;
+              const governance = governanceByEvent[event.id];
+              const canManage = governance?.canManageVisibility || isOwner;
               return (
               <div
                 key={event.id}
@@ -184,6 +242,11 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-background border border-border text-muted-foreground">
                           {visibilityLabel(event.visibility)}
                         </span>
+                        {isOwner && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                            owner
+                          </span>
+                        )}
                         {event.is_duplicate && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700">
                             duplicado
@@ -210,6 +273,53 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                         <Clock className="h-3 w-3" />
                         {formatTime(event.created_at)}
                       </span>
+                      {(isOwner || governance?.canManageVisibility) && (
+                        <div className="mt-2 flex flex-wrap justify-end gap-1">
+                          {!governance && (
+                            <button
+                              onClick={() => loadGovernance(event.id)}
+                              className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
+                              disabled={loadingEventId === event.id}
+                            >
+                              {loadingEventId === event.id ? "..." : "Gerenciar"}
+                            </button>
+                          )}
+                          {canManage && (
+                            <>
+                              <button
+                                onClick={() => changeVisibility(event.id, "public")}
+                                className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
+                                disabled={loadingEventId === event.id}
+                              >
+                                Público
+                              </button>
+                              <button
+                                onClick={() => changeVisibility(event.id, "circuit_only")}
+                                className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
+                                disabled={loadingEventId === event.id}
+                              >
+                                Circuito
+                              </button>
+                              <button
+                                onClick={() => changeVisibility(event.id, "private")}
+                                className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
+                                disabled={loadingEventId === event.id}
+                              >
+                                Privado
+                              </button>
+                              {isOwner && (
+                                <button
+                                  onClick={() => delegateManagement(event.id)}
+                                  className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
+                                  disabled={loadingEventId === event.id}
+                                >
+                                  Delegar
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
