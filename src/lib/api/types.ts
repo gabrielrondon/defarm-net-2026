@@ -232,6 +232,10 @@ export interface Event {
   visible_to_roles?: Record<string, unknown> | null;
   event_owner_workspace_id?: string | null;
   event_owner_user_id?: string | null;
+  trust_score?: number;
+  trust_level?: "low" | "medium" | "high" | string;
+  trust_factors?: Record<string, unknown> | null;
+  trust_model_version?: string | null;
 }
 
 export interface ListEventsResponse {
@@ -1030,6 +1034,10 @@ export interface PublicItemEvent {
   circuit_id: string;
   payload?: Record<string, unknown> | null;
   created_at: string;
+  trust_score?: number | null;
+  trust_level?: "low" | "medium" | "high" | string | null;
+  trust_factors?: Record<string, unknown> | null;
+  trust_model_version?: string | null;
 }
 
 export interface SearchRequest {
@@ -1146,6 +1154,10 @@ export interface TimelineEvent {
   item_id?: string | null;
   entity_type: string;
   entity_id: string;
+  trust_score?: number | null;
+  trust_level?: "low" | "medium" | "high" | string | null;
+  trust_factors?: Record<string, unknown> | null;
+  trust_model_version?: string | null;
 }
 
 export interface TimelineResponse {

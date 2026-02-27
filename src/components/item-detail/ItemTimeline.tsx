@@ -57,6 +57,23 @@ function visibilityLabel(visibility?: string): string {
   }
 }
 
+function trustLabel(level?: string, score?: number): { text: string; className: string } {
+  if (!level && typeof score !== "number") {
+    return { text: "Confiança n/d", className: "bg-muted text-muted-foreground" };
+  }
+
+  const safeScore = typeof score === "number" ? Math.max(0, Math.min(100, score)) : undefined;
+  const normalized = (level || (safeScore !== undefined && safeScore >= 80 ? "high" : safeScore !== undefined && safeScore >= 60 ? "medium" : "low")).toLowerCase();
+
+  if (normalized === "high") {
+    return { text: `Confiança alta${safeScore !== undefined ? ` · ${safeScore}` : ""}`, className: "bg-emerald-500/10 text-emerald-700" };
+  }
+  if (normalized === "medium") {
+    return { text: `Confiança média${safeScore !== undefined ? ` · ${safeScore}` : ""}`, className: "bg-amber-500/10 text-amber-700" };
+  }
+  return { text: `Confiança baixa${safeScore !== undefined ? ` · ${safeScore}` : ""}`, className: "bg-rose-500/10 text-rose-700" };
+}
+
 function compactDetails(event: Event): string[] {
   const details: string[] = [];
   const payload = event.payload || {};
@@ -209,6 +226,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
               const isOwner = !!event.event_owner_workspace_id && event.event_owner_workspace_id === user?.workspace_id;
               const governance = governanceByEvent[event.id];
               const canManage = governance?.canManageVisibility || isOwner;
+              const trust = trustLabel(event.trust_level, event.trust_score);
               return (
               <div
                 key={event.id}
@@ -252,6 +270,16 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                             duplicado
                           </span>
                         )}
+                        <span
+                          className={cn("text-[11px] px-2 py-0.5 rounded-full", trust.className)}
+                          title={
+                            event.trust_factors
+                              ? `Modelo ${event.trust_model_version || "v1"} · ${JSON.stringify(event.trust_factors)}`
+                              : `Modelo ${event.trust_model_version || "v1"}`
+                          }
+                        >
+                          {trust.text}
+                        </span>
                       </div>
                       {summary && <p className="text-sm text-foreground mt-2">{summary}</p>}
                       {!summary && (

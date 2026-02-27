@@ -127,6 +127,28 @@ function compactJson(value: unknown): string {
   }
 }
 
+function trustBadge(level?: string | null, score?: number | null): { text: string; className: string } {
+  if (level === "high" || (typeof score === "number" && score >= 80)) {
+    return {
+      text: `Confiança alta${typeof score === "number" ? ` · ${score}` : ""}`,
+      className: "bg-emerald-500/10 text-emerald-700",
+    };
+  }
+  if (level === "medium" || (typeof score === "number" && score >= 60)) {
+    return {
+      text: `Confiança média${typeof score === "number" ? ` · ${score}` : ""}`,
+      className: "bg-amber-500/10 text-amber-700",
+    };
+  }
+  if (level === "low" || typeof score === "number") {
+    return {
+      text: `Confiança baixa${typeof score === "number" ? ` · ${score}` : ""}`,
+      className: "bg-rose-500/10 text-rose-700",
+    };
+  }
+  return { text: "Confiança n/d", className: "bg-muted text-muted-foreground" };
+}
+
 /* ── main component ──────────────────────────── */
 
 export default function PublicItem() {
@@ -435,6 +457,7 @@ export default function PublicItem() {
                   const isOperational = !REAL_LIFE_EVENT_TYPES.has(event.event_type);
                   const isExpanded = expandedEvents.has(event.id);
                   const hasPayload = event.payload && Object.keys(event.payload).length > 0;
+                  const trust = trustBadge(event.trust_level, event.trust_score);
 
                   return (
                     <div key={event.id} className="relative pl-12 pb-1 pt-1">
@@ -464,6 +487,16 @@ export default function PublicItem() {
                                   operacional
                                 </span>
                               )}
+                              <span
+                                className={`text-[10px] px-1.5 py-0.5 rounded ${trust.className}`}
+                                title={
+                                  event.trust_factors
+                                    ? `Modelo ${event.trust_model_version || "v1"} · ${JSON.stringify(event.trust_factors)}`
+                                    : `Modelo ${event.trust_model_version || "v1"}`
+                                }
+                              >
+                                {trust.text}
+                              </span>
                             </div>
                             {summary && (
                               <p className="text-sm text-foreground mt-2">{summary}</p>
