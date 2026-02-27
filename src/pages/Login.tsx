@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -55,32 +55,52 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
     if (demoPassword) setPassword(demoPassword);
   }, [searchParams]);
 
-  useEffect(() => {
+  const restorePendingTwofa = useCallback(() => {
     // Recover pending 2FA challenge to avoid falling back to credentials on reload/remount.
     try {
       const raw =
         sessionStorage.getItem(PENDING_2FA_KEY) ||
         localStorage.getItem(PENDING_2FA_FALLBACK_KEY);
-      if (!raw) return;
+      if (!raw) return false;
       const parsed = JSON.parse(raw) as Pending2FA;
       if (!parsed?.token || !parsed?.created_at) {
         sessionStorage.removeItem(PENDING_2FA_KEY);
         localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
-        return;
+        return false;
       }
       if (Date.now() - parsed.created_at > PENDING_2FA_TTL_MS) {
         sessionStorage.removeItem(PENDING_2FA_KEY);
         localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
-        return;
+        return false;
       }
       setTwofaToken(parsed.token);
       setIsTwofaStep(true);
       if (parsed.email) setEmail(parsed.email);
+      return true;
     } catch {
       sessionStorage.removeItem(PENDING_2FA_KEY);
       localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
+      return false;
     }
   }, []);
+
+  useEffect(() => {
+    restorePendingTwofa();
+  }, [restorePendingTwofa]);
+
+  useEffect(() => {
+    // Some password managers may transiently reset UI state without full reload.
+    // Re-hydrate 2FA step on focus/visibility.
+    const rehydrate = () => {
+      if (!isTwofaStep) restorePendingTwofa();
+    };
+    window.addEventListener("focus", rehydrate);
+    document.addEventListener("visibilitychange", rehydrate);
+    return () => {
+      window.removeEventListener("focus", rehydrate);
+      document.removeEventListener("visibilitychange", rehydrate);
+    };
+  }, [isTwofaStep, restorePendingTwofa]);
 
   const getPendingTwofaToken = (): string | null => {
     if (twofaToken?.trim()) return twofaToken.trim();
@@ -97,6 +117,15 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
       return null;
     }
   };
+
+  const hasPendingTwofa = !!getPendingTwofaToken();
+  const showTwofaStep = isTwofaStep || hasPendingTwofa;
+
+  useEffect(() => {
+    if (!isTwofaStep && hasPendingTwofa) {
+      setIsTwofaStep(true);
+    }
+  }, [isTwofaStep, hasPendingTwofa]);
 
   useEffect(() => {
     if (isAuthLoading || !isAuthenticated) return;
@@ -133,7 +162,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
     setIsLoading(true);
 
     try {
-      if (isTwofaStep) {
+      if (showTwofaStep) {
         const effectiveToken = getPendingTwofaToken();
         if (!effectiveToken) {
           throw new Error("Desafio 2FA expirou. Entre novamente com email e senha.");
@@ -192,14 +221,14 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {isTwofaStep
+              {showTwofaStep
                 ? "Verificação em duas etapas"
                 : isPartnerMode
                 ? "Portal de Parceiros"
                 : t("login.welcome")}
             </h1>
             <p className="text-muted-foreground">
-              {isTwofaStep
+              {showTwofaStep
                 ? "Informe o código de 6 dígitos do autenticador ou um recovery code."
                 : isPartnerMode
                 ? "Acesse com sua conta de parceiro para enviar dados e acompanhar integrações."
@@ -209,7 +238,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {!isTwofaStep ? (
+            {!showTwofaStep ? (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="email">{t("login.email")}</Label>
@@ -217,7 +246,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                     id="email"
                     name="email"
                     type="email"
-                    autoComplete="email username"
+                    autoComplete="username"
                     placeholder={t("register.emailPlaceholder")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -261,6 +290,29 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="twofa-account">Conta</Label>
+                  <Input
+                    id="twofa-account"
+                    name="username"
+                    type="email"
+                    value={email}
+                    autoComplete="username"
+                    readOnly
+                    data-1p-ignore="true"
+                    className="h-11 bg-muted/40"
+                  />
+                  <input
+                    type="email"
+                    name="username"
+                    autoComplete="username"
+                    value={email}
+                    readOnly
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="twofa">Código 2FA</Label>
                   <Input
                     id="twofa"
@@ -299,14 +351,14 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
             <Button
               type="submit"
-              disabled={isLoading || (isTwofaStep ? !twofaCode.trim() : false)}
+              disabled={isLoading || (showTwofaStep ? !twofaCode.trim() : false)}
               className="w-full h-12 btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold text-lg"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  {isTwofaStep ? "Validar 2FA" : t("login.signIn")}
+                  {showTwofaStep ? "Validar 2FA" : t("login.signIn")}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
