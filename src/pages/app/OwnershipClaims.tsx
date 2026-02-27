@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Link2, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import { CheckCircle2, Link2, Loader2, Plus, ShieldCheck, XCircle } from "lucide-react";
 import {
   adminListOwnershipClaims,
   adminRejectOwnershipClaim,
@@ -18,6 +18,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const IDENTIFIER_TYPES = [
   { value: "land_dfid", label: "LAND DFID (propriedade)" },
@@ -69,10 +78,12 @@ export default function OwnershipClaims() {
   const [partyValue, setPartyValue] = useState("");
   const [propertyPartyRole, setPropertyPartyRole] = useState<(typeof PROPERTY_PARTY_ROLE_OPTIONS)[number]["value"]>("owner");
   const [propertyPartyNotes, setPropertyPartyNotes] = useState("");
+  const [claimDialogOpen, setClaimDialogOpen] = useState(false);
+  const [propertyPartyDialogOpen, setPropertyPartyDialogOpen] = useState(false);
 
   const isAdmin = !!user?.is_admin;
   const workspaceType = user?.workspace_type || "producer";
-  const canSubmit = workspaceType === "producer" || workspaceType === "certifier" || isAdmin;
+  const canSubmit = workspaceType === "producer" || workspaceType === "certifier";
 
   const myClaimsQuery = useQuery({
     queryKey: ["my-claims"],
@@ -122,6 +133,7 @@ export default function OwnershipClaims() {
       setRoleNoImovel("");
       setTelefoneContato("");
       setDocumentoComprovanteUrl("");
+      setClaimDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["my-claims"] });
       toast({ title: "Claim enviado", description: "Seu claim foi registrado e aguarda validação do admin." });
     },
@@ -162,6 +174,7 @@ export default function OwnershipClaims() {
       setPropertyDfid("");
       setPartyValue("");
       setPropertyPartyNotes("");
+      setPropertyPartyDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["my-property-party-roles"] });
       queryClient.invalidateQueries({ queryKey: ["admin-property-party-roles"] });
       toast({
@@ -243,6 +256,21 @@ export default function OwnershipClaims() {
     [myClaims]
   );
 
+  const renderClaimStatus = (status: string) => {
+    const normalized = status.toLowerCase();
+    if (normalized === "verified") return { label: "Verificado", variant: "default" as const };
+    if (normalized === "rejected") return { label: "Rejeitado", variant: "destructive" as const };
+    return { label: "Pendente", variant: "secondary" as const };
+  };
+
+  const renderPropertyPartyStatus = (status: string) => {
+    const normalized = status.toLowerCase();
+    if (normalized === "verified") return { label: "Verificado", variant: "default" as const };
+    if (normalized === "rejected") return { label: "Rejeitado", variant: "destructive" as const };
+    if (normalized === "ended") return { label: "Encerrado", variant: "outline" as const };
+    return { label: "Pendente", variant: "secondary" as const };
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
@@ -253,128 +281,171 @@ export default function OwnershipClaims() {
       </div>
 
       {canSubmit && (
-        <section className="bg-background border border-border rounded-xl p-4 space-y-3">
-          <h2 className="text-lg font-semibold">Novo claim</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <select
-              className="h-10 px-3 rounded-md border border-input bg-background"
-              value={identifierType}
-              onChange={(e) => setIdentifierType(e.target.value as any)}
-            >
-              {IDENTIFIER_TYPES.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <Input
-              placeholder="Informe o identificador"
-              value={identifierValue}
-              onChange={(e) => setIdentifierValue(e.target.value)}
-              className="md:col-span-2"
-            />
-            <Button
-              onClick={() => submitMutation.mutate()}
-              disabled={!identifierValue.trim() || hasPendingMutation}
-            >
-              {submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar claim"}
-            </Button>
+        <section className="bg-background border border-border rounded-xl p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Ações de propriedade</h2>
+            <p className="text-sm text-muted-foreground">
+              Envie claim da propriedade ou vínculo propriedade↔parte sem poluir a tela principal.
+            </p>
           </div>
-          <Input placeholder="Nome da fazenda (opcional)" value={farmName} onChange={(e) => setFarmName(e.target.value)} />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Input placeholder="Município (opcional)" value={municipio} onChange={(e) => setMunicipio(e.target.value)} />
-            <select
-              className="h-10 px-3 rounded-md border border-input bg-background"
-              value={uf}
-              onChange={(e) => setUf(e.target.value)}
-            >
-              <option value="">UF (opcional)</option>
-              {UF_OPTIONS.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <Input
-              placeholder="Área em hectares (opcional)"
-              value={areaHectares}
-              onChange={(e) => setAreaHectares(e.target.value)}
-              inputMode="decimal"
-            />
+          <div className="flex flex-wrap gap-2">
+            <Dialog open={claimDialogOpen} onOpenChange={setClaimDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo claim
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Novo claim de propriedade</DialogTitle>
+                  <DialogDescription>
+                    Use identificador da propriedade (preferencial) e, se quiser, detalhe o contexto para acelerar validação.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <select
+                      className="h-10 px-3 rounded-md border border-input bg-background"
+                      value={identifierType}
+                      onChange={(e) => setIdentifierType(e.target.value as any)}
+                    >
+                      {IDENTIFIER_TYPES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      placeholder="Informe o identificador"
+                      value={identifierValue}
+                      onChange={(e) => setIdentifierValue(e.target.value)}
+                      className="md:col-span-2"
+                    />
+                  </div>
+                  <Input placeholder="Nome da fazenda (opcional)" value={farmName} onChange={(e) => setFarmName(e.target.value)} />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Input placeholder="Município (opcional)" value={municipio} onChange={(e) => setMunicipio(e.target.value)} />
+                    <select
+                      className="h-10 px-3 rounded-md border border-input bg-background"
+                      value={uf}
+                      onChange={(e) => setUf(e.target.value)}
+                    >
+                      <option value="">UF (opcional)</option>
+                      {UF_OPTIONS.map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      placeholder="Área em hectares (opcional)"
+                      value={areaHectares}
+                      onChange={(e) => setAreaHectares(e.target.value)}
+                      inputMode="decimal"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <select
+                      className="h-10 px-3 rounded-md border border-input bg-background"
+                      value={roleNoImovel}
+                      onChange={(e) => setRoleNoImovel(e.target.value as RoleNoImovel)}
+                    >
+                      <option value="">Papel no imóvel (opcional)</option>
+                      {ROLE_OPTIONS.map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                    <Input placeholder="Telefone de contato (opcional)" value={telefoneContato} onChange={(e) => setTelefoneContato(e.target.value)} />
+                    <Input placeholder="URL do comprovante (opcional)" value={documentoComprovanteUrl} onChange={(e) => setDocumentoComprovanteUrl(e.target.value)} />
+                  </div>
+                  <Input placeholder="Observações (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={() => submitMutation.mutate()}
+                    disabled={!identifierValue.trim() || hasPendingMutation}
+                  >
+                    {submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar claim"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={propertyPartyDialogOpen} onOpenChange={setPropertyPartyDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Novo vínculo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Vínculo Propriedade ↔ Parte</DialogTitle>
+                  <DialogDescription>
+                    Registre quem é titular/operador da LAND para reduzir ambiguidade entre CAR/CPF/CNPJ.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <Input
+                      placeholder="DFID-LAND-..."
+                      value={propertyDfid}
+                      onChange={(e) => setPropertyDfid(e.target.value)}
+                      className="md:col-span-2"
+                    />
+                    <select
+                      className="h-10 px-3 rounded-md border border-input bg-background"
+                      value={partyType}
+                      onChange={(e) => setPartyType(e.target.value as (typeof PARTY_TYPE_OPTIONS)[number]["value"])}
+                    >
+                      {PARTY_TYPE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Input placeholder="CPF/CNPJ" value={partyValue} onChange={(e) => setPartyValue(e.target.value)} />
+                    <select
+                      className="h-10 px-3 rounded-md border border-input bg-background"
+                      value={propertyPartyRole}
+                      onChange={(e) => setPropertyPartyRole(e.target.value as (typeof PROPERTY_PARTY_ROLE_OPTIONS)[number]["value"])}
+                    >
+                      {PROPERTY_PARTY_ROLE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Input
+                    placeholder="Observações (opcional)"
+                    value={propertyPartyNotes}
+                    onChange={(e) => setPropertyPartyNotes(e.target.value)}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={() => submitPropertyPartyMutation.mutate()}
+                    disabled={!propertyDfid.trim() || !partyValue.trim() || hasPendingMutation}
+                  >
+                    {submitPropertyPartyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar vínculo"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select
-              className="h-10 px-3 rounded-md border border-input bg-background"
-              value={roleNoImovel}
-              onChange={(e) => setRoleNoImovel(e.target.value as RoleNoImovel)}
-            >
-              <option value="">Papel no imóvel (opcional)</option>
-              {ROLE_OPTIONS.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <Input placeholder="Telefone de contato (opcional)" value={telefoneContato} onChange={(e) => setTelefoneContato(e.target.value)} />
-            <Input placeholder="URL do comprovante (opcional)" value={documentoComprovanteUrl} onChange={(e) => setDocumentoComprovanteUrl(e.target.value)} />
-          </div>
-          <Input placeholder="Observações (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </section>
       )}
 
-      {canSubmit && (
-        <section className="bg-background border border-border rounded-xl p-4 space-y-3">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Link2 className="h-5 w-5" /> Vínculo Propriedade ↔ Parte (novo modelo)
-          </h2>
+      {!canSubmit && (
+        <section className="bg-background border border-border rounded-xl p-4">
           <p className="text-sm text-muted-foreground">
-            Registre quem é o titular/operador de uma propriedade LAND. Isso reduz ambiguidade entre CAR/CPF/CNPJ.
+            Seu perfil atual não pode criar claims. Esta área permite visualização; envio é habilitado para workspaces
+            do tipo produtor ou certificadora.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <Input
-              placeholder="DFID-LAND-..."
-              value={propertyDfid}
-              onChange={(e) => setPropertyDfid(e.target.value)}
-              className="md:col-span-2"
-            />
-            <select
-              className="h-10 px-3 rounded-md border border-input bg-background"
-              value={partyType}
-              onChange={(e) => setPartyType(e.target.value as (typeof PARTY_TYPE_OPTIONS)[number]["value"])}
-            >
-              {PARTY_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <Input placeholder="CPF/CNPJ" value={partyValue} onChange={(e) => setPartyValue(e.target.value)} />
-            <select
-              className="h-10 px-3 rounded-md border border-input bg-background"
-              value={propertyPartyRole}
-              onChange={(e) => setPropertyPartyRole(e.target.value as (typeof PROPERTY_PARTY_ROLE_OPTIONS)[number]["value"])}
-            >
-              {PROPERTY_PARTY_ROLE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <Input
-              placeholder="Observações (opcional)"
-              value={propertyPartyNotes}
-              onChange={(e) => setPropertyPartyNotes(e.target.value)}
-              className="md:col-span-4"
-            />
-            <Button
-              onClick={() => submitPropertyPartyMutation.mutate()}
-              disabled={!propertyDfid.trim() || !partyValue.trim() || hasPendingMutation}
-            >
-              {submitPropertyPartyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar vínculo"}
-            </Button>
-          </div>
         </section>
       )}
 
@@ -402,8 +473,8 @@ export default function OwnershipClaims() {
                     </p>
                   )}
                 </div>
-                <Badge variant={claim.status === "verified" ? "default" : claim.status === "rejected" ? "destructive" : "secondary"}>
-                  {claim.status}
+                <Badge variant={renderClaimStatus(claim.status).variant}>
+                  {renderClaimStatus(claim.status).label}
                 </Badge>
               </div>
             ))}
@@ -429,18 +500,8 @@ export default function OwnershipClaims() {
                     {row.party_identifier_type.toUpperCase()}: {row.party_identifier_value} · papel: {row.role}
                   </p>
                 </div>
-                <Badge
-                  variant={
-                    row.status === "verified"
-                      ? "default"
-                      : row.status === "rejected"
-                        ? "destructive"
-                        : row.status === "ended"
-                          ? "outline"
-                          : "secondary"
-                  }
-                >
-                  {row.status}
+                <Badge variant={renderPropertyPartyStatus(row.status).variant}>
+                  {renderPropertyPartyStatus(row.status).label}
                 </Badge>
               </div>
             ))}
