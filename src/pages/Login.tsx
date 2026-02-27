@@ -24,6 +24,11 @@ type Pending2FA = {
   created_at: number;
 };
 
+const isValidTwofaInput = (code: string): boolean => {
+  const normalized = code.trim().replace(/\s+/g, "");
+  return /^\d{6}$/.test(normalized) || /^[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$/.test(normalized);
+};
+
 export default function Login({ forcedMode = "default" }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -120,6 +125,8 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
   const hasPendingTwofa = !!getPendingTwofaToken();
   const showTwofaStep = isTwofaStep || hasPendingTwofa;
+  const normalizedTwofaCode = twofaCode.trim().replace(/\s+/g, "");
+  const canSubmitTwofa = isValidTwofaInput(normalizedTwofaCode);
 
   useEffect(() => {
     if (!isTwofaStep && hasPendingTwofa) {
@@ -167,7 +174,10 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
         if (!effectiveToken) {
           throw new Error("Desafio 2FA expirou. Entre novamente com email e senha.");
         }
-        const normalizedCode = twofaCode.trim().replace(/\s+/g, "");
+        if (!canSubmitTwofa) {
+          throw new Error("Informe um código 2FA válido (6 dígitos) ou recovery code (XXXX-XXXX).");
+        }
+        const normalizedCode = normalizedTwofaCode;
         await verifyLogin2FA(effectiveToken, normalizedCode);
         clearPending2FA();
         setIsTwofaStep(false);
@@ -237,7 +247,11 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+            autoComplete={showTwofaStep ? "off" : "on"}
+          >
             {!showTwofaStep ? (
               <>
                 <div className="space-y-2">
@@ -351,7 +365,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
             <Button
               type="submit"
-              disabled={isLoading || (showTwofaStep ? !twofaCode.trim() : false)}
+              disabled={isLoading || (showTwofaStep ? !canSubmitTwofa : false)}
               className="w-full h-12 btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold text-lg"
             >
               {isLoading ? (
