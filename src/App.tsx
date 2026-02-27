@@ -17,6 +17,7 @@ import Privacidade from "./pages/Privacidade";
 import Termos from "./pages/Termos";
 import LogoPack from "./pages/LogoPack";
 import Login from "./pages/Login";
+import Login2FA from "./pages/Login2FA";
 import Cadastro from "./pages/Cadastro";
 import EsqueciSenha from "./pages/EsqueciSenha";
 import ResetSenha from "./pages/ResetSenha";
@@ -164,6 +165,7 @@ const App = () => (
             <Route path="/i/:dfid" element={<PublicItem />} />
             <Route path="/embed/portfolio" element={<EmbedPortfolio />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/login/2fa" element={<Login2FA />} />
             <Route path="/entrar" element={<Navigate to="/login" replace />} />
             <Route path="/partner-login" element={<Login forcedMode="partner" />} />
             <Route path="/parceiros/login" element={<Login forcedMode="partner" />} />
