@@ -255,6 +255,8 @@ export default function OwnershipClaims() {
     () => [...myClaims].sort((a, b) => b.created_at.localeCompare(a.created_at)),
     [myClaims]
   );
+  const pendingClaimsCount = sortedMyClaims.filter((c) => c.status === "pending").length;
+  const verifiedClaimsCount = sortedMyClaims.filter((c) => c.status === "verified").length;
 
   const renderClaimStatus = (status: string) => {
     const normalized = status.toLowerCase();
@@ -280,6 +282,25 @@ export default function OwnershipClaims() {
         </p>
       </div>
 
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-border bg-background p-3">
+          <p className="text-xs text-muted-foreground">Claims enviados</p>
+          <p className="text-xl font-semibold">{sortedMyClaims.length}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-background p-3">
+          <p className="text-xs text-muted-foreground">Pendentes</p>
+          <p className="text-xl font-semibold">{pendingClaimsCount}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-background p-3">
+          <p className="text-xs text-muted-foreground">Verificados</p>
+          <p className="text-xl font-semibold">{verifiedClaimsCount}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-background p-3">
+          <p className="text-xs text-muted-foreground">Vínculos</p>
+          <p className="text-xl font-semibold">{myPropertyParty.length}</p>
+        </div>
+      </section>
+
       {canSubmit && (
         <section className="bg-background border border-border rounded-xl p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -288,15 +309,15 @@ export default function OwnershipClaims() {
               Envie claim da propriedade ou vínculo propriedade↔parte sem poluir a tela principal.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full md:w-auto">
             <Dialog open={claimDialogOpen} onOpenChange={setClaimDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" className="w-full">
                   <Plus className="h-4 w-4 mr-2" />
                   Novo claim
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl">
+              <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Novo claim de propriedade</DialogTitle>
                   <DialogDescription>
@@ -363,8 +384,9 @@ export default function OwnershipClaims() {
                   </div>
                   <Input placeholder="Observações (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2">
                   <Button
+                    className="w-full sm:w-auto"
                     onClick={() => submitMutation.mutate()}
                     disabled={!identifierValue.trim() || hasPendingMutation}
                   >
@@ -376,12 +398,12 @@ export default function OwnershipClaims() {
 
             <Dialog open={propertyPartyDialogOpen} onOpenChange={setPropertyPartyDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full">
                   <Link2 className="h-4 w-4 mr-2" />
                   Novo vínculo
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl">
+              <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Vínculo Propriedade ↔ Parte</DialogTitle>
                   <DialogDescription>
@@ -426,8 +448,9 @@ export default function OwnershipClaims() {
                     onChange={(e) => setPropertyPartyNotes(e.target.value)}
                   />
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2">
                   <Button
+                    className="w-full sm:w-auto"
                     onClick={() => submitPropertyPartyMutation.mutate()}
                     disabled={!propertyDfid.trim() || !partyValue.trim() || hasPendingMutation}
                   >
@@ -460,7 +483,7 @@ export default function OwnershipClaims() {
         ) : (
           <div className="space-y-2">
             {sortedMyClaims.map((claim) => (
-              <div key={claim.id} className="border border-border rounded-lg p-3 flex items-center justify-between gap-3">
+              <div key={claim.id} className="border border-border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <p className="font-medium">{claim.identifier_type.toUpperCase()}: {claim.identifier_value}</p>
                   <p className="text-xs text-muted-foreground">
@@ -493,7 +516,7 @@ export default function OwnershipClaims() {
         ) : (
           <div className="space-y-2">
             {myPropertyParty.map((row) => (
-              <div key={row.id} className="border border-border rounded-lg p-3 flex items-center justify-between gap-3">
+              <div key={row.id} className="border border-border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <p className="font-medium">{row.property_dfid}</p>
                   <p className="text-xs text-muted-foreground">
