@@ -23,6 +23,7 @@ import type { Circuit } from "@/lib/api/types";
 import { Download, ExternalLink, FileUp, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/contexts/AuthContext";
+import { ApiError } from "@/lib/api/client";
 
 export function PartnerIntake() {
   const { toast } = useToast();
@@ -46,13 +47,29 @@ export function PartnerIntake() {
   const [previewResolvable, setPreviewResolvable] = useState(0);
   const [previewUnknown, setPreviewUnknown] = useState(0);
   const [previewResult, setPreviewResult] = useState<PartnerIntakePreviewResponse | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
 
-  const buildPreValidation = async (selectedFile: File | null, selectedSourceCircuitId: string) => {
+  const formatClientError = (err: unknown, fallback: string) => {
+    if (err instanceof ApiError) {
+      return `${err.message}${err.details ? ` · ${err.details}` : ""} (HTTP ${err.status} / ${err.code})`;
+    }
+    if (err instanceof Error) {
+      return err.message;
+    }
+    return fallback;
+  };
+
+  const buildPreValidation = async (
+    selectedFile: File | null,
+    selectedSourceCircuitId?: string,
+    showToastOnError = false
+  ) => {
     setPreviewRows(0);
     setPreviewResolvable(0);
     setPreviewUnknown(0);
     setPreviewResult(null);
+    setPreviewError(null);
     if (!selectedFile) return;
     setPreviewing(true);
     try {
@@ -61,11 +78,20 @@ export function PartnerIntake() {
       setPreviewResolvable(preview.resolvable_rows);
       setPreviewUnknown(preview.unresolved_rows);
       setPreviewResult(preview);
-    } catch {
+    } catch (err) {
+      const description = formatClientError(err, "Falha ao gerar prévia.");
       setPreviewRows(0);
       setPreviewResolvable(0);
       setPreviewUnknown(0);
       setPreviewResult(null);
+      setPreviewError(description);
+      if (showToastOnError) {
+        toast({
+          title: "Falha na prévia",
+          description,
+          variant: "destructive",
+        });
+      }
     } finally {
       setPreviewing(false);
     }
@@ -116,12 +142,12 @@ export function PartnerIntake() {
   }, [load]);
 
   useEffect(() => {
-    if (!file || !sourceCircuitId) return;
+    if (!file) return;
     void buildPreValidation(file, sourceCircuitId);
   }, [file, sourceCircuitId, autoCreate]);
 
   const onSubmit = async () => {
-    if (!file || !sourceCircuitId) return;
+    if (!file) return;
     setSending(true);
     try {
       const result = await partnerIntake(file, sourceCircuitId, autoCreate);
@@ -133,10 +159,11 @@ export function PartnerIntake() {
       setPreviewResult(null);
       setFile(null);
       await load();
-    } catch {
+    } catch (err) {
+      const description = formatClientError(err, "Não foi possível processar este arquivo.");
       toast({
         title: "Falha no intake",
-        description: "Não foi possível processar este arquivo.",
+        description,
         variant: "destructive",
       });
     } finally {
@@ -187,7 +214,7 @@ export function PartnerIntake() {
           Envie CSV/JSON uma única vez. A DeFarm persiste payload bruto, resolve cliente por identificador e roteia para os circuitos corretos.
         </p>
         <p className="text-xs text-muted-foreground">
-          Recomendado em produção: enviar em chunks de 50-150 linhas por request.
+          Recomendado em produção: enviar em chunks de 50-150 linhas por request. Em login JWT, o circuito de staging é opcional (usamos o padrão quando omitido).
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
@@ -209,14 +236,14 @@ export function PartnerIntake() {
               onChange={async (e) => {
                 const selected = e.target.files?.[0] || null;
                 setFile(selected);
-                if (selected && sourceCircuitId) {
-                  await buildPreValidation(selected, sourceCircuitId);
+                if (selected) {
+                  await buildPreValidation(selected, sourceCircuitId || undefined, true);
                 }
               }}
             />
           </label>
 
-          <Button onClick={onSubmit} disabled={!file || !sourceCircuitId || sending}>
+          <Button onClick={onSubmit} disabled={!file || sending}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Processar intake"}
           </Button>
         </div>
@@ -239,6 +266,9 @@ export function PartnerIntake() {
                 <p className="text-muted-foreground">Auto-criação prevista: <span className="text-foreground font-medium">{previewResult?.would_auto_create_rows ?? 0}</span></p>
               </div>
             )}
+            {previewError ? (
+              <p className="text-xs text-destructive mt-2">{previewError}</p>
+            ) : null}
             {!previewing && previewResult?.routing_plan?.length ? (
               <div className="mt-3 space-y-1">
                 {previewResult.routing_plan.slice(0, 6).map((plan) => (

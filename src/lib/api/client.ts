@@ -16,7 +16,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public code: string,
-    message: string
+    message: string,
+    public details?: string
   ) {
     super(message);
     this.name = "ApiError";
@@ -143,7 +144,8 @@ export async function registryRequest<T>(
       throw new ApiError(
         response.status,
         errorData.error || "UNKNOWN_ERROR",
-        errorData.message || `Request failed with status ${response.status}`
+        errorData.message || `Request failed with status ${response.status}`,
+        errorData.details
       );
     }
 
@@ -189,7 +191,8 @@ export async function authRequest<T>(
     throw new ApiError(
       response.status,
       errorData.error || "AUTH_ERROR",
-      errorData.message || `Auth request failed with status ${response.status}`
+      errorData.message || `Auth request failed with status ${response.status}`,
+      errorData.details
     );
   }
 
@@ -217,7 +220,8 @@ export async function registryPublicRequest<T>(
     throw new ApiError(
       response.status,
       errorData.error || "PUBLIC_REQUEST_ERROR",
-      errorData.message || `Request failed with status ${response.status}`
+      errorData.message || `Request failed with status ${response.status}`,
+      errorData.details
     );
   }
 
@@ -263,7 +267,8 @@ export async function registryFileRequest(
     throw new ApiError(
       response.status,
       errorData.error || "FILE_REQUEST_ERROR",
-      errorData.message || `Request failed with status ${response.status}`
+      errorData.message || `Request failed with status ${response.status}`,
+      errorData.details
     );
   }
 
