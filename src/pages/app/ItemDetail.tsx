@@ -111,34 +111,6 @@ export default function ItemDetail() {
     },
   });
 
-  if (isLoadingItem) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (itemError || !item) {
-    return (
-      <div className="max-w-2xl mx-auto text-center py-12">
-        <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Item não encontrado
-        </h1>
-        <p className="text-muted-foreground mb-6">
-          O item que você está procurando não existe ou você não tem permissão para acessá-lo.
-        </p>
-        <Link to="/app/itens">
-          <Button>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Itens
-          </Button>
-        </Link>
-      </div>
-    );
-  }
-
   // Merge events from detail response + separate query
   const allEvents = itemDetails?.events?.length ? itemDetails.events : events;
   const propertyLinks = propertyLinksData?.links || [];
@@ -201,6 +173,34 @@ export default function ItemDetail() {
       setRefreshingProperty(null);
     }
   };
+
+  if (isLoadingItem) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (itemError || !item) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-12">
+        <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Item não encontrado
+        </h1>
+        <p className="text-muted-foreground mb-6">
+          O item que você está procurando não existe ou você não tem permissão para acessá-lo.
+        </p>
+        <Link to="/app/itens">
+          <Button>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar para Itens
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
