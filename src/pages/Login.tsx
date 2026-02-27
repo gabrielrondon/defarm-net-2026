@@ -15,6 +15,7 @@ interface LoginProps {
 }
 
 const PENDING_2FA_KEY = "defarm_pending_2fa";
+const PENDING_2FA_FALLBACK_KEY = "defarm_pending_2fa_fallback";
 const PENDING_2FA_TTL_MS = 10 * 60 * 1000;
 
 type Pending2FA = {
@@ -30,7 +31,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
   const [twofaToken, setTwofaToken] = useState<string | null>(null);
   const [twofaCode, setTwofaCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login, verifyLogin2FA } = useAuth();
+  const { login, verifyLogin2FA, isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -56,23 +57,43 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
   useEffect(() => {
     // Recover pending 2FA challenge to avoid falling back to credentials on reload/remount.
     try {
-      const raw = sessionStorage.getItem(PENDING_2FA_KEY);
+      const raw =
+        sessionStorage.getItem(PENDING_2FA_KEY) ||
+        localStorage.getItem(PENDING_2FA_FALLBACK_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as Pending2FA;
       if (!parsed?.token || !parsed?.created_at) {
         sessionStorage.removeItem(PENDING_2FA_KEY);
+        localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
         return;
       }
       if (Date.now() - parsed.created_at > PENDING_2FA_TTL_MS) {
         sessionStorage.removeItem(PENDING_2FA_KEY);
+        localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
         return;
       }
       setTwofaToken(parsed.token);
       if (parsed.email) setEmail(parsed.email);
     } catch {
       sessionStorage.removeItem(PENDING_2FA_KEY);
+      localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthLoading || !isAuthenticated) return;
+    const destination =
+      user?.workspace_type === "partner"
+        ? "/app/parceiro"
+        : user?.workspace_type === "certifier"
+        ? "/app/claims"
+        : user?.workspace_type === "processor"
+        ? "/app/eventos"
+        : isPartnerMode
+        ? "/app/parceiro"
+        : "/app";
+    navigate(destination, { replace: true });
+  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, navigate]);
 
   const persistPending2FA = (token: string, accountEmail: string) => {
     const payload: Pending2FA = {
@@ -81,10 +102,12 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
       created_at: Date.now(),
     };
     sessionStorage.setItem(PENDING_2FA_KEY, JSON.stringify(payload));
+    localStorage.setItem(PENDING_2FA_FALLBACK_KEY, JSON.stringify(payload));
   };
 
   const clearPending2FA = () => {
     sessionStorage.removeItem(PENDING_2FA_KEY);
+    localStorage.removeItem(PENDING_2FA_FALLBACK_KEY);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,7 +119,6 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
         const normalizedCode = twofaCode.trim().replace(/\s+/g, "");
         await verifyLogin2FA(twofaToken, normalizedCode);
         clearPending2FA();
-        navigate(isPartnerMode ? "/app/parceiro" : "/app");
       } else {
         const challenge = await login({ email, password });
         if (challenge?.requires_2fa) {
@@ -108,7 +130,6 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
           });
           return;
         }
-        navigate(isPartnerMode ? "/app/parceiro" : "/app");
       }
     } catch (error) {
       toast({
