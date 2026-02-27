@@ -82,6 +82,30 @@ for (const batch of result.routed_batches) {
   }
 }`;
 
+const TEMPLATE_API_EXAMPLE = `# 1) Criar template (JWT)
+curl -X POST "https://gateway.defarm.net/api/ingestion/templates" \\
+  -H "Authorization: Bearer <JWT>" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Parceiro ERP v1",
+    "mapping": {
+      "columns": {
+        "numero_car": "car",
+        "peso_vivo_kg": "weight_kg"
+      }
+    }
+  }'
+
+# 2) Listar templates e pegar id
+curl -X GET "https://gateway.defarm.net/api/ingestion/templates" \\
+  -H "Authorization: Bearer <JWT>"
+
+# 3) Enviar com template_id
+curl -X POST "https://gateway.defarm.net/api/partner/upload" \\
+  -H "x-api-key: <PARTNER_API_KEY>" \\
+  -F "file=@dados.csv" \\
+  -F "template_id=<TEMPLATE_UUID>"`;
+
 const JWT_LOGIN_EXAMPLE = `curl -X POST "https://gateway.defarm.net/auth/login" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -102,7 +126,7 @@ function downloadTemplate(content: string, filename: string) {
 }
 
 export function PartnerKit() {
-  const [copied, setCopied] = useState<"none" | "curl" | "jwt">("none");
+  const [copied, setCopied] = useState<"none" | "curl" | "jwt" | "template">("none");
 
   const copyCurl = async () => {
     await navigator.clipboard.writeText(CURL_EXAMPLE);
@@ -113,6 +137,12 @@ export function PartnerKit() {
   const copyJwt = async () => {
     await navigator.clipboard.writeText(JWT_LOGIN_EXAMPLE);
     setCopied("jwt");
+    setTimeout(() => setCopied("none"), 1800);
+  };
+
+  const copyTemplateApi = async () => {
+    await navigator.clipboard.writeText(TEMPLATE_API_EXAMPLE);
+    setCopied("template");
     setTimeout(() => setCopied("none"), 1800);
   };
 
@@ -192,6 +222,20 @@ export function PartnerKit() {
             Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para simular roteamento sem tokenizar.
           </p>
           <pre className="code-block">{PREVIEW_EXAMPLE}</pre>
+        </Card>
+
+        <Card className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">Template opcional (mapeamento)</p>
+            <Button size="sm" variant="ghost" onClick={copyTemplateApi} className="h-7 px-2 text-xs">
+              {copied === "template" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+              {copied === "template" ? "Copiado" : "Copiar"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Se precisar mapear nomes de colunas diferentes, crie template e envie <code className="text-xs bg-muted px-1 py-0.5 rounded">template_id</code> no upload.
+          </p>
+          <pre className="code-block">{TEMPLATE_API_EXAMPLE}</pre>
         </Card>
 
         <Card className="p-4 space-y-3">
