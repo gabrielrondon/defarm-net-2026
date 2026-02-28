@@ -9065,6 +9065,30 @@ paths:
       requestBody:
         required: true
         content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerUploadJsonRequest'
+            examples:
+              jsonArray:
+                summary: Direct JSON array body
+                value:
+                - sisbov: '105500497219983'
+                  car: MT-1234.56789.0000.00
+                  value_chain: BEEF
+              jsonEnvelope:
+                summary: JSON envelope with controls
+                value:
+                  source_circuit_id: 11111111-1111-1111-1111-111111111111
+                  template_id: 22222222-2222-2222-2222-222222222222
+                  mapping:
+                    columns:
+                      id_interno: partner_internal_id
+                      numero_sisbov: sisbov
+                  auto_create_circuit: true
+                  items:
+                  - sisbov: '105500497219983'
+                    car: MT-1234.56789.0000.00
+                    value_chain: BEEF
           multipart/form-data:
             schema:
               type: object
@@ -9089,6 +9113,26 @@ paths:
                 auto_create_circuit:
                   type: boolean
                   description: Auto-create destination circuit when no routing rule matches.
+      responses:
+        '201':
+          description: Ingestion processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerIntakeResponse'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+  /api/partner/ingestions/preview:
+    post:
+      tags:
+      - Partner Routing
+      summary: Partner ingestions preview (no side effects)
+      description: 'Validates CSV/JSON and simulates routing outcomes without storing payload, creating circuits, or tokenizing items. Requires `value_chain` + traceable asset identifier per row (BEEF/DAIRY: SISBOV preferred or CHIP).'
+      operationId: preview_partner_ingestion
+      requestBody:
+        required: true
+        content:
           application/json:
             schema:
               $ref: '#/components/schemas/PartnerUploadJsonRequest'
@@ -9113,26 +9157,6 @@ paths:
                   - sisbov: '105500497219983'
                     car: MT-1234.56789.0000.00
                     value_chain: BEEF
-      responses:
-        '201':
-          description: Ingestion processed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PartnerIntakeResponse'
-      security:
-      - bearerAuth: []
-      - apiKeyAuth: []
-  /api/partner/ingestions/preview:
-    post:
-      tags:
-      - Partner Routing
-      summary: Partner ingestions preview (no side effects)
-      description: 'Validates CSV/JSON and simulates routing outcomes without storing payload, creating circuits, or tokenizing items. Requires `value_chain` + traceable asset identifier per row (BEEF/DAIRY: SISBOV preferred or CHIP).'
-      operationId: preview_partner_ingestion
-      requestBody:
-        required: true
-        content:
           multipart/form-data:
             schema:
               type: object
@@ -9157,30 +9181,6 @@ paths:
                 auto_create_circuit:
                   type: boolean
                   description: Simulate auto-creation when no routing rule matches.
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PartnerUploadJsonRequest'
-            examples:
-              jsonArray:
-                summary: Direct JSON array body
-                value:
-                - sisbov: '105500497219983'
-                  car: MT-1234.56789.0000.00
-                  value_chain: BEEF
-              jsonEnvelope:
-                summary: JSON envelope with controls
-                value:
-                  source_circuit_id: 11111111-1111-1111-1111-111111111111
-                  template_id: 22222222-2222-2222-2222-222222222222
-                  mapping:
-                    columns:
-                      id_interno: partner_internal_id
-                      numero_sisbov: sisbov
-                  auto_create_circuit: true
-                  items:
-                  - sisbov: '105500497219983'
-                    car: MT-1234.56789.0000.00
-                    value_chain: BEEF
       responses:
         '200':
           description: Preview generated
