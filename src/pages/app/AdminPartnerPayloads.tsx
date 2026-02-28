@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, ExternalLink, FileJson, FileSpreadsheet, RefreshCw, ScrollText, Webhook } from "lucide-react";
+import { Download, ExternalLink, FileJson, FileSpreadsheet, Radio, RefreshCw, ScrollText, Webhook } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +78,10 @@ export default function AdminPartnerPayloads() {
   const [search, setSearch] = useState<string>("");
   const [status, setStatus] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [liveTail, setLiveTail] = useState(false);
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   const workspacesQuery = useQuery({
     queryKey: ["admin-workspaces-all"],
@@ -117,6 +121,34 @@ export default function AdminPartnerPayloads() {
   const completedCount = filteredRows.filter((row) => row.status === "completed").length;
   const failedCount = filteredRows.filter((row) => row.status === "failed").length;
   const partialCount = filteredRows.filter((row) => row.status === "partial").length;
+
+  useEffect(() => {
+    if (!liveTail) return;
+    const id = window.setInterval(() => {
+      payloadsQuery.refetch();
+    }, 3500);
+    return () => window.clearInterval(id);
+  }, [liveTail, payloadsQuery]);
+
+  useEffect(() => {
+    const ids = rows.map((r) => r.id);
+    if (!initializedRef.current) {
+      seenIdsRef.current = new Set(ids);
+      initializedRef.current = true;
+      return;
+    }
+    const incoming = ids.filter((id) => !seenIdsRef.current.has(id));
+    if (incoming.length > 0) {
+      setNewIds((prev) => {
+        const next = new Set(prev);
+        for (const id of incoming) next.add(id);
+        return next;
+      });
+      for (const id of incoming) {
+        seenIdsRef.current.add(id);
+      }
+    }
+  }, [rows]);
 
   return (
     <div className="space-y-6">
@@ -224,6 +256,22 @@ export default function AdminPartnerPayloads() {
               <RefreshCw className={`h-4 w-4 mr-1 ${payloadsQuery.isFetching ? "animate-spin" : ""}`} />
               Atualizar
             </Button>
+            <Button
+              variant={liveTail ? "default" : "outline"}
+              size="sm"
+              onClick={() => setLiveTail((v) => !v)}
+            >
+              <Radio className="h-4 w-4 mr-1" />
+              {liveTail ? "Live Tail ativo" : "Live Tail"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={newIds.size === 0}
+              onClick={() => setNewIds(new Set())}
+            >
+              Marcar {newIds.size} nova(s)
+            </Button>
             <Button variant="outline" size="sm" asChild>
               <Link to="/app/webhooks">
                 <Webhook className="h-4 w-4 mr-1" />
@@ -270,21 +318,32 @@ export default function AdminPartnerPayloads() {
                 key={row.id}
                 type="button"
                 className={`w-full text-left rounded-lg border p-3 hover:bg-muted/20 transition-colors ${
-                  selected?.id === row.id ? "ring-2 ring-primary/30 border-primary/40" : ""
+                  selected?.id === row.id
+                    ? "ring-2 ring-primary/30 border-primary/40"
+                    : newIds.has(row.id)
+                      ? "border-primary/40 bg-primary/5"
+                      : ""
                 }`}
                 onClick={() => setSelectedId(row.id)}
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium truncate">{row.file_name || "payload"}</p>
-                  <span className={`text-[11px] px-2 py-1 rounded-full border ${
-                    row.status === "completed"
-                      ? "bg-primary/10 text-primary border-primary/20"
-                      : row.status === "failed"
-                        ? "bg-destructive/10 text-destructive border-destructive/20"
-                        : "bg-muted text-muted-foreground border-border"
-                  }`}>
-                    {row.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {newIds.has(row.id) ? (
+                      <span className="text-[11px] px-2 py-1 rounded-full border bg-primary/10 text-primary border-primary/20">
+                        novo
+                      </span>
+                    ) : null}
+                    <span className={`text-[11px] px-2 py-1 rounded-full border ${
+                      row.status === "completed"
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : row.status === "failed"
+                          ? "bg-destructive/10 text-destructive border-destructive/20"
+                          : "bg-muted text-muted-foreground border-border"
+                    }`}>
+                      {row.status}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {new Date(row.created_at).toLocaleString("pt-BR")} · {workspaceLabel(row.workspace_id)}

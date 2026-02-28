@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   type PartnerRequestLogEntry,
 } from "@/lib/api/partner-request-log";
 import { listRawPayloads, downloadRawPayload, type RawPayloadSummary } from "@/lib/api/partner-routing";
-import { Download, ExternalLink, Loader2, ScrollText, Trash2, Webhook } from "lucide-react";
+import { Download, ExternalLink, Loader2, Radio, ScrollText, Trash2, Webhook } from "lucide-react";
 
 type TimelineEntry =
   | { source: "api"; id: string; ts: string; item: PartnerRequestLogEntry }
@@ -50,7 +50,11 @@ export default function PartnerLogs() {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "api" | "payload">("all");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [liveTail, setLiveTail] = useState(false);
   const [selected, setSelected] = useState<TimelineEntry | null>(null);
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const initializedRef = useRef(false);
 
   const loadRawHistory = useCallback(async () => {
     try {
@@ -86,12 +90,12 @@ export default function PartnerLogs() {
   }, []);
 
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh && !liveTail) return;
     const id = window.setInterval(() => {
       void loadRawHistory();
-    }, 15000);
+    }, liveTail ? 3500 : 15000);
     return () => window.clearInterval(id);
-  }, [autoRefresh, loadRawHistory]);
+  }, [autoRefresh, liveTail, loadRawHistory]);
 
   const timeline = useMemo<TimelineEntry[]>(() => {
     const apiEntries: TimelineEntry[] = localLogs.map((item) => ({
@@ -133,6 +137,26 @@ export default function PartnerLogs() {
     });
   }, [timeline, sourceFilter, search]);
 
+  useEffect(() => {
+    const ids = timeline.map((e) => e.id);
+    if (!initializedRef.current) {
+      seenIdsRef.current = new Set(ids);
+      initializedRef.current = true;
+      return;
+    }
+    const incoming = ids.filter((id) => !seenIdsRef.current.has(id));
+    if (incoming.length > 0) {
+      setNewIds((prev) => {
+        const next = new Set(prev);
+        for (const id of incoming) next.add(id);
+        return next;
+      });
+      for (const id of incoming) {
+        seenIdsRef.current.add(id);
+      }
+    }
+  }, [timeline]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -153,13 +177,26 @@ export default function PartnerLogs() {
       </div>
 
       <Card className="p-4 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} id="auto-refresh-logs" />
           <Label htmlFor="auto-refresh-logs">Atualizar automaticamente (15s)</Label>
+          <Switch checked={liveTail} onCheckedChange={setLiveTail} id="live-tail-logs" />
+          <Label htmlFor="live-tail-logs" className="inline-flex items-center gap-1">
+            <Radio className={`h-3.5 w-3.5 ${liveTail ? "text-primary" : "text-muted-foreground"}`} />
+            Live Tail (3.5s)
+          </Label>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => void loadRawHistory()}>
             Atualizar agora
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={newIds.size === 0}
+            onClick={() => setNewIds(new Set())}
+          >
+            Marcar {newIds.size} nova(s) como lida(s)
           </Button>
           <Button
             variant="ghost"
@@ -168,6 +205,9 @@ export default function PartnerLogs() {
             onClick={() => {
               clearLog();
               setLocalLogs([]);
+              setNewIds(new Set());
+              seenIdsRef.current = new Set();
+              initializedRef.current = false;
             }}
           >
             <Trash2 className="h-4 w-4 mr-1" />
@@ -216,7 +256,9 @@ export default function PartnerLogs() {
               key={entry.id}
               type="button"
               onClick={() => setSelected(entry)}
-              className="w-full text-left rounded-lg border p-3 hover:bg-muted/30 transition-colors"
+              className={`w-full text-left rounded-lg border p-3 hover:bg-muted/30 transition-colors ${
+                newIds.has(entry.id) ? "border-primary/40 bg-primary/5" : ""
+              }`}
             >
               <div className="flex flex-col md:flex-row md:items-center gap-2 md:justify-between">
                 <div className="space-y-1 min-w-0">
@@ -235,6 +277,11 @@ export default function PartnerLogs() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {newIds.has(entry.id) ? (
+                    <span className="text-[11px] px-2 py-1 rounded-full border bg-primary/10 text-primary border-primary/20">
+                      novo
+                    </span>
+                  ) : null}
                   <span className={`text-[11px] px-2 py-1 rounded-full border ${
                     entry.source === "api"
                       ? (entry.item.status != null && entry.item.status < 400
