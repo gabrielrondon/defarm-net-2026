@@ -36,6 +36,7 @@ import {
   TerminalSquare,
   Code2,
   Database,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -60,6 +61,7 @@ type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
 const navCatalog: NavItem[] = [
   { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
   { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
+  { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
   { icon: Key, label: "API Keys", href: "/app/api-keys" },
   { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
   { icon: TerminalSquare, label: "CLI", href: "/app/cli" },
@@ -77,7 +79,7 @@ const navCatalog: NavItem[] = [
 ];
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
-  partner: ["/app/parceiro", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
+  partner: ["/app/parceiro", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
   producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],

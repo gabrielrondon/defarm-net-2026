@@ -93,7 +93,12 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 // Partner request log — captura interações com a API do parceiro
-import { addLogEntry, summarizeResponse } from "./partner-request-log";
+import {
+  addLogEntry,
+  summarizeResponse,
+  serializeRequestBody,
+  serializeResponseBody,
+} from "./partner-request-log";
 
 const PARTNER_LOG_PREFIXES = ["/partner/", "/embed/", "/ingestion/templates"];
 function isPartnerEndpoint(endpoint: string): boolean {
@@ -125,6 +130,7 @@ export async function registryRequest<T>(
   const method = options.method || "GET";
   const shouldLog = isPartnerEndpoint(endpoint);
   const startTime = shouldLog ? Date.now() : 0;
+  const requestBody = shouldLog ? serializeRequestBody(options.body) : null;
 
   if (DEBUG_API_LOGS) {
     console.log(`[DeFarm API] ${method} ${url}`);
@@ -163,7 +169,9 @@ export async function registryRequest<T>(
           errorCode: errorData.error || "UNKNOWN_ERROR",
           errorMessage: errorData.message || null,
           durationMs: Date.now() - startTime,
+          requestBody,
           responseSummary: null,
+          responseBody: serializeResponseBody(errorData),
         });
       }
       throw new ApiError(
@@ -185,7 +193,9 @@ export async function registryRequest<T>(
           errorCode: null,
           errorMessage: null,
           durationMs: Date.now() - startTime,
+          requestBody,
           responseSummary: "(sem conteúdo)",
+          responseBody: null,
         });
       }
       return undefined as T;
@@ -201,7 +211,9 @@ export async function registryRequest<T>(
         errorCode: null,
         errorMessage: null,
         durationMs: Date.now() - startTime,
+        requestBody,
         responseSummary: summarizeResponse(data),
+        responseBody: serializeResponseBody(data),
       });
     }
     return data;
@@ -218,7 +230,9 @@ export async function registryRequest<T>(
         errorCode: "NETWORK_ERROR",
         errorMessage: error instanceof Error ? error.message : "Erro de rede",
         durationMs: Date.now() - startTime,
+        requestBody,
         responseSummary: null,
+        responseBody: null,
       });
     }
     if (DEBUG_API_LOGS) {
