@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-import { CheckCircle2, Copy, FileText, Link2 } from "lucide-react";
+import { CheckCircle2, Copy, ExternalLink, FileText, Link2 } from "lucide-react";
 
 const KIT_TEMPLATE = `value_chain,country,year,sisbov,chip,ear_tag,birth_date,sex,lot_name,zone_name,source_system
 BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,parceiro_a
@@ -168,7 +168,7 @@ export function PartnerKit() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="card-accent-left p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">Template CSV</p>
@@ -177,6 +177,45 @@ export function PartnerKit() {
           <Button size="sm" variant="outline" onClick={() => downloadTemplate(KIT_TEMPLATE, "partner-template.csv")}>
             <FileText className="h-4 w-4 mr-1.5" />
             Baixar
+          </Button>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">OpenAPI</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Contrato parceiro</p>
+          </div>
+          <Button size="sm" variant="outline" asChild>
+            <a href="https://docs.defarm.net/openapi-partner-public.yaml" target="_blank" rel="noreferrer">
+              <ExternalLink className="h-4 w-4 mr-1.5" />
+              Abrir
+            </a>
+          </Button>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">Swagger</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Teste interativo</p>
+          </div>
+          <Button size="sm" variant="outline" asChild>
+            <a href="https://docs.defarm.net/swagger-partner.html" target="_blank" rel="noreferrer">
+              <ExternalLink className="h-4 w-4 mr-1.5" />
+              Abrir
+            </a>
+          </Button>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">Postman</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Coleção pronta</p>
+          </div>
+          <Button size="sm" variant="outline" asChild>
+            <a href="https://docs.defarm.net/postman-partner-collection.json" target="_blank" rel="noreferrer">
+              <ExternalLink className="h-4 w-4 mr-1.5" />
+              Abrir
+            </a>
           </Button>
         </Card>
       </div>
