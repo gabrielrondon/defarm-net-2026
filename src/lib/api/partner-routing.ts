@@ -73,6 +73,9 @@ export interface PartnerIntakeResponse {
     routes: number;
     items: number;
     created_circuits: number;
+    impacted_circuits: number;
+    items_created: number;
+    items_enriched: number;
     partner_reference?: {
       field: string;
       value: string;
@@ -87,6 +90,7 @@ export interface PartnerIntakeResponse {
       identifier_type: string;
       value: string;
     } | null;
+    url_refs?: Record<string, string> | null;
     routes: {
       route_type: string;
       route_value: string;

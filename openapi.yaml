@@ -2107,11 +2107,16 @@ components:
           type: string
           enum:
           - car
-          - cnpj
-          - cpf
+          - ccir
           - incra
           - nirf
+          - cib
+          - matricula
+          - georef
           - land_dfid
+          - inscricao_estadual
+          - cnpj
+          - cpf
         identifier_value:
           type: string
         circuit_id:
@@ -2440,7 +2445,7 @@ components:
           type: object
           additionalProperties: true
       - $ref: '#/components/schemas/PartnerUploadJsonEnvelope'
-      description: Direct JSON body accepted by /api/partner/ingestions and /api/partner/ingestions/preview.
+      description: Direct JSON body accepted by /v1/partner/ingestions and /v1/partner/ingestions/preview.
     PartnerCircuitLink:
       type: object
       required:
