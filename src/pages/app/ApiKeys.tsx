@@ -121,14 +121,16 @@ export default function ApiKeys() {
   const handleCreate = async () => {
     if (!newKeyName) return;
     if (newKeyScope === "circuit" && !newKeyCircuit) return;
-    if (newKeyScope === "workspace_ingestion" && !newKeyStagingCircuit) return;
     setCreating(true);
     try {
       const result = await createPartnerApiKey({
         key_name: newKeyName,
         scope: newKeyScope,
         circuit_id: newKeyScope === "circuit" ? newKeyCircuit : undefined,
-        staging_circuit_id: newKeyScope === "workspace_ingestion" ? newKeyStagingCircuit : undefined,
+        staging_circuit_id:
+          newKeyScope === "workspace_ingestion" && newKeyStagingCircuit
+            ? newKeyStagingCircuit
+            : undefined,
         description: newKeyDescription || undefined,
         expires_in_days: newKeyExpiry ? parseInt(newKeyExpiry) : undefined,
       });
@@ -418,20 +420,12 @@ export default function ApiKeys() {
               </div>
             ) : null}
             {newKeyScope === "workspace_ingestion" ? (
-              <div className="space-y-2">
-                <Label>Circuito de staging *</Label>
-                <Select value={newKeyStagingCircuit} onValueChange={setNewKeyStagingCircuit}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o circuito staging" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {circuits.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+                Sem configuração adicional: a DeFarm escolhe automaticamente o circuito interno de ingestão.
+                <br />
+                <span className="opacity-80">
+                  Avançado (opcional): você ainda pode definir manualmente no backend via <code>staging_circuit_id</code>.
+                </span>
               </div>
             ) : null}
             <div className="space-y-2">
@@ -463,8 +457,7 @@ export default function ApiKeys() {
               disabled={
                 creating ||
                 !newKeyName ||
-                (newKeyScope === "circuit" && !newKeyCircuit) ||
-                (newKeyScope === "workspace_ingestion" && !newKeyStagingCircuit)
+                (newKeyScope === "circuit" && !newKeyCircuit)
               }
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

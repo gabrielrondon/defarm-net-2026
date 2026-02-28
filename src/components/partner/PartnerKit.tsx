@@ -252,7 +252,7 @@ export function PartnerKit() {
       <div>
         <p className="section-label mb-3">Checklist para produção</p>
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside marker:text-muted-foreground/40">
-          <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> com circuito de staging.</li>
+          <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> (sem configuração adicional).</li>
           <li>Opcional: rodar preview em <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para validar o lote.</li>
           <li>Enviar em chunks (recomendado 50-150 linhas por request) para <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>.</li>
           <li>Resolver pendências em Roteamento.</li>
