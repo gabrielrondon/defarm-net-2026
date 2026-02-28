@@ -8279,11 +8279,11 @@ paths:
           description: Admin key required
         '500':
           description: Internal server error
-  /api/partner/api-keys:
+  /v1/partner/api-keys:
     post:
       tags:
       - Partner API Keys
-      summary: POST /api/partner/api-keys
+      summary: POST /v1/partner/api-keys
       description: 'Create a new API key for partner integrations.
 
 
@@ -8322,7 +8322,7 @@ paths:
     get:
       tags:
       - Partner API Keys
-      summary: GET /api/partner/api-keys
+      summary: GET /v1/partner/api-keys
       description: 'List your API keys across all circuits.
 
 
@@ -8343,11 +8343,11 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /api/partner/api-keys/{id}:
+  /v1/partner/api-keys/{id}:
     delete:
       tags:
       - Partner API Keys
-      summary: DELETE /api/partner/api-keys/{id}
+      summary: DELETE /v1/partner/api-keys/{id}
       description: 'Revoke (deactivate) an API key immediately.
 
 
@@ -8374,11 +8374,11 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /api/partner/api-keys/{id}/metrics:
+  /v1/partner/api-keys/{id}/metrics:
     get:
       tags:
       - Partner API Keys
-      summary: GET /api/partner/api-keys/{id}/metrics
+      summary: GET /v1/partner/api-keys/{id}/metrics
       description: 'Get usage metrics for a specific API key.
 
 
@@ -8409,7 +8409,7 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /api/partner/routing-rules:
+  /v1/partner/routing-rules:
     get:
       tags:
       - Partner Routing
@@ -8454,7 +8454,7 @@ paths:
                 $ref: '#/components/schemas/RoutingRuleResponse'
       security:
       - bearerAuth: []
-  /api/partner/routing-rules/{id}:
+  /v1/partner/routing-rules/{id}:
     delete:
       tags:
       - Partner Routing
@@ -8472,7 +8472,7 @@ paths:
           description: Routing rule deactivated
       security:
       - bearerAuth: []
-  /api/partner/ingestion/raw:
+  /v1/partner/ingestions/raw:
     get:
       tags:
       - Partner Routing
@@ -8494,7 +8494,7 @@ paths:
                 $ref: '#/components/schemas/ListRawPayloadsResponse'
       security:
       - bearerAuth: []
-  /api/partner/ingestion/raw/{id}/download:
+  /v1/partner/ingestions/raw/{id}/download:
     get:
       tags:
       - Partner Routing
@@ -8520,7 +8520,7 @@ paths:
                 type: string
       security:
       - bearerAuth: []
-  /api/partner/ingestion/issues:
+  /v1/partner/ingestions/issues:
     get:
       tags:
       - Partner Routing
@@ -8536,7 +8536,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssuesResponse'
       security:
       - bearerAuth: []
-  /api/partner/ingestion/issues/items:
+  /v1/partner/ingestions/issues/items:
     get:
       tags:
       - Partner Routing
@@ -8569,7 +8569,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueItemsResponse'
       security:
       - bearerAuth: []
-  /api/partner/ingestion/issues/{id}/assign:
+  /v1/partner/ingestions/issues/{id}/assign:
     patch:
       tags:
       - Partner Routing
@@ -8598,7 +8598,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /api/partner/ingestion/issues/{id}/resolve:
+  /v1/partner/ingestions/issues/{id}/resolve:
     put:
       tags:
       - Partner Routing
@@ -8627,7 +8627,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /api/partner/ingestion/issues/{id}/reopen:
+  /v1/partner/ingestions/issues/{id}/reopen:
     put:
       tags:
       - Partner Routing
@@ -8650,7 +8650,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /api/partner/ingestion/intake:
+  /v1/partner/ingestions/intake:
     post:
       tags:
       - Partner Routing
@@ -8686,12 +8686,12 @@ paths:
       security:
       - bearerAuth: []
       - apiKeyAuth: []
-  /api/partner/upload:
+  /v1/partner/ingestions:
     post:
       tags:
       - Partner Routing
       summary: Partner upload (alias for intelligent intake)
-      description: Recommended alias for intelligent partner upload. Same behavior as /api/partner/ingestion/intake.
+      description: Recommended alias for intelligent partner upload. Same behavior as /v1/partner/ingestions/intake.
       operationId: partner_upload
       requestBody:
         required: true
@@ -8722,7 +8722,7 @@ paths:
       security:
       - bearerAuth: []
       - apiKeyAuth: []
-  /api/partner/ingestion/intake/preview:
+  /v1/partner/ingestions/intake/preview:
     post:
       tags:
       - Partner Routing
@@ -8758,12 +8758,12 @@ paths:
       security:
       - bearerAuth: []
       - apiKeyAuth: []
-  /api/partner/upload/preview:
+  /v1/partner/ingestions/preview:
     post:
       tags:
       - Partner Routing
       summary: Partner upload preview (alias)
-      description: Recommended alias for intake preview. Same behavior as /api/partner/ingestion/intake/preview.
+      description: Recommended alias for intake preview. Same behavior as /v1/partner/ingestions/intake/preview.
       operationId: partner_upload_preview
       requestBody:
         required: true
@@ -11714,7 +11714,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /api/ingestion/templates:
+  /v1/ingestion/templates:
     get:
       tags:
       - Items
@@ -11765,7 +11765,7 @@ paths:
           description: Missing or invalid authentication
         '403':
           description: Requires partner workspace
-  /api/ingestion/templates/{id}:
+  /v1/ingestion/templates/{id}:
     put:
       tags:
       - Items

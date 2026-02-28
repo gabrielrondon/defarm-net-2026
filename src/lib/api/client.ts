@@ -5,8 +5,9 @@ export const GATEWAY_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   "https://gateway.defarm.net";
 
-// Registry endpoints are prefixed with /api on the gateway
-export const REGISTRY_API_BASE = `${GATEWAY_BASE}/api`;
+// Registry endpoints use the public versioned prefix on the gateway.
+// Gateway keeps /api as compatibility alias, but frontend uses /v1 by default.
+export const REGISTRY_API_BASE = `${GATEWAY_BASE}/v1`;
 
 // Auth endpoints live at the gateway root
 export const AUTH_API_BASE = GATEWAY_BASE;
@@ -91,6 +92,14 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+// Partner request log — captura interações com a API do parceiro
+import { addLogEntry, summarizeResponse } from "./partner-request-log";
+
+const PARTNER_LOG_PREFIXES = ["/partner/", "/embed/", "/ingestion/templates"];
+function isPartnerEndpoint(endpoint: string): boolean {
+  return PARTNER_LOG_PREFIXES.some((p) => endpoint.startsWith(p));
+}
+
 // Generic API request helper for the Registry API (via Gateway)
 // Automatically attaches Bearer token and handles 401 with refresh
 export async function registryRequest<T>(
@@ -113,8 +122,12 @@ export async function registryRequest<T>(
   }
 
   const url = `${REGISTRY_API_BASE}${endpoint}`;
+  const method = options.method || "GET";
+  const shouldLog = isPartnerEndpoint(endpoint);
+  const startTime = shouldLog ? Date.now() : 0;
+
   if (DEBUG_API_LOGS) {
-    console.log(`[DeFarm API] ${options.method || "GET"} ${url}`);
+    console.log(`[DeFarm API] ${method} ${url}`);
   }
 
   try {
@@ -141,6 +154,18 @@ export async function registryRequest<T>(
       if (DEBUG_API_LOGS) {
         console.error(`[DeFarm API] Error:`, errorData);
       }
+      if (shouldLog) {
+        addLogEntry({
+          timestamp: new Date().toISOString(),
+          method,
+          endpoint,
+          status: response.status,
+          errorCode: errorData.error || "UNKNOWN_ERROR",
+          errorMessage: errorData.message || null,
+          durationMs: Date.now() - startTime,
+          responseSummary: null,
+        });
+      }
       throw new ApiError(
         response.status,
         errorData.error || "UNKNOWN_ERROR",
@@ -151,12 +176,51 @@ export async function registryRequest<T>(
 
     // Handle 204 No Content
     if (response.status === 204) {
+      if (shouldLog) {
+        addLogEntry({
+          timestamp: new Date().toISOString(),
+          method,
+          endpoint,
+          status: 204,
+          errorCode: null,
+          errorMessage: null,
+          durationMs: Date.now() - startTime,
+          responseSummary: "(sem conteúdo)",
+        });
+      }
       return undefined as T;
     }
 
-    return response.json();
+    const data = await response.json();
+    if (shouldLog) {
+      addLogEntry({
+        timestamp: new Date().toISOString(),
+        method,
+        endpoint,
+        status: response.status,
+        errorCode: null,
+        errorMessage: null,
+        durationMs: Date.now() - startTime,
+        responseSummary: summarizeResponse(data),
+      });
+    }
+    return data;
   } catch (error) {
-    if (error instanceof ApiError) throw error;
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    if (shouldLog) {
+      addLogEntry({
+        timestamp: new Date().toISOString(),
+        method,
+        endpoint,
+        status: null,
+        errorCode: "NETWORK_ERROR",
+        errorMessage: error instanceof Error ? error.message : "Erro de rede",
+        durationMs: Date.now() - startTime,
+        responseSummary: null,
+      });
+    }
     if (DEBUG_API_LOGS) {
       console.error(`[DeFarm API] Network error:`, error);
     }

@@ -8,17 +8,17 @@ const KIT_TEMPLATE = `value_chain,country,year,sisbov,chip,ear_tag,birth_date,se
 BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,parceiro_a
 BEEF,UY,2026,,982000000000001,UY000004,2022-11-09,female,Vacas cria,C3,parceiro_b`;
 
-const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/upload" \\
+const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/v1/partner/ingestions" \\
   -H "x-api-key: <PARTNER_API_KEY>" \\
   -F "file=@dados.csv" \\
   -F "auto_create_circuit=true"`;
 
-const PREVIEW_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/upload/preview" \\
+const PREVIEW_EXAMPLE = `curl -X POST "https://gateway.defarm.net/v1/partner/ingestions/preview" \\
   -H "x-api-key: <PARTNER_API_KEY>" \\
   -F "file=@dados.csv" \\
   -F "auto_create_circuit=true"`;
 
-const JSON_DIRECT_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/upload" \\
+const JSON_DIRECT_EXAMPLE = `curl -X POST "https://gateway.defarm.net/v1/partner/ingestions" \\
   -H "x-api-key: <PARTNER_API_KEY>" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -93,7 +93,7 @@ for (const batch of result.routed_batches) {
 }`;
 
 const TEMPLATE_API_EXAMPLE = `# 1) Criar template (JWT)
-curl -X POST "https://gateway.defarm.net/api/ingestion/templates" \\
+curl -X POST "https://gateway.defarm.net/v1/ingestion/templates" \\
   -H "Authorization: Bearer <JWT>" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -107,11 +107,11 @@ curl -X POST "https://gateway.defarm.net/api/ingestion/templates" \\
   }'
 
 # 2) Listar templates e pegar id
-curl -X GET "https://gateway.defarm.net/api/ingestion/templates" \\
+curl -X GET "https://gateway.defarm.net/v1/ingestion/templates" \\
   -H "Authorization: Bearer <JWT>"
 
 # 3) Enviar com template_id
-curl -X POST "https://gateway.defarm.net/api/partner/upload" \\
+curl -X POST "https://gateway.defarm.net/v1/partner/ingestions" \\
   -H "x-api-key: <PARTNER_API_KEY>" \\
   -F "file=@dados.csv" \\
   -F "template_id=<TEMPLATE_UUID>"`;
@@ -162,7 +162,7 @@ export function PartnerKit() {
       <div>
         <h2 className="text-foreground">Kit Parceiro</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          Passo 1: envie dados com identificador mínimo (CAR, CCIR, INCRA, NIRF, CIB, MATRÍCULA, GEOREF, LAND_DFID, IE, CNPJ ou CPF), sem template, para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/partner/upload</code>.
+          Passo 1: envie dados com identificador mínimo (CAR, CCIR, INCRA, NIRF, CIB, MATRÍCULA, GEOREF, LAND_DFID, IE, CNPJ ou CPF), sem template, para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/v1/partner/ingestions</code>.
           Passo 2: valide no preview e suba em produção com API key real. Passo 3: use template/avançados só se necessário.
         </p>
       </div>
@@ -221,7 +221,7 @@ export function PartnerKit() {
       </div>
 
       <p className="text-xs text-muted-foreground -mt-4">
-        Importante: o endpoint <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code> já faz roteamento inteligente e não exige template.
+        Importante: o endpoint <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions</code> já faz roteamento inteligente e não exige template.
       </p>
 
       {/* Code examples — collapsible sections */}
@@ -274,7 +274,7 @@ export function PartnerKit() {
           <p className="text-xs uppercase tracking-wide text-primary font-semibold">Passo 2 (validação)</p>
           <p className="text-sm font-medium text-foreground">Preview (dry-run) antes do envio real</p>
           <p className="text-xs text-muted-foreground">
-            Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para simular roteamento sem tokenizar.
+            Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions/preview</code> para simular roteamento sem tokenizar.
           </p>
           <pre className="code-block">{PREVIEW_EXAMPLE}</pre>
         </Card>
@@ -318,8 +318,8 @@ export function PartnerKit() {
         <p className="section-label mb-3">Checklist para produção</p>
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside marker:text-muted-foreground/40">
           <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> (sem configuração adicional).</li>
-          <li>Opcional: rodar preview em <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para validar o lote.</li>
-          <li>Enviar em chunks (recomendado 50-150 linhas por request) para <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload</code>.</li>
+          <li>Opcional: rodar preview em <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions/preview</code> para validar o lote.</li>
+          <li>Enviar em chunks (recomendado 50-150 linhas por request) para <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions</code>.</li>
           <li>Resolver pendências em Roteamento.</li>
           <li>Abrir <code className="text-xs bg-muted px-1 py-0.5 rounded">circuit_links</code> retornados para ver o portfólio imediatamente.</li>
         </ol>

@@ -226,7 +226,7 @@ export async function deleteRoutingRule(id: string): Promise<void> {
 }
 
 export async function listRawPayloads(limit = 50): Promise<ListRawPayloadsResponse> {
-  return registryRequest<ListRawPayloadsResponse>(`/partner/ingestion/raw${buildQueryString({ limit })}`);
+  return registryRequest<ListRawPayloadsResponse>(`/partner/ingestions/raw${buildQueryString({ limit })}`);
 }
 
 export async function partnerIntake(
@@ -245,7 +245,7 @@ export async function partnerIntake(
     formData.append("template_id", templateId);
   }
 
-  return registryRequest<PartnerIntakeResponse>("/partner/upload", {
+  return registryRequest<PartnerIntakeResponse>("/partner/ingestions", {
     method: "POST",
     headers: {},
     body: formData as unknown as BodyInit,
@@ -268,7 +268,7 @@ export async function partnerIntakePreview(
     formData.append("template_id", templateId);
   }
 
-  return registryRequest<PartnerIntakePreviewResponse>("/partner/upload/preview", {
+  return registryRequest<PartnerIntakePreviewResponse>("/partner/ingestions/preview", {
     method: "POST",
     headers: {},
     body: formData as unknown as BodyInit,
@@ -286,7 +286,7 @@ export async function downloadRawPayload(
   id: string,
   options?: { suggestedFileName?: string | null; contentType?: string | null }
 ): Promise<{ blob: Blob; fileName: string }> {
-  const response = await registryFileRequest(`/partner/ingestion/raw/${id}/download`);
+  const response = await registryFileRequest(`/partner/ingestions/raw/${id}/download`);
   const blob = await response.blob();
   const contentDisposition = response.headers.get("content-disposition") || "";
   const fileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
@@ -303,7 +303,7 @@ export async function downloadRawPayload(
 }
 
 export async function listRoutingIssues(): Promise<RoutingIssuesResponse> {
-  return registryRequest<RoutingIssuesResponse>("/partner/ingestion/issues");
+  return registryRequest<RoutingIssuesResponse>("/partner/ingestions/issues");
 }
 
 export async function listRoutingIssueItems(params?: {
@@ -312,14 +312,14 @@ export async function listRoutingIssueItems(params?: {
   limit?: number;
 }): Promise<RoutingIssueItemsResponse> {
   const query = buildQueryString(params);
-  return registryRequest<RoutingIssueItemsResponse>(`/partner/ingestion/issues/items${query}`);
+  return registryRequest<RoutingIssueItemsResponse>(`/partner/ingestions/issues/items${query}`);
 }
 
 export async function assignRoutingIssue(
   issueId: string,
   payload?: { assigned_to_user_id?: string | null }
 ): Promise<{ message: string; issue_id: string; status: string }> {
-  return registryRequest(`/partner/ingestion/issues/${issueId}/assign`, {
+  return registryRequest(`/partner/ingestions/issues/${issueId}/assign`, {
     method: "PATCH",
     body: JSON.stringify(payload ?? {}),
   });
@@ -334,7 +334,7 @@ export async function resolveRoutingIssue(
     circuit_id?: string;
   }
 ): Promise<{ message: string; issue_id: string; status: string }> {
-  return registryRequest(`/partner/ingestion/issues/${issueId}/resolve`, {
+  return registryRequest(`/partner/ingestions/issues/${issueId}/resolve`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
