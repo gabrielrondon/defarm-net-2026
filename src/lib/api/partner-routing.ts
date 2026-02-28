@@ -232,7 +232,8 @@ export async function listRawPayloads(limit = 50): Promise<ListRawPayloadsRespon
 export async function partnerIntake(
   file: File,
   sourceCircuitId?: string,
-  autoCreateCircuit = true
+  autoCreateCircuit = true,
+  templateId?: string
 ): Promise<PartnerIntakeResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -240,6 +241,9 @@ export async function partnerIntake(
     formData.append("source_circuit_id", sourceCircuitId);
   }
   formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
+  if (templateId) {
+    formData.append("template_id", templateId);
+  }
 
   return registryRequest<PartnerIntakeResponse>("/partner/upload", {
     method: "POST",
@@ -251,7 +255,8 @@ export async function partnerIntake(
 export async function partnerIntakePreview(
   file: File,
   sourceCircuitId?: string,
-  autoCreateCircuit = true
+  autoCreateCircuit = true,
+  templateId?: string
 ): Promise<PartnerIntakePreviewResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -259,6 +264,9 @@ export async function partnerIntakePreview(
     formData.append("source_circuit_id", sourceCircuitId);
   }
   formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
+  if (templateId) {
+    formData.append("template_id", templateId);
+  }
 
   return registryRequest<PartnerIntakePreviewResponse>("/partner/upload/preview", {
     method: "POST",

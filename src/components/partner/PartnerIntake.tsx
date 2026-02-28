@@ -24,6 +24,8 @@ import { AlertTriangle, Download, ExternalLink, FileUp, Loader2, ScrollText, Tra
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/lib/api/client";
+import { listIngestionTemplates } from "@/lib/api/ingestion-templates";
+import type { IngestionTemplate } from "@/lib/api/types";
 import {
   clearLog,
   getLogEntries,
@@ -36,6 +38,8 @@ export function PartnerIntake() {
   const { user } = useAuth();
   const [circuits, setCircuits] = useState<Circuit[]>([]);
   const [sourceCircuitId, setSourceCircuitId] = useState("");
+  const [templateId, setTemplateId] = useState("none");
+  const [templates, setTemplates] = useState<IngestionTemplate[]>([]);
   const [autoCreate, setAutoCreate] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
@@ -75,6 +79,7 @@ export function PartnerIntake() {
   const buildPreValidation = async (
     selectedFile: File | null,
     selectedSourceCircuitId?: string,
+    selectedTemplateId?: string,
     showToastOnError = false
   ) => {
     setPreviewRows(0);
@@ -85,7 +90,12 @@ export function PartnerIntake() {
     if (!selectedFile) return;
     setPreviewing(true);
     try {
-      const preview = await partnerIntakePreview(selectedFile, selectedSourceCircuitId, autoCreate);
+      const preview = await partnerIntakePreview(
+        selectedFile,
+        selectedSourceCircuitId,
+        autoCreate,
+        selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined
+      );
       setPreviewRows(preview.total_rows);
       setPreviewResolvable(preview.resolvable_rows);
       setPreviewUnknown(preview.unresolved_rows);
@@ -121,14 +131,16 @@ export function PartnerIntake() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [circuitsData, rawData, issuesData] = await Promise.all([
+      const [circuitsData, rawData, issuesData, templatesData] = await Promise.all([
         getCircuits(),
         listRawPayloads(40),
         listRoutingIssueItems({ status: issueStatusFilter, assigned_to_me: issueAssignedToMe, limit: 200 }),
+        listIngestionTemplates().catch(() => [] as IngestionTemplate[]),
       ]);
       setCircuits(circuitsData);
       setHistory(rawData.rows);
       setIssues(issuesData.issues);
+      setTemplates(templatesData);
       if (!sourceCircuitId && circuitsData[0]) {
         const staging = circuitsData.find(
           (c) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true"
@@ -155,14 +167,19 @@ export function PartnerIntake() {
 
   useEffect(() => {
     if (!file) return;
-    void buildPreValidation(file, sourceCircuitId);
-  }, [file, sourceCircuitId, autoCreate]);
+    void buildPreValidation(file, sourceCircuitId, templateId);
+  }, [file, sourceCircuitId, autoCreate, templateId]);
 
   const onSubmit = async () => {
     if (!file) return;
     setSending(true);
     try {
-      const result = await partnerIntake(file, sourceCircuitId, autoCreate);
+      const result = await partnerIntake(
+        file,
+        sourceCircuitId,
+        autoCreate,
+        templateId !== "none" ? templateId : undefined
+      );
       setLastResult(result);
       toast({
         title: "Intake processado",
@@ -228,6 +245,9 @@ export function PartnerIntake() {
         <p className="text-xs text-muted-foreground">
           Recomendado em produção: enviar em chunks de 50-150 linhas por request. Em login JWT, o circuito de staging é opcional (usamos o padrão quando omitido).
         </p>
+        <p className="text-xs text-muted-foreground">
+          Template é opcional. Use apenas quando precisar mapear nomes de colunas diferentes do padrão DeFarm.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
             <SelectTrigger><SelectValue placeholder="Circuito de staging" /></SelectTrigger>
@@ -249,7 +269,7 @@ export function PartnerIntake() {
                 const selected = e.target.files?.[0] || null;
                 setFile(selected);
                 if (selected) {
-                  await buildPreValidation(selected, sourceCircuitId || undefined, true);
+                  await buildPreValidation(selected, sourceCircuitId || undefined, templateId, true);
                 }
               }}
             />
@@ -258,6 +278,27 @@ export function PartnerIntake() {
           <Button onClick={onSubmit} disabled={!file || sending}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Processar intake"}
           </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Select value={templateId} onValueChange={setTemplateId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Template (opcional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Sem template (padrão DeFarm)</SelectItem>
+              {templates.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.name}{template.is_default ? " (padrão)" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="md:col-span-2 text-xs text-muted-foreground self-center">
+            {templateId === "none"
+              ? "Mapeamento automático padrão ativo."
+              : `Template selecionado: ${templates.find((t) => t.id === templateId)?.name || templateId}`}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
