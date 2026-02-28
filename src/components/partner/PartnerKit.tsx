@@ -162,8 +162,8 @@ export function PartnerKit() {
       <div>
         <h2 className="text-foreground">Kit Parceiro</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          Envie CSV/JSON para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/partner/upload</code>.
-          Payload bruto persistido, roteamento automático por identificador.
+          Passo 1: envie dados com identificador mínimo (sem template) para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/partner/upload</code>.
+          Passo 2: valide no preview e suba em produção com API key real. Passo 3: use template/avançados só se necessário.
         </p>
       </div>
 
@@ -216,6 +216,7 @@ export function PartnerKit() {
         </Card>
 
         <Card className="p-4 space-y-3">
+          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Passo 1 (básico)</p>
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-foreground">Upload via cURL</p>
             <Button size="sm" variant="ghost" onClick={copyCurl} className="h-7 px-2 text-xs">
@@ -231,6 +232,7 @@ export function PartnerKit() {
         </Card>
 
         <Card className="p-4 space-y-3">
+          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Passo 2 (validação)</p>
           <p className="text-sm font-medium text-foreground">Preview (dry-run) antes do envio real</p>
           <p className="text-xs text-muted-foreground">
             Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/partner/upload/preview</code> para simular roteamento sem tokenizar.
@@ -239,6 +241,7 @@ export function PartnerKit() {
         </Card>
 
         <Card className="p-4 space-y-3">
+          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Passo 3 (opcional)</p>
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-foreground">Template opcional (mapeamento)</p>
             <Button size="sm" variant="ghost" onClick={copyTemplateApi} className="h-7 px-2 text-xs">
@@ -250,6 +253,15 @@ export function PartnerKit() {
             Se precisar mapear nomes de colunas diferentes, crie template e envie <code className="text-xs bg-muted px-1 py-0.5 rounded">template_id</code> no upload.
           </p>
           <pre className="code-block">{TEMPLATE_API_EXAMPLE}</pre>
+        </Card>
+
+        <Card className="p-4 space-y-3">
+          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Opcional (AI Skill)</p>
+          <p className="text-sm font-medium text-foreground">AI Skill + Client</p>
+          <p className="text-xs text-muted-foreground">
+            Se quiser acelerar com IA/copilot, use o cliente oficial e o kit de prompt.
+          </p>
+          <pre className="code-block">{`npm install @defarm/partner-client\nhttps://docs.defarm.net/docs/partner-tooling`}</pre>
         </Card>
 
         <Card className="p-4 space-y-3">
