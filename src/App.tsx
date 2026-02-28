@@ -60,6 +60,7 @@ import AdminUsers from "./pages/app/AdminUsers";
 import AdminCanonicalIdentifiers from "./pages/app/AdminCanonicalIdentifiers";
 import AdminJobs from "./pages/app/AdminJobs";
 import AdminSearchAnalytics from "./pages/app/AdminSearchAnalytics";
+import AdminPartnerPayloads from "./pages/app/AdminPartnerPayloads";
 import PartnerPortal from "./pages/app/PartnerPortal";
 import WebhooksPage from "./pages/app/Webhooks";
 import PartnerCliPage from "./pages/app/PartnerCli";
@@ -427,6 +428,14 @@ const App = () => (
               element={
                 <RequireAdmin>
                   <AppLayout><AdminSearchAnalytics /></AppLayout>
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/app/admin/payloads-parceiros"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminPartnerPayloads /></AppLayout>
                 </RequireAdmin>
               }
             />

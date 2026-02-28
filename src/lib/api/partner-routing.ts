@@ -225,8 +225,13 @@ export async function deleteRoutingRule(id: string): Promise<void> {
   });
 }
 
-export async function listRawPayloads(limit = 50): Promise<ListRawPayloadsResponse> {
-  return registryRequest<ListRawPayloadsResponse>(`/partner/ingestions/raw${buildQueryString({ limit })}`);
+export async function listRawPayloads(
+  limit = 50,
+  workspaceId?: string
+): Promise<ListRawPayloadsResponse> {
+  return registryRequest<ListRawPayloadsResponse>(
+    `/partner/ingestions/raw${buildQueryString({ limit, workspace_id: workspaceId })}`
+  );
 }
 
 export async function partnerIntake(

@@ -8477,7 +8477,7 @@ paths:
       tags:
       - Partner Routing
       summary: List raw ingestion payloads
-      description: List persisted raw CSV/JSON payloads received through partner intake.
+      description: List persisted raw CSV/JSON payloads received through partner ingestion. Admin users can list across all workspaces and optionally filter by workspace_id.
       operationId: list_partner_ingestion_raw
       parameters:
       - name: limit
@@ -8485,6 +8485,13 @@ paths:
         required: false
         schema:
           type: integer
+      - name: workspace_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+        description: Optional admin-only filter. Ignored for non-admin users.
       responses:
         '200':
           description: Raw payload history
@@ -8499,7 +8506,7 @@ paths:
       tags:
       - Partner Routing
       summary: Download raw ingestion payload
-      description: Download the original CSV/JSON payload for troubleshooting and replay.
+      description: Download the original CSV/JSON payload for troubleshooting and replay. Admin users can download payloads from any workspace.
       operationId: download_partner_ingestion_raw
       parameters:
       - name: id

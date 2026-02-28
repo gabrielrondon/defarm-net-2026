@@ -35,6 +35,7 @@ import {
   Webhook,
   TerminalSquare,
   Code2,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -87,6 +88,7 @@ const adminNavItems: NavItem[] = [
   { icon: Search, label: "Search/Analytics", href: "/app/admin/search-analytics" },
   { icon: Users, label: "Usuários", href: "/app/admin/usuarios" },
   { icon: Fingerprint, label: "Identificadores", href: "/app/admin/identificadores" },
+  { icon: Database, label: "Payloads Parceiros", href: "/app/admin/payloads-parceiros" },
   { icon: ListTodo, label: "Fila de Jobs", href: "/app/admin/jobs" },
 ];
 
