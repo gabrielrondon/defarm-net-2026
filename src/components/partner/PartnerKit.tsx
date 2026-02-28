@@ -18,6 +18,16 @@ const PREVIEW_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/up
   -F "file=@dados.csv" \\
   -F "auto_create_circuit=true"`;
 
+const JSON_DIRECT_EXAMPLE = `curl -X POST "https://gateway.defarm.net/api/partner/upload" \\
+  -H "x-api-key: <PARTNER_API_KEY>" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "auto_create_circuit": true,
+    "items": [
+      { "car": "MT-1234.56789.0000.00", "value_chain": "BEEF", "breed": "Nelore" }
+    ]
+  }'`;
+
 const RESPONSE_EXAMPLE = `{
   "summary": {
     "status": "completed",
@@ -214,6 +224,10 @@ export function PartnerKit() {
             </Button>
           </div>
           <pre className="code-block">{CURL_EXAMPLE}</pre>
+          <p className="text-xs text-muted-foreground">
+            Alternativa: também aceitamos JSON direto no body (sem multipart), útil para integração backend-to-backend.
+          </p>
+          <pre className="code-block">{JSON_DIRECT_EXAMPLE}</pre>
         </Card>
 
         <Card className="p-4 space-y-3">
