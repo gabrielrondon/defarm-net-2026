@@ -8414,7 +8414,7 @@ paths:
       tags:
       - Partner Routing
       summary: List partner routing rules
-      description: List active routing rules that map partner identifiers (CAR/CPF/CNPJ/LAND DFID) to destination circuits.
+      description: List active routing rules that map partner identifiers (CAR/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/LAND DFID/IE/CNPJ/CPF) to destination circuits.
       operationId: list_partner_routing_rules
       parameters:
       - name: identifier_type

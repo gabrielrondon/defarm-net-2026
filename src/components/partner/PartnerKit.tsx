@@ -162,7 +162,7 @@ export function PartnerKit() {
       <div>
         <h2 className="text-foreground">Kit Parceiro</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          Passo 1: envie dados com identificador mínimo (sem template) para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/partner/upload</code>.
+          Passo 1: envie dados com identificador mínimo (CAR, CCIR, INCRA, NIRF, CIB, MATRÍCULA, GEOREF, LAND_DFID, IE, CNPJ ou CPF), sem template, para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/api/partner/upload</code>.
           Passo 2: valide no preview e suba em produção com API key real. Passo 3: use template/avançados só se necessário.
         </p>
       </div>
