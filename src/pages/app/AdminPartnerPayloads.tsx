@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, ExternalLink, FileJson, FileSpreadsheet, RefreshCw, ScrollText, Webhook } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,70 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { listRawPayloads, downloadRawPayload, type RawPayloadSummary } from "@/lib/api/partner-routing";
 import { listWorkspaces, type AdminWorkspace } from "@/lib/api/admin-users";
+import { Link } from "react-router-dom";
+
+function csvEscape(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function toCsv(rows: RawPayloadSummary[], workspaceLabel: (id: string) => string): string {
+  const headers = [
+    "created_at",
+    "workspace_id",
+    "workspace_label",
+    "payload_id",
+    "file_name",
+    "status",
+    "intake_mode",
+    "source_circuit_id",
+    "content_type",
+    "payload_size_bytes",
+    "payload_sha256",
+    "error_message",
+    "processed_at",
+  ];
+  const lines: string[] = [headers.join(",")];
+  for (const row of rows) {
+    const cols = [
+      row.created_at,
+      row.workspace_id,
+      workspaceLabel(row.workspace_id),
+      row.id,
+      row.file_name || "",
+      row.status,
+      row.intake_mode,
+      row.source_circuit_id || "",
+      row.content_type || "",
+      String(row.payload_size_bytes),
+      row.payload_sha256,
+      row.error_message || "",
+      row.processed_at || "",
+    ].map((v) => csvEscape(v));
+    lines.push(cols.join(","));
+  }
+  return lines.join("\n");
+}
+
+function downloadTextFile(content: string, filename: string, contentType: string) {
+  const blob = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function AdminPartnerPayloads() {
   const { toast } = useToast();
   const [workspaceId, setWorkspaceId] = useState<string>("all");
   const [limit, setLimit] = useState<number>(100);
   const [search, setSearch] = useState<string>("");
+  const [status, setStatus] = useState<string>("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const workspacesQuery = useQuery({
     queryKey: ["admin-workspaces-all"],
@@ -38,6 +96,7 @@ export default function AdminPartnerPayloads() {
 
   const rows = payloadsQuery.data?.rows || [];
   const filteredRows = rows.filter((row: RawPayloadSummary) => {
+    if (status !== "all" && row.status !== status) return false;
     const q = search.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -53,15 +112,59 @@ export default function AdminPartnerPayloads() {
     return ws ? `${ws.name} (${ws.slug})` : id;
   };
 
+  const selected = filteredRows.find((r) => r.id === selectedId) || filteredRows[0] || null;
+  const totalBytes = filteredRows.reduce((sum, row) => sum + row.payload_size_bytes, 0);
+  const completedCount = filteredRows.filter((row) => row.status === "completed").length;
+  const failedCount = filteredRows.filter((row) => row.status === "failed").length;
+  const partialCount = filteredRows.filter((row) => row.status === "partial").length;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Payloads Brutos de Parceiros</h1>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const payload = {
+                exported_at: new Date().toISOString(),
+                count: filteredRows.length,
+                rows: filteredRows,
+              };
+              downloadTextFile(
+                JSON.stringify(payload, null, 2),
+                `partner-ingestions-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`,
+                "application/json;charset=utf-8"
+              );
+            }}
+            disabled={filteredRows.length === 0}
+          >
+            <FileJson className="h-4 w-4 mr-1" />
+            Export JSON
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const csv = toCsv(filteredRows, workspaceLabel);
+              downloadTextFile(
+                csv,
+                `partner-ingestions-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.csv`,
+                "text/csv;charset=utf-8"
+              );
+            }}
+            disabled={filteredRows.length === 0}
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-1" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Consulta global (admin)</CardTitle>
+          <CardTitle>Timeline Global Multi-Workspace</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -90,11 +193,24 @@ export default function AdminPartnerPayloads() {
               </SelectContent>
             </Select>
 
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
+                <SelectItem value="partial">Parcial</SelectItem>
+                <SelectItem value="failed">Falha</SelectItem>
+                <SelectItem value="processing">Processando</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Input
               placeholder="Buscar por arquivo/hash/workspace/erro"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="md:col-span-2"
+              className="md:col-span-1"
             />
           </div>
 
@@ -108,96 +224,183 @@ export default function AdminPartnerPayloads() {
               <RefreshCw className={`h-4 w-4 mr-1 ${payloadsQuery.isFetching ? "animate-spin" : ""}`} />
               Atualizar
             </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/app/webhooks">
+                <Webhook className="h-4 w-4 mr-1" />
+                Escutar Webhooks
+              </Link>
+            </Button>
             <span className="text-xs text-muted-foreground">
               {payloadsQuery.isLoading ? "Carregando..." : `${filteredRows.length} registro(s)`}
             </span>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Criado em</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Workspace</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Arquivo</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tamanho</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">SHA256</th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((row) => (
-                  <tr key={row.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(row.created_at).toLocaleString("pt-BR")}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {workspaceLabel(row.workspace_id)}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {row.file_name || "payload.json"}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {row.status}
-                      {row.error_message ? (
-                        <div className="text-destructive mt-1">{row.error_message}</div>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {row.payload_size_bytes.toLocaleString("pt-BR")} bytes
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground">
-                      {row.payload_sha256.slice(0, 16)}...
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          try {
-                            const { blob, fileName } = await downloadRawPayload(row.id, {
-                              suggestedFileName: row.file_name,
-                              contentType: row.content_type,
-                            });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
-                            a.href = url;
-                            a.download = fileName;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                          } catch (e: any) {
-                            toast({
-                              title: "Falha ao baixar payload",
-                              description: e?.message || "Não foi possível baixar o payload bruto.",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Baixar
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {!payloadsQuery.isLoading && filteredRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                      Nenhum payload encontrado para os filtros atuais.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Registros filtrados</p>
+              <p className="text-lg font-semibold">{filteredRows.length}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Concluídos</p>
+              <p className="text-lg font-semibold text-primary">{completedCount}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Parcial/Falha</p>
+              <p className="text-lg font-semibold">{partialCount + failedCount}</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xs text-muted-foreground">Volume total</p>
+              <p className="text-lg font-semibold">{totalBytes.toLocaleString("pt-BR")} bytes</p>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ScrollText className="h-4 w-4 text-muted-foreground" />
+              Timeline de Envios e Tentativas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 max-h-[720px] overflow-auto">
+            {filteredRows.map((row) => (
+              <button
+                key={row.id}
+                type="button"
+                className={`w-full text-left rounded-lg border p-3 hover:bg-muted/20 transition-colors ${
+                  selected?.id === row.id ? "ring-2 ring-primary/30 border-primary/40" : ""
+                }`}
+                onClick={() => setSelectedId(row.id)}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium truncate">{row.file_name || "payload"}</p>
+                  <span className={`text-[11px] px-2 py-1 rounded-full border ${
+                    row.status === "completed"
+                      ? "bg-primary/10 text-primary border-primary/20"
+                      : row.status === "failed"
+                        ? "bg-destructive/10 text-destructive border-destructive/20"
+                        : "bg-muted text-muted-foreground border-border"
+                  }`}>
+                    {row.status}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {new Date(row.created_at).toLocaleString("pt-BR")} · {workspaceLabel(row.workspace_id)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {row.payload_size_bytes.toLocaleString("pt-BR")} bytes · sha256 {row.payload_sha256.slice(0, 16)}...
+                </p>
+                {row.error_message ? (
+                  <p className="text-xs text-destructive mt-1">{row.error_message}</p>
+                ) : null}
+              </button>
+            ))}
+            {!payloadsQuery.isLoading && filteredRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                Nenhum payload encontrado para os filtros atuais.
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Detalhes do Evento</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!selected ? (
+              <p className="text-sm text-muted-foreground">Selecione um evento na timeline para abrir detalhes.</p>
+            ) : (
+              <>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Workspace</p>
+                  <p className="text-sm">{workspaceLabel(selected.workspace_id)}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Arquivo</p>
+                  <p className="text-sm">{selected.file_name || "payload"}</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Criado em</p>
+                    <p className="text-sm">{new Date(selected.created_at).toLocaleString("pt-BR")}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Processado em</p>
+                    <p className="text-sm">{selected.processed_at ? new Date(selected.processed_at).toLocaleString("pt-BR") : "n/a"}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <p className="text-sm">{selected.status}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Tamanho</p>
+                    <p className="text-sm">{selected.payload_size_bytes.toLocaleString("pt-BR")} bytes</p>
+                  </div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">SHA256</p>
+                  <p className="text-xs font-mono break-all">{selected.payload_sha256}</p>
+                </div>
+                {selected.error_message ? (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <p className="text-xs text-muted-foreground">Erro retornado</p>
+                    <p className="text-sm text-destructive">{selected.error_message}</p>
+                  </div>
+                ) : null}
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground mb-2">Metadata / resposta de processamento</p>
+                  <pre className="max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
+                    {JSON.stringify(selected.metadata, null, 2)}
+                  </pre>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { blob, fileName } = await downloadRawPayload(selected.id, {
+                          suggestedFileName: selected.file_name,
+                          contentType: selected.content_type,
+                        });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = fileName;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      } catch (e: any) {
+                        toast({
+                          title: "Falha ao baixar payload",
+                          description: e?.message || "Não foi possível baixar o payload bruto.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Baixar payload bruto
+                  </Button>
+                  <Button variant="ghost" size="sm" asChild>
+                    <a
+                      href={`https://defarm.net/app/admin/payloads-parceiros`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir em nova aba <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                    </a>
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
-
