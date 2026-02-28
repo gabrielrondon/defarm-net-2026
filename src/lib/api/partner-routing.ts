@@ -65,6 +65,13 @@ export interface IntakeBatchResult {
   item_links?: {
     item_id: string;
     dfid: string;
+    url?: string;
+    partner_reference?: string | null;
+    routes?: {
+      route_type: string;
+      route_value: string;
+      circuit_id: string;
+    }[];
     circuit_id: string;
     app_url: string;
     public_url: string;
@@ -101,6 +108,24 @@ export interface PartnerIntakeResponse {
   workspace_id: string;
   total_rows: number;
   routed_batches: IntakeBatchResult[];
+  routes?: {
+    route_type: string;
+    route_value: string;
+    circuit_id: string;
+    rows: number;
+    status: string;
+    items: number;
+  }[];
+  items?: {
+    dfid: string;
+    url: string;
+    partner_reference?: string | null;
+    routes: {
+      route_type: string;
+      route_value: string;
+      circuit_id: string;
+    }[];
+  }[];
   unresolved_rows: number;
   created_circuits: string[];
   circuit_links?: {
@@ -238,7 +263,8 @@ export async function partnerIntake(
   file: File,
   sourceCircuitId?: string,
   autoCreateCircuit = true,
-  templateId?: string
+  templateId?: string,
+  inlineMapping?: Record<string, unknown>
 ): Promise<PartnerIntakeResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -248,6 +274,9 @@ export async function partnerIntake(
   formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
   if (templateId) {
     formData.append("template_id", templateId);
+  }
+  if (inlineMapping && Object.keys(inlineMapping).length > 0) {
+    formData.append("mapping", JSON.stringify(inlineMapping));
   }
 
   return registryRequest<PartnerIntakeResponse>("/partner/ingestions", {
@@ -261,7 +290,8 @@ export async function partnerIntakePreview(
   file: File,
   sourceCircuitId?: string,
   autoCreateCircuit = true,
-  templateId?: string
+  templateId?: string,
+  inlineMapping?: Record<string, unknown>
 ): Promise<PartnerIntakePreviewResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -271,6 +301,9 @@ export async function partnerIntakePreview(
   formData.append("auto_create_circuit", autoCreateCircuit ? "true" : "false");
   if (templateId) {
     formData.append("template_id", templateId);
+  }
+  if (inlineMapping && Object.keys(inlineMapping).length > 0) {
+    formData.append("mapping", JSON.stringify(inlineMapping));
   }
 
   return registryRequest<PartnerIntakePreviewResponse>("/partner/ingestions/preview", {

@@ -39,6 +39,7 @@ export function PartnerIntake() {
   const [circuits, setCircuits] = useState<Circuit[]>([]);
   const [sourceCircuitId, setSourceCircuitId] = useState("");
   const [templateId, setTemplateId] = useState("none");
+  const [inlineMappingText, setInlineMappingText] = useState("");
   const [templates, setTemplates] = useState<IngestionTemplate[]>([]);
   const [autoCreate, setAutoCreate] = useState(true);
   const [file, setFile] = useState<File | null>(null);
@@ -80,6 +81,7 @@ export function PartnerIntake() {
     selectedFile: File | null,
     selectedSourceCircuitId?: string,
     selectedTemplateId?: string,
+    selectedInlineMappingText?: string,
     showToastOnError = false
   ) => {
     setPreviewRows(0);
@@ -88,13 +90,36 @@ export function PartnerIntake() {
     setPreviewResult(null);
     setPreviewError(null);
     if (!selectedFile) return;
+    const mappingText = (selectedInlineMappingText ?? inlineMappingText).trim();
+    let inlineMapping: Record<string, unknown> | undefined;
+    if (mappingText.length > 0) {
+      try {
+        const parsed = JSON.parse(mappingText);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("Mapping deve ser um objeto JSON.");
+        }
+        inlineMapping = parsed as Record<string, unknown>;
+      } catch (err) {
+        const description = err instanceof Error ? err.message : "Mapping JSON inválido.";
+        setPreviewError(description);
+        if (showToastOnError) {
+          toast({
+            title: "Falha na prévia",
+            description,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+    }
     setPreviewing(true);
     try {
       const preview = await partnerIntakePreview(
         selectedFile,
         selectedSourceCircuitId,
         autoCreate,
-        selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined
+        selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined,
+        inlineMapping
       );
       setPreviewRows(preview.total_rows);
       setPreviewResolvable(preview.resolvable_rows);
@@ -167,18 +192,28 @@ export function PartnerIntake() {
 
   useEffect(() => {
     if (!file) return;
-    void buildPreValidation(file, sourceCircuitId, templateId);
-  }, [file, sourceCircuitId, autoCreate, templateId]);
+    void buildPreValidation(file, sourceCircuitId, templateId, inlineMappingText);
+  }, [file, sourceCircuitId, autoCreate, templateId, inlineMappingText]);
 
   const onSubmit = async () => {
     if (!file) return;
     setSending(true);
     try {
+      const mappingText = inlineMappingText.trim();
+      let inlineMapping: Record<string, unknown> | undefined;
+      if (mappingText.length > 0) {
+        const parsed = JSON.parse(mappingText);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("Mapping deve ser um objeto JSON.");
+        }
+        inlineMapping = parsed as Record<string, unknown>;
+      }
       const result = await partnerIntake(
         file,
         sourceCircuitId,
         autoCreate,
-        templateId !== "none" ? templateId : undefined
+        templateId !== "none" ? templateId : undefined,
+        inlineMapping
       );
       setLastResult(result);
       toast({
@@ -271,7 +306,7 @@ export function PartnerIntake() {
                 const selected = e.target.files?.[0] || null;
                 setFile(selected);
                 if (selected) {
-                  await buildPreValidation(selected, sourceCircuitId || undefined, templateId, true);
+                  await buildPreValidation(selected, sourceCircuitId || undefined, templateId, inlineMappingText, true);
                 }
               }}
             />
@@ -302,6 +337,19 @@ export function PartnerIntake() {
               : `Template selecionado: ${templates.find((t) => t.id === templateId)?.name || templateId}`}
           </div>
         </div>
+
+        <label className="block border rounded-md p-3">
+          <p className="text-xs font-medium mb-2">Mapping inline (JSON, opcional)</p>
+          <textarea
+            value={inlineMappingText}
+            onChange={(e) => setInlineMappingText(e.target.value)}
+            className="w-full min-h-[88px] bg-transparent text-xs font-mono outline-none resize-y"
+            placeholder={`{"columns":{"id_interno":"partner_internal_id","numero_sisbov":"sisbov"}}`}
+          />
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Use para mapear campos sem criar template. Se enviar template + mapping, o mapping inline tem prioridade.
+          </p>
+        </label>
 
         <div className="flex items-center gap-3">
           <Switch checked={autoCreate} onCheckedChange={setAutoCreate} id="auto-create" />
@@ -399,6 +447,13 @@ export function PartnerIntake() {
                 {lastResult.routed_batches.flatMap((batch) => batch.item_links || []).slice(0, 20).map((item) => (
                   <div key={item.item_id} className="rounded border p-2 bg-background/60">
                     <div className="flex flex-wrap items-center gap-2">
+                      {item.url ? (
+                        <Button size="sm" variant="ghost" asChild>
+                          <a href={item.url} target="_blank" rel="noopener noreferrer">
+                            Abrir URL <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                          </a>
+                        </Button>
+                      ) : null}
                       <Button size="sm" variant="outline" asChild>
                         <a href={item.app_url} target="_blank" rel="noopener noreferrer">
                           Abrir item <ExternalLink className="h-3.5 w-3.5 ml-1" />
@@ -420,6 +475,11 @@ export function PartnerIntake() {
                     {item.input_references?.length ? (
                       <p className="text-[11px] text-muted-foreground mt-1">
                         referência enviada: {item.input_references.map((r) => `${r.field}=${r.value}`).join(" · ")}
+                      </p>
+                    ) : null}
+                    {item.partner_reference ? (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        partner_reference: {item.partner_reference}
                       </p>
                     ) : null}
                     {item.identifiers?.length ? (
