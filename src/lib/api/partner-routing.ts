@@ -62,30 +62,6 @@ export interface IntakeBatchResult {
   receipt_id?: string | null;
   status: string;
   error_message?: string | null;
-  item_links?: {
-    item_id: string;
-    dfid: string;
-    url?: string;
-    partner_reference?: string | null;
-    routes?: {
-      route_type: string;
-      route_value: string;
-      circuit_id: string;
-    }[];
-    circuit_id: string;
-    app_url: string;
-    public_url: string;
-    is_public?: boolean;
-    identifiers: {
-      identifier_type: string;
-      value: string;
-      is_canonical: boolean;
-    }[];
-    input_references: {
-      field: string;
-      value: string;
-    }[];
-  }[];
 }
 
 export interface PartnerIntakeResponse {
@@ -108,7 +84,7 @@ export interface PartnerIntakeResponse {
   workspace_id: string;
   total_rows: number;
   routed_batches: IntakeBatchResult[];
-  routes?: {
+  routes: {
     route_type: string;
     route_value: string;
     circuit_id: string;
@@ -116,7 +92,7 @@ export interface PartnerIntakeResponse {
     status: string;
     items: number;
   }[];
-  items?: {
+  items: {
     dfid: string;
     url: string;
     partner_reference?: string | null;

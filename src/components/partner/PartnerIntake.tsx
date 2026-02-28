@@ -439,52 +439,29 @@ export function PartnerIntake() {
                 ))}
               </div>
             ) : null}
-            {lastResult.routed_batches?.some((batch) => (batch.item_links?.length || 0) > 0) ? (
+            {lastResult.items?.length ? (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Itens resolvidos no upload (DFID + identificadores + referência enviada):
+                  Itens resolvidos no upload (DFID + URL + referência):
                 </p>
-                {lastResult.routed_batches.flatMap((batch) => batch.item_links || []).slice(0, 20).map((item) => (
-                  <div key={item.item_id} className="rounded border p-2 bg-background/60">
+                {lastResult.items.slice(0, 20).map((item) => (
+                  <div key={item.dfid} className="rounded border p-2 bg-background/60">
                     <div className="flex flex-wrap items-center gap-2">
-                      {item.url ? (
-                        <Button size="sm" variant="ghost" asChild>
-                          <a href={item.url} target="_blank" rel="noopener noreferrer">
-                            Abrir URL <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                          </a>
-                        </Button>
-                      ) : null}
                       <Button size="sm" variant="outline" asChild>
-                        <a href={item.app_url} target="_blank" rel="noopener noreferrer">
-                          Abrir item <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        <a href={item.url} target="_blank" rel="noopener noreferrer">
+                          Abrir URL <ExternalLink className="h-3.5 w-3.5 ml-1" />
                         </a>
                       </Button>
-                      {item.is_public !== false ? (
-                        <Button size="sm" variant="ghost" asChild>
-                          <a href={item.public_url} target="_blank" rel="noopener noreferrer">
-                            Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                          </a>
-                        </Button>
-                      ) : (
-                        <span className="text-[11px] text-muted-foreground">
-                          Item em circuito privado (link público indisponível)
-                        </span>
-                      )}
                       <p className="text-[11px] text-muted-foreground">{item.dfid}</p>
                     </div>
-                    {item.input_references?.length ? (
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        referência enviada: {item.input_references.map((r) => `${r.field}=${r.value}`).join(" · ")}
-                      </p>
-                    ) : null}
                     {item.partner_reference ? (
                       <p className="text-[11px] text-muted-foreground mt-1">
                         partner_reference: {item.partner_reference}
                       </p>
                     ) : null}
-                    {item.identifiers?.length ? (
+                    {item.routes?.length ? (
                       <p className="text-[11px] text-muted-foreground mt-1">
-                        identificadores: {item.identifiers.map((id) => `${id.identifier_type}:${id.value}`).join(" · ")}
+                        rotas: {item.routes.map((r) => `${r.route_type}:${r.route_value}`).join(" · ")}
                       </p>
                     ) : null}
                   </div>
