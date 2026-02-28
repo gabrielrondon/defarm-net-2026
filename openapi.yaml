@@ -2533,7 +2533,7 @@ components:
           type: string
         reason:
           type: string
-          description: missing_identifier | empty_after_normalization | no_routing_rule
+          description: missing_identifier | missing_value_chain | missing_trackable_identifier | empty_after_normalization | no_routing_rule
         severity:
           type: string
           description: low | medium | high
@@ -8690,8 +8690,8 @@ paths:
     post:
       tags:
       - Partner Routing
-      summary: Partner upload (alias for intelligent intake)
-      description: Recommended alias for intelligent partner upload. Same behavior as /v1/partner/ingestions/intake.
+      summary: Partner ingestion (primary)
+      description: Primary endpoint for intelligent partner ingestion.
       operationId: partner_upload
       requestBody:
         required: true
@@ -8714,7 +8714,7 @@ paths:
                   description: Auto-create destination circuit when no routing rule matches.
       responses:
         '201':
-          description: Upload processed
+          description: Ingestion processed
           content:
             application/json:
               schema:
@@ -8762,8 +8762,8 @@ paths:
     post:
       tags:
       - Partner Routing
-      summary: Partner upload preview (alias)
-      description: Recommended alias for intake preview. Same behavior as /v1/partner/ingestions/intake/preview.
+      summary: Partner ingestion preview (primary)
+      description: Primary endpoint for ingestion preview (dry-run).
       operationId: partner_upload_preview
       requestBody:
         required: true

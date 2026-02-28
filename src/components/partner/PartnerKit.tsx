@@ -24,7 +24,7 @@ const JSON_DIRECT_EXAMPLE = `curl -X POST "https://gateway.defarm.net/v1/partner
   -d '{
     "auto_create_circuit": true,
     "items": [
-      { "car": "MT-1234.56789.0000.00", "value_chain": "BEEF", "breed": "Nelore" }
+      { "sisbov": "105500497219983", "car": "MT-1234.56789.0000.00", "value_chain": "BEEF", "breed": "Nelore" }
     ]
   }'`;
 
@@ -162,7 +162,7 @@ export function PartnerKit() {
       <div>
         <h2 className="text-foreground">Kit Parceiro</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          Passo 1: envie dados com identificador mínimo (CAR, CCIR, INCRA, NIRF, CIB, MATRÍCULA, GEOREF, LAND_DFID, IE, CNPJ ou CPF), sem template, para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/v1/partner/ingestions</code>.
+          Passo 1: envie dados com <code className="text-xs bg-muted px-1.5 py-0.5 rounded">value_chain</code> + identificador do ativo rastreável (BEEF: SISBOV preferencial ou CHIP) para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/v1/partner/ingestions</code>. Identificadores como CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/LAND_DFID/IE/CNPJ/CPF são de roteamento e contexto.
           Passo 2: valide no preview e suba em produção com API key real. Passo 3: use template/avançados só se necessário.
         </p>
       </div>

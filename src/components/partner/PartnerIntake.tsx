@@ -227,6 +227,8 @@ export function PartnerIntake() {
 
   const formatIssueReason = (reason: string) => {
     if (reason === "missing_identifier") return "sem identificador";
+    if (reason === "missing_value_chain") return "sem value_chain";
+    if (reason === "missing_trackable_identifier") return "sem identificador do ativo";
     if (reason === "empty_after_normalization") return "identificador inválido";
     if (reason === "no_routing_rule") return "sem regra de roteamento";
     return reason;
