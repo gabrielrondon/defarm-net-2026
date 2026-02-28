@@ -51,6 +51,7 @@ export default function PartnerLogs() {
   const [sourceFilter, setSourceFilter] = useState<"all" | "api" | "payload">("all");
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [liveTail, setLiveTail] = useState(false);
+  const [onlyNew, setOnlyNew] = useState(false);
   const [selected, setSelected] = useState<TimelineEntry | null>(null);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const seenIdsRef = useRef<Set<string>>(new Set());
@@ -117,6 +118,7 @@ export default function PartnerLogs() {
     const text = search.trim().toLowerCase();
     return timeline.filter((entry) => {
       if (sourceFilter !== "all" && entry.source !== sourceFilter) return false;
+      if (onlyNew && !newIds.has(entry.id)) return false;
       if (!text) return true;
       if (entry.source === "api") {
         const e = entry.item;
@@ -135,7 +137,7 @@ export default function PartnerLogs() {
         (e.error_message || "").toLowerCase().includes(text)
       );
     });
-  }, [timeline, sourceFilter, search]);
+  }, [timeline, sourceFilter, search, onlyNew, newIds]);
 
   useEffect(() => {
     const ids = timeline.map((e) => e.id);
@@ -185,6 +187,8 @@ export default function PartnerLogs() {
             <Radio className={`h-3.5 w-3.5 ${liveTail ? "text-primary" : "text-muted-foreground"}`} />
             Live Tail (3.5s)
           </Label>
+          <Switch checked={onlyNew} onCheckedChange={setOnlyNew} id="only-new-logs" />
+          <Label htmlFor="only-new-logs">Somente novos</Label>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => void loadRawHistory()}>

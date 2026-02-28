@@ -79,6 +79,7 @@ export default function AdminPartnerPayloads() {
   const [status, setStatus] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [liveTail, setLiveTail] = useState(false);
+  const [onlyNew, setOnlyNew] = useState(false);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const seenIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
@@ -101,6 +102,7 @@ export default function AdminPartnerPayloads() {
   const rows = payloadsQuery.data?.rows || [];
   const filteredRows = rows.filter((row: RawPayloadSummary) => {
     if (status !== "all" && row.status !== status) return false;
+    if (onlyNew && !newIds.has(row.id)) return false;
     const q = search.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -263,6 +265,13 @@ export default function AdminPartnerPayloads() {
             >
               <Radio className="h-4 w-4 mr-1" />
               {liveTail ? "Live Tail ativo" : "Live Tail"}
+            </Button>
+            <Button
+              variant={onlyNew ? "default" : "outline"}
+              size="sm"
+              onClick={() => setOnlyNew((v) => !v)}
+            >
+              Somente novos
             </Button>
             <Button
               variant="outline"
