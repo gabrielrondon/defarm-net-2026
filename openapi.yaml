@@ -100,6 +100,8 @@ tags:
   description: User-submitted property claims (property-first identifiers recommended) and admin verification with auto-circuit surfacing.
 - name: Property Links
   description: Item-to-property provenance annotations forming a custody/movement trail (item_property_links).
+- name: Property Compliance
+  description: Compliance snapshots by LAND property and circuit-level property compliance views.
 - name: Property Party Roles
   description: Temporal relationship model between LAND properties and parties (owner/operator/manager).
 components:
@@ -2202,10 +2204,6 @@ components:
         error_message:
           type: string
           nullable: true
-        item_links:
-          type: array
-          items:
-            $ref: '#/components/schemas/PartnerItemLink'
         metadata: {}
         created_at:
           type: string
@@ -2257,83 +2255,83 @@ components:
       type: object
       required:
       - summary
-      - raw_payload_id
-      - source_circuit_id
-      - workspace_id
-      - total_rows
-      - routed_batches
-      - unresolved_rows
-      - created_circuits
-      - circuit_links
-      - status
+      - items
+      - errors
+      - routes
       properties:
         summary:
           $ref: '#/components/schemas/PartnerIntakeSummary'
-        raw_payload_id:
-          type: string
-          format: uuid
-        source_circuit_id:
-          type: string
-          format: uuid
-        workspace_id:
-          type: string
-          format: uuid
-        total_rows:
-          type: integer
-          format: int32
-        routed_batches:
+        items:
           type: array
+          description: Itens processados (formato flat para integração).
           items:
-            $ref: '#/components/schemas/IntakeBatchResult'
-        unresolved_rows:
-          type: integer
-          format: int32
-        created_circuits:
+            $ref: '#/components/schemas/PartnerItemOutput'
+        errors:
           type: array
+          description: Erros por linha/payload para reconciliação precisa no sistema do parceiro.
           items:
-            type: string
-            format: uuid
-        circuit_links:
+            $ref: '#/components/schemas/PartnerIntakeErrorOutput'
+        routes:
           type: array
+          description: Rotas agregadas por identificador de roteamento.
           items:
-            $ref: '#/components/schemas/PartnerCircuitLink'
-        status:
-          type: string
+            $ref: '#/components/schemas/PartnerRouteOutput'
+        verbose:
+          allOf:
+          - $ref: '#/components/schemas/PartnerIntakeVerbose'
+          nullable: true
     PartnerIntakeSummary:
       type: object
       required:
       - status
       - total_rows
+      - processed_rows
       - unresolved_rows
-      - routed_batches
-      - items_linked
+      - routes
+      - items
       - created_circuits
-      - circuits_linked
+      - impacted_circuits
+      - items_created
+      - items_enriched
       properties:
         status:
           type: string
         total_rows:
           type: integer
           format: int32
+        processed_rows:
+          type: integer
+          format: int32
         unresolved_rows:
           type: integer
           format: int32
-        routed_batches:
+        routes:
           type: integer
           format: int32
-        items_linked:
+        items:
           type: integer
           format: int32
         created_circuits:
           type: integer
           format: int32
-        circuits_linked:
+        impacted_circuits:
+          type: integer
+          format: int32
+        items_created:
+          type: integer
+          format: int32
+        items_enriched:
           type: integer
           format: int32
         partner_reference:
           allOf:
           - $ref: '#/components/schemas/PartnerInputReference'
           nullable: true
+        warnings:
+          type: array
+          description: Avisos operacionais para o integrador.
+          items:
+            type: string
     PartnerIntakePreviewPlanItem:
       type: object
       required:
@@ -2402,12 +2400,54 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PartnerIntakePreviewPlanItem'
+    PartnerUploadJsonEnvelope:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        source_circuit_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Optional source staging circuit. If omitted, DeFarm infers workspace staging.
+        template_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Optional template for column remapping before routing/tokenization.
+        mapping:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Optional inline mapping. Overrides template mapping when both are provided.
+        auto_create_circuit:
+          type: boolean
+          description: Auto-create destination circuit when no routing rule matches.
+          default: true
+        fallback_to_source_circuit:
+          type: boolean
+          description: When unresolved, optionally fallback to source circuit.
+          default: true
+    PartnerUploadJsonRequest:
+      oneOf:
+      - type: array
+        items:
+          type: object
+          additionalProperties: true
+      - $ref: '#/components/schemas/PartnerUploadJsonEnvelope'
+      description: Direct JSON body accepted by /api/partner/ingestions and /api/partner/ingestions/preview.
     PartnerCircuitLink:
       type: object
       required:
       - circuit_id
       - app_url
       - public_url
+      - is_public
       properties:
         circuit_id:
           type: string
@@ -2416,18 +2456,7 @@ components:
           type: string
         public_url:
           type: string
-    PartnerItemIdentifier:
-      type: object
-      required:
-      - identifier_type
-      - value
-      - is_canonical
-      properties:
-        identifier_type:
-          type: string
-        value:
-          type: string
-        is_canonical:
+        is_public:
           type: boolean
     PartnerInputReference:
       type: object
@@ -2439,37 +2468,153 @@ components:
           type: string
         value:
           type: string
-    PartnerItemLink:
+    PartnerItemRoute:
       type: object
       required:
-      - item_id
-      - dfid
+      - route_type
+      - route_value
       - circuit_id
-      - app_url
-      - public_url
-      - identifiers
-      - input_references
       properties:
-        item_id:
+        route_type:
           type: string
-          format: uuid
-        dfid:
+        route_value:
           type: string
         circuit_id:
           type: string
           format: uuid
-        app_url:
+    PartnerItemOutput:
+      type: object
+      required:
+      - dfid
+      - url
+      - routes
+      properties:
+        dfid:
           type: string
-        public_url:
+        url:
           type: string
-        identifiers:
+        url_refs:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: Optional canonical reference links by identifier type (e.g.
+            sisbov, chip). Only present for identifiers detected for this item.
+        partner_reference:
+          type: string
+          nullable: true
+        asset_reference:
+          allOf:
+          - $ref: '#/components/schemas/PartnerAssetReference'
+          nullable: true
+        routes:
           type: array
           items:
-            $ref: '#/components/schemas/PartnerItemIdentifier'
-        input_references:
+            $ref: '#/components/schemas/PartnerItemRoute'
+    PartnerIntakeErrorOutput:
+      type: object
+      required:
+      - reason_code
+      - message
+      properties:
+        row_index:
+          type: integer
+          format: int32
+          nullable: true
+        partner_reference:
+          type: string
+          nullable: true
+        reason_code:
+          type: string
+        message:
+          type: string
+        value_chain:
+          type: string
+          nullable: true
+        identifier_type:
+          type: string
+          nullable: true
+        identifier_value:
+          type: string
+          nullable: true
+    PartnerAssetReference:
+      type: object
+      required:
+      - identifier_type
+      - value
+      properties:
+        identifier_type:
+          type: string
+        value:
+          type: string
+    PartnerIntakeVerbose:
+      type: object
+      required:
+      - raw_payload_id
+      - source_circuit_id
+      - workspace_id
+      - total_rows
+      - unresolved_rows
+      - routed_batches
+      - created_circuits
+      - circuit_links
+      - status
+      properties:
+        raw_payload_id:
+          type: string
+          format: uuid
+        source_circuit_id:
+          type: string
+          format: uuid
+        workspace_id:
+          type: string
+          format: uuid
+        total_rows:
+          type: integer
+          format: int32
+        unresolved_rows:
+          type: integer
+          format: int32
+        routed_batches:
           type: array
           items:
-            $ref: '#/components/schemas/PartnerInputReference'
+            $ref: '#/components/schemas/IntakeBatchResult'
+        created_circuits:
+          type: array
+          items:
+            type: string
+            format: uuid
+        circuit_links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerCircuitLink'
+        status:
+          type: string
+    PartnerRouteOutput:
+      type: object
+      required:
+      - route_type
+      - route_value
+      - circuit_id
+      - rows
+      - status
+      - items
+      properties:
+        route_type:
+          type: string
+        route_value:
+          type: string
+        circuit_id:
+          type: string
+          format: uuid
+        rows:
+          type: integer
+          format: int32
+        status:
+          type: string
+        items:
+          type: integer
+          format: int32
     RoutingIssueSummary:
       type: object
       required:
@@ -2773,6 +2918,63 @@ components:
         count:
           type: integer
           format: int32
+    RefreshComplianceRequest:
+      type: object
+      properties:
+        force:
+          type: boolean
+          nullable: true
+    PropertyComplianceResponse:
+      type: object
+      required:
+      - property_dfid
+      - status
+      - source
+      properties:
+        property_dfid:
+          type: string
+        car:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [ok, warning, blocked, unknown]
+        score:
+          type: integer
+          format: int32
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        details_json:
+          type: object
+          nullable: true
+          additionalProperties: true
+        checked_at:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          nullable: true
+        source:
+          type: string
+    CircuitComplianceListResponse:
+      type: object
+      required:
+      - circuit_id
+      - count
+      - properties
+      properties:
+        circuit_id:
+          type: string
+          format: uuid
+        count:
+          type: integer
+          format: int32
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyComplianceResponse'
     CreateEmbedTokenRequest:
       type: object
       required:
@@ -3439,6 +3641,34 @@ components:
           type: string
           format: uuid
           nullable: true
+        event_owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+        event_owner_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        trust_score:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: Computed trust score for this event.
+        trust_level:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          description: Trust level derived from trust_score.
+        trust_factors:
+          type: object
+          additionalProperties: true
+          description: Detailed scoring factors used to compute trust_score.
+        trust_model_version:
+          type: string
+          description: Version of the trust scoring model.
     CreateEventRequest:
       type: object
       required:
@@ -3465,6 +3695,133 @@ components:
         payload: {}
         metadata:
           nullable: true
+        visibility:
+          type: string
+          nullable: true
+          enum:
+          - public
+          - private
+          - circuit_only
+          - selective
+        visible_to_roles:
+          type: array
+          nullable: true
+          items:
+            type: string
+    UpdateEventVisibilityRequest:
+      type: object
+      required:
+      - visibility
+      properties:
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - circuit_only
+          - selective
+        visible_to_roles:
+          type: array
+          nullable: true
+          items:
+            type: string
+    GrantEventDelegationRequest:
+      type: object
+      required:
+      - delegate_workspace_id
+      properties:
+        delegate_workspace_id:
+          type: string
+          format: uuid
+        can_manage_visibility:
+          type: boolean
+          nullable: true
+        can_manage_disclosure:
+          type: boolean
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+    EventDelegationResponse:
+      type: object
+      required:
+      - id
+      - event_id
+      - owner_workspace_id
+      - delegate_workspace_id
+      - can_manage_visibility
+      - can_manage_disclosure
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        owner_workspace_id:
+          type: string
+          format: uuid
+        delegate_workspace_id:
+          type: string
+          format: uuid
+        granted_by_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        can_manage_visibility:
+          type: boolean
+        can_manage_disclosure:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_by_user_id:
+          type: string
+          format: uuid
+          nullable: true
+    EventGovernanceResponse:
+      type: object
+      required:
+      - event_id
+      - caller_can_manage_visibility
+      - caller_can_manage_disclosure
+      - delegations
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        event_owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+        event_owner_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        caller_can_manage_visibility:
+          type: boolean
+        caller_can_manage_disclosure:
+          type: boolean
+        delegations:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventDelegationResponse'
     GenerateProofRequest:
       description: Request payload to generate cryptographic proof for data.
       type: object
@@ -4704,6 +5061,27 @@ components:
         entity_id:
           type: string
           format: uuid
+        trust_score:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Event trust score (null for blockchain/storage timeline rows).
+        trust_level:
+          type: string
+          nullable: true
+          enum:
+          - low
+          - medium
+          - high
+        trust_factors:
+          nullable: true
+          type: object
+          additionalProperties: true
+        trust_model_version:
+          type: string
+          nullable: true
     Timeline:
       description: Reconstructed timeline merged from events, blockchain anchors and storage refs.
       type: object
@@ -8279,11 +8657,11 @@ paths:
           description: Admin key required
         '500':
           description: Internal server error
-  /v1/partner/api-keys:
+  /api/partner/api-keys:
     post:
       tags:
       - Partner API Keys
-      summary: POST /v1/partner/api-keys
+      summary: POST /api/partner/api-keys
       description: 'Create a new API key for partner integrations.
 
 
@@ -8322,7 +8700,7 @@ paths:
     get:
       tags:
       - Partner API Keys
-      summary: GET /v1/partner/api-keys
+      summary: GET /api/partner/api-keys
       description: 'List your API keys across all circuits.
 
 
@@ -8343,11 +8721,11 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /v1/partner/api-keys/{id}:
+  /api/partner/api-keys/{id}:
     delete:
       tags:
       - Partner API Keys
-      summary: DELETE /v1/partner/api-keys/{id}
+      summary: DELETE /api/partner/api-keys/{id}
       description: 'Revoke (deactivate) an API key immediately.
 
 
@@ -8374,11 +8752,11 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /v1/partner/api-keys/{id}/metrics:
+  /api/partner/api-keys/{id}/metrics:
     get:
       tags:
       - Partner API Keys
-      summary: GET /v1/partner/api-keys/{id}/metrics
+      summary: GET /api/partner/api-keys/{id}/metrics
       description: 'Get usage metrics for a specific API key.
 
 
@@ -8409,7 +8787,7 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /v1/partner/routing-rules:
+  /api/partner/routing-rules:
     get:
       tags:
       - Partner Routing
@@ -8454,7 +8832,7 @@ paths:
                 $ref: '#/components/schemas/RoutingRuleResponse'
       security:
       - bearerAuth: []
-  /v1/partner/routing-rules/{id}:
+  /api/partner/routing-rules/{id}:
     delete:
       tags:
       - Partner Routing
@@ -8472,7 +8850,7 @@ paths:
           description: Routing rule deactivated
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/raw:
+  /api/partner/ingestions/raw:
     get:
       tags:
       - Partner Routing
@@ -8501,7 +8879,7 @@ paths:
                 $ref: '#/components/schemas/ListRawPayloadsResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/raw/{id}/download:
+  /api/partner/ingestions/raw/{id}/download:
     get:
       tags:
       - Partner Routing
@@ -8527,7 +8905,7 @@ paths:
                 type: string
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues:
+  /api/partner/ingestions/issues:
     get:
       tags:
       - Partner Routing
@@ -8543,7 +8921,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssuesResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/items:
+  /api/partner/ingestions/issues/items:
     get:
       tags:
       - Partner Routing
@@ -8576,7 +8954,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueItemsResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/{id}/assign:
+  /api/partner/ingestions/issues/{id}/assign:
     patch:
       tags:
       - Partner Routing
@@ -8605,7 +8983,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/{id}/resolve:
+  /api/partner/ingestions/issues/{id}/resolve:
     put:
       tags:
       - Partner Routing
@@ -8634,7 +9012,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/{id}/reopen:
+  /api/partner/ingestions/issues/{id}/reopen:
     put:
       tags:
       - Partner Routing
@@ -8657,50 +9035,28 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/intake:
+  /api/partner/ingestions:
     post:
       tags:
       - Partner Routing
-      summary: '[LEGACY] Partner ingestions alias'
-      description: Legacy alias kept for backward compatibility. Use `/v1/partner/ingestions` for all new integrations.
-      deprecated: true
-      operationId: partner_intake
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-              - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                source_circuit_id:
-                  type: string
-                  format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
-                auto_create_circuit:
-                  type: boolean
-                  description: Auto-create destination circuit when no routing rule matches.
-      responses:
-        '201':
-          description: Intake processed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PartnerIntakeResponse'
-      security:
-      - bearerAuth: []
-      - apiKeyAuth: []
-  /v1/partner/ingestions:
-    post:
-      tags:
-      - Partner Routing
-      summary: Partner ingestions (primary)
-      description: 'Primary endpoint for partner ingestion. Minimum per row is `value_chain` + traceable asset identifier (BEEF/DAIRY: SISBOV preferred or CHIP). Property/party identifiers (CAR/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/LAND_DFID/IE/CNPJ/CPF) are routing/context fields. `partner_internal_id` is recommended for reconciliation.'
+      summary: Partner ingestions (CSV/JSON)
+      description: >-
+        Persist payload bruto, resolver roteamento por identificador e ingerir por circuito automaticamente.
+        Cada linha precisa conter `value_chain` e identificador do ativo rastreável
+        (BEEF/DAIRY: `sisbov` preferencial ou `chip`).
+        Identificadores como CAR/CPF/CNPJ/INCRA/NIRF/CIB/MATRICULA/GEOREF/LAND_DFID/IE
+        são usados para roteamento/contexto.
+        Com JWT (portal), `source_circuit_id` é opcional: se omitido, o sistema usa automaticamente
+        o circuito staging padrão do workspace. Com `x-api-key` de escopo `workspace_ingestion`,
+        `source_circuit_id` também é opcional e o staging é inferido da key.
       operationId: create_partner_ingestion
+      parameters:
+      - name: verbose
+        in: query
+        description: Retorna campos operacionais detalhados em `verbose` quando true.
+        required: false
+        schema:
+          type: boolean
       requestBody:
         required: true
         content:
@@ -8716,10 +9072,42 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT or x-api-key scope=workspace_ingestion).
+                template_id:
+                  type: string
+                  format: uuid
+                  description: Optional. Applies a saved ingestion template (column mapping) before routing/tokenization.
+                mapping:
+                  type: object
+                  additionalProperties: true
+                  description: Optional inline mapping JSON. Overrides template mapping when both are provided.
                 auto_create_circuit:
                   type: boolean
                   description: Auto-create destination circuit when no routing rule matches.
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerUploadJsonRequest'
+            examples:
+              jsonArray:
+                summary: Direct JSON array body
+                value:
+                - sisbov: '105500497219983'
+                  car: MT-1234.56789.0000.00
+                  value_chain: BEEF
+              jsonEnvelope:
+                summary: JSON envelope with controls
+                value:
+                  source_circuit_id: 11111111-1111-1111-1111-111111111111
+                  template_id: 22222222-2222-2222-2222-222222222222
+                  mapping:
+                    columns:
+                      id_interno: partner_internal_id
+                      numero_sisbov: sisbov
+                  auto_create_circuit: true
+                  items:
+                  - sisbov: '105500497219983'
+                    car: MT-1234.56789.0000.00
+                    value_chain: BEEF
       responses:
         '201':
           description: Ingestion processed
@@ -8730,49 +9118,12 @@ paths:
       security:
       - bearerAuth: []
       - apiKeyAuth: []
-  /v1/partner/ingestions/intake/preview:
+  /api/partner/ingestions/preview:
     post:
       tags:
       - Partner Routing
-      summary: '[LEGACY] Partner ingestions preview alias'
-      description: Legacy alias kept for backward compatibility. Use `/v1/partner/ingestions/preview` for all new integrations.
-      deprecated: true
-      operationId: partner_intake_preview
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-              - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                source_circuit_id:
-                  type: string
-                  format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
-                auto_create_circuit:
-                  type: boolean
-                  description: Simulate auto-creation when no routing rule matches.
-      responses:
-        '200':
-          description: Preview generated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PartnerIntakePreviewResponse'
-      security:
-      - bearerAuth: []
-      - apiKeyAuth: []
-  /v1/partner/ingestions/preview:
-    post:
-      tags:
-      - Partner Routing
-      summary: Partner ingestions preview (primary)
-      description: Primary endpoint for dry-run preview. Validates payload and simulates routing without side effects.
+      summary: Partner ingestions preview (no side effects)
+      description: 'Validates CSV/JSON and simulates routing outcomes without storing payload, creating circuits, or tokenizing items. Requires `value_chain` + traceable asset identifier per row (BEEF/DAIRY: SISBOV preferred or CHIP).'
       operationId: preview_partner_ingestion
       requestBody:
         required: true
@@ -8789,10 +9140,42 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT or x-api-key scope=workspace_ingestion).
+                template_id:
+                  type: string
+                  format: uuid
+                  description: Optional. Applies a saved ingestion template (column mapping) before routing simulation.
+                mapping:
+                  type: object
+                  additionalProperties: true
+                  description: Optional inline mapping JSON. Overrides template mapping when both are provided.
                 auto_create_circuit:
                   type: boolean
                   description: Simulate auto-creation when no routing rule matches.
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerUploadJsonRequest'
+            examples:
+              jsonArray:
+                summary: Direct JSON array body
+                value:
+                - sisbov: '105500497219983'
+                  car: MT-1234.56789.0000.00
+                  value_chain: BEEF
+              jsonEnvelope:
+                summary: JSON envelope with controls
+                value:
+                  source_circuit_id: 11111111-1111-1111-1111-111111111111
+                  template_id: 22222222-2222-2222-2222-222222222222
+                  mapping:
+                    columns:
+                      id_interno: partner_internal_id
+                      numero_sisbov: sisbov
+                  auto_create_circuit: true
+                  items:
+                  - sisbov: '105500497219983'
+                    car: MT-1234.56789.0000.00
+                    value_chain: BEEF
       responses:
         '200':
           description: Preview generated
@@ -10751,6 +11134,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/items/public/resolve/{identifier_type}/{identifier_value}:
+    get:
+      tags:
+      - Items
+      summary: Resolve public item by identifier
+      description: '**Public endpoint** - No authentication required.
+
+
+        Resolve a canonical identifier (for example `sisbov` or `chip`) to the current
+        public DeFarm item URL.
+        '
+      operationId: resolve_public_item_by_identifier
+      parameters:
+      - name: identifier_type
+        in: path
+        description: Identifier type (for example sisbov, chip, ie, cnpj, cpf).
+        required: true
+        schema:
+          type: string
+      - name: identifier_value
+        in: path
+        description: Raw identifier value. Server applies normalization rules by type.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Identifier resolved to a public item
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - dfid
+                - url
+                properties:
+                  dfid:
+                    type: string
+                    example: DFID-BEEF-BR-2026-000123-abc123
+                  url:
+                    type: string
+                    example: https://defarm.net/i/DFID-BEEF-BR-2026-000123-abc123
+        '400':
+          description: Invalid identifier type or value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Item not found or not publicly accessible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/search:
     post:
       tags:
@@ -11418,6 +11861,151 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/events/{id}/visibility:
+    put:
+      tags:
+      - Events
+      summary: PUT /events/:id/visibility
+      description: Update event visibility settings (owner/delegate/admin).
+      operationId: update_event_visibility
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventVisibilityRequest'
+      responses:
+        '200':
+          description: Event visibility updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '403':
+          description: Not owner/delegate/admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/governance:
+    get:
+      tags:
+      - Events
+      summary: GET /events/:id/governance
+      description: Returns owner metadata and active delegations for event governance controls in UI.
+      operationId: get_event_governance
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Event governance metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventGovernanceResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/delegations:
+    post:
+      tags:
+      - Events
+      summary: POST /events/:id/delegations
+      description: Grant or update delegated governance permissions for an event.
+      operationId: grant_event_delegation
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantEventDelegationRequest'
+      responses:
+        '201':
+          description: Delegation granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDelegationResponse'
+        '403':
+          description: Only owner/admin can delegate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/delegations/{delegation_id}:
+    delete:
+      tags:
+      - Events
+      summary: DELETE /events/:id/delegations/:delegation_id
+      description: Revoke active delegation for event governance.
+      operationId: revoke_event_delegation
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: delegation_id
+        in: path
+        description: Delegation ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Delegation revoked
+        '403':
+          description: Only owner/admin can revoke
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Delegation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/items/{id}/timeline:
     get:
       tags:
@@ -11723,7 +12311,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /v1/ingestion/templates:
+  /api/ingestion/templates:
     get:
       tags:
       - Items
@@ -11774,7 +12362,7 @@ paths:
           description: Missing or invalid authentication
         '403':
           description: Requires partner workspace
-  /v1/ingestion/templates/{id}:
+  /api/ingestion/templates/{id}:
     put:
       tags:
       - Items
@@ -14025,6 +14613,124 @@ paths:
           description: Unauthorized
       security:
       - bearerAuth: []
+  /api/properties/{property_dfid}/compliance:
+    get:
+      tags:
+      - Property Compliance
+      summary: Get latest compliance snapshot for a LAND property
+      operationId: get_property_compliance
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        description: LAND DFID (DFID-LAND-...)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Compliance snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyComplianceResponse'
+        '400':
+          description: Invalid property DFID
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/properties/{property_dfid}/compliance/refresh:
+    post:
+      tags:
+      - Property Compliance
+      summary: Refresh compliance snapshot for a LAND property
+      operationId: refresh_property_compliance
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        description: LAND DFID (DFID-LAND-...)
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshComplianceRequest'
+      responses:
+        '200':
+          description: Compliance refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyComplianceResponse'
+        '400':
+          description: Invalid property DFID
+        '404':
+          description: LAND item without CAR
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/circuits/{id}/properties/compliance:
+    get:
+      tags:
+      - Property Compliance
+      summary: List property compliance for a circuit
+      operationId: list_circuit_property_compliance
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+      responses:
+        '200':
+          description: Circuit property compliance list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitComplianceListResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Circuit not found
+      security:
+      - bearerAuth: []
+  /api/circuits/{id}/properties/compliance/public:
+    get:
+      tags:
+      - Property Compliance
+      summary: Public property compliance for a public circuit
+      description: Returns compliance entries only when the circuit is public and `settings.public_show_compliance=true`.
+      operationId: list_circuit_property_compliance_public
+      security: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Public compliance list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitComplianceListResponse'
+        '403':
+          description: Public compliance not enabled
+        '404':
+          description: Circuit not found
   /api/properties/{property_dfid}/parties:
     post:
       tags:

@@ -86,7 +86,7 @@ export function summarizeResponse(data: unknown): string {
   // PartnerIntakeResponse
   if (obj.summary && typeof obj.summary === "object") {
     const s = obj.summary as Record<string, unknown>;
-    return `status=${s.status} · ${s.total_rows} linhas · ${s.routed_batches} lotes · ${s.items_linked} itens · ${s.unresolved_rows} pendências`;
+    return `status=${s.status} · ${s.total_rows} linhas · ${s.routes} rotas · ${s.items} itens · ${s.unresolved_rows} pendências`;
   }
   // PartnerIntakePreviewResponse
   if ("routing_plan" in obj) {

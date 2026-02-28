@@ -68,22 +68,40 @@ export interface PartnerIntakeResponse {
   summary: {
     status: string;
     total_rows: number;
+    processed_rows: number;
     unresolved_rows: number;
-    routed_batches: number;
-    items_linked: number;
+    routes: number;
+    items: number;
     created_circuits: number;
-    circuits_linked: number;
     partner_reference?: {
       field: string;
       value: string;
     } | null;
     warnings?: string[];
   };
-  raw_payload_id: string;
-  source_circuit_id?: string | null;
-  workspace_id: string;
-  total_rows: number;
-  routed_batches: IntakeBatchResult[];
+  items: {
+    dfid: string;
+    url: string;
+    partner_reference?: string | null;
+    asset_reference?: {
+      identifier_type: string;
+      value: string;
+    } | null;
+    routes: {
+      route_type: string;
+      route_value: string;
+      circuit_id: string;
+    }[];
+  }[];
+  errors: {
+    row_index?: number | null;
+    partner_reference?: string | null;
+    reason_code: string;
+    message: string;
+    value_chain?: string | null;
+    identifier_type?: string | null;
+    identifier_value?: string | null;
+  }[];
   routes: {
     route_type: string;
     route_value: string;
@@ -92,25 +110,22 @@ export interface PartnerIntakeResponse {
     status: string;
     items: number;
   }[];
-  items: {
-    dfid: string;
-    url: string;
-    partner_reference?: string | null;
-    routes: {
-      route_type: string;
-      route_value: string;
+  verbose?: {
+    raw_payload_id: string;
+    source_circuit_id?: string | null;
+    workspace_id: string;
+    total_rows: number;
+    unresolved_rows: number;
+    routed_batches: IntakeBatchResult[];
+    created_circuits: string[];
+    circuit_links?: {
       circuit_id: string;
+      app_url: string;
+      public_url: string;
+      is_public?: boolean;
     }[];
-  }[];
-  unresolved_rows: number;
-  created_circuits: string[];
-  circuit_links?: {
-    circuit_id: string;
-    app_url: string;
-    public_url: string;
-    is_public?: boolean;
-  }[];
-  status: string;
+    status: string;
+  } | null;
 }
 
 export interface PartnerIntakePreviewPlanItem {

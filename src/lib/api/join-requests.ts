@@ -31,6 +31,15 @@ export async function getPublicItem(dfid: string): Promise<PublicItem> {
   return registryRequest<PublicItem>(`/items/${dfid}/public`);
 }
 
+export async function resolvePublicItemByIdentifier(
+  identifierType: string,
+  identifierValue: string
+): Promise<{ dfid: string; url: string }> {
+  return registryRequest<{ dfid: string; url: string }>(
+    `/items/public/resolve/${encodeURIComponent(identifierType)}/${encodeURIComponent(identifierValue)}`
+  );
+}
+
 export async function getPublicItemEvents(
   dfid: string,
   params?: { event_type?: string; limit?: number; offset?: number }

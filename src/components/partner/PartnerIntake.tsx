@@ -218,7 +218,7 @@ export function PartnerIntake() {
       setLastResult(result);
       toast({
         title: "Ingestão processada",
-        description: `Status: ${result.status}. Lotes roteados: ${result.routed_batches.length}.`,
+        description: `Status: ${result.summary.status}. Rotas: ${result.summary.routes}.`,
       });
       setPreviewResult(null);
       setFile(null);
@@ -387,12 +387,12 @@ export function PartnerIntake() {
         {lastResult ? (
           <div className="rounded-lg border p-3 bg-muted/20 space-y-3">
             <p className="text-xs font-medium text-foreground">
-              Último processamento: {lastResult.summary?.status || lastResult.status} · {lastResult.summary?.total_rows ?? lastResult.total_rows} linha(s)
+              Último processamento: {lastResult.summary.status} · {lastResult.summary.total_rows} linha(s)
             </p>
             {lastResult.summary ? (
               <div className="space-y-1">
                 <p className="text-[11px] text-muted-foreground">
-                  lotes: {lastResult.summary.routed_batches} · itens com link: {lastResult.summary.items_linked} · pendências: {lastResult.summary.unresolved_rows}
+                  rotas: {lastResult.summary.routes} · itens com link: {lastResult.summary.items} · pendências: {lastResult.summary.unresolved_rows}
                 </p>
                 {lastResult.summary.partner_reference ? (
                   <p className="text-[11px] text-muted-foreground">
@@ -411,12 +411,12 @@ export function PartnerIntake() {
                 ) : null}
               </div>
             ) : null}
-            {lastResult.circuit_links?.length ? (
+            {lastResult.verbose?.circuit_links?.length ? (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   Links diretos para os circuitos com os itens roteados:
                 </p>
-                {lastResult.circuit_links.map((link) => (
+                {lastResult.verbose.circuit_links.map((link) => (
                   <div key={link.circuit_id} className="flex flex-wrap items-center gap-2">
                     <Button size="sm" variant="outline" asChild>
                       <a href={link.app_url} target="_blank" rel="noopener noreferrer">
@@ -439,6 +439,21 @@ export function PartnerIntake() {
                 ))}
               </div>
             ) : null}
+            {lastResult.errors?.length ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Erros retornados por linha:</p>
+                {lastResult.errors.slice(0, 20).map((error, idx) => (
+                  <div key={`${error.reason_code}-${error.row_index ?? "none"}-${idx}`} className="rounded border p-2 bg-destructive/5">
+                    <p className="text-[11px] text-destructive">
+                      {error.reason_code} · {error.message}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      linha: {error.row_index ?? "-"} · referência: {error.partner_reference || "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {lastResult.items?.length ? (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
@@ -457,6 +472,11 @@ export function PartnerIntake() {
                     {item.partner_reference ? (
                       <p className="text-[11px] text-muted-foreground mt-1">
                         partner_reference: {item.partner_reference}
+                      </p>
+                    ) : null}
+                    {item.asset_reference ? (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        referência do ativo: {item.asset_reference.identifier_type}={item.asset_reference.value}
                       </p>
                     ) : null}
                     {item.routes?.length ? (

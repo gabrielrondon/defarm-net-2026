@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -20,7 +20,7 @@ import {
   Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getPublicItem, getPublicItemEvents } from "@/lib/defarm-api";
+import { getPublicItem, getPublicItemEvents, resolvePublicItemByIdentifier } from "@/lib/defarm-api";
 import {
   eventTypeColors,
   eventTypeLabels,
@@ -152,21 +152,61 @@ function trustBadge(level?: string | null, score?: number | null): { text: strin
 /* ── main component ──────────────────────────── */
 
 export default function PublicItem() {
-  const { dfid } = useParams<{ dfid: string }>();
+  const { dfid, identifierType, identifierValue } = useParams<{
+    dfid?: string;
+    identifierType?: string;
+    identifierValue?: string;
+  }>();
+  const navigate = useNavigate();
   const [showOperational, setShowOperational] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [resolvedDfid, setResolvedDfid] = useState<string | null>(dfid || null);
+  const [isResolvingRef, setIsResolvingRef] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolveIdentifierReference() {
+      if (dfid) {
+        setResolvedDfid(dfid);
+        setResolveError(null);
+        return;
+      }
+      if (!identifierType || !identifierValue) return;
+
+      setIsResolvingRef(true);
+      setResolveError(null);
+      try {
+        const resolved = await resolvePublicItemByIdentifier(identifierType, identifierValue);
+        if (cancelled) return;
+        setResolvedDfid(resolved.dfid);
+        navigate(`/i/${encodeURIComponent(resolved.dfid)}`, { replace: true });
+      } catch {
+        if (cancelled) return;
+        setResolveError("Este identificador não foi encontrado como item público.");
+      } finally {
+        if (!cancelled) setIsResolvingRef(false);
+      }
+    }
+
+    void resolveIdentifierReference();
+    return () => {
+      cancelled = true;
+    };
+  }, [dfid, identifierType, identifierValue, navigate]);
 
   const { data: item, isLoading, error } = useQuery({
-    queryKey: ["public-item", dfid],
-    queryFn: () => getPublicItem(dfid!),
-    enabled: !!dfid,
+    queryKey: ["public-item", resolvedDfid],
+    queryFn: () => getPublicItem(resolvedDfid!),
+    enabled: !!resolvedDfid,
     retry: 1,
   });
 
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
-    queryKey: ["public-item-events", dfid],
-    queryFn: () => getPublicItemEvents(dfid!, { limit: 50 }),
-    enabled: !!dfid,
+    queryKey: ["public-item-events", resolvedDfid],
+    queryFn: () => getPublicItemEvents(resolvedDfid!, { limit: 50 }),
+    enabled: !!resolvedDfid,
     retry: 1,
   });
 
@@ -242,25 +282,27 @@ export default function PublicItem() {
 
   /* ── edge states ── */
 
-  if (isLoading) {
+  if (isResolvingRef || isLoading) {
     return (
       <Shell>
         <div className="flex flex-col items-center justify-center py-24">
           <Loader2 className="h-7 w-7 animate-spin text-primary mb-3" />
-          <p className="text-sm text-muted-foreground">Carregando dados do animal…</p>
+          <p className="text-sm text-muted-foreground">
+            {isResolvingRef ? "Resolvendo referência do item..." : "Carregando dados do animal…"}
+          </p>
         </div>
       </Shell>
     );
   }
 
-  if (error || !item) {
+  if (resolveError || error || !item) {
     return (
       <Shell>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Package className="h-10 w-10 text-muted-foreground/40 mb-4" />
           <h1 className="text-lg font-semibold text-foreground">Item não encontrado</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-            Este item não existe ou não está disponível publicamente.
+            {resolveError || "Este item não existe ou não está disponível publicamente."}
           </p>
           <Link to={publicCircuitUrl} className="mt-6">
             <Button variant="outline" size="sm">
