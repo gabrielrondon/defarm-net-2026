@@ -8654,8 +8654,9 @@ paths:
     post:
       tags:
       - Partner Routing
-      summary: Intelligent partner intake (CSV/JSON)
-      description: Persist payload bruto, resolver roteamento por identificador e ingerir por circuito automaticamente. Com JWT (portal), envie `source_circuit_id`. Com `x-api-key` de escopo `workspace_ingestion`, `source_circuit_id` é opcional e o staging é inferido da key.
+      summary: '[LEGACY] Partner ingestions alias'
+      description: Legacy alias kept for backward compatibility. Use `/v1/partner/ingestions` for all new integrations.
+      deprecated: true
       operationId: partner_intake
       requestBody:
         required: true
@@ -8672,7 +8673,7 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
                 auto_create_circuit:
                   type: boolean
                   description: Auto-create destination circuit when no routing rule matches.
@@ -8690,9 +8691,9 @@ paths:
     post:
       tags:
       - Partner Routing
-      summary: Partner ingestion (primary)
-      description: Primary endpoint for intelligent partner ingestion.
-      operationId: partner_upload
+      summary: Partner ingestions (primary)
+      description: 'Primary endpoint for partner ingestion. Minimum per row is `value_chain` + traceable asset identifier (BEEF/DAIRY: SISBOV preferred or CHIP). Property/party identifiers (CAR/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/LAND_DFID/IE/CNPJ/CPF) are routing/context fields. `partner_internal_id` is recommended for reconciliation.'
+      operationId: create_partner_ingestion
       requestBody:
         required: true
         content:
@@ -8708,7 +8709,7 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
                 auto_create_circuit:
                   type: boolean
                   description: Auto-create destination circuit when no routing rule matches.
@@ -8726,8 +8727,9 @@ paths:
     post:
       tags:
       - Partner Routing
-      summary: Preview intelligent intake (no side effects)
-      description: Validates CSV/JSON and simulates routing outcomes without storing payload, creating circuits, or tokenizing items.
+      summary: '[LEGACY] Partner ingestions preview alias'
+      description: Legacy alias kept for backward compatibility. Use `/v1/partner/ingestions/preview` for all new integrations.
+      deprecated: true
       operationId: partner_intake_preview
       requestBody:
         required: true
@@ -8744,7 +8746,7 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
                 auto_create_circuit:
                   type: boolean
                   description: Simulate auto-creation when no routing rule matches.
@@ -8762,9 +8764,9 @@ paths:
     post:
       tags:
       - Partner Routing
-      summary: Partner ingestion preview (primary)
-      description: Primary endpoint for ingestion preview (dry-run).
-      operationId: partner_upload_preview
+      summary: Partner ingestions preview (primary)
+      description: Primary endpoint for dry-run preview. Validates payload and simulates routing without side effects.
+      operationId: preview_partner_ingestion
       requestBody:
         required: true
         content:
@@ -8780,7 +8782,7 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Required when authenticated with Bearer JWT. Optional when using x-api-key scope=workspace_ingestion.
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
                 auto_create_circuit:
                   type: boolean
                   description: Simulate auto-creation when no routing rule matches.

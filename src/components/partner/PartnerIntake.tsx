@@ -153,7 +153,7 @@ export function PartnerIntake() {
     } catch {
       toast({
         title: "Erro ao carregar ingestões",
-        description: "Não foi possível carregar histórico do intake.",
+        description: "Não foi possível carregar histórico da ingestão.",
         variant: "destructive",
       });
     } finally {
@@ -182,7 +182,7 @@ export function PartnerIntake() {
       );
       setLastResult(result);
       toast({
-        title: "Intake processado",
+        title: "Ingestão processada",
         description: `Status: ${result.status}. Lotes roteados: ${result.routed_batches.length}.`,
       });
       setPreviewResult(null);
@@ -191,7 +191,7 @@ export function PartnerIntake() {
     } catch (err) {
       const description = formatClientError(err, "Não foi possível processar este arquivo.");
       toast({
-        title: "Falha no intake",
+        title: "Falha na ingestão",
         description,
         variant: "destructive",
       });
@@ -278,7 +278,7 @@ export function PartnerIntake() {
           </label>
 
           <Button onClick={onSubmit} disabled={!file || sending}>
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Processar intake"}
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Processar ingestão"}
           </Button>
         </div>
 
@@ -544,7 +544,7 @@ export function PartnerIntake() {
       <Card className="p-5 space-y-4">
         <h3 className="text-base font-semibold">Pendências de Roteamento</h3>
         <p className="text-sm text-muted-foreground">
-          Pendências detectadas no intake. Assuma e resolva com regra para evitar recorrência.
+          Pendências detectadas na ingestão. Assuma e resolva com regra para evitar recorrência.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-lg border p-3">
