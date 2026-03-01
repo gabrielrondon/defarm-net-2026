@@ -897,7 +897,7 @@ export default function CircuitoDetail() {
       </div>
 
       {/* Adapters Panel */}
-      {id && user?.workspace_type !== "partner" && <CircuitAdaptersPanel circuitId={id} />}
+      {id && <CircuitAdaptersPanel circuitId={id} />}
 
       {/* Dialogs */}
       {circuit && (
