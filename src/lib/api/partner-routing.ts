@@ -281,6 +281,49 @@ export async function partnerIntake(
   });
 }
 
+function buildJsonIntakeBody(
+  payload: unknown,
+  options?: {
+    sourceCircuitId?: string;
+    autoCreateCircuit?: boolean;
+    templateId?: string;
+    inlineMapping?: Record<string, unknown>;
+  }
+): unknown {
+  const autoCreate = options?.autoCreateCircuit ?? true;
+  const base =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? { ...(payload as Record<string, unknown>) }
+      : { items: Array.isArray(payload) ? payload : [] };
+
+  if (options?.sourceCircuitId) {
+    base.source_circuit_id = options.sourceCircuitId;
+  }
+  base.auto_create_circuit = autoCreate;
+  if (options?.templateId) {
+    base.template_id = options.templateId;
+  }
+  if (options?.inlineMapping && Object.keys(options.inlineMapping).length > 0) {
+    base.mapping = options.inlineMapping;
+  }
+  return base;
+}
+
+export async function partnerIntakeJson(
+  payload: unknown,
+  options?: {
+    sourceCircuitId?: string;
+    autoCreateCircuit?: boolean;
+    templateId?: string;
+    inlineMapping?: Record<string, unknown>;
+  }
+): Promise<PartnerIntakeResponse> {
+  return registryRequest<PartnerIntakeResponse>("/partner/ingestions", {
+    method: "POST",
+    body: JSON.stringify(buildJsonIntakeBody(payload, options)),
+  });
+}
+
 export async function partnerIntakePreview(
   file: File,
   sourceCircuitId?: string,
@@ -305,6 +348,21 @@ export async function partnerIntakePreview(
     method: "POST",
     headers: {},
     body: formData as unknown as BodyInit,
+  });
+}
+
+export async function partnerIntakePreviewJson(
+  payload: unknown,
+  options?: {
+    sourceCircuitId?: string;
+    autoCreateCircuit?: boolean;
+    templateId?: string;
+    inlineMapping?: Record<string, unknown>;
+  }
+): Promise<PartnerIntakePreviewResponse> {
+  return registryRequest<PartnerIntakePreviewResponse>("/partner/ingestions/preview", {
+    method: "POST",
+    body: JSON.stringify(buildJsonIntakeBody(payload, options)),
   });
 }
 

@@ -12,7 +12,9 @@ import {
   listRawPayloads,
   listRoutingIssueItems,
   partnerIntake,
+  partnerIntakeJson,
   partnerIntakePreview,
+  partnerIntakePreviewJson,
   resolveRoutingIssue,
   type PartnerIntakeResponse,
   type PartnerIntakePreviewResponse,
@@ -41,6 +43,19 @@ export function PartnerIntake() {
   const [templateId, setTemplateId] = useState("none");
   const [inlineMappingText, setInlineMappingText] = useState("");
   const [templates, setTemplates] = useState<IngestionTemplate[]>([]);
+  const [intakeInputMode, setIntakeInputMode] = useState<"json" | "file">("json");
+  const [jsonBodyText, setJsonBodyText] = useState(
+    `{
+  "items": [
+    {
+      "value_chain": "BEEF",
+      "sisbov": "BR990000777000001",
+      "car": "MT-5107248.29C8.4496.42A7",
+      "partner_internal_id": "demo-0001"
+    }
+  ]
+}`
+  );
   const [autoCreate, setAutoCreate] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
@@ -82,14 +97,18 @@ export function PartnerIntake() {
     selectedSourceCircuitId?: string,
     selectedTemplateId?: string,
     selectedInlineMappingText?: string,
-    showToastOnError = false
+    showToastOnError = false,
+    selectedMode?: "json" | "file",
+    selectedJsonBodyText?: string
   ) => {
     setPreviewRows(0);
     setPreviewResolvable(0);
     setPreviewUnknown(0);
     setPreviewResult(null);
     setPreviewError(null);
-    if (!selectedFile) return;
+    const mode = selectedMode || intakeInputMode;
+    if (mode === "file" && !selectedFile) return;
+    if (mode === "json" && !(selectedJsonBodyText ?? jsonBodyText).trim()) return;
     const mappingText = (selectedInlineMappingText ?? inlineMappingText).trim();
     let inlineMapping: Record<string, unknown> | undefined;
     if (mappingText.length > 0) {
@@ -114,13 +133,21 @@ export function PartnerIntake() {
     }
     setPreviewing(true);
     try {
-      const preview = await partnerIntakePreview(
-        selectedFile,
-        selectedSourceCircuitId,
-        autoCreate,
-        selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined,
-        inlineMapping
-      );
+      const preview =
+        mode === "file"
+          ? await partnerIntakePreview(
+              selectedFile as File,
+              selectedSourceCircuitId,
+              autoCreate,
+              selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined,
+              inlineMapping
+            )
+          : await partnerIntakePreviewJson(JSON.parse((selectedJsonBodyText ?? jsonBodyText).trim()), {
+              sourceCircuitId: selectedSourceCircuitId,
+              autoCreateCircuit: autoCreate,
+              templateId: selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined,
+              inlineMapping,
+            });
       setPreviewRows(preview.total_rows);
       setPreviewResolvable(preview.resolvable_rows);
       setPreviewUnknown(preview.unresolved_rows);
@@ -191,13 +218,22 @@ export function PartnerIntake() {
   }, [load]);
 
   useEffect(() => {
-    if (!file) return;
+    if (intakeInputMode !== "file" || !file) return;
     void buildPreValidation(file, sourceCircuitId, templateId, inlineMappingText);
-  }, [file, sourceCircuitId, autoCreate, templateId, inlineMappingText]);
+  }, [intakeInputMode, file, sourceCircuitId, autoCreate, templateId, inlineMappingText]);
 
   const runPreviewNow = async () => {
-    if (!file) return;
-    await buildPreValidation(file, sourceCircuitId || undefined, templateId, inlineMappingText, true);
+    if (intakeInputMode === "file" && !file) return;
+    if (intakeInputMode === "json" && !jsonBodyText.trim()) return;
+    await buildPreValidation(
+      file,
+      sourceCircuitId || undefined,
+      templateId,
+      inlineMappingText,
+      true,
+      intakeInputMode,
+      jsonBodyText
+    );
     toast({
       title: "Prévia executada",
       description: "Validação concluída sem persistir dados.",
@@ -205,7 +241,8 @@ export function PartnerIntake() {
   };
 
   const onSubmit = async () => {
-    if (!file) return;
+    if (intakeInputMode === "file" && !file) return;
+    if (intakeInputMode === "json" && !jsonBodyText.trim()) return;
     const confirmed = window.confirm(
       "Este envio vai persistir payload e processar ingestão real. Deseja continuar?"
     );
@@ -221,20 +258,28 @@ export function PartnerIntake() {
         }
         inlineMapping = parsed as Record<string, unknown>;
       }
-      const result = await partnerIntake(
-        file,
-        sourceCircuitId,
-        autoCreate,
-        templateId !== "none" ? templateId : undefined,
-        inlineMapping
-      );
+      const result =
+        intakeInputMode === "json"
+          ? await partnerIntakeJson(JSON.parse(jsonBodyText.trim()), {
+              sourceCircuitId,
+              autoCreateCircuit: autoCreate,
+              templateId: templateId !== "none" ? templateId : undefined,
+              inlineMapping,
+            })
+          : await partnerIntake(
+              file as File,
+              sourceCircuitId,
+              autoCreate,
+              templateId !== "none" ? templateId : undefined,
+              inlineMapping
+            );
       setLastResult(result);
       toast({
         title: "Ingestão processada",
         description: `Status: ${result.summary.status}. Rotas: ${result.summary.routes}.`,
       });
       setPreviewResult(null);
-      setFile(null);
+      if (intakeInputMode === "file") setFile(null);
       await load();
     } catch (err) {
       const description = formatClientError(err, "Não foi possível processar este arquivo.");
@@ -290,7 +335,7 @@ export function PartnerIntake() {
       <Card className="p-5 space-y-4">
         <h3 className="text-base font-semibold">Ingestão Inteligente (staging)</h3>
         <p className="text-sm text-muted-foreground">
-          Envie CSV/JSON uma única vez. A DeFarm persiste payload bruto, resolve cliente por identificador e roteia para os circuitos corretos.
+          Modo recomendado: enviar JSON no body do request. Como alternativa, também aceitamos arquivo CSV/JSON.
         </p>
         <p className="text-xs text-muted-foreground">
           Guia oficial:{" "}
@@ -318,7 +363,7 @@ export function PartnerIntake() {
         <p className="text-xs text-muted-foreground">
           Template é opcional. Use apenas quando precisar mapear nomes de colunas diferentes do padrão DeFarm.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
             <SelectTrigger><SelectValue placeholder="Circuito de staging" /></SelectTrigger>
             <SelectContent>
@@ -327,10 +372,29 @@ export function PartnerIntake() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={intakeInputMode} onValueChange={(value: "json" | "file") => setIntakeInputMode(value)}>
+            <SelectTrigger><SelectValue placeholder="Modo de entrada" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="json">Request JSON (recomendado)</SelectItem>
+              <SelectItem value="file">Arquivo CSV/JSON (alternativo)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
+        {intakeInputMode === "json" ? (
+          <label className="block border rounded-md p-3">
+            <p className="text-xs font-medium mb-2">Body JSON (recomendado)</p>
+            <textarea
+              value={jsonBodyText}
+              onChange={(e) => setJsonBodyText(e.target.value)}
+              className="w-full min-h-[130px] bg-transparent text-xs font-mono outline-none resize-y"
+              placeholder={`{"items":[{"value_chain":"BEEF","sisbov":"...","car":"..."}]}`}
+            />
+          </label>
+        ) : (
           <label className="border rounded-md px-3 py-2 text-sm flex items-center gap-2 cursor-pointer">
             <FileUp className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate">{file?.name || "Selecionar arquivo"}</span>
+            <span className="truncate">{file?.name || "Selecionar arquivo (CSV/JSON)"}</span>
             <input
               type="file"
               className="hidden"
@@ -339,21 +403,29 @@ export function PartnerIntake() {
                 const selected = e.target.files?.[0] || null;
                 setFile(selected);
                 if (selected) {
-                  await buildPreValidation(selected, sourceCircuitId || undefined, templateId, inlineMappingText, true);
+                  await buildPreValidation(
+                    selected,
+                    sourceCircuitId || undefined,
+                    templateId,
+                    inlineMappingText,
+                    true,
+                    "file",
+                    jsonBodyText
+                  );
                 }
               }}
             />
           </label>
+        )}
 
-          <div className="flex items-center gap-2">
-            <Button onClick={runPreviewNow} disabled={!file || previewing || sending}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={runPreviewNow} disabled={(intakeInputMode === "file" ? !file : !jsonBodyText.trim()) || previewing || sending}>
               {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Executar preview"}
             </Button>
-            <Button variant="outline" onClick={onSubmit} disabled={!file || sending}>
+            <Button variant="outline" onClick={onSubmit} disabled={(intakeInputMode === "file" ? !file : !jsonBodyText.trim()) || sending}>
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar de verdade"}
             </Button>
           </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Select value={templateId} onValueChange={setTemplateId}>
@@ -394,7 +466,7 @@ export function PartnerIntake() {
           <Label htmlFor="auto-create">Criar circuito automaticamente quando identificador não existir</Label>
         </div>
 
-        {file ? (
+        {(intakeInputMode === "file" ? !!file : !!jsonBodyText.trim()) ? (
           <div className="rounded-lg border p-3 bg-muted/30">
             <p className="text-xs font-medium text-foreground mb-2">Prévia real de roteamento (sem tokenizar)</p>
             {previewing ? (

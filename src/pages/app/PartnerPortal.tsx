@@ -21,7 +21,7 @@ export default function PartnerPortal() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["value"]>("overview");
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="mb-8">
         <p className="section-label mb-1">Parceiro</p>
         <h1 className="text-foreground">Portal do Parceiro</h1>
