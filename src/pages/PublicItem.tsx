@@ -2,14 +2,12 @@ import { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Loader2,
   Package,
   ShieldCheck,
   ExternalLink,
   CalendarDays,
   Globe,
-  Wheat,
   Fingerprint,
   ChevronDown,
   ChevronUp,
@@ -18,13 +16,25 @@ import {
   Activity,
   Database,
   Link2,
+  Copy,
+  Scale,
+  Lock,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ApiError,
   getPublicItem,
   getPublicItemCanonicalIdentifier,
   getPublicItemEvents,
+  getPublicItemProofs,
   resolvePublicItemByIdentifier,
 } from "@/lib/defarm-api";
 import {
@@ -32,14 +42,24 @@ import {
   eventTypeLabels,
   eventTypeIcons,
   formatDateShort,
-  formatTime,
   REAL_LIFE_EVENT_TYPES,
 } from "@/components/item-detail/constants";
 import logoIcon from "@/assets/logo-icon.png";
 import { AssetQRCode } from "@/components/AssetQRCode";
 import type { PublicItemEvent } from "@/lib/api/types";
-
-/* ── helpers ─────────────────────────────────── */
+import type { CheckResponse } from "@/lib/check-api/types";
+import { executeCheck } from "@/lib/check-api";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Line,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const chainLabels: Record<string, string> = {
   BEEF: "Bovinos",
@@ -54,26 +74,6 @@ const statusMap: Record<string, { text: string; className: string }> = {
   deprecated: { text: "Depreciado", className: "bg-destructive/10 text-destructive" },
 };
 
-function eventSummary(event: PublicItemEvent): string | null {
-  const p = event.payload || {};
-  if (event.event_type === "item_movement") {
-    const base = typeof p.property_dfid === "string" ? `Propriedade: ${p.property_dfid}` : "Movimentação registrada";
-    return typeof p.gta_number === "string" ? `${base} · GTA ${p.gta_number}` : base;
-  }
-  if (event.event_type === "item_property_linked" || event.event_type === "item_property_unlinked") {
-    return typeof p.property_dfid === "string" ? `Propriedade: ${p.property_dfid}` : null;
-  }
-  if (event.event_type === "item_weighed" && typeof p.weight_kg === "number") {
-    return `${p.weight_kg} kg${typeof p.occurred_at === "string" ? ` · ${p.occurred_at}` : ""}`;
-  }
-  if (event.event_type === "item_born" && typeof p.occurred_at === "string") {
-    return `Nascimento em ${p.occurred_at}`;
-  }
-  // generic: show source if available
-  if (typeof p.source === "string") return `Origem: ${p.source}`;
-  return null;
-}
-
 type TechnicalProof = {
   eventId: string;
   createdAt: string;
@@ -86,12 +86,63 @@ type TechnicalProof = {
   pinStatus?: string;
 };
 
+type WeightPoint = {
+  date: string;
+  label: string;
+  weight: number;
+  source: "metadata" | "event";
+};
+
+function shortHash(value: string, head = 10, tail = 8): string {
+  if (!value) return "-";
+  if (value.length <= head + tail + 3) return value;
+  return `${value.slice(0, head)}...${value.slice(-tail)}`;
+}
+
+function normalizeKey(key: string): string {
+  return key.trim().toLowerCase();
+}
+
+function compactJson(value: unknown): string {
+  if (value === null || value === undefined) return "-";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
 function readString(record: Record<string, unknown>, keys: string[]): string | undefined {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" && value.trim()) return value.trim();
   }
   return undefined;
+}
+
+function detectCanonicalIdentifier(metadata: Record<string, unknown>): { label: string; value: string } | null {
+  const picks: Array<{ key: string; label: string }> = [
+    { key: "sisbov", label: "SISBOV" },
+    { key: "chip", label: "CHIP" },
+    { key: "cpf", label: "CPF" },
+    { key: "cnpj", label: "CNPJ" },
+    { key: "inscricao_estadual", label: "IE" },
+    { key: "ie", label: "IE" },
+    { key: "land_dfid", label: "LAND_DFID" },
+    { key: "car", label: "CAR" },
+  ];
+  for (const pick of picks) {
+    const raw = metadata[pick.key];
+    if (typeof raw === "string" && raw.trim()) {
+      return { label: pick.label, value: raw.trim() };
+    }
+    if (typeof raw === "number") {
+      return { label: pick.label, value: String(raw) };
+    }
+  }
+  return null;
 }
 
 function extractTechnicalProof(event: PublicItemEvent): TechnicalProof | null {
@@ -122,37 +173,22 @@ function extractTechnicalProof(event: PublicItemEvent): TechnicalProof | null {
   };
 }
 
-function compactJson(value: unknown): string {
-  if (value === null || value === undefined) return "-";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
+function eventSummary(event: PublicItemEvent): string | null {
+  const p = event.payload || {};
+  if (event.event_type === "item_movement") {
+    const base = typeof p.property_dfid === "string" ? `Propriedade: ${p.property_dfid}` : "Movimentação registrada";
+    return typeof p.gta_number === "string" ? `${base} · GTA ${p.gta_number}` : base;
   }
-}
-
-function detectCanonicalIdentifier(metadata: Record<string, unknown>): { label: string; value: string } | null {
-  const picks: Array<{ key: string; label: string }> = [
-    { key: "sisbov", label: "SISBOV" },
-    { key: "chip", label: "CHIP" },
-    { key: "cpf", label: "CPF" },
-    { key: "cnpj", label: "CNPJ" },
-    { key: "inscricao_estadual", label: "IE" },
-    { key: "ie", label: "IE" },
-    { key: "land_dfid", label: "LAND_DFID" },
-    { key: "car", label: "CAR" },
-  ];
-  for (const pick of picks) {
-    const raw = metadata[pick.key];
-    if (typeof raw === "string" && raw.trim()) {
-      return { label: pick.label, value: raw.trim() };
-    }
-    if (typeof raw === "number") {
-      return { label: pick.label, value: String(raw) };
-    }
+  if (event.event_type === "item_property_linked" || event.event_type === "item_property_unlinked") {
+    return typeof p.property_dfid === "string" ? `Propriedade: ${p.property_dfid}` : null;
   }
+  if (event.event_type === "item_weighed" && typeof p.weight_kg === "number") {
+    return `${p.weight_kg} kg${typeof p.occurred_at === "string" ? ` · ${p.occurred_at}` : ""}`;
+  }
+  if (event.event_type === "item_born" && typeof p.occurred_at === "string") {
+    return `Nascimento em ${p.occurred_at}`;
+  }
+  if (typeof p.source === "string") return `Origem: ${p.source}`;
   return null;
 }
 
@@ -178,8 +214,6 @@ function trustBadge(level?: string | null, score?: number | null): { text: strin
   return { text: "Confiança n/d", className: "bg-muted text-muted-foreground" };
 }
 
-/* ── main component ──────────────────────────── */
-
 export default function PublicItem() {
   const { dfid, identifierType, identifierValue } = useParams<{
     dfid?: string;
@@ -187,12 +221,24 @@ export default function PublicItem() {
     identifierValue?: string;
   }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+
   const [showOperational, setShowOperational] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [resolvedDfid, setResolvedDfid] = useState<string | null>(dfid || null);
   const [isResolvingRef, setIsResolvingRef] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [resolveDeprecated, setResolveDeprecated] = useState(false);
+
+  const [showCarDialog, setShowCarDialog] = useState(false);
+  const [carResult, setCarResult] = useState<CheckResponse | null>(null);
+  const [carLoading, setCarLoading] = useState(false);
+  const [carError, setCarError] = useState<string | null>(null);
+
+  const [showWeightDialog, setShowWeightDialog] = useState(false);
+  const [showIdentityDialog, setShowIdentityDialog] = useState(false);
+  const [showCidDialog, setShowCidDialog] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -247,6 +293,20 @@ export default function PublicItem() {
     retry: 1,
   });
 
+  const { data: proofs, isLoading: isLoadingProofs } = useQuery({
+    queryKey: ["public-item-proofs", resolvedDfid],
+    queryFn: () => getPublicItemProofs(resolvedDfid!),
+    enabled: !!resolvedDfid,
+    retry: 1,
+  });
+
+  const { data: canonicalFromDb } = useQuery({
+    queryKey: ["public-item-canonical", resolvedDfid],
+    queryFn: () => getPublicItemCanonicalIdentifier(resolvedDfid!),
+    enabled: !!resolvedDfid,
+    retry: 1,
+  });
+
   const itemDeprecated = useMemo(() => {
     if (resolveDeprecated) return true;
     if (error instanceof ApiError && error.status === 410 && error.code === "item_deprecated") return true;
@@ -271,25 +331,79 @@ export default function PublicItem() {
   }, [events]);
 
   const technicalProofs = useMemo(() => {
-    const proofs = events
+    const rows = events
       .map(extractTechnicalProof)
       .filter((proof): proof is TechnicalProof => !!proof)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const seenTx = new Set<string>();
-    const seenCid = new Set<string>();
+
     const unique: TechnicalProof[] = [];
-    for (const proof of proofs) {
-      const txKey = proof.txHash || "";
-      const cidKey = proof.cid || "";
-      if (txKey && seenTx.has(txKey) && cidKey && seenCid.has(cidKey)) continue;
-      if (txKey && seenTx.has(txKey) && !cidKey) continue;
-      if (!txKey && cidKey && seenCid.has(cidKey)) continue;
-      if (txKey) seenTx.add(txKey);
-      if (cidKey) seenCid.add(cidKey);
-      unique.push(proof);
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const key = `${row.txHash || "-"}|${row.cid || "-"}|${row.createdAt}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(row);
     }
     return unique;
   }, [events]);
+
+  const emittedTxHashes = useMemo(() => {
+    const identity = proofs?.identity_anchor?.transaction_hash;
+    const nft = proofs?.nft_mint_anchor?.transaction_hash;
+    const txRows = technicalProofs.filter((p) => p.txHash).map((p) => p.txHash as string);
+    return Array.from(new Set(txRows)).filter((tx) => tx !== identity && tx !== nft);
+  }, [technicalProofs, proofs]);
+
+  const metadata = useMemo(() => ((item?.metadata || {}) as Record<string, unknown>), [item?.metadata]);
+
+  const weightMeta = useMemo(() => {
+    const weightRaw = metadata.weight_kg;
+    const dateRaw = metadata.data_peso;
+    const weight = typeof weightRaw === "number" ? weightRaw : Number(weightRaw);
+    const date = typeof dateRaw === "string" ? dateRaw : null;
+    if (!Number.isFinite(weight)) return null;
+    return { weight, date };
+  }, [metadata]);
+
+  const weightHistory = useMemo<WeightPoint[]>(() => {
+    const points: WeightPoint[] = [];
+
+    if (weightMeta) {
+      points.push({
+        date: weightMeta.date || item?.updated_at || item?.created_at || new Date().toISOString(),
+        label: weightMeta.date || formatDateShort(item?.updated_at || item?.created_at || new Date().toISOString()),
+        weight: weightMeta.weight,
+        source: "metadata",
+      });
+    }
+
+    for (const event of events) {
+      if (event.event_type !== "item_weighed") continue;
+      const payload = (event.payload || {}) as Record<string, unknown>;
+      const weightRaw = payload.weight_kg;
+      const weight = typeof weightRaw === "number" ? weightRaw : Number(weightRaw);
+      if (!Number.isFinite(weight)) continue;
+      const occurredAt =
+        (typeof payload.occurred_at === "string" && payload.occurred_at) ||
+        (typeof payload.data_peso === "string" && payload.data_peso) ||
+        event.created_at;
+      points.push({
+        date: occurredAt,
+        label: formatDateShort(occurredAt),
+        weight,
+        source: "event",
+      });
+    }
+
+    const dedup = new Map<string, WeightPoint>();
+    for (const p of points) {
+      dedup.set(`${p.date}|${p.weight}`, p);
+    }
+
+    return Array.from(dedup.values()).sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+  }, [events, item?.created_at, item?.updated_at, weightMeta]);
 
   const visibleMetadataEntries = useMemo(() => {
     const technicalKeys = new Set([
@@ -304,26 +418,43 @@ export default function PublicItem() {
       "ipfs_gateway_url",
       "blockchain_anchors",
       "storage_refs",
+      "partner_internal_id",
+      "partner_reference",
+      "data_peso",
     ]);
-    const metadata = (item?.metadata || {}) as Record<string, unknown>;
-    return Object.entries(metadata).filter(([key]) => !technicalKeys.has(key));
-  }, [item?.metadata]);
 
-  const fallbackCanonicalIdentifier = useMemo(() => {
-    const metadata = (item?.metadata || {}) as Record<string, unknown>;
-    return detectCanonicalIdentifier(metadata);
-  }, [item?.metadata]);
+    return Object.entries(metadata).filter(([key]) => !technicalKeys.has(normalizeKey(key)));
+  }, [metadata]);
 
-  const { data: canonicalFromDb } = useQuery({
-    queryKey: ["public-item-canonical", resolvedDfid],
-    queryFn: () => getPublicItemCanonicalIdentifier(resolvedDfid!),
-    enabled: !!resolvedDfid,
-    retry: 1,
-  });
+  const fallbackCanonicalIdentifier = useMemo(() => detectCanonicalIdentifier(metadata), [metadata]);
 
   const canonicalIdentifier = canonicalFromDb
-    ? { label: canonicalFromDb.identifier_type, value: canonicalFromDb.value }
+    ? { label: canonicalFromDb.identifier_type.toUpperCase(), value: canonicalFromDb.value }
     : fallbackCanonicalIdentifier;
+
+  const carValue = useMemo(() => {
+    const direct = metadata.car;
+    if (typeof direct === "string" && direct.trim()) return direct.trim();
+    if (typeof direct === "number") return String(direct);
+    return null;
+  }, [metadata]);
+
+  const latestContentVersion = useMemo(() => {
+    if (!proofs?.content_versions?.length) return null;
+    return (
+      proofs.content_versions.find((v) => v.is_latest) ||
+      [...proofs.content_versions].sort((a, b) => b.version - a.version)[0]
+    );
+  }, [proofs?.content_versions]);
+
+  const olderContentVersions = useMemo(() => {
+    if (!proofs?.content_versions?.length || !latestContentVersion) return [];
+    return proofs.content_versions
+      .filter((v) => v.cid !== latestContentVersion.cid)
+      .sort((a, b) => b.version - a.version);
+  }, [proofs?.content_versions, latestContentVersion]);
+
+  const visibleEvents = showOperational ? events : realEvents;
 
   const publicCircuitId = useMemo(() => {
     for (const event of events) {
@@ -333,20 +464,54 @@ export default function PublicItem() {
     }
     return null;
   }, [events]);
-  const publicCircuitUrl = publicCircuitId ? `/c/${publicCircuitId}` : "/circuitos/publicos";
-  const publicBackLabel = publicCircuitId ? "Voltar ao circuito" : "Voltar aos circuitos";
 
-  const visibleEvents = showOperational ? events : realEvents;
+  const copyText = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: `${label} copiado` });
+    } catch {
+      toast({ title: `Falha ao copiar ${label.toLowerCase()}`, variant: "destructive" });
+    }
+  };
+
+  const openCarVerification = async () => {
+    if (!carValue) return;
+    if (!isAuthenticated) {
+      setShowCarDialog(true);
+      return;
+    }
+
+    setShowCarDialog(true);
+    setCarLoading(true);
+    setCarError(null);
+
+    try {
+      const response = await executeCheck({
+        input: { type: "CAR", value: carValue },
+        options: { useCache: true, includeEvidence: false },
+      });
+      setCarResult(response);
+    } catch (err: unknown) {
+      setCarError(err instanceof Error ? err.message : "Falha ao consultar compliance do CAR");
+    } finally {
+      setCarLoading(false);
+    }
+  };
 
   const toggleExpanded = (id: string) => {
     setExpandedEvents((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   };
 
-  /* ── edge states ── */
+  const publicCircuitUrl = publicCircuitId ? `/c/${publicCircuitId}` : "/circuitos/publicos";
+  const publicBackLabel = publicCircuitId ? "Voltar ao circuito" : "Voltar aos circuitos";
 
   if (isResolvingRef || isLoading) {
     return (
@@ -354,7 +519,7 @@ export default function PublicItem() {
         <div className="flex flex-col items-center justify-center py-24">
           <Loader2 className="h-7 w-7 animate-spin text-primary mb-3" />
           <p className="text-sm text-muted-foreground">
-            {isResolvingRef ? "Resolvendo referência do item..." : "Carregando dados do animal…"}
+            {isResolvingRef ? "Resolvendo referência do item..." : "Carregando dados do item..."}
           </p>
         </div>
       </Shell>
@@ -389,10 +554,7 @@ export default function PublicItem() {
             {resolveError || "Este item não existe ou não está disponível publicamente."}
           </p>
           <Link to={publicCircuitUrl} className="mt-6">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              {publicBackLabel}
-            </Button>
+            <Button variant="outline" size="sm">{publicBackLabel}</Button>
           </Link>
         </div>
       </Shell>
@@ -404,16 +566,13 @@ export default function PublicItem() {
   return (
     <Shell>
       <div className="space-y-6">
-        {/* ── breadcrumb ── */}
         <Link
           to={publicCircuitUrl}
           className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="h-3.5 w-3.5 mr-1" />
           {publicBackLabel}
         </Link>
 
-        {/* ── item hero card ── */}
         <div className="rounded-2xl bg-gradient-to-br from-primary/8 via-background to-primary/4 border border-primary/10 p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -424,16 +583,12 @@ export default function PublicItem() {
                 {item.dfid}
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${st.className}`}>
-                  {st.text}
-                </span>
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${st.className}`}>{st.text}</span>
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <Globe className="h-3 w-3" />
                   {item.country}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {chainLabels[item.value_chain] || item.value_chain}
-                </span>
+                <span className="text-xs text-muted-foreground">{chainLabels[item.value_chain] || item.value_chain}</span>
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <CalendarDays className="h-3 w-3" />
                   {item.year}
@@ -447,99 +602,191 @@ export default function PublicItem() {
           </div>
         </div>
 
-        {/* ── QR code card ── */}
         {item.dfid && (
           <AssetQRCode
             dfid={item.dfid}
             canonicalIdLabel={canonicalIdentifier?.label}
             canonicalIdValue={canonicalIdentifier?.value}
+            identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
+            latestCid={latestContentVersion?.cid || undefined}
           />
         )}
 
-        {/* ── metadata ── */}
         {visibleMetadataEntries.length > 0 && (
           <section className="rounded-xl border border-border p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Metadados públicos</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {visibleMetadataEntries.map(([key, value]) => (
-                <div key={key} className="bg-muted/40 rounded-lg p-3">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{key.replace(/_/g, " ")}</p>
-                  {typeof value === "object" ? (
-                    <pre className="text-xs text-foreground mt-1 overflow-x-auto whitespace-pre-wrap break-words">
-                      {compactJson(value)}
-                    </pre>
-                  ) : (
-                    <p className="text-sm font-medium text-foreground mt-0.5 break-words">
-                      {String(value ?? "-")}
-                    </p>
-                  )}
-                </div>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {visibleMetadataEntries.map(([key, value]) => {
+                const normalized = normalizeKey(key);
+                const displayLabel = key.replace(/_/g, " ");
+
+                if (normalized === "sisbov" && (typeof value === "string" || typeof value === "number")) {
+                  const sisbov = String(value);
+                  const refUrl = `${window.location.origin}/i/sisbov/${encodeURIComponent(sisbov)}`;
+                  return (
+                    <div key={key} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SISBOV</p>
+                      <a
+                        href={`/i/sisbov/${encodeURIComponent(sisbov)}`}
+                        className="text-sm font-medium text-primary break-all hover:underline"
+                      >
+                        {sisbov}
+                      </a>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, "SISBOV")}>
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copiar número
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(refUrl, "Link SISBOV")}>
+                          <Link2 className="h-3 w-3 mr-1" />
+                          Copiar link
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (normalized === "car" && (typeof value === "string" || typeof value === "number")) {
+                  const car = String(value);
+                  return (
+                    <div key={key} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">CAR</p>
+                      <button
+                        onClick={() => void openCarVerification()}
+                        className="text-sm font-medium text-primary break-all hover:underline text-left"
+                      >
+                        {car}
+                      </button>
+                      <p className="text-[11px] text-muted-foreground">Clique para verificar compliance desse CAR.</p>
+                    </div>
+                  );
+                }
+
+                if (normalized === "weight_kg" && (typeof value === "number" || typeof value === "string")) {
+                  const weight = Number(value);
+                  return (
+                    <div key={key} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Peso</p>
+                      <button
+                        onClick={() => setShowWeightDialog(true)}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary"
+                      >
+                        <TrendingUp className="h-4 w-4" />
+                        {Number.isFinite(weight) ? `${weight.toFixed(1)} kg` : String(value)}
+                      </button>
+                      {weightMeta?.date ? (
+                        <p className="text-[11px] text-muted-foreground">Data da pesagem: {weightMeta.date}</p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">Clique para ver evolução de peso.</p>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={key} className="bg-muted/40 rounded-lg p-3">
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
+                    {typeof value === "object" ? (
+                      <pre className="text-xs text-foreground mt-1 overflow-x-auto whitespace-pre-wrap break-words">
+                        {compactJson(value)}
+                      </pre>
+                    ) : (
+                      <p className="text-sm font-medium text-foreground mt-0.5 break-words">{String(value ?? "-")}</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
 
-        {technicalProofs.length > 0 && (
-          <section className="rounded-xl border border-border p-5 space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Database className="h-4.5 w-4.5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Provas Técnicas (Stellar + IPFS)</h2>
-                <p className="text-xs text-muted-foreground">
-                  {technicalProofs.length} registro(s) públicos de ancoragem/versionamento
-                </p>
-              </div>
+        <section className="rounded-xl border border-border p-5 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Database className="h-4.5 w-4.5 text-primary" />
             </div>
-            <div className="space-y-2">
-              {technicalProofs.slice(0, 8).map((proof) => (
-                <div key={proof.eventId} className="rounded-lg border border-border bg-muted/20 p-3">
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>{eventTypeLabels[proof.eventType] || proof.eventType}</span>
-                    <span>·</span>
-                    <span>{formatDateShort(proof.createdAt)}</span>
-                    {proof.network ? (
-                      <>
-                        <span>·</span>
-                        <span>{proof.network}</span>
-                      </>
-                    ) : null}
-                  </div>
-                  <div className="mt-2 space-y-1">
-                    {proof.txHash ? (
-                      <a
-                        href={proof.stellarUrl || `https://stellar.expert/explorer/public/tx/${proof.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-mono"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        Stellar: {proof.txHash}
-                      </a>
-                    ) : null}
-                    {proof.cid ? (
-                      <a
-                        href={proof.gatewayUrl || `https://gateway.pinata.cloud/ipfs/${proof.cid}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-mono"
-                      >
-                        <Link2 className="h-3 w-3" />
-                        IPFS CID: {proof.cid}
-                      </a>
-                    ) : null}
-                    {proof.pinStatus ? (
-                      <p className="text-[11px] text-muted-foreground">Status IPFS: {proof.pinStatus}</p>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Registros Decentralizados</h2>
+              <p className="text-xs text-muted-foreground">Identidade on-chain + versões de conteúdo IPFS</p>
             </div>
-          </section>
-        )}
+          </div>
 
-        {/* ── timeline ── */}
+          {isLoadingProofs ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando provas...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Identidade</p>
+                {proofs?.identity_anchor?.transaction_hash ? (
+                  <>
+                    <a
+                      href={`https://stellar.expert/explorer/public/tx/${proofs.identity_anchor.transaction_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
+                    >
+                      {shortHash(proofs.identity_anchor.transaction_hash)}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => void copyText(proofs.identity_anchor!.transaction_hash, "Hash de identidade")}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copiar hash
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowIdentityDialog(true)}>
+                        Ver detalhes
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Identidade ainda não disponível.</p>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">CID (última versão)</p>
+                {latestContentVersion ? (
+                  <>
+                    <a
+                      href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
+                    >
+                      {shortHash(latestContentVersion.cid)}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => void copyText(latestContentVersion.cid, "CID")}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copiar CID
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCidDialog(true)}>
+                        Ver versões
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhuma versão de conteúdo disponível.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
@@ -550,14 +797,12 @@ export default function PublicItem() {
                 <h2 className="text-base font-semibold text-foreground">Histórico</h2>
                 <p className="text-xs text-muted-foreground">
                   {realEvents.length} evento{realEvents.length !== 1 ? "s" : ""} registrado{realEvents.length !== 1 ? "s" : ""}
-                  {operationalEvents.length > 0 && (
-                    <span> · {operationalEvents.length} técnico/operacional(is)</span>
-                  )}
+                  {operationalEvents.length > 0 && <span> · {operationalEvents.length} técnico/operacional(is)</span>}
                 </p>
               </div>
             </div>
 
-            {operationalEvents.length > 0 && (
+            {isAuthenticated && operationalEvents.length > 0 && (
               <button
                 onClick={() => setShowOperational((prev) => !prev)}
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border hover:bg-muted/50"
@@ -577,7 +822,16 @@ export default function PublicItem() {
             )}
           </div>
 
-          {isLoadingEvents ? (
+          {!isAuthenticated ? (
+            <div className="rounded-xl border border-border bg-muted/30 py-8 px-5 text-center">
+              <Lock className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-foreground font-medium">Histórico visível para usuários logados</p>
+              <p className="text-xs text-muted-foreground mt-1">Entre na DeFarm para visualizar a timeline detalhada.</p>
+              <Link to="/login" className="inline-block mt-4">
+                <Button size="sm">Entrar na DeFarm</Button>
+              </Link>
+            </div>
+          ) : isLoadingEvents ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
@@ -588,7 +842,6 @@ export default function PublicItem() {
             </div>
           ) : (
             <div className="relative">
-              {/* vertical line */}
               <div className="absolute left-[19px] top-3 bottom-3 w-px bg-border" />
 
               <div className="space-y-0">
@@ -604,14 +857,12 @@ export default function PublicItem() {
 
                   return (
                     <div key={event.id} className="relative pl-12 pb-1 pt-1">
-                      {/* dot */}
                       <div
                         className={`absolute left-[7px] top-3 w-6 h-6 rounded-full flex items-center justify-center ring-2 ring-background ${colors}`}
                       >
                         <Icon className="h-3 w-3" />
                       </div>
 
-                      {/* card */}
                       <div
                         className={`rounded-xl border p-4 transition-colors ${
                           isOperational
@@ -622,9 +873,7 @@ export default function PublicItem() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${colors}`}>
-                                {label}
-                              </span>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${colors}`}>{label}</span>
                               {isOperational && (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                                   operacional
@@ -641,16 +890,13 @@ export default function PublicItem() {
                                 {trust.text}
                               </span>
                             </div>
-                            {summary && (
-                              <p className="text-sm text-foreground mt-2">{summary}</p>
-                            )}
+                            {summary && <p className="text-sm text-foreground mt-2">{summary}</p>}
                           </div>
                           <span className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
                             {formatDateShort(event.created_at)}
                           </span>
                         </div>
 
-                        {/* expandable payload */}
                         {hasPayload && (
                           <div className="mt-2">
                             <button
@@ -692,11 +938,190 @@ export default function PublicItem() {
           )}
         </section>
       </div>
+
+      <Dialog open={showCarDialog} onOpenChange={setShowCarDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scale className="h-4 w-4" /> Verificação de CAR
+            </DialogTitle>
+            <DialogDescription>
+              {carValue ? `CAR: ${carValue}` : "CAR não informado no item."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {!carValue ? (
+            <p className="text-sm text-muted-foreground">Este item não contém CAR público para consulta.</p>
+          ) : !isAuthenticated ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Para executar verificação desse CAR, entre na DeFarm.
+              </p>
+              <Link to="/login" className="inline-block">
+                <Button size="sm">Entrar na DeFarm</Button>
+              </Link>
+            </div>
+          ) : carLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Consultando compliance...
+            </div>
+          ) : carError ? (
+            <p className="text-sm text-destructive">{carError}</p>
+          ) : carResult ? (
+            <div className="space-y-2 text-sm">
+              <p><span className="text-muted-foreground">Veredito:</span> <span className="font-medium">{carResult.verdict}</span></p>
+              <p><span className="text-muted-foreground">Score:</span> <span className="font-medium">{carResult.score}</span></p>
+              <p><span className="text-muted-foreground">Checkers:</span> <span className="font-medium">{carResult.summary.totalCheckers}</span></p>
+              <p><span className="text-muted-foreground">Falhas:</span> <span className="font-medium">{carResult.summary.failed}</span></p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Abra novamente para executar a consulta.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showWeightDialog} onOpenChange={setShowWeightDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Evolução de peso</DialogTitle>
+            <DialogDescription>Histórico de pesagens públicas registradas para este item.</DialogDescription>
+          </DialogHeader>
+
+          {weightHistory.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma pesagem pública disponível.</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weightHistory}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} domain={["dataMin - 5", "dataMax + 5"]} />
+                    <RechartsTooltip />
+                    <Line type="monotone" dataKey="weight" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="space-y-2">
+                {weightHistory.map((p, idx) => (
+                  <div key={`${p.date}-${idx}`} className="text-xs flex items-center justify-between border rounded px-2 py-1.5">
+                    <span className="text-muted-foreground">{p.date}</span>
+                    <span className="font-medium">{p.weight.toFixed(1)} kg</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showIdentityDialog} onOpenChange={setShowIdentityDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Identidade e eventos emitidos</DialogTitle>
+            <DialogDescription>
+              Primeiro registro de identidade e emissões on-chain associadas ao conteúdo.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-sm">
+            {proofs?.identity_anchor ? (
+              <div className="rounded border p-3">
+                <p className="text-xs text-muted-foreground">Hash de identidade</p>
+                <p className="font-mono break-all mt-1">{proofs.identity_anchor.transaction_hash}</p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Sem hash de identidade disponível.</p>
+            )}
+
+            {proofs?.nft_mint_anchor ? (
+              <div className="rounded border p-3">
+                <p className="text-xs text-muted-foreground">Hash de mint</p>
+                <p className="font-mono break-all mt-1">{proofs.nft_mint_anchor.transaction_hash}</p>
+              </div>
+            ) : null}
+
+            <div className="rounded border p-3">
+              <p className="text-xs text-muted-foreground mb-2">Hashes de eventos emitidos ({emittedTxHashes.length})</p>
+              {emittedTxHashes.length === 0 ? (
+                <p className="text-muted-foreground">Nenhum evento emitido público encontrado.</p>
+              ) : (
+                <div className="space-y-2">
+                  {emittedTxHashes.map((tx) => (
+                    <div key={tx} className="flex items-center justify-between gap-2">
+                      <a
+                        href={`https://stellar.expert/explorer/public/tx/${tx}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-primary hover:underline break-all text-xs"
+                      >
+                        {shortHash(tx, 14, 10)}
+                      </a>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(tx, "Hash")}>Copiar</Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCidDialog} onOpenChange={setShowCidDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Versões de CID</DialogTitle>
+            <DialogDescription>
+              Última versão e histórico de CIDs anteriores.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 text-sm">
+            {latestContentVersion ? (
+              <div className="rounded border p-3">
+                <p className="text-xs text-muted-foreground">Último CID (v{latestContentVersion.version})</p>
+                <a
+                  href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-primary hover:underline break-all mt-1 inline-flex"
+                >
+                  {latestContentVersion.cid}
+                </a>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Nenhum CID disponível.</p>
+            )}
+
+            <div className="rounded border p-3">
+              <p className="text-xs text-muted-foreground mb-2">CIDs anteriores ({olderContentVersions.length})</p>
+              {olderContentVersions.length === 0 ? (
+                <p className="text-muted-foreground">Sem versões anteriores.</p>
+              ) : (
+                <div className="space-y-2">
+                  {olderContentVersions.map((v) => (
+                    <div key={`${v.version}-${v.cid}`} className="flex items-center justify-between gap-2">
+                      <a
+                        href={v.gateway_url || `https://gateway.pinata.cloud/ipfs/${v.cid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-primary hover:underline break-all text-xs"
+                      >
+                        v{v.version} · {shortHash(v.cid, 14, 10)}
+                      </a>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(v.cid, "CID")}>Copiar</Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Shell>
   );
 }
-
-/* ── shell ────────────────────────────────────── */
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -707,21 +1132,15 @@ function Shell({ children }: { children: React.ReactNode }) {
             <img src={logoIcon} alt="DeFarm" className="h-7 w-7" />
             <span className="font-bold text-foreground text-sm">DeFarm</span>
           </div>
-          <span className="text-[11px] text-muted-foreground">
-            Rastreabilidade verificada
-          </span>
+          <span className="text-[11px] text-muted-foreground">Rastreabilidade verificada</span>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {children}
-      </main>
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
 
       <footer className="border-t border-border mt-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">
-            Dados verificados pela plataforma DeFarm
-          </p>
+          <p className="text-xs text-muted-foreground">Dados verificados pela plataforma DeFarm</p>
           <a
             href="https://defarm.net"
             target="_blank"

@@ -6,6 +6,8 @@ interface AssetQRCodeProps {
   dfid: string;
   canonicalIdLabel?: string;
   canonicalIdValue?: string;
+  identityHash?: string;
+  latestCid?: string;
   className?: string;
 }
 
@@ -29,6 +31,8 @@ export function AssetQRCode({
   dfid,
   canonicalIdLabel,
   canonicalIdValue,
+  identityHash,
+  latestCid,
   className = "",
 }: AssetQRCodeProps) {
   const [fullscreen, setFullscreen] = useState(false);
@@ -64,6 +68,11 @@ export function AssetQRCode({
     a.download = `${dfid}-qrcode.svg`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const shorten = (value: string, head = 10, tail = 8) => {
+    if (value.length <= head + tail + 3) return value;
+    return `${value.slice(0, head)}...${value.slice(-tail)}`;
   };
 
   return (
@@ -125,6 +134,16 @@ export function AssetQRCode({
                   {canonicalIdLabel && canonicalIdValue ? (
                     <p className="text-xs text-muted-foreground break-all">
                       {canonicalIdLabel}: <span className="font-mono">{canonicalIdValue}</span>
+                    </p>
+                  ) : null}
+                  {identityHash ? (
+                    <p className="text-[11px] text-muted-foreground break-all">
+                      Registro de identidade: <span className="font-mono text-foreground/80">{shorten(identityHash)}</span>
+                    </p>
+                  ) : null}
+                  {latestCid ? (
+                    <p className="text-[11px] text-muted-foreground break-all">
+                      Último registro de conteúdo: <span className="font-mono text-foreground/80">{shorten(latestCid)}</span>
                     </p>
                   ) : null}
                   <p className="text-xs text-muted-foreground">{publicUrl}</p>

@@ -1032,6 +1032,32 @@ export interface PublicCanonicalIdentifier {
   value: string;
 }
 
+export interface PublicIdentityAnchor {
+  transaction_hash: string;
+  chain_type: string;
+  anchor_type: string;
+  status: string;
+  anchored_at: string;
+}
+
+export interface PublicContentVersion {
+  version: number;
+  cid: string;
+  status: string;
+  uploaded_at: string;
+  gateway_url: string;
+  is_latest: boolean;
+}
+
+export interface PublicItemProofs {
+  dfid: string;
+  item_id: string;
+  identity_anchor?: PublicIdentityAnchor | null;
+  nft_mint_anchor?: PublicIdentityAnchor | null;
+  content_versions: PublicContentVersion[];
+  cid_update_events_count: number;
+}
+
 export interface PublicItemEvent {
   id: string;
   event_type: string;

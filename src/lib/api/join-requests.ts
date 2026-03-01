@@ -7,6 +7,7 @@ import type {
   PublicCircuitPortfolio,
   PublicItem,
   PublicCanonicalIdentifier,
+  PublicItemProofs,
   PublicItemEvent,
 } from "./types";
 
@@ -19,7 +20,7 @@ export async function getPublicCircuits(params?: {
   offset?: number;
 }): Promise<PublicCircuitsResponse> {
   return registryRequest<PublicCircuitsResponse>(
-    `/circuits/public${buildQueryString(params as Record<string, any>)}`
+    `/circuits/public${buildQueryString(params as Record<string, unknown>)}`
   );
 }
 
@@ -38,6 +39,10 @@ export async function getPublicItemCanonicalIdentifier(
   return registryRequest<PublicCanonicalIdentifier>(`/items/${dfid}/canonical/public`);
 }
 
+export async function getPublicItemProofs(dfid: string): Promise<PublicItemProofs> {
+  return registryRequest<PublicItemProofs>(`/items/${dfid}/proofs/public`);
+}
+
 export async function resolvePublicItemByIdentifier(
   identifierType: string,
   identifierValue: string
@@ -52,7 +57,7 @@ export async function getPublicItemEvents(
   params?: { event_type?: string; limit?: number; offset?: number }
 ): Promise<PublicItemEvent[]> {
   return registryRequest<PublicItemEvent[]>(
-    `/items/${dfid}/events/public${buildQueryString(params as Record<string, any>)}`
+    `/items/${dfid}/events/public${buildQueryString(params as Record<string, unknown>)}`
   );
 }
 
