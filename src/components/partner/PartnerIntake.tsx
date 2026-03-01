@@ -282,7 +282,7 @@ export function PartnerIntake() {
       if (intakeInputMode === "file") setFile(null);
       await load();
     } catch (err) {
-      const description = formatClientError(err, "Não foi possível processar este arquivo.");
+      const description = formatClientError(err, "Não foi possível processar esta requisição.");
       toast({
         title: "Falha na ingestão",
         description,
@@ -335,7 +335,7 @@ export function PartnerIntake() {
       <Card className="p-5 space-y-4">
         <h3 className="text-base font-semibold">Ingestão Inteligente (staging)</h3>
         <p className="text-sm text-muted-foreground">
-          Modo recomendado: enviar JSON no body do request. Como alternativa, também aceitamos arquivo CSV/JSON.
+          Padrão da API: enviar <code>application/json</code> no body da requisição. Como alternativa, também aceitamos arquivo CSV/JSON.
         </p>
         <p className="text-xs text-muted-foreground">
           Guia oficial:{" "}
@@ -375,7 +375,7 @@ export function PartnerIntake() {
           <Select value={intakeInputMode} onValueChange={(value: "json" | "file") => setIntakeInputMode(value)}>
             <SelectTrigger><SelectValue placeholder="Modo de entrada" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="json">Request JSON (recomendado)</SelectItem>
+              <SelectItem value="json">application/json no body (padrão)</SelectItem>
               <SelectItem value="file">Arquivo CSV/JSON (alternativo)</SelectItem>
             </SelectContent>
           </Select>
@@ -383,7 +383,7 @@ export function PartnerIntake() {
 
         {intakeInputMode === "json" ? (
           <label className="block border rounded-md p-3">
-            <p className="text-xs font-medium mb-2">Body JSON (recomendado)</p>
+            <p className="text-xs font-medium mb-2">Body JSON (Content-Type: application/json)</p>
             <textarea
               value={jsonBodyText}
               onChange={(e) => setJsonBodyText(e.target.value)}
@@ -470,7 +470,7 @@ export function PartnerIntake() {
           <div className="rounded-lg border p-3 bg-muted/30">
             <p className="text-xs font-medium text-foreground mb-2">Prévia real de roteamento (sem tokenizar)</p>
             {previewing ? (
-              <p className="text-xs text-muted-foreground">Analisando arquivo...</p>
+              <p className="text-xs text-muted-foreground">Analisando payload...</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
                 <p className="text-muted-foreground">Linhas lidas: <span className="text-foreground font-medium">{previewRows}</span></p>
@@ -641,7 +641,7 @@ export function PartnerIntake() {
         </div>
 
         {filteredHistory.length === 0 ? (
-          <EmptyState icon={FileUp} title="Nenhum payload registrado" description="Envie um arquivo CSV ou JSON acima para começar." />
+          <EmptyState icon={FileUp} title="Nenhum payload registrado" description="Envie um payload JSON (padrão) ou arquivo CSV/JSON (alternativo) para começar." />
         ) : (
           <div className="space-y-2">
             {filteredHistory.map((row) => (
