@@ -507,7 +507,7 @@ export default function PublicItem() {
     setCarResult(null);
 
     if (!carHasOfficialFormat) {
-      setCarGeoError("Formato de CAR não oficial. Use o padrão UF-CODIGO-HEX32 para consulta geoespacial.");
+      setCarGeoError(null);
       setCarError("Este CAR não está no formato oficial para verificação automática.");
       return;
     }
@@ -516,13 +516,8 @@ export default function PublicItem() {
     setCarGeoError(null);
     getCarGeoJSON(carValue, { skipAuth: true })
       .then((geo) => setCarGeojson(geo))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "";
-        if (msg.includes("404")) {
-          setCarGeoError("CAR não encontrado nas bases públicas consultadas.");
-          return;
-        }
-        setCarGeoError("Polígono não disponível para este CAR no momento.");
+      .catch(() => {
+        setCarGeoError(null);
       })
       .finally(() => setCarGeoLoading(false));
 
@@ -1033,20 +1028,18 @@ export default function PublicItem() {
             <p className="text-sm text-muted-foreground">Este item não contém CAR público para consulta.</p>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-lg border border-border bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground mb-2">Polígono da propriedade</p>
-                {carGeoLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando mapa...
-                  </div>
-                ) : carGeoError ? (
-                  <p className="text-sm text-muted-foreground">{carGeoError}</p>
-                ) : carGeojson ? (
-                  <PropertyMap geojson={carGeojson} className="h-64 w-full" />
-                ) : (
-                  <p className="text-sm text-muted-foreground">Geometria não disponível para este CAR.</p>
-                )}
-              </div>
+              {carGeoLoading || carGeojson ? (
+                <div className="rounded-lg border border-border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground mb-2">Polígono da propriedade</p>
+                  {carGeoLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Carregando mapa...
+                    </div>
+                  ) : carGeojson ? (
+                    <PropertyMap geojson={carGeojson} className="h-64 w-full" />
+                  ) : null}
+                </div>
+              ) : null}
 
               {!isAuthenticated ? (
                 <div className="space-y-3">
