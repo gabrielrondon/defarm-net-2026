@@ -1157,7 +1157,24 @@ export default function PublicItem() {
             {proofs?.identity_anchor ? (
               <div className="rounded border p-3">
                 <p className="text-xs text-muted-foreground">Hash de identidade</p>
-                <p className="font-mono break-all mt-1">{proofs.identity_anchor.transaction_hash}</p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <a
+                    href={`https://stellar.expert/explorer/public/tx/${proofs.identity_anchor.transaction_hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-primary hover:underline break-all text-xs"
+                  >
+                    {proofs.identity_anchor.transaction_hash}
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => void copyText(proofs.identity_anchor!.transaction_hash, "Hash de identidade")}
+                  >
+                    Copiar
+                  </Button>
+                </div>
               </div>
             ) : (
               <p className="text-muted-foreground">Sem hash de identidade disponível.</p>
@@ -1166,7 +1183,14 @@ export default function PublicItem() {
             {proofs?.nft_mint_anchor ? (
               <div className="rounded border p-3">
                 <p className="text-xs text-muted-foreground">Hash de mint</p>
-                <p className="font-mono break-all mt-1">{proofs.nft_mint_anchor.transaction_hash}</p>
+                <a
+                  href={`https://stellar.expert/explorer/public/tx/${proofs.nft_mint_anchor.transaction_hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-primary hover:underline break-all text-xs mt-1 inline-flex"
+                >
+                  {proofs.nft_mint_anchor.transaction_hash}
+                </a>
               </div>
             ) : null}
 
