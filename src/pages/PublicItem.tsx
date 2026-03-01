@@ -50,8 +50,10 @@ import { AssetQRCode } from "@/components/AssetQRCode";
 import type { PublicItemEvent } from "@/lib/api/types";
 import type { CheckResponse } from "@/lib/check-api/types";
 import { executeCheck } from "@/lib/check-api";
+import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import {
   Line,
   LineChart,
@@ -236,6 +238,9 @@ export default function PublicItem() {
   const [carResult, setCarResult] = useState<CheckResponse | null>(null);
   const [carLoading, setCarLoading] = useState(false);
   const [carError, setCarError] = useState<string | null>(null);
+  const [carGeojson, setCarGeojson] = useState<CarGeoJSON | null>(null);
+  const [carGeoLoading, setCarGeoLoading] = useState(false);
+  const [carGeoError, setCarGeoError] = useState<string | null>(null);
 
   const [showWeightDialog, setShowWeightDialog] = useState(false);
   const [showIdentityDialog, setShowIdentityDialog] = useState(false);
@@ -476,12 +481,21 @@ export default function PublicItem() {
 
   const openCarVerification = async () => {
     if (!carValue) return;
+    setShowCarDialog(true);
+
+    setCarGeoLoading(true);
+    setCarGeoError(null);
+    getCarGeoJSON(carValue, { skipAuth: true })
+      .then((geo) => setCarGeojson(geo))
+      .catch((err: unknown) =>
+        setCarGeoError(err instanceof Error ? err.message : "Falha ao carregar polígono do CAR")
+      )
+      .finally(() => setCarGeoLoading(false));
+
     if (!isAuthenticated) {
-      setShowCarDialog(true);
       return;
     }
 
-    setShowCarDialog(true);
     setCarLoading(true);
     setCarError(null);
 
@@ -944,8 +958,19 @@ export default function PublicItem() {
         </section>
       </div>
 
-      <Dialog open={showCarDialog} onOpenChange={setShowCarDialog}>
-        <DialogContent>
+      <Dialog
+        open={showCarDialog}
+        onOpenChange={(open) => {
+          setShowCarDialog(open);
+          if (!open) {
+            setCarError(null);
+            setCarGeoError(null);
+            setCarLoading(false);
+            setCarGeoLoading(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Scale className="h-4 w-4" /> Verificação de CAR
@@ -957,30 +982,49 @@ export default function PublicItem() {
 
           {!carValue ? (
             <p className="text-sm text-muted-foreground">Este item não contém CAR público para consulta.</p>
-          ) : !isAuthenticated ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Para executar verificação desse CAR, entre na DeFarm.
-              </p>
-              <Link to="/login" className="inline-block">
-                <Button size="sm">Entrar na DeFarm</Button>
-              </Link>
-            </div>
-          ) : carLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Consultando compliance...
-            </div>
-          ) : carError ? (
-            <p className="text-sm text-destructive">{carError}</p>
-          ) : carResult ? (
-            <div className="space-y-2 text-sm">
-              <p><span className="text-muted-foreground">Veredito:</span> <span className="font-medium">{carResult.verdict}</span></p>
-              <p><span className="text-muted-foreground">Score:</span> <span className="font-medium">{carResult.score}</span></p>
-              <p><span className="text-muted-foreground">Checkers:</span> <span className="font-medium">{carResult.summary.totalCheckers}</span></p>
-              <p><span className="text-muted-foreground">Falhas:</span> <span className="font-medium">{carResult.summary.failed}</span></p>
-            </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Abra novamente para executar a consulta.</p>
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-muted/20 p-3">
+                <p className="text-xs text-muted-foreground mb-2">Polígono da propriedade</p>
+                {carGeoLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando mapa...
+                  </div>
+                ) : carGeoError ? (
+                  <p className="text-sm text-destructive">{carGeoError}</p>
+                ) : carGeojson ? (
+                  <PropertyMap geojson={carGeojson} className="h-64 w-full" />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Geometria não disponível para este CAR.</p>
+                )}
+              </div>
+
+              {!isAuthenticated ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Para executar verificação de compliance desse CAR, entre na DeFarm.
+                  </p>
+                  <Link to="/login" className="inline-block">
+                    <Button size="sm">Entrar na DeFarm</Button>
+                  </Link>
+                </div>
+              ) : carLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Consultando compliance...
+                </div>
+              ) : carError ? (
+                <p className="text-sm text-destructive">{carError}</p>
+              ) : carResult ? (
+                <div className="space-y-2 text-sm">
+                  <p><span className="text-muted-foreground">Veredito:</span> <span className="font-medium">{carResult.verdict}</span></p>
+                  <p><span className="text-muted-foreground">Score:</span> <span className="font-medium">{carResult.score}</span></p>
+                  <p><span className="text-muted-foreground">Checkers:</span> <span className="font-medium">{carResult.summary.totalCheckers}</span></p>
+                  <p><span className="text-muted-foreground">Falhas:</span> <span className="font-medium">{carResult.summary.failed}</span></p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Abra novamente para executar a consulta.</p>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
