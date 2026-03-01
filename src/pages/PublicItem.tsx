@@ -470,6 +470,17 @@ export default function PublicItem() {
     return Array.from(new Set(ids));
   }, [events]);
 
+  const carAuthExpired = useMemo(() => {
+    if (!carError) return false;
+    const msg = carError.toLowerCase();
+    return (
+      msg.includes("token has expired") ||
+      msg.includes("token expired") ||
+      msg.includes("401") ||
+      msg.includes("unauthorized")
+    );
+  }, [carError]);
+
   const copyText = async (value: string, label: string) => {
     try {
       await navigator.clipboard.writeText(value);
@@ -487,8 +498,8 @@ export default function PublicItem() {
     setCarGeoError(null);
     getCarGeoJSON(carValue, { skipAuth: true })
       .then((geo) => setCarGeojson(geo))
-      .catch((err: unknown) =>
-        setCarGeoError(err instanceof Error ? err.message : "Falha ao carregar polígono do CAR")
+      .catch(() =>
+        setCarGeoError("Polígono não disponível para este CAR no momento.")
       )
       .finally(() => setCarGeoLoading(false));
 
@@ -506,7 +517,18 @@ export default function PublicItem() {
       });
       setCarResult(response);
     } catch (err: unknown) {
-      setCarError(err instanceof Error ? err.message : "Falha ao consultar compliance do CAR");
+      const raw = err instanceof Error ? err.message : "Falha ao consultar compliance do CAR";
+      const normalized = raw.toLowerCase();
+      if (
+        normalized.includes("token has expired") ||
+        normalized.includes("token expired") ||
+        normalized.includes("401") ||
+        normalized.includes("unauthorized")
+      ) {
+        setCarError("Sua sessão expirou. Faça login novamente para consultar o compliance.");
+      } else {
+        setCarError("Não foi possível consultar o compliance deste CAR agora.");
+      }
     } finally {
       setCarLoading(false);
     }
@@ -991,7 +1013,7 @@ export default function PublicItem() {
                     <Loader2 className="h-4 w-4 animate-spin" /> Carregando mapa...
                   </div>
                 ) : carGeoError ? (
-                  <p className="text-sm text-destructive">{carGeoError}</p>
+                  <p className="text-sm text-muted-foreground">{carGeoError}</p>
                 ) : carGeojson ? (
                   <PropertyMap geojson={carGeojson} className="h-64 w-full" />
                 ) : (
@@ -1013,7 +1035,14 @@ export default function PublicItem() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Consultando compliance...
                 </div>
               ) : carError ? (
-                <p className="text-sm text-destructive">{carError}</p>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{carError}</p>
+                  {carAuthExpired ? (
+                    <Link to="/login" className="inline-block">
+                      <Button size="sm">Entrar novamente</Button>
+                    </Link>
+                  ) : null}
+                </div>
               ) : carResult ? (
                 <div className="space-y-2 text-sm">
                   <p><span className="text-muted-foreground">Veredito:</span> <span className="font-medium">{carResult.verdict}</span></p>

@@ -78,7 +78,6 @@ import {
   type PropertyCompliance,
 } from "@/lib/api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
-import CircuitAdaptersPanel from "@/components/circuit/CircuitAdaptersPanel";
 import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 export default function CircuitoDetail() {
   const { user } = useAuth();
@@ -895,9 +894,6 @@ export default function CircuitoDetail() {
           </div>
         )}
       </div>
-
-      {/* Adapters Panel */}
-      {id && <CircuitAdaptersPanel circuitId={id} />}
 
       {/* Dialogs */}
       {circuit && (
