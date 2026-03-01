@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Download, Share2 } from "lucide-react";
+import { X, Download, Share2, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AssetQRCodeProps {
@@ -13,6 +13,10 @@ interface AssetQRCodeProps {
 
 function buildQrUrl(dfid: string, size = 480): string {
   const publicUrl = `https://defarm.net/i/${dfid}`;
+  const latestCidUrl = latestCid ? `https://gateway.pinata.cloud/ipfs/${latestCid}` : null;
+  const identityHashUrl = identityHash
+    ? `https://stellar.expert/explorer/public/tx/${identityHash}`
+    : null;
   return `https://quickchart.io/qr?text=${encodeURIComponent(publicUrl)}&size=${size}&margin=0&dark=27C268&light=ffffff`;
 }
 
@@ -68,6 +72,14 @@ export function AssetQRCode({
     a.download = `${dfid}-qrcode.svg`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleCopy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // no-op; keep UI simple in public view
+    }
   };
 
   const shorten = (value: string, head = 10, tail = 8) => {
@@ -137,14 +149,52 @@ export function AssetQRCode({
                     </p>
                   ) : null}
                   {identityHash ? (
-                    <p className="text-[11px] text-muted-foreground break-all">
-                      Registro de identidade: <span className="font-mono text-foreground/80">{shorten(identityHash)}</span>
-                    </p>
+                    <div className="text-[11px] text-muted-foreground break-all">
+                      <p>Registro de identidade:</p>
+                      <div className="inline-flex items-center gap-1.5">
+                        <a
+                          href={identityHashUrl || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-foreground/80 hover:text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          {shorten(identityHash)}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => void handleCopy(identityHash)}
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Copiar hash de identidade"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
                   {latestCid ? (
-                    <p className="text-[11px] text-muted-foreground break-all">
-                      Último registro de conteúdo: <span className="font-mono text-foreground/80">{shorten(latestCid)}</span>
-                    </p>
+                    <div className="text-[11px] text-muted-foreground break-all">
+                      <p>Último registro de conteúdo:</p>
+                      <div className="inline-flex items-center gap-1.5">
+                        <a
+                          href={latestCidUrl || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-foreground/80 hover:text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          {shorten(latestCid)}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => void handleCopy(latestCid)}
+                          className="text-muted-foreground hover:text-foreground"
+                          aria-label="Copiar CID"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
                   <p className="text-xs text-muted-foreground">{publicUrl}</p>
                 </div>
