@@ -20,7 +20,7 @@ import {
   Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getPublicItem, getPublicItemEvents, resolvePublicItemByIdentifier } from "@/lib/defarm-api";
+import { ApiError, getPublicItem, getPublicItemEvents, resolvePublicItemByIdentifier } from "@/lib/defarm-api";
 import {
   eventTypeColors,
   eventTypeLabels,
@@ -163,6 +163,7 @@ export default function PublicItem() {
   const [resolvedDfid, setResolvedDfid] = useState<string | null>(dfid || null);
   const [isResolvingRef, setIsResolvingRef] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [resolveDeprecated, setResolveDeprecated] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,19 +172,26 @@ export default function PublicItem() {
       if (dfid) {
         setResolvedDfid(dfid);
         setResolveError(null);
+        setResolveDeprecated(false);
         return;
       }
       if (!identifierType || !identifierValue) return;
 
       setIsResolvingRef(true);
       setResolveError(null);
+      setResolveDeprecated(false);
       try {
         const resolved = await resolvePublicItemByIdentifier(identifierType, identifierValue);
         if (cancelled) return;
         setResolvedDfid(resolved.dfid);
         navigate(`/i/${encodeURIComponent(resolved.dfid)}`, { replace: true });
-      } catch {
+      } catch (err) {
         if (cancelled) return;
+        if (err instanceof ApiError && err.status === 410 && err.code === "item_deprecated") {
+          setResolveDeprecated(true);
+          setResolveError("Este item foi marcado como deprecated e não está mais visível publicamente.");
+          return;
+        }
         setResolveError("Este identificador não foi encontrado como item público.");
       } finally {
         if (!cancelled) setIsResolvingRef(false);
@@ -209,6 +217,19 @@ export default function PublicItem() {
     enabled: !!resolvedDfid,
     retry: 1,
   });
+
+  const itemDeprecated = useMemo(() => {
+    if (resolveDeprecated) return true;
+    if (error instanceof ApiError && error.status === 410 && error.code === "item_deprecated") return true;
+    return false;
+  }, [resolveDeprecated, error]);
+
+  const maskedDfid = useMemo(() => {
+    const ref = resolvedDfid || dfid || null;
+    if (!ref) return null;
+    const head = ref.slice(0, 20);
+    return `${head}${ref.length > 20 ? "•••" : ""}`;
+  }, [resolvedDfid, dfid]);
 
   const { realEvents, operationalEvents } = useMemo(() => {
     const real: PublicItemEvent[] = [];
@@ -290,6 +311,30 @@ export default function PublicItem() {
           <p className="text-sm text-muted-foreground">
             {isResolvingRef ? "Resolvendo referência do item..." : "Carregando dados do animal…"}
           </p>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (itemDeprecated) {
+    return (
+      <Shell>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="mb-4 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-left max-w-md w-full">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Item reference</p>
+            <p className="font-mono text-sm text-foreground/70 mt-1">{maskedDfid || "DFID não disponível"}</p>
+          </div>
+          <Package className="h-10 w-10 text-muted-foreground/50 mb-4" />
+          <h1 className="text-lg font-semibold text-foreground">Item deprecated</h1>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+            Este item foi descontinuado da visualização pública.
+          </p>
+          <Link to={publicCircuitUrl} className="mt-6">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              {publicBackLabel}
+            </Button>
+          </Link>
         </div>
       </Shell>
     );
