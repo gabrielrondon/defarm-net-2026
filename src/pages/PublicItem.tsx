@@ -127,6 +127,29 @@ function compactJson(value: unknown): string {
   }
 }
 
+function detectCanonicalIdentifier(metadata: Record<string, unknown>): { label: string; value: string } | null {
+  const picks: Array<{ key: string; label: string }> = [
+    { key: "sisbov", label: "SISBOV" },
+    { key: "chip", label: "CHIP" },
+    { key: "cpf", label: "CPF" },
+    { key: "cnpj", label: "CNPJ" },
+    { key: "inscricao_estadual", label: "IE" },
+    { key: "ie", label: "IE" },
+    { key: "land_dfid", label: "LAND_DFID" },
+    { key: "car", label: "CAR" },
+  ];
+  for (const pick of picks) {
+    const raw = metadata[pick.key];
+    if (typeof raw === "string" && raw.trim()) {
+      return { label: pick.label, value: raw.trim() };
+    }
+    if (typeof raw === "number") {
+      return { label: pick.label, value: String(raw) };
+    }
+  }
+  return null;
+}
+
 function trustBadge(level?: string | null, score?: number | null): { text: string; className: string } {
   if (level === "high" || (typeof score === "number" && score >= 80)) {
     return {
@@ -280,6 +303,11 @@ export default function PublicItem() {
     return Object.entries(metadata).filter(([key]) => !technicalKeys.has(key));
   }, [item?.metadata]);
 
+  const canonicalIdentifier = useMemo(() => {
+    const metadata = (item?.metadata || {}) as Record<string, unknown>;
+    return detectCanonicalIdentifier(metadata);
+  }, [item?.metadata]);
+
   const publicCircuitId = useMemo(() => {
     for (const event of events) {
       if (typeof event.circuit_id === "string" && event.circuit_id) {
@@ -329,12 +357,6 @@ export default function PublicItem() {
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
             Este item foi descontinuado da visualização pública.
           </p>
-          <Link to={publicCircuitUrl} className="mt-6">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              {publicBackLabel}
-            </Button>
-          </Link>
         </div>
       </Shell>
     );
@@ -409,7 +431,13 @@ export default function PublicItem() {
         </div>
 
         {/* ── QR code card ── */}
-        {item.dfid && <AssetQRCode dfid={item.dfid} />}
+        {item.dfid && (
+          <AssetQRCode
+            dfid={item.dfid}
+            canonicalIdLabel={canonicalIdentifier?.label}
+            canonicalIdValue={canonicalIdentifier?.value}
+          />
+        )}
 
         {/* ── metadata ── */}
         {visibleMetadataEntries.length > 0 && (

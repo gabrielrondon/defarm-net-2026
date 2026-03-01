@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 
 interface AssetQRCodeProps {
   dfid: string;
+  canonicalIdLabel?: string;
+  canonicalIdValue?: string;
   className?: string;
 }
 
@@ -23,7 +25,12 @@ function DiamondQR({ dfid, size = 120 }: { dfid: string; size?: number }) {
   );
 }
 
-export function AssetQRCode({ dfid, className = "" }: AssetQRCodeProps) {
+export function AssetQRCode({
+  dfid,
+  canonicalIdLabel,
+  canonicalIdValue,
+  className = "",
+}: AssetQRCodeProps) {
   const [fullscreen, setFullscreen] = useState(false);
   const publicUrl = `https://defarm.net/i/${dfid}`;
 
@@ -73,6 +80,11 @@ export function AssetQRCode({ dfid, className = "" }: AssetQRCodeProps) {
           <div className="text-center">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Escaneie para rastrear</p>
             <p className="text-xs font-mono text-foreground/70 mt-1 break-all">{dfid}</p>
+            {canonicalIdLabel && canonicalIdValue ? (
+              <p className="text-[11px] text-muted-foreground mt-1 break-all">
+                {canonicalIdLabel}: <span className="font-mono text-foreground/80">{canonicalIdValue}</span>
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="absolute inset-0 rounded-2xl bg-foreground/0 group-hover:bg-foreground/[0.02] transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -110,6 +122,11 @@ export function AssetQRCode({ dfid, className = "" }: AssetQRCodeProps) {
                     Certificado de Rastreabilidade
                   </p>
                   <p className="text-sm font-mono text-foreground font-medium break-all">{dfid}</p>
+                  {canonicalIdLabel && canonicalIdValue ? (
+                    <p className="text-xs text-muted-foreground break-all">
+                      {canonicalIdLabel}: <span className="font-mono">{canonicalIdValue}</span>
+                    </p>
+                  ) : null}
                   <p className="text-xs text-muted-foreground">{publicUrl}</p>
                 </div>
 
