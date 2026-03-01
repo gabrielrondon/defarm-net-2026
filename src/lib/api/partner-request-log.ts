@@ -86,11 +86,8 @@ export function summarizeResponse(data: unknown): string {
   // PartnerIntakeResponse
   if (obj.summary && typeof obj.summary === "object") {
     const s = obj.summary as Record<string, unknown>;
-    return `status=${s.status} · ${s.total_rows} linhas · ${s.routes} rotas · ${s.items} itens · ${s.unresolved_rows} pendências`;
-  }
-  // PartnerIntakePreviewResponse
-  if ("routing_plan" in obj) {
-    return `${obj.total_rows} linhas · ${obj.resolvable_rows} roteáveis · ${obj.unresolved_rows} sem rota`;
+    const dryRunPrefix = obj.dry_run === true ? "preview · " : "";
+    return `${dryRunPrefix}status=${s.status} · ${s.total_rows} linhas · ${s.routes} rotas · ${s.items} itens · ${s.unresolved_rows} pendências`;
   }
   // ListRawPayloadsResponse
   if ("rows" in obj && "count" in obj) {

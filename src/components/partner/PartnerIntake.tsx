@@ -17,7 +17,6 @@ import {
   partnerIntakePreviewJson,
   resolveRoutingIssue,
   type PartnerIntakeResponse,
-  type PartnerIntakePreviewResponse,
   type RawPayloadSummary,
   type RoutingIssueItem,
 } from "@/lib/api/partner-routing";
@@ -72,7 +71,7 @@ export function PartnerIntake() {
   const [previewRows, setPreviewRows] = useState(0);
   const [previewResolvable, setPreviewResolvable] = useState(0);
   const [previewUnknown, setPreviewUnknown] = useState(0);
-  const [previewResult, setPreviewResult] = useState<PartnerIntakePreviewResponse | null>(null);
+  const [previewResult, setPreviewResult] = useState<PartnerIntakeResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
   const [logEntries, setLogEntries] = useState<PartnerRequestLogEntry[]>(getLogEntries);
@@ -148,9 +147,9 @@ export function PartnerIntake() {
               templateId: selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined,
               inlineMapping,
             });
-      setPreviewRows(preview.total_rows);
-      setPreviewResolvable(preview.resolvable_rows);
-      setPreviewUnknown(preview.unresolved_rows);
+      setPreviewRows(preview.summary.total_rows);
+      setPreviewResolvable(preview.summary.processed_rows);
+      setPreviewUnknown(preview.summary.unresolved_rows);
       setPreviewResult(preview);
     } catch (err) {
       const description = formatClientError(err, "Falha ao gerar prévia.");
@@ -476,17 +475,20 @@ export function PartnerIntake() {
                 <p className="text-muted-foreground">Linhas lidas: <span className="text-foreground font-medium">{previewRows}</span></p>
                 <p className="text-muted-foreground">Com identificador: <span className="text-primary font-medium">{previewResolvable}</span></p>
                 <p className="text-muted-foreground">Sem identificador: <span className="text-destructive font-medium">{previewUnknown}</span></p>
-                <p className="text-muted-foreground">Auto-criação prevista: <span className="text-foreground font-medium">{previewResult?.would_auto_create_rows ?? 0}</span></p>
+                <p className="text-muted-foreground">Circuitos novos: <span className="text-foreground font-medium">{previewResult?.summary.created_circuits ?? 0}</span></p>
               </div>
             )}
             {previewError ? (
               <p className="text-xs text-destructive mt-2">{previewError}</p>
             ) : null}
-            {!previewing && previewResult?.routing_plan?.length ? (
+            {!previewing && previewResult?.routes?.length ? (
               <div className="mt-3 space-y-1">
-                {previewResult.routing_plan.slice(0, 6).map((plan) => (
-                  <p key={`${plan.identifier_type}-${plan.identifier_value}-${plan.circuit_id || "none"}`} className="text-[11px] text-muted-foreground">
-                    {plan.identifier_type.toUpperCase()} {plan.identifier_value} · {plan.rows} linha(s) · {plan.status === "routed_existing" ? `roteia para ${circuitNameMap.get(plan.circuit_id || "") || plan.circuit_id}` : plan.status === "would_auto_create" ? "criaria circuito automaticamente" : "ficará pendente"}
+                {previewResult.routes.slice(0, 6).map((route) => (
+                  <p key={`${route.route_type}-${route.route_value}-${route.circuit_id || "none"}`} className="text-[11px] text-muted-foreground">
+                    {route.route_type.toUpperCase()} {route.route_value} · {route.rows} linha(s) ·{" "}
+                    {route.circuit_id
+                      ? `roteia para ${circuitNameMap.get(route.circuit_id) || route.circuit_id}`
+                      : "ficará no staging/fallback"}
                   </p>
                 ))}
               </div>

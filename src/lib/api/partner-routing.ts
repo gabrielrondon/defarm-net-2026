@@ -57,7 +57,7 @@ export interface ListRawPayloadsResponse {
 export interface IntakeBatchResult {
   identifier_type: string;
   identifier_value: string;
-  circuit_id: string;
+  circuit_id?: string | null;
   rows: number;
   receipt_id?: string | null;
   status: string;
@@ -65,6 +65,7 @@ export interface IntakeBatchResult {
 }
 
 export interface PartnerIntakeResponse {
+  dry_run?: boolean | null;
   summary: {
     status: string;
     total_rows: number;
@@ -76,6 +77,7 @@ export interface PartnerIntakeResponse {
     impacted_circuits: number;
     items_created: number;
     items_enriched: number;
+    events_detected?: number | null;
     partner_reference?: {
       field: string;
       value: string;
@@ -83,18 +85,25 @@ export interface PartnerIntakeResponse {
     warnings?: string[];
   };
   items: {
-    dfid: string;
-    url: string;
+    dfid?: string | null;
+    url?: string | null;
     partner_reference?: string | null;
     asset_reference?: {
       identifier_type: string;
       value: string;
     } | null;
     url_refs?: Record<string, string> | null;
+    would_create?: boolean | null;
+    events_preview?:
+      | {
+          event_type: string;
+          payload: unknown;
+        }[]
+      | null;
     routes: {
       route_type: string;
       route_value: string;
-      circuit_id: string;
+      circuit_id?: string | null;
     }[];
   }[];
   errors: {
@@ -109,7 +118,7 @@ export interface PartnerIntakeResponse {
   routes: {
     route_type: string;
     route_value: string;
-    circuit_id: string;
+    circuit_id?: string | null;
     rows: number;
     status: string;
     items: number;
@@ -130,32 +139,6 @@ export interface PartnerIntakeResponse {
     }[];
     status: string;
   } | null;
-}
-
-export interface PartnerIntakePreviewPlanItem {
-  identifier_type: string;
-  identifier_value: string;
-  identifier_value_normalized: string;
-  rows: number;
-  circuit_id?: string | null;
-  status: "routed_existing" | "would_auto_create" | "unresolved";
-  reason?: string | null;
-}
-
-export interface PartnerIntakePreviewResponse {
-  source_circuit_id: string;
-  workspace_id: string;
-  total_rows: number;
-  resolvable_rows: number;
-  unresolved_rows: number;
-  matched_rows: number;
-  would_auto_create_rows: number;
-  unresolved_identifiers: {
-    identifier_type: string;
-    identifier_value: string;
-    reason: string;
-  }[];
-  routing_plan: PartnerIntakePreviewPlanItem[];
 }
 
 export interface RoutingIssueSummary {
@@ -330,7 +313,7 @@ export async function partnerIntakePreview(
   autoCreateCircuit = true,
   templateId?: string,
   inlineMapping?: Record<string, unknown>
-): Promise<PartnerIntakePreviewResponse> {
+): Promise<PartnerIntakeResponse> {
   const formData = new FormData();
   formData.append("file", file);
   if (sourceCircuitId) {
@@ -344,7 +327,7 @@ export async function partnerIntakePreview(
     formData.append("mapping", JSON.stringify(inlineMapping));
   }
 
-  return registryRequest<PartnerIntakePreviewResponse>("/partner/ingestions/preview", {
+  return registryRequest<PartnerIntakeResponse>("/partner/ingestions/preview", {
     method: "POST",
     headers: {},
     body: formData as unknown as BodyInit,
@@ -359,8 +342,8 @@ export async function partnerIntakePreviewJson(
     templateId?: string;
     inlineMapping?: Record<string, unknown>;
   }
-): Promise<PartnerIntakePreviewResponse> {
-  return registryRequest<PartnerIntakePreviewResponse>("/partner/ingestions/preview", {
+): Promise<PartnerIntakeResponse> {
+  return registryRequest<PartnerIntakeResponse>("/partner/ingestions/preview", {
     method: "POST",
     body: JSON.stringify(buildJsonIntakeBody(payload, options)),
   });

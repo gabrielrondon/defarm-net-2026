@@ -82,8 +82,10 @@ tags:
   description: Admin-only operations (API keys, canonical identifiers).
 - name: Partner API Keys
   description: Partner API key issuance and usage metrics.
+- name: Partner Upload
+  description: Intelligent partner intake flows — upload, preview, and reconciliation.
 - name: Partner Routing
-  description: Intelligent partner intake, routing rules, and raw payload history.
+  description: Routing rules, issue tracking, and raw payload history.
 - name: Embed
   description: Short-lived embed tokens and portfolio retrieval for partner/client UX.
 - name: Webhooks
@@ -2098,6 +2100,7 @@ components:
           nullable: true
     UpsertRoutingRuleRequest:
       type: object
+      description: 'Create or update a routing rule that maps a partner identifier to a destination circuit.'
       required:
       - identifier_type
       - identifier_value
@@ -2105,6 +2108,7 @@ components:
       properties:
         identifier_type:
           type: string
+          description: 'Type of routing identifier. Determines how the value is normalized and matched during ingestion.'
           enum:
           - car
           - ccir
@@ -2119,14 +2123,18 @@ components:
           - cpf
         identifier_value:
           type: string
+          description: 'The identifier value to match (e.g. a CAR number, CNPJ, CPF). Automatically normalized on save.'
         circuit_id:
           type: string
           format: uuid
+          description: 'Destination circuit ID where matching rows will be routed.'
         notes:
           type: string
           nullable: true
+          description: 'Optional free-text note about this rule (e.g. farm name, client reference).'
     RoutingRuleResponse:
       type: object
+      description: 'A routing rule that maps a partner identifier to a destination circuit.'
       required:
       - id
       - workspace_id
@@ -2142,35 +2150,48 @@ components:
         id:
           type: string
           format: uuid
+          description: 'Unique ID of this routing rule.'
         workspace_id:
           type: string
           format: uuid
+          description: 'Workspace that owns this rule.'
         identifier_type:
           type: string
+          description: 'Type of routing identifier (e.g. car, cnpj, cpf).'
         identifier_value:
           type: string
+          description: 'Original identifier value as provided.'
         identifier_value_normalized:
           type: string
+          description: 'Normalized form used for matching (e.g. digits-only for CPF/CNPJ).'
         circuit_id:
           type: string
           format: uuid
+          description: 'Destination circuit for rows matching this rule.'
         is_active:
           type: boolean
+          description: 'Whether this rule is currently active. Inactive rules are ignored during routing.'
         auto_created:
           type: boolean
+          description: 'True if this rule was auto-created during ingestion (auto_create_circuit=true).'
         notes:
           type: string
           nullable: true
+          description: 'Free-text note about this rule.'
         created_by:
           type: string
           format: uuid
           nullable: true
+          description: 'User ID that created the rule. Null for auto-created rules.'
         created_at:
           type: string
+          description: 'Creation timestamp (RFC 3339).'
         updated_at:
           type: string
+          description: 'Last update timestamp (RFC 3339).'
     RawPayloadSummary:
       type: object
+      description: 'Summary of a persisted raw payload for audit and replay.'
       required:
       - id
       - workspace_id
@@ -2184,52 +2205,71 @@ components:
         id:
           type: string
           format: uuid
+          description: 'Unique ID of this raw payload record.'
         workspace_id:
           type: string
           format: uuid
+          description: 'Workspace that submitted this payload.'
         source_circuit_id:
           type: string
           format: uuid
           nullable: true
+          description: 'Staging circuit used for this ingestion.'
         intake_mode:
           type: string
+          description: 'How the payload was submitted (e.g. multipart, json).'
         content_type:
           type: string
           nullable: true
+          description: 'MIME type of the original file (e.g. text/csv, application/json).'
         file_name:
           type: string
           nullable: true
+          description: 'Original file name if uploaded via multipart.'
         payload_size_bytes:
           type: integer
           format: int32
+          description: 'Size of the raw payload in bytes.'
         payload_sha256:
           type: string
+          description: 'SHA-256 hash of the payload for integrity verification.'
         status:
           type: string
+          description: 'Processing status of this payload (e.g. processed, failed).'
         error_message:
           type: string
           nullable: true
-        metadata: {}
+          description: 'Error message if processing failed.'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: 'Ingestion context metadata (e.g. template_id, mapping used, auth method).'
         created_at:
           type: string
+          description: 'Submission timestamp (RFC 3339).'
         processed_at:
           type: string
           nullable: true
+          description: 'Processing completion timestamp (RFC 3339). Null if not yet processed.'
     ListRawPayloadsResponse:
       type: object
+      description: 'Paginated list of raw ingestion payloads.'
       required:
       - rows
       - count
       properties:
         rows:
           type: array
+          description: 'Raw payload records.'
           items:
             $ref: '#/components/schemas/RawPayloadSummary'
         count:
           type: integer
           format: int32
+          description: 'Total number of records matching the query.'
     IntakeBatchResult:
       type: object
+      description: 'Detailed result for one routing batch (verbose only).'
       required:
       - identifier_type
       - identifier_value
@@ -2239,46 +2279,61 @@ components:
       properties:
         identifier_type:
           type: string
+          description: 'Type of routing identifier for this batch (e.g. car, cnpj).'
         identifier_value:
           type: string
+          description: 'Value of the routing identifier.'
         circuit_id:
           type: string
           format: uuid
+          description: 'Destination circuit for this batch.'
         rows:
           type: integer
           format: int32
+          description: 'Number of rows in this batch.'
         receipt_id:
           type: string
           format: uuid
           nullable: true
+          description: 'Receipt ID for audit tracking. Null if batch failed.'
         status:
           type: string
+          description: 'Batch processing outcome.'
+          enum:
+          - completed
+          - failed
         error_message:
           type: string
           nullable: true
+          description: 'Error details if the batch failed.'
     PartnerIntakeResponse:
       type: object
+      description: 'Response returned after processing an ingestion. Contains a summary with counters, a flat list of processed items, per-row errors, and aggregated route information.'
       required:
       - summary
       - items
       - errors
       - routes
       properties:
+        dry_run:
+          type: boolean
+          nullable: true
+          description: Present and true when response comes from preview simulation.
         summary:
           $ref: '#/components/schemas/PartnerIntakeSummary'
         items:
           type: array
-          description: Itens processados (formato flat para integração).
+          description: Processed items in flat format for easy integration.
           items:
             $ref: '#/components/schemas/PartnerItemOutput'
         errors:
           type: array
-          description: Erros por linha/payload para reconciliação precisa no sistema do parceiro.
+          description: Per-row errors for precise reconciliation in the partner's system.
           items:
             $ref: '#/components/schemas/PartnerIntakeErrorOutput'
         routes:
           type: array
-          description: Rotas agregadas por identificador de roteamento.
+          description: Aggregated routes by routing identifier.
           items:
             $ref: '#/components/schemas/PartnerRouteOutput'
         verbose:
@@ -2287,6 +2342,7 @@ components:
           nullable: true
     PartnerIntakeSummary:
       type: object
+      description: 'High-level counters for the ingestion result. Use for dashboards and logs without parsing the full response.'
       required:
       - status
       - total_rows
@@ -2301,120 +2357,82 @@ components:
       properties:
         status:
           type: string
+          description: 'Overall ingestion outcome.'
+          enum:
+          - completed
+          - partial
+          - failed
         total_rows:
           type: integer
           format: int32
+          description: 'Total number of rows received in the payload.'
         processed_rows:
           type: integer
           format: int32
+          description: 'Rows successfully processed and routed to circuits.'
         unresolved_rows:
           type: integer
           format: int32
+          description: 'Rows that could not be routed (missing identifier or no matching rule).'
         routes:
           type: integer
           format: int32
+          description: 'Number of distinct routing destinations used.'
         items:
           type: integer
           format: int32
+          description: 'Total items created or enriched in this ingestion.'
         created_circuits:
           type: integer
           format: int32
+          description: 'Circuits auto-created during this ingestion (when auto_create_circuit=true).'
         impacted_circuits:
           type: integer
           format: int32
+          description: 'Total distinct circuits that received items (existing + newly created).'
         items_created:
           type: integer
           format: int32
+          description: 'Items created for the first time (new DFID generated).'
         items_enriched:
           type: integer
           format: int32
+          description: 'Existing items updated with new data from this ingestion.'
+        events_detected:
+          type: integer
+          format: int32
+          nullable: true
+          description: 'Preview only. Total events that would be detected from row data.'
         partner_reference:
           allOf:
           - $ref: '#/components/schemas/PartnerInputReference'
           nullable: true
+          description: 'Present only when the batch resolves to a single unique partner reference. Shortcut for reconciliation.'
         warnings:
           type: array
-          description: Avisos operacionais para o integrador.
+          description: Operational warnings for the integrator.
           items:
             type: string
-    PartnerIntakePreviewPlanItem:
-      type: object
-      required:
-      - identifier_type
-      - identifier_value
-      - identifier_value_normalized
-      - rows
-      - status
-      properties:
-        identifier_type:
-          type: string
-        identifier_value:
-          type: string
-        identifier_value_normalized:
-          type: string
-        rows:
-          type: integer
-          format: int32
-        circuit_id:
-          type: string
-          format: uuid
-          nullable: true
-        status:
-          type: string
-        reason:
-          type: string
-          nullable: true
-    PartnerIntakePreviewResponse:
-      type: object
-      required:
-      - source_circuit_id
-      - workspace_id
-      - total_rows
-      - resolvable_rows
-      - unresolved_rows
-      - matched_rows
-      - would_auto_create_rows
-      - unresolved_identifiers
-      - routing_plan
-      properties:
-        source_circuit_id:
-          type: string
-          format: uuid
-        workspace_id:
-          type: string
-          format: uuid
-        total_rows:
-          type: integer
-          format: int32
-        resolvable_rows:
-          type: integer
-          format: int32
-        unresolved_rows:
-          type: integer
-          format: int32
-        matched_rows:
-          type: integer
-          format: int32
-        would_auto_create_rows:
-          type: integer
-          format: int32
-        unresolved_identifiers:
-          type: array
-          items: {}
-        routing_plan:
-          type: array
-          items:
-            $ref: '#/components/schemas/PartnerIntakePreviewPlanItem'
     PartnerUploadJsonEnvelope:
       type: object
+      title: JSON Envelope with Controls
+      description: 'Envelope format with control fields. Use when you need to specify
+        template_id, mapping, source_circuit_id, or other ingestion options alongside
+        your data rows.'
       required:
       - items
       properties:
         items:
           type: array
+          description: 'Array of data rows. Each row must contain value_chain (e.g.
+            BEEF) and one traceable asset identifier (e.g. sisbov/chip for BEEF).
+            Routing identifier is recommended (e.g. car, cnpj, cpf, ie).'
           items:
             type: object
             additionalProperties: true
+            description: 'A single data row. Required fields: value_chain and one traceable
+              asset identifier. Routing identifier is recommended (car/cnpj/cpf/ie/etc.);
+              if omitted, routing may fallback to source circuit when enabled.'
         source_circuit_id:
           type: string
           format: uuid
@@ -2439,15 +2457,27 @@ components:
           description: When unresolved, optionally fallback to source circuit.
           default: true
     PartnerUploadJsonRequest:
+      description: 'JSON body for ingestion. Two formats accepted: (1) a direct array
+        of row objects for simplicity, or (2) a JSON envelope when you need control
+        fields like template_id, mapping, or source_circuit_id.'
       oneOf:
       - type: array
+        title: Direct JSON Array
+        description: 'Simple format: send an array of row objects directly. Each object
+          must contain value_chain and a traceable asset identifier (e.g. sisbov/chip
+          for BEEF). Routing identifier is recommended (e.g. car, cnpj, cpf, ie).'
         items:
           type: object
           additionalProperties: true
+          description: 'A single data row. Required per row: value_chain (e.g. BEEF)
+            and one traceable asset identifier (e.g. sisbov or chip for BEEF). Routing
+            identifier is recommended (e.g. car, cnpj, cpf, ie) to route directly
+            to destination circuits; without it, fallback-to-source behavior applies
+            when enabled.'
       - $ref: '#/components/schemas/PartnerUploadJsonEnvelope'
-      description: Direct JSON body accepted by /v1/partner/ingestions and /v1/partner/ingestions/preview.
     PartnerCircuitLink:
       type: object
+      description: 'Link to a circuit that received items during ingestion (verbose only).'
       required:
       - circuit_id
       - app_url
@@ -2457,67 +2487,103 @@ components:
         circuit_id:
           type: string
           format: uuid
+          description: 'Circuit ID.'
         app_url:
           type: string
+          description: 'URL to view this circuit in the DeFarm portal.'
         public_url:
           type: string
+          description: 'Public URL for this circuit on defarm.net.'
         is_public:
           type: boolean
+          description: 'Whether this circuit is publicly accessible.'
     PartnerInputReference:
       type: object
+      description: 'Reference to the partner input field used for batch-level reconciliation.'
       required:
       - field
       - value
       properties:
         field:
           type: string
+          description: 'Name of the input field used as reference (e.g. partner_internal_id).'
         value:
           type: string
+          description: 'Value of the reference field from the input.'
     PartnerItemRoute:
       type: object
+      description: 'Circuit routing information for a single item.'
       required:
       - route_type
       - route_value
-      - circuit_id
       properties:
         route_type:
           type: string
+          description: 'Type of routing identifier used (e.g. car, cnpj).'
         route_value:
           type: string
+          description: 'Value of the routing identifier.'
         circuit_id:
           type: string
           format: uuid
-    PartnerItemOutput:
+          nullable: true
+          description: 'Destination circuit ID.'
+    PartnerPreviewEventOutput:
       type: object
       required:
-      - dfid
-      - url
+      - event_type
+      - payload
+      properties:
+        event_type:
+          type: string
+        payload: {}
+    PartnerItemOutput:
+      type: object
+      description: 'A single processed item with its DFID, public URL, and routing information.'
+      required:
       - routes
       properties:
         dfid:
           type: string
+          nullable: true
+          description: 'DeFarm Identifier assigned to this item. Format: DFID-{CHAIN}-{CC}-{YYYY}-{SEQ}-{CS}.'
         url:
           type: string
+          nullable: true
+          description: 'Public URL for this item on defarm.net.'
         url_refs:
           type: object
           nullable: true
           additionalProperties:
             type: string
-          description: Optional canonical reference links by identifier type (e.g.
-            sisbov, chip). Only present for identifiers detected for this item.
+          description: 'Canonical reference links by identifier type (e.g. sisbov, chip). Only present for identifiers detected for this item.'
         partner_reference:
           type: string
           nullable: true
+          description: 'Value of partner_internal_id from the input row, for reconciliation. Null when not provided in the input.'
         asset_reference:
           allOf:
           - $ref: '#/components/schemas/PartnerAssetReference'
           nullable: true
+          description: 'Primary traceable asset identifier detected for this item (e.g. sisbov, chip).'
+        would_create:
+          type: boolean
+          nullable: true
+          description: Preview only. True when the row would create a new item instead of enriching.
+        events_preview:
+          type: array
+          nullable: true
+          description: Preview only. Events that would be detected from the row payload.
+          items:
+            $ref: '#/components/schemas/PartnerPreviewEventOutput'
         routes:
           type: array
+          description: 'Circuits this item was routed to.'
           items:
             $ref: '#/components/schemas/PartnerItemRoute'
     PartnerIntakeErrorOutput:
       type: object
+      description: 'Error detail for a single row that failed validation or routing.'
       required:
       - reason_code
       - message
@@ -2526,34 +2592,51 @@ components:
           type: integer
           format: int32
           nullable: true
+          description: '0-based row position in the original payload. Null for payload-level errors.'
         partner_reference:
           type: string
           nullable: true
+          description: 'Value of partner_internal_id from the failed row, for reconciliation.'
         reason_code:
           type: string
+          description: 'Machine-readable error code for this row.'
+          enum:
+          - missing_value_chain
+          - missing_trackable_identifier
+          - missing_identifier
+          - empty_after_normalization
+          - no_routing_rule
         message:
           type: string
+          description: 'Human-readable error description with suggested next step.'
         value_chain:
           type: string
           nullable: true
+          description: 'Value chain from the row, if present (e.g. BEEF, DAIRY).'
         identifier_type:
           type: string
           nullable: true
+          description: 'Type of the identifier involved in the error (e.g. sisbov, car).'
         identifier_value:
           type: string
           nullable: true
+          description: 'Value of the identifier involved in the error.'
     PartnerAssetReference:
       type: object
+      description: 'Primary traceable asset identifier for an item.'
       required:
       - identifier_type
       - value
       properties:
         identifier_type:
           type: string
+          description: 'Type of the asset identifier (e.g. sisbov, chip, ear_tag).'
         value:
           type: string
+          description: 'The identifier value.'
     PartnerIntakeVerbose:
       type: object
+      description: 'Detailed operational fields returned when ?verbose=true. Useful for debugging and internal tooling.'
       required:
       - raw_payload_id
       - source_circuit_id
@@ -2568,60 +2651,79 @@ components:
         raw_payload_id:
           type: string
           format: uuid
+          description: 'ID of the persisted raw payload. Use with /v1/partner/ingestions/raw/{id}/download to retrieve it.'
         source_circuit_id:
           type: string
           format: uuid
+          description: 'Staging circuit used for this ingestion.'
         workspace_id:
           type: string
           format: uuid
+          description: 'Workspace that processed this ingestion.'
         total_rows:
           type: integer
           format: int32
+          description: 'Total rows in the payload.'
         unresolved_rows:
           type: integer
           format: int32
+          description: 'Rows that could not be routed.'
         routed_batches:
           type: array
+          description: 'Detailed per-batch routing results.'
           items:
             $ref: '#/components/schemas/IntakeBatchResult'
         created_circuits:
           type: array
+          description: 'IDs of circuits auto-created during this ingestion.'
           items:
             type: string
             format: uuid
         circuit_links:
           type: array
+          description: 'Links to circuits that received items (app and public URLs).'
           items:
             $ref: '#/components/schemas/PartnerCircuitLink'
         status:
           type: string
     PartnerRouteOutput:
       type: object
+      description: 'Aggregated routing result for one identifier group (e.g. all rows with the same CAR).'
       required:
       - route_type
       - route_value
-      - circuit_id
       - rows
       - status
       - items
       properties:
         route_type:
           type: string
+          description: 'Type of routing identifier used (e.g. car, cnpj, cpf).'
         route_value:
           type: string
+          description: 'Value of the routing identifier (e.g. MT-1234.56789.0000.00).'
         circuit_id:
           type: string
           format: uuid
+          nullable: true
+          description: 'Destination circuit that received the items.'
         rows:
           type: integer
           format: int32
+          description: 'Number of input rows routed to this circuit.'
         status:
           type: string
+          description: 'Routing outcome for this identifier group.'
+          enum:
+          - completed
+          - failed
         items:
           type: integer
           format: int32
+          description: 'Number of items created or enriched for this route.'
     RoutingIssueSummary:
       type: object
+      description: 'An unresolved routing identifier seen during ingestion.'
       required:
       - identifier_type
       - identifier_value
@@ -2629,24 +2731,30 @@ components:
       properties:
         identifier_type:
           type: string
+          description: 'Type of the unresolved identifier (e.g. car, cnpj).'
         identifier_value:
           type: string
+          description: 'Value of the unresolved identifier.'
         occurrences:
           type: integer
           format: int64
+          description: 'Number of times this identifier appeared across recent ingestions.'
     RoutingIssuesResponse:
       type: object
+      description: 'List of unresolved routing identifiers for triage.'
       required:
       - issues
       - count
       properties:
         issues:
           type: array
+          description: 'Unresolved routing issues.'
           items:
             $ref: '#/components/schemas/RoutingIssueSummary'
         count:
           type: integer
           format: int32
+          description: 'Total number of unresolved issues.'
     RoutingIssueItem:
       type: object
       required:
@@ -2982,18 +3090,22 @@ components:
             $ref: '#/components/schemas/PropertyComplianceResponse'
     CreateEmbedTokenRequest:
       type: object
+      description: 'Request to create a short-lived embed token for a circuit.'
       required:
       - circuit_id
       properties:
         circuit_id:
           type: string
           format: uuid
+          description: 'Circuit to generate the embed token for.'
         expires_in_minutes:
           type: integer
           format: int64
           nullable: true
+          description: 'Token lifetime in minutes. Defaults to 60 if not specified.'
     CreateEmbedTokenResponse:
       type: object
+      description: 'Response with the generated embed token and its URL.'
       required:
       - token
       - expires_at
@@ -3001,12 +3113,16 @@ components:
       properties:
         token:
           type: string
+          description: 'The embed token value. Pass as ?token= to the embed portfolio endpoint.'
         expires_at:
           type: string
+          description: 'Token expiration timestamp (RFC 3339).'
         embed_url:
           type: string
+          description: 'Ready-to-use URL for embedding the portfolio in an iframe or webview.'
     EmbedEventProof:
       type: object
+      description: 'A recent event with blockchain/IPFS proof, for end-client visualization.'
       required:
       - id
       - event_type
@@ -3015,27 +3131,37 @@ components:
         id:
           type: string
           format: uuid
+          description: 'Event ID.'
         event_type:
           type: string
+          description: 'Type of event (e.g. item_weighed, item_vaccinated).'
         item_id:
           type: string
           format: uuid
           nullable: true
+          description: 'Item associated with this event.'
         created_at:
           type: string
+          description: 'Event timestamp (RFC 3339).'
         stellar_tx_hash:
           type: string
           nullable: true
+          description: 'Stellar blockchain transaction hash anchoring this event.'
         ipfs_cid:
           type: string
           nullable: true
+          description: 'IPFS content identifier for the event metadata.'
     EmbedPortfolioResponse:
       type: object
+      description: 'Portfolio data resolved from an embed token, for end-client visualization.'
       required:
       - portfolio
       - recent_event_proofs
       properties:
-        portfolio: {}
+        portfolio:
+          type: object
+          additionalProperties: true
+          description: 'Circuit portfolio data including items, metadata, and summary counts. Structure varies by circuit configuration.'
         recent_event_proofs:
           type: array
           items:
@@ -8666,7 +8792,7 @@ paths:
     post:
       tags:
       - Partner API Keys
-      summary: POST /api/partner/api-keys
+      summary: Create partner API key
       description: 'Create a new API key for partner integrations.
 
 
@@ -8705,7 +8831,7 @@ paths:
     get:
       tags:
       - Partner API Keys
-      summary: GET /api/partner/api-keys
+      summary: List partner API keys
       description: 'List your API keys across all circuits.
 
 
@@ -8730,7 +8856,7 @@ paths:
     delete:
       tags:
       - Partner API Keys
-      summary: DELETE /api/partner/api-keys/{id}
+      summary: Revoke partner API key
       description: 'Revoke (deactivate) an API key immediately.
 
 
@@ -8761,7 +8887,7 @@ paths:
     get:
       tags:
       - Partner API Keys
-      summary: GET /api/partner/api-keys/{id}/metrics
+      summary: Get API key usage metrics
       description: 'Get usage metrics for a specific API key.
 
 
@@ -8816,6 +8942,7 @@ paths:
                   $ref: '#/components/schemas/RoutingRuleResponse'
       security:
       - bearerAuth: []
+      - apiKeyAuth: []
     post:
       tags:
       - Partner Routing
@@ -8884,6 +9011,7 @@ paths:
                 $ref: '#/components/schemas/ListRawPayloadsResponse'
       security:
       - bearerAuth: []
+      - apiKeyAuth: []
   /api/partner/ingestions/raw/{id}/download:
     get:
       tags:
@@ -8910,6 +9038,7 @@ paths:
                 type: string
       security:
       - bearerAuth: []
+      - apiKeyAuth: []
   /api/partner/ingestions/issues:
     get:
       tags:
@@ -8926,6 +9055,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssuesResponse'
       security:
       - bearerAuth: []
+      - apiKeyAuth: []
   /api/partner/ingestions/issues/items:
     get:
       tags:
@@ -9043,22 +9173,23 @@ paths:
   /api/partner/ingestions:
     post:
       tags:
-      - Partner Routing
-      summary: Partner ingestions (CSV/JSON)
+      - Partner Upload
+      summary: Send data for intelligent ingestion
       description: >-
-        Persist payload bruto, resolver roteamento por identificador e ingerir por circuito automaticamente.
-        Cada linha precisa conter `value_chain` e identificador do ativo rastreável
-        (BEEF/DAIRY: `sisbov` preferencial ou `chip`).
-        Identificadores como CAR/CPF/CNPJ/INCRA/NIRF/CIB/MATRICULA/GEOREF/LAND_DFID/IE
-        são usados para roteamento/contexto.
-        Com JWT (portal), `source_circuit_id` é opcional: se omitido, o sistema usa automaticamente
-        o circuito staging padrão do workspace. Com `x-api-key` de escopo `workspace_ingestion`,
-        `source_circuit_id` também é opcional e o staging é inferido da key.
+        Send CSV or JSON data for intelligent ingestion into DeFarm.
+        Required per row:
+        (1) `value_chain` (e.g. BEEF, DAIRY, SOY);
+        (2) one traceable asset identifier (e.g. for BEEF use `sisbov`, `chip`, or both).
+        Routing identifier is recommended (e.g. `car`, `cnpj`, `cpf`, `inscricao_estadual`/`ie`) to route directly to destination circuits.
+        If routing identifier is missing, unresolved rows can fallback to source circuit when `fallback_to_source_circuit=true`.
+        DeFarm persists the original payload, applies routing rules, and creates or updates items automatically.
+        Auth: Bearer JWT or `x-api-key` with scope `workspace_ingestion`.
+        In both cases `source_circuit_id` is optional — the staging circuit is inferred automatically.
       operationId: create_partner_ingestion
       parameters:
       - name: verbose
         in: query
-        description: Retorna campos operacionais detalhados em `verbose` quando true.
+        description: When true, includes detailed operational fields in the `verbose` object.
         required: false
         schema:
           type: boolean
@@ -9113,7 +9244,16 @@ paths:
                 auto_create_circuit:
                   type: boolean
                   description: Auto-create destination circuit when no routing rule matches.
+                fallback_to_source_circuit:
+                  type: boolean
+                  description: When no routing rule matches and auto_create_circuit is false, route unresolved rows to the source staging circuit instead of returning an error. Default true.
       responses:
+        '200':
+          description: Ingestion failed with actionable errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerIntakeResponse'
         '201':
           description: Ingestion processed
           content:
@@ -9126,9 +9266,16 @@ paths:
   /api/partner/ingestions/preview:
     post:
       tags:
-      - Partner Routing
-      summary: Partner ingestions preview (no side effects)
-      description: 'Validates CSV/JSON and simulates routing outcomes without storing payload, creating circuits, or tokenizing items. Requires `value_chain` + traceable asset identifier per row (BEEF/DAIRY: SISBOV preferred or CHIP).'
+      - Partner Upload
+      summary: Preview ingestion (no side effects)
+      description: >-
+        Dry-run validation of CSV/JSON data. Simulates routing outcomes without storing
+        the payload, creating circuits, or tokenizing items.
+        Each row must contain `value_chain` and one traceable asset identifier (e.g. for BEEF: `sisbov`, `chip`, or both).
+        Routing identifier is recommended (e.g. `car`, `cnpj`, `cpf`, `inscricao_estadual`/`ie`) for direct destination routing.
+        If routing identifier is missing, unresolved rows can fallback to source circuit when `fallback_to_source_circuit=true`.
+        Returns the same contract shape as ingestion (`summary`, `items`, `routes`, `errors`) with `dry_run=true`,
+        but without creating DFIDs or persisting side effects.
       operationId: preview_partner_ingestion
       requestBody:
         required: true
@@ -9187,7 +9334,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PartnerIntakePreviewResponse'
+                $ref: '#/components/schemas/PartnerIntakeResponse'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
