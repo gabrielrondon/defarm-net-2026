@@ -106,6 +106,12 @@ function normalizeKey(key: string): string {
   return key.trim().toLowerCase();
 }
 
+const CAR_REGEX = /^[A-Z]{2}-\d{5,7}-[A-F0-9]{32}$/i;
+
+function isOfficialCarFormat(value: string): boolean {
+  return CAR_REGEX.test(value.trim());
+}
+
 function compactJson(value: unknown): string {
   if (value === null || value === undefined) return "-";
   if (typeof value === "string") return value;
@@ -445,6 +451,10 @@ export default function PublicItem() {
     if (typeof direct === "number") return String(direct);
     return null;
   }, [metadata]);
+  const carHasOfficialFormat = useMemo(
+    () => (carValue ? isOfficialCarFormat(carValue) : false),
+    [carValue]
+  );
 
   const latestContentVersion = useMemo(() => {
     if (!proofs?.content_versions?.length) return null;
@@ -493,14 +503,27 @@ export default function PublicItem() {
   const openCarVerification = async () => {
     if (!carValue) return;
     setShowCarDialog(true);
+    setCarGeojson(null);
+    setCarResult(null);
+
+    if (!carHasOfficialFormat) {
+      setCarGeoError("Formato de CAR não oficial. Use o padrão UF-CODIGO-HEX32 para consulta geoespacial.");
+      setCarError("Este CAR não está no formato oficial para verificação automática.");
+      return;
+    }
 
     setCarGeoLoading(true);
     setCarGeoError(null);
     getCarGeoJSON(carValue, { skipAuth: true })
       .then((geo) => setCarGeojson(geo))
-      .catch(() =>
-        setCarGeoError("Polígono não disponível para este CAR no momento.")
-      )
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg.includes("404")) {
+          setCarGeoError("CAR não encontrado nas bases públicas consultadas.");
+          return;
+        }
+        setCarGeoError("Polígono não disponível para este CAR no momento.");
+      })
       .finally(() => setCarGeoLoading(false));
 
     if (!isAuthenticated) {
@@ -698,7 +721,11 @@ export default function PublicItem() {
                       >
                         {car}
                       </button>
-                      <p className="text-[11px] text-muted-foreground">Clique para verificar compliance desse CAR.</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {carHasOfficialFormat
+                          ? "Clique para verificar compliance e polígono desse CAR."
+                          : "CAR fora do padrão oficial; a consulta geoespacial pode não estar disponível."}
+                      </p>
                     </div>
                   );
                 }
