@@ -37,6 +37,7 @@ import {
   Code2,
   Database,
   ScrollText,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -55,12 +56,14 @@ interface NavItem {
   icon: typeof BookOpen;
   label: string;
   href: string;
+  external?: boolean;
 }
 type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
 
 const navCatalog: NavItem[] = [
   { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
   { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
+  { icon: BookOpen, label: "Docs", href: "https://docs.defarm.net/docs/getting-started", external: true },
   { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
   { icon: Key, label: "API Keys", href: "/app/api-keys" },
   { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
@@ -79,7 +82,7 @@ const navCatalog: NavItem[] = [
 ];
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
-  partner: ["/app/parceiro", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
+  partner: ["/app/parceiro", "https://docs.defarm.net/docs/getting-started", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
   producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
@@ -254,9 +257,28 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {visibleNavItems.map((item) => {
-            const isActive = location.pathname === item.href || 
-              (item.href !== "/app" && location.pathname.startsWith(item.href));
-            
+            const isActive =
+              !item.external &&
+              (location.pathname === item.href ||
+                (item.href !== "/app" && location.pathname.startsWith(item.href)));
+
+            if (item.external) {
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setSidebarOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                  <ExternalLink className="h-4 w-4 ml-auto" />
+                </a>
+              );
+            }
+
             return (
               <Link
                 key={item.href}

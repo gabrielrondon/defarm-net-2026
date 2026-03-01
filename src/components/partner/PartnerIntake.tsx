@@ -195,8 +195,21 @@ export function PartnerIntake() {
     void buildPreValidation(file, sourceCircuitId, templateId, inlineMappingText);
   }, [file, sourceCircuitId, autoCreate, templateId, inlineMappingText]);
 
+  const runPreviewNow = async () => {
+    if (!file) return;
+    await buildPreValidation(file, sourceCircuitId || undefined, templateId, inlineMappingText, true);
+    toast({
+      title: "Prévia executada",
+      description: "Validação concluída sem persistir dados.",
+    });
+  };
+
   const onSubmit = async () => {
     if (!file) return;
+    const confirmed = window.confirm(
+      "Este envio vai persistir payload e processar ingestão real. Deseja continuar?"
+    );
+    if (!confirmed) return;
     setSending(true);
     try {
       const mappingText = inlineMappingText.trim();
@@ -280,6 +293,26 @@ export function PartnerIntake() {
           Envie CSV/JSON uma única vez. A DeFarm persiste payload bruto, resolve cliente por identificador e roteia para os circuitos corretos.
         </p>
         <p className="text-xs text-muted-foreground">
+          Guia oficial:{" "}
+          <a
+            href="https://docs.defarm.net/docs/getting-started#preview"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            quickstart + preview
+          </a>
+          {" · "}
+          <a
+            href="https://docs.defarm.net/docs/api#upload"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            formato de upload
+          </a>
+        </p>
+        <p className="text-xs text-muted-foreground">
           Recomendado em produção: enviar em chunks de 50-150 linhas por request. Em login JWT, o circuito de staging é opcional (usamos o padrão quando omitido).
         </p>
         <p className="text-xs text-muted-foreground">
@@ -312,9 +345,14 @@ export function PartnerIntake() {
             />
           </label>
 
-          <Button onClick={onSubmit} disabled={!file || sending}>
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Processar ingestão"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={runPreviewNow} disabled={!file || previewing || sending}>
+              {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Executar preview"}
+            </Button>
+            <Button variant="outline" onClick={onSubmit} disabled={!file || sending}>
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar de verdade"}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
