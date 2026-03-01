@@ -20,7 +20,13 @@ import {
   Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ApiError, getPublicItem, getPublicItemEvents, resolvePublicItemByIdentifier } from "@/lib/defarm-api";
+import {
+  ApiError,
+  getPublicItem,
+  getPublicItemCanonicalIdentifier,
+  getPublicItemEvents,
+  resolvePublicItemByIdentifier,
+} from "@/lib/defarm-api";
 import {
   eventTypeColors,
   eventTypeLabels,
@@ -303,10 +309,21 @@ export default function PublicItem() {
     return Object.entries(metadata).filter(([key]) => !technicalKeys.has(key));
   }, [item?.metadata]);
 
-  const canonicalIdentifier = useMemo(() => {
+  const fallbackCanonicalIdentifier = useMemo(() => {
     const metadata = (item?.metadata || {}) as Record<string, unknown>;
     return detectCanonicalIdentifier(metadata);
   }, [item?.metadata]);
+
+  const { data: canonicalFromDb } = useQuery({
+    queryKey: ["public-item-canonical", resolvedDfid],
+    queryFn: () => getPublicItemCanonicalIdentifier(resolvedDfid!),
+    enabled: !!resolvedDfid,
+    retry: 1,
+  });
+
+  const canonicalIdentifier = canonicalFromDb
+    ? { label: canonicalFromDb.identifier_type, value: canonicalFromDb.value }
+    : fallbackCanonicalIdentifier;
 
   const publicCircuitId = useMemo(() => {
     for (const event of events) {

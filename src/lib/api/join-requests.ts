@@ -6,6 +6,7 @@ import type {
   PublicCircuitsResponse,
   PublicCircuitPortfolio,
   PublicItem,
+  PublicCanonicalIdentifier,
   PublicItemEvent,
 } from "./types";
 
@@ -29,6 +30,12 @@ export async function getPublicCircuit(id: string): Promise<PublicCircuitPortfol
 // Public item endpoints (no auth required)
 export async function getPublicItem(dfid: string): Promise<PublicItem> {
   return registryRequest<PublicItem>(`/items/${dfid}/public`);
+}
+
+export async function getPublicItemCanonicalIdentifier(
+  dfid: string
+): Promise<PublicCanonicalIdentifier> {
+  return registryRequest<PublicCanonicalIdentifier>(`/items/${dfid}/canonical/public`);
 }
 
 export async function resolvePublicItemByIdentifier(

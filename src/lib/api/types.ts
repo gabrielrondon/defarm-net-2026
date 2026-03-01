@@ -1027,6 +1027,11 @@ export interface PublicItem {
   updated_at?: string;
 }
 
+export interface PublicCanonicalIdentifier {
+  identifier_type: string;
+  value: string;
+}
+
 export interface PublicItemEvent {
   id: string;
   event_type: string;
