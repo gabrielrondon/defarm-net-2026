@@ -20,6 +20,7 @@ import {
   Scale,
   Lock,
   TrendingUp,
+  Network,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -239,6 +240,7 @@ export default function PublicItem() {
   const [showWeightDialog, setShowWeightDialog] = useState(false);
   const [showIdentityDialog, setShowIdentityDialog] = useState(false);
   const [showCidDialog, setShowCidDialog] = useState(false);
+  const [showCircuitsDialog, setShowCircuitsDialog] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -456,13 +458,11 @@ export default function PublicItem() {
 
   const visibleEvents = showOperational ? events : realEvents;
 
-  const publicCircuitId = useMemo(() => {
-    for (const event of events) {
-      if (typeof event.circuit_id === "string" && event.circuit_id) {
-        return event.circuit_id;
-      }
-    }
-    return null;
+  const associatedCircuitIds = useMemo(() => {
+    const ids = events
+      .map((event) => event.circuit_id)
+      .filter((value): value is string => typeof value === "string" && value.length > 0);
+    return Array.from(new Set(ids));
   }, [events]);
 
   const copyText = async (value: string, label: string) => {
@@ -510,12 +510,9 @@ export default function PublicItem() {
     });
   };
 
-  const publicCircuitUrl = publicCircuitId ? `/c/${publicCircuitId}` : "/circuitos/publicos";
-  const publicBackLabel = publicCircuitId ? "Voltar ao circuito" : "Voltar aos circuitos";
-
   if (isResolvingRef || isLoading) {
     return (
-      <Shell>
+      <Shell isAuthenticated={isAuthenticated}>
         <div className="flex flex-col items-center justify-center py-24">
           <Loader2 className="h-7 w-7 animate-spin text-primary mb-3" />
           <p className="text-sm text-muted-foreground">
@@ -528,7 +525,7 @@ export default function PublicItem() {
 
   if (itemDeprecated) {
     return (
-      <Shell>
+      <Shell isAuthenticated={isAuthenticated}>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="mb-4 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-left max-w-md w-full">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Item reference</p>
@@ -546,15 +543,15 @@ export default function PublicItem() {
 
   if (resolveError || error || !item) {
     return (
-      <Shell>
+      <Shell isAuthenticated={isAuthenticated}>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Package className="h-10 w-10 text-muted-foreground/40 mb-4" />
           <h1 className="text-lg font-semibold text-foreground">Item não encontrado</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
             {resolveError || "Este item não existe ou não está disponível publicamente."}
           </p>
-          <Link to={publicCircuitUrl} className="mt-6">
-            <Button variant="outline" size="sm">{publicBackLabel}</Button>
+          <Link to="/circuitos/publicos" className="mt-6">
+            <Button variant="outline" size="sm">Voltar aos circuitos</Button>
           </Link>
         </div>
       </Shell>
@@ -564,15 +561,8 @@ export default function PublicItem() {
   const st = statusMap[(item.status || "").toLowerCase()] || statusMap.active;
 
   return (
-    <Shell>
+    <Shell isAuthenticated={isAuthenticated}>
       <div className="space-y-6">
-        <Link
-          to={publicCircuitUrl}
-          className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {publicBackLabel}
-        </Link>
-
         <div className="rounded-2xl bg-gradient-to-br from-primary/8 via-background to-primary/4 border border-primary/10 p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -601,6 +591,21 @@ export default function PublicItem() {
             </div>
           </div>
         </div>
+
+        <section className="rounded-xl border border-border p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Circuitos associados</h2>
+              <p className="text-xs text-muted-foreground">
+                {associatedCircuitIds.length} circuito{associatedCircuitIds.length !== 1 ? "s" : ""} detectado{associatedCircuitIds.length !== 1 ? "s" : ""}.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setShowCircuitsDialog(true)}>
+              <Network className="h-4 w-4 mr-1.5" />
+              Ver circuitos
+            </Button>
+          </div>
+        </section>
 
         {item.dfid && (
           <AssetQRCode
@@ -980,6 +985,36 @@ export default function PublicItem() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showCircuitsDialog} onOpenChange={setShowCircuitsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Circuitos associados</DialogTitle>
+            <DialogDescription>
+              Se o circuito for privado/seletivo, a página de destino poderá exigir autenticação.
+            </DialogDescription>
+          </DialogHeader>
+
+          {associatedCircuitIds.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum circuito associado foi identificado nos eventos públicos deste item.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {associatedCircuitIds.map((circuitId) => (
+                <a
+                  key={circuitId}
+                  href={`/c/${circuitId}`}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 hover:bg-muted/40"
+                >
+                  <span className="font-mono text-xs break-all">{circuitId}</span>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                </a>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showWeightDialog} onOpenChange={setShowWeightDialog}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
@@ -1123,7 +1158,13 @@ export default function PublicItem() {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  isAuthenticated,
+}: {
+  children: React.ReactNode;
+  isAuthenticated: boolean;
+}) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
@@ -1132,7 +1173,22 @@ function Shell({ children }: { children: React.ReactNode }) {
             <img src={logoIcon} alt="DeFarm" className="h-7 w-7" />
             <span className="font-bold text-foreground text-sm">DeFarm</span>
           </div>
-          <span className="text-[11px] text-muted-foreground">Rastreabilidade verificada</span>
+          <div className="flex items-center gap-3">
+            {!isAuthenticated ? (
+              <Link to="/login">
+                <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
+                  Login na DeFarm
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/app">
+                <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
+                  Abrir app
+                </Button>
+              </Link>
+            )}
+            <span className="text-[11px] text-muted-foreground hidden sm:inline">Rastreabilidade verificada</span>
+          </div>
         </div>
       </header>
 

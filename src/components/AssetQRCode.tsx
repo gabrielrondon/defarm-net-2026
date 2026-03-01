@@ -1,6 +1,13 @@
 import { useState } from "react";
-import { X, Download, Share2, ExternalLink, Copy } from "lucide-react";
+import { X, Download, Share2, ExternalLink, Copy, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 interface AssetQRCodeProps {
   dfid: string;
@@ -13,10 +20,6 @@ interface AssetQRCodeProps {
 
 function buildQrUrl(dfid: string, size = 480): string {
   const publicUrl = `https://defarm.net/i/${dfid}`;
-  const latestCidUrl = latestCid ? `https://gateway.pinata.cloud/ipfs/${latestCid}` : null;
-  const identityHashUrl = identityHash
-    ? `https://stellar.expert/explorer/public/tx/${identityHash}`
-    : null;
   return `https://quickchart.io/qr?text=${encodeURIComponent(publicUrl)}&size=${size}&margin=0&dark=27C268&light=ffffff`;
 }
 
@@ -31,6 +34,36 @@ function DiamondQR({ dfid, size = 120 }: { dfid: string; size?: number }) {
   );
 }
 
+function shorten(value: string, head = 10, tail = 8) {
+  if (value.length <= head + tail + 3) return value;
+  return `${value.slice(0, head)}...${value.slice(-tail)}`;
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Falha ao ler blob"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
+  const url = URL.createObjectURL(blob);
+  return await new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Falha ao carregar imagem"));
+    };
+    image.src = url;
+  });
+}
+
 export function AssetQRCode({
   dfid,
   canonicalIdLabel,
@@ -40,56 +73,188 @@ export function AssetQRCode({
   className = "",
 }: AssetQRCodeProps) {
   const [fullscreen, setFullscreen] = useState(false);
-  const publicUrl = `https://defarm.net/i/${dfid}`;
+  const { toast } = useToast();
 
-  const handleShare = async () => {
-    const shareData = {
-      title: `Rastreabilidade ${dfid}`,
-      text: `Confira a rastreabilidade verificada deste ativo: ${publicUrl}`,
-      url: publicUrl,
-    };
+  const publicUrl = `https://defarm.net/i/${dfid}`;
+  const latestCidUrl = latestCid ? `https://gateway.pinata.cloud/ipfs/${latestCid}` : null;
+  const identityHashUrl = identityHash
+    ? `https://stellar.expert/explorer/public/tx/${identityHash}`
+    : null;
+
+  const handleCopy = async (value: string, label: string) => {
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        window.open(`https://wa.me/?text=${encodeURIComponent(shareData.text)}`, "_blank");
-      }
+      await navigator.clipboard.writeText(value);
+      toast({ title: `${label} copiado` });
     } catch {
-      await navigator.clipboard.writeText(publicUrl);
+      toast({ title: `Falha ao copiar ${label.toLowerCase()}`, variant: "destructive" });
     }
   };
 
-  const handleDownload = () => {
-    const svg = `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <rect x="22" y="22" width="76" height="76" rx="18" fill="#27C268" transform="rotate(45 60 60)"/>
-      <rect x="32" y="32" width="56" height="56" rx="14" fill="white" stroke="white" stroke-width="6" transform="rotate(45 60 60) translate(5 -5)"/>
-      <image x="34" y="34" width="52" height="52" href="${buildQrUrl(dfid, 480)}" transform="rotate(45 60 60) translate(5 -5)"/>
-    </svg>`;
-    const blob = new Blob([svg], { type: "image/svg+xml" });
+  const fetchQrPngBlob = async (size = 1200) => {
+    const response = await fetch(buildQrUrl(dfid, size));
+    if (!response.ok) throw new Error("Falha ao gerar QR");
+    return await response.blob();
+  };
+
+  const generatePngCardBlob = async (): Promise<Blob> => {
+    const qrBlob = await fetchQrPngBlob(900);
+    const qrImage = await loadImageFromBlob(qrBlob);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 1240;
+    canvas.height = 1754;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas indisponível");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#111827";
+    ctx.font = "700 54px Arial";
+    ctx.fillText("DeFarm", 80, 100);
+
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "400 24px Arial";
+    ctx.fillText("Certificado de Rastreabilidade", 80, 145);
+
+    ctx.drawImage(qrImage, 270, 220, 700, 700);
+
+    ctx.fillStyle = "#111827";
+    ctx.font = "700 30px Arial";
+    ctx.fillText(dfid, 80, 1020);
+
+    let y = 1080;
+    const drawLine = (label: string, value?: string | null) => {
+      if (!value) return;
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "600 20px Arial";
+      ctx.fillText(`${label}:`, 80, y);
+      ctx.fillStyle = "#111827";
+      ctx.font = "400 20px Arial";
+      ctx.fillText(value, 280, y);
+      y += 44;
+    };
+
+    drawLine(canonicalIdLabel || "Identificador", canonicalIdValue || null);
+    drawLine("Registro de identidade", identityHash || null);
+    drawLine("Último CID", latestCid || null);
+    drawLine("URL", publicUrl);
+
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Falha ao gerar PNG"));
+          return;
+        }
+        resolve(blob);
+      }, "image/png");
+    });
+  };
+
+  const generatePdfBlob = async (): Promise<Blob> => {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const qrBlob = await fetchQrPngBlob(900);
+    const qrDataUrl = await blobToDataUrl(qrBlob);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("DeFarm", 48, 52);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    doc.text("Certificado de Rastreabilidade", 48, 72);
+
+    doc.addImage(qrDataUrl, "PNG", 140, 100, 320, 320);
+
+    let y = 460;
+    const line = (label: string, value?: string | null) => {
+      if (!value) return;
+      doc.setFont("helvetica", "bold");
+      doc.text(`${label}:`, 48, y);
+      doc.setFont("helvetica", "normal");
+      const wrapped = doc.splitTextToSize(value, 460);
+      doc.text(wrapped, 180, y);
+      y += 24 + (wrapped.length - 1) * 16;
+    };
+
+    line("DFID", dfid);
+    line(canonicalIdLabel || "Identificador", canonicalIdValue || null);
+    line("Registro de identidade", identityHash || null);
+    line("Último CID", latestCid || null);
+    line("URL", publicUrl);
+
+    return doc.output("blob");
+  };
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${dfid}-qrcode.svg`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleCopy = async (value: string) => {
+  const shareBlob = async (blob: Blob, fileName: string, title: string) => {
+    const file = new File([blob], fileName, { type: blob.type || "application/octet-stream" });
+    const shareData: ShareData = {
+      title,
+      text: `${title} - ${dfid}`,
+      url: publicUrl,
+      files: [file],
+    };
+
     try {
-      await navigator.clipboard.writeText(value);
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(publicUrl);
+        toast({ title: "Link copiado", description: "Seu dispositivo não suporta compartilhamento de arquivo." });
+      }
     } catch {
-      // no-op; keep UI simple in public view
+      toast({ title: "Compartilhamento cancelado", variant: "destructive" });
     }
   };
 
-  const shorten = (value: string, head = 10, tail = 8) => {
-    if (value.length <= head + tail + 3) return value;
-    return `${value.slice(0, head)}...${value.slice(-tail)}`;
+  const onDownloadPng = async () => {
+    try {
+      const blob = await generatePngCardBlob();
+      downloadBlob(blob, `${dfid}-certificado.png`);
+    } catch (err) {
+      toast({ title: "Falha ao baixar PNG", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
+    }
+  };
+
+  const onDownloadPdf = async () => {
+    try {
+      const blob = await generatePdfBlob();
+      downloadBlob(blob, `${dfid}-certificado.pdf`);
+    } catch (err) {
+      toast({ title: "Falha ao baixar PDF", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
+    }
+  };
+
+  const onSharePng = async () => {
+    try {
+      const blob = await generatePngCardBlob();
+      await shareBlob(blob, `${dfid}-certificado.png`, "Certificado PNG");
+    } catch (err) {
+      toast({ title: "Falha ao compartilhar PNG", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
+    }
+  };
+
+  const onSharePdf = async () => {
+    try {
+      const blob = await generatePdfBlob();
+      await shareBlob(blob, `${dfid}-certificado.pdf`, "Certificado PDF");
+    } catch (err) {
+      toast({ title: "Falha ao compartilhar PDF", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
+    }
   };
 
   return (
     <>
-      {/* Compact card */}
       <div
         className={`group relative rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-primary/3 p-6 cursor-pointer transition-all hover:shadow-lg hover:border-primary/20 ${className}`}
         onClick={() => setFullscreen(true)}
@@ -115,7 +280,6 @@ export function AssetQRCode({
         </div>
       </div>
 
-      {/* Fullscreen overlay */}
       {fullscreen && (
         <div
           className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
@@ -125,7 +289,6 @@ export function AssetQRCode({
             className="relative w-full max-w-sm mx-4 animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close */}
             <button
               onClick={() => setFullscreen(false)}
               className="absolute -top-12 right-0 p-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -133,7 +296,6 @@ export function AssetQRCode({
               <X className="h-6 w-6" />
             </button>
 
-            {/* Card */}
             <div className="rounded-3xl border border-border bg-gradient-to-b from-primary/8 via-background to-background p-8 shadow-2xl">
               <div className="flex flex-col items-center gap-6">
                 <DiamondQR dfid={dfid} size={220} />
@@ -163,7 +325,7 @@ export function AssetQRCode({
                         </a>
                         <button
                           type="button"
-                          onClick={() => void handleCopy(identityHash)}
+                          onClick={() => void handleCopy(identityHash, "Hash de identidade")}
                           className="text-muted-foreground hover:text-foreground"
                           aria-label="Copiar hash de identidade"
                         >
@@ -187,7 +349,7 @@ export function AssetQRCode({
                         </a>
                         <button
                           type="button"
-                          onClick={() => void handleCopy(latestCid)}
+                          onClick={() => void handleCopy(latestCid, "CID")}
                           className="text-muted-foreground hover:text-foreground"
                           aria-label="Copiar CID"
                         >
@@ -200,24 +362,33 @@ export function AssetQRCode({
                 </div>
 
                 <div className="flex items-center gap-3 w-full">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={handleDownload}
-                  >
-                    <Download className="h-4 w-4 mr-1.5" />
-                    Baixar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={handleShare}
-                  >
-                    <Share2 className="h-4 w-4 mr-1.5" />
-                    Compartilhar
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Download className="h-4 w-4 mr-1.5" />
+                        Baixar
+                        <ChevronDown className="h-4 w-4 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52">
+                      <DropdownMenuItem onClick={() => void onDownloadPng()}>PNG (QR + dados)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => void onDownloadPdf()}>PDF (QR + dados + links)</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Share2 className="h-4 w-4 mr-1.5" />
+                        Compartilhar
+                        <ChevronDown className="h-4 w-4 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={() => void onSharePng()}>PNG (QR + dados)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => void onSharePdf()}>PDF (QR + dados + links)</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
