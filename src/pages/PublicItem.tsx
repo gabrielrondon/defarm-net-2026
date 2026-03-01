@@ -93,8 +93,39 @@ type WeightPoint = {
   date: string;
   label: string;
   weight: number;
-  source: "metadata" | "event";
+  source: "metadata" | "event" | "cid";
 };
+
+function parseWeightPointFromSnapshot(snapshot: unknown, uploadedAtFallback?: string): WeightPoint | null {
+  if (!snapshot || typeof snapshot !== "object") return null;
+  const obj = snapshot as Record<string, unknown>;
+  const business = (obj.business && typeof obj.business === "object"
+    ? (obj.business as Record<string, unknown>)
+    : null);
+  const metadata = (business?.metadata && typeof business.metadata === "object"
+    ? (business.metadata as Record<string, unknown>)
+    : (obj.metadata && typeof obj.metadata === "object"
+      ? (obj.metadata as Record<string, unknown>)
+      : null));
+
+  if (!metadata) return null;
+  const rawWeight = metadata.weight_kg;
+  const weight = typeof rawWeight === "number" ? rawWeight : Number(rawWeight);
+  if (!Number.isFinite(weight)) return null;
+
+  const rawDate = metadata.data_peso;
+  const date =
+    (typeof rawDate === "string" && rawDate.trim()) ||
+    uploadedAtFallback ||
+    new Date().toISOString();
+
+  return {
+    date,
+    label: formatDateShort(date),
+    weight,
+    source: "cid",
+  };
+}
 
 function shortHash(value: string, head = 10, tail = 8): string {
   if (!value) return "-";
@@ -313,6 +344,38 @@ export default function PublicItem() {
     retry: 1,
   });
 
+  const { data: cidWeightHistory = [] } = useQuery({
+    queryKey: [
+      "public-item-cid-weight-history",
+      resolvedDfid,
+      ...(proofs?.content_versions || []).map((v) => `${v.version}:${v.cid}`),
+    ],
+    enabled: !!resolvedDfid && !!proofs?.content_versions?.length,
+    queryFn: async () => {
+      const versions = proofs?.content_versions || [];
+      const points: WeightPoint[] = [];
+
+      await Promise.all(
+        versions.map(async (version) => {
+          const url = version.gateway_url || `https://gateway.pinata.cloud/ipfs/${version.cid}`;
+          if (!url) return;
+          try {
+            const resp = await fetch(url);
+            if (!resp.ok) return;
+            const json = await resp.json();
+            const point = parseWeightPointFromSnapshot(json, version.uploaded_at);
+            if (point) points.push(point);
+          } catch {
+            // Ignore CID fetch failures in public UI and keep timeline best-effort.
+          }
+        })
+      );
+
+      return points.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    },
+    staleTime: 60_000,
+  });
+
   const { data: canonicalFromDb } = useQuery({
     queryKey: ["public-item-canonical", resolvedDfid],
     queryFn: () => getPublicItemCanonicalIdentifier(resolvedDfid!),
@@ -408,6 +471,10 @@ export default function PublicItem() {
       });
     }
 
+    for (const point of cidWeightHistory) {
+      points.push(point);
+    }
+
     const dedup = new Map<string, WeightPoint>();
     for (const p of points) {
       dedup.set(`${p.date}|${p.weight}`, p);
@@ -416,7 +483,7 @@ export default function PublicItem() {
     return Array.from(dedup.values()).sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-  }, [events, item?.created_at, item?.updated_at, weightMeta]);
+  }, [events, item?.created_at, item?.updated_at, weightMeta, cidWeightHistory]);
 
   const visibleMetadataEntries = useMemo(() => {
     const technicalKeys = new Set([
