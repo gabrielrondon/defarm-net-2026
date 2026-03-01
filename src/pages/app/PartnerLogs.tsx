@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -313,102 +314,108 @@ export default function PartnerLogs() {
         </div>
       )}
 
-      {selected ? (
-        <Card className="p-5 space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-base font-semibold">Detalhes do evento</h3>
-            <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>
-              Fechar
-            </Button>
-          </div>
+      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Detalhes do evento</DialogTitle>
+            <DialogDescription>
+              {selected?.source === "api"
+                ? "Request/response da tentativa na sessão atual."
+                : "Detalhes do payload persistido e metadados de processamento."}
+            </DialogDescription>
+          </DialogHeader>
 
-          {selected.source === "api" ? (
-            <div className="space-y-3">
-              <p className="text-sm">
-                <span className="font-medium">Endpoint:</span>{" "}
-                <code className="text-xs bg-muted px-1 py-0.5 rounded">{selected.item.method} {selected.item.endpoint}</code>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {new Date(selected.item.timestamp).toLocaleString("pt-BR")} · {selected.item.durationMs} ms · status{" "}
-                {selected.item.status ?? "erro de rede"}
-              </p>
-              {selected.item.errorCode ? (
-                <p className="text-sm text-destructive">
-                  {selected.item.errorCode}: {selected.item.errorMessage || "sem mensagem"}
-                </p>
-              ) : null}
-              {selected.item.requestBody ? (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Request enviado</p>
-                  <pre className="code-block max-h-64 overflow-auto">{selected.item.requestBody}</pre>
+          {selected ? (
+            <div className="space-y-3 overflow-y-auto pr-1">
+              {selected.source === "api" ? (
+                <div className="space-y-3">
+                  <p className="text-sm">
+                    <span className="font-medium">Endpoint:</span>{" "}
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">{selected.item.method} {selected.item.endpoint}</code>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selected.item.timestamp).toLocaleString("pt-BR")} · {selected.item.durationMs} ms · status{" "}
+                    {selected.item.status ?? "erro de rede"}
+                  </p>
+                  {selected.item.errorCode ? (
+                    <p className="text-sm text-destructive">
+                      {selected.item.errorCode}: {selected.item.errorMessage || "sem mensagem"}
+                    </p>
+                  ) : null}
+                  {selected.item.requestBody ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Request enviado</p>
+                      <pre className="code-block max-h-64 overflow-auto">{selected.item.requestBody}</pre>
+                    </div>
+                  ) : null}
+                  {selected.item.responseBody ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Response recebido</p>
+                      <pre className="code-block max-h-64 overflow-auto">{selected.item.responseBody}</pre>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-              {selected.item.responseBody ? (
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Response recebido</p>
-                  <pre className="code-block max-h-64 overflow-auto">{selected.item.responseBody}</pre>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm">
+                    <span className="font-medium">Arquivo:</span> {selected.item.file_name || "payload"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selected.item.created_at).toLocaleString("pt-BR")} · {selected.item.payload_size_bytes.toLocaleString("pt-BR")} bytes
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    sha256: <code>{selected.item.payload_sha256}</code>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    content-type: {selected.item.content_type || "n/a"} · modo: {selected.item.intake_mode}
+                  </p>
+                  {selected.item.error_message ? (
+                    <p className="text-sm text-destructive">{selected.item.error_message}</p>
+                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const { blob, fileName } = await downloadRawPayload(selected.item.id, {
+                            suggestedFileName: selected.item.file_name,
+                            contentType: selected.item.content_type,
+                          });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = fileName;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        } catch {
+                          toast({
+                            title: "Falha ao baixar payload bruto",
+                            description: "Não foi possível baixar este arquivo.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Baixar bruto
+                    </Button>
+                    <Button size="sm" variant="ghost" asChild>
+                      <Link to="/app/parceiro">
+                        Portal Parceiro <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                      </Link>
+                    </Button>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Metadata de processamento</p>
+                    <pre className="code-block max-h-72 overflow-auto">{prettyJson(selected.item.metadata)}</pre>
+                  </div>
                 </div>
-              ) : null}
+              )}
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm">
-                <span className="font-medium">Arquivo:</span> {selected.item.file_name || "payload"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {new Date(selected.item.created_at).toLocaleString("pt-BR")} · {selected.item.payload_size_bytes.toLocaleString("pt-BR")} bytes
-              </p>
-              <p className="text-xs text-muted-foreground">
-                sha256: <code>{selected.item.payload_sha256}</code>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                content-type: {selected.item.content_type || "n/a"} · modo: {selected.item.intake_mode}
-              </p>
-              {selected.item.error_message ? (
-                <p className="text-sm text-destructive">{selected.item.error_message}</p>
-              ) : null}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const { blob, fileName } = await downloadRawPayload(selected.item.id, {
-                        suggestedFileName: selected.item.file_name,
-                        contentType: selected.item.content_type,
-                      });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = fileName;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    } catch {
-                      toast({
-                        title: "Falha ao baixar payload bruto",
-                        description: "Não foi possível baixar este arquivo.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  Baixar bruto
-                </Button>
-                <Button size="sm" variant="ghost" asChild>
-                  <Link to="/app/parceiro">
-                    Portal Parceiro <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                  </Link>
-                </Button>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Metadata de processamento</p>
-                <pre className="code-block max-h-72 overflow-auto">{prettyJson(selected.item.metadata)}</pre>
-              </div>
-            </div>
-          )}
-        </Card>
-      ) : null}
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
