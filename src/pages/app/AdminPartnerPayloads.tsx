@@ -421,7 +421,15 @@ export default function AdminPartnerPayloads() {
                   </div>
                 ) : null}
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground mb-2">Metadata / resposta de processamento</p>
+                  <p className="text-xs text-muted-foreground mb-2">Resposta snapshot (quando disponível)</p>
+                  <pre className="max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
+                    {JSON.stringify((selected.metadata as any)?.response_snapshot || {
+                      note: "Sem response_snapshot neste registro (payload antigo ou anterior ao patch).",
+                    }, null, 2)}
+                  </pre>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground mb-2">Metadata operacional</p>
                   <pre className="max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
                     {JSON.stringify(selected.metadata, null, 2)}
                   </pre>
