@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
 import {
@@ -21,7 +22,7 @@ import {
   type RoutingIssueItem,
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
-import { AlertTriangle, Download, ExternalLink, FileUp, Loader2, ScrollText, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, FileUp, Info, Languages, Loader2, ScrollText, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/lib/api/client";
@@ -33,6 +34,30 @@ import {
   subscribeLog,
   type PartnerRequestLogEntry,
 } from "@/lib/api/partner-request-log";
+
+type MetadataLocale = "pt-BR" | "en";
+type FieldDef = { canonical: string; aliases: string[]; labels: Record<MetadataLocale, string> };
+
+const FIELD_DEFS: FieldDef[] = [
+  { canonical: "value_chain", aliases: ["value_chain", "valuechain"], labels: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
+  { canonical: "sisbov", aliases: ["sisbov"], labels: { "pt-BR": "SISBOV", en: "SISBOV" } },
+  { canonical: "chip", aliases: ["chip", "rfid"], labels: { "pt-BR": "Chip", en: "Chip" } },
+  { canonical: "inscricao_estadual", aliases: ["inscricao_estadual", "ie"], labels: { "pt-BR": "Inscrição estadual", en: "State registration" } },
+  { canonical: "car", aliases: ["car"], labels: { "pt-BR": "CAR", en: "CAR" } },
+  { canonical: "weight_kg", aliases: ["weight_kg", "weight", "peso_kg", "peso"], labels: { "pt-BR": "Peso (kg)", en: "Weight (kg)" } },
+  { canonical: "data_peso", aliases: ["data_peso", "data_pesagem", "weight_date", "date"], labels: { "pt-BR": "Data da pesagem", en: "Weighing date" } },
+  {
+    canonical: "partner_internal_id",
+    aliases: ["partner_internal_id", "partner_reference", "external_id", "animal_id"],
+    labels: { "pt-BR": "Referência do parceiro", en: "Partner reference" },
+  },
+];
+
+const FIELD_LABELS = new Map(FIELD_DEFS.map((f) => [f.canonical, f.labels] as const));
+
+function canonicalFieldLabel(canonical: string, locale: MetadataLocale): string {
+  return FIELD_LABELS.get(canonical)?.[locale] || canonical;
+}
 
 export function PartnerIntake() {
   const { toast } = useToast();
@@ -76,6 +101,15 @@ export function PartnerIntake() {
   const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
   const [logEntries, setLogEntries] = useState<PartnerRequestLogEntry[]>(getLogEntries);
   const [logExpanded, setLogExpanded] = useState(false);
+  const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem("partner_portal_metadata_locale") : null;
+    return stored === "en" ? "en" : "pt-BR";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("partner_portal_metadata_locale", metadataLocale);
+  }, [metadataLocale]);
 
   useEffect(() => {
     return subscribeLog(() => setLogEntries(getLogEntries()));
@@ -332,7 +366,28 @@ export function PartnerIntake() {
   return (
     <div className="space-y-6">
       <Card className="p-5 space-y-4">
-        <h3 className="text-base font-semibold">Ingestão Inteligente (staging)</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">Ingestão Inteligente (staging)</h3>
+          <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1">
+            <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
+            <Button
+              size="sm"
+              variant={metadataLocale === "pt-BR" ? "default" : "ghost"}
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setMetadataLocale("pt-BR")}
+            >
+              PT-BR
+            </Button>
+            <Button
+              size="sm"
+              variant={metadataLocale === "en" ? "default" : "ghost"}
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setMetadataLocale("en")}
+            >
+              EN
+            </Button>
+          </div>
+        </div>
         <p className="text-sm text-muted-foreground">
           Padrão da API: enviar <code>application/json</code> no body da requisição. Como alternativa, também aceitamos arquivo CSV/JSON.
         </p>
@@ -362,6 +417,30 @@ export function PartnerIntake() {
         <p className="text-xs text-muted-foreground">
           Template é opcional. Use apenas quando precisar mapear nomes de colunas diferentes do padrão DeFarm.
         </p>
+        <div className="rounded-lg border p-3 bg-muted/20">
+          <p className="text-xs font-medium mb-2">
+            {metadataLocale === "en" ? "Official fields (aliases accepted)" : "Campos oficiais (aliases aceitos)"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {FIELD_DEFS.map((field) => (
+              <Tooltip key={field.canonical}>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border bg-background text-muted-foreground">
+                    {canonicalFieldLabel(field.canonical, metadataLocale)}
+                    <Info className="h-3 w-3" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs">
+                  {metadataLocale === "en" ? "Official field: " : "Campo oficial: "}
+                  <code>{field.canonical}</code>
+                  <br />
+                  {metadataLocale === "en" ? "Accepted aliases: " : "Aliases aceitos: "}
+                  {field.aliases.join(", ")}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
             <SelectTrigger><SelectValue placeholder="Circuito de staging" /></SelectTrigger>
@@ -588,7 +667,9 @@ export function PartnerIntake() {
                     ) : null}
                     {item.asset_reference ? (
                       <p className="text-[11px] text-muted-foreground mt-1">
-                        referência do ativo: {item.asset_reference.identifier_type}={item.asset_reference.value}
+                        {metadataLocale === "en" ? "asset reference" : "referência do ativo"}:{" "}
+                        {canonicalFieldLabel(item.asset_reference.identifier_type.toLowerCase(), metadataLocale)}
+                        ({item.asset_reference.identifier_type})={item.asset_reference.value}
                       </p>
                     ) : null}
                     {item.routes?.length ? (

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -17,11 +18,88 @@ import {
   type PartnerRequestLogEntry,
 } from "@/lib/api/partner-request-log";
 import { listRawPayloads, downloadRawPayload, type RawPayloadSummary } from "@/lib/api/partner-routing";
-import { Download, ExternalLink, Loader2, Radio, ScrollText, Trash2, Webhook } from "lucide-react";
+import { Download, ExternalLink, Info, Languages, Loader2, Radio, ScrollText, Trash2, Webhook } from "lucide-react";
 
 type TimelineEntry =
   | { source: "api"; id: string; ts: string; item: PartnerRequestLogEntry }
   | { source: "payload"; id: string; ts: string; item: RawPayloadSummary };
+
+type MetadataLocale = "pt-BR" | "en";
+type CanonicalEntry = { canonicalKey: string; rawKeys: string[]; value: unknown };
+type FieldDef = { canonical: string; aliases: string[]; labels: Record<MetadataLocale, string> };
+
+const FIELD_DEFS: FieldDef[] = [
+  { canonical: "value_chain", aliases: ["value_chain", "valuechain"], labels: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
+  { canonical: "sisbov", aliases: ["sisbov"], labels: { "pt-BR": "SISBOV", en: "SISBOV" } },
+  { canonical: "chip", aliases: ["chip", "rfid"], labels: { "pt-BR": "Chip", en: "Chip" } },
+  { canonical: "inscricao_estadual", aliases: ["inscricao_estadual", "ie"], labels: { "pt-BR": "Inscrição estadual", en: "State registration" } },
+  { canonical: "car", aliases: ["car"], labels: { "pt-BR": "CAR", en: "CAR" } },
+  { canonical: "weight_kg", aliases: ["weight_kg", "weight", "peso_kg", "peso"], labels: { "pt-BR": "Peso (kg)", en: "Weight (kg)" } },
+  { canonical: "data_peso", aliases: ["data_peso", "data_pesagem", "weight_date", "date"], labels: { "pt-BR": "Data da pesagem", en: "Weighing date" } },
+  {
+    canonical: "partner_internal_id",
+    aliases: ["partner_internal_id", "partner_reference", "external_id", "animal_id"],
+    labels: { "pt-BR": "Referência do parceiro", en: "Partner reference" },
+  },
+];
+
+const FIELD_ALIAS = (() => {
+  const map = new Map<string, string>();
+  for (const def of FIELD_DEFS) {
+    map.set(def.canonical, def.canonical);
+    for (const alias of def.aliases) map.set(alias, def.canonical);
+  }
+  return map;
+})();
+
+const FIELD_LABELS = new Map(FIELD_DEFS.map((d) => [d.canonical, d.labels] as const));
+
+function normalizeField(key: string): string {
+  return key
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function canonicalLabel(key: string, locale: MetadataLocale): string {
+  return FIELD_LABELS.get(key)?.[locale] || key;
+}
+
+function parseCanonicalEntriesFromRequestBody(body: string | null | undefined): CanonicalEntry[] {
+  if (!body) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return [];
+  }
+
+  const obj = parsed as Record<string, unknown>;
+  const firstItem =
+    Array.isArray(parsed)
+      ? (parsed[0] as Record<string, unknown> | undefined)
+      : Array.isArray(obj?.items)
+        ? (obj.items[0] as Record<string, unknown> | undefined)
+        : undefined;
+  if (!firstItem || typeof firstItem !== "object") return [];
+
+  const grouped = new Map<string, CanonicalEntry>();
+  for (const [rawKey, value] of Object.entries(firstItem)) {
+    if (value === null || value === undefined || value === "") continue;
+    const canonical = FIELD_ALIAS.get(normalizeField(rawKey)) || normalizeField(rawKey);
+    const current = grouped.get(canonical);
+    if (!current) {
+      grouped.set(canonical, { canonicalKey: canonical, rawKeys: [rawKey], value });
+      continue;
+    }
+    if (!current.rawKeys.includes(rawKey)) current.rawKeys.push(rawKey);
+    if (normalizeField(rawKey) === canonical) current.value = value;
+  }
+  return Array.from(grouped.values()).sort((a, b) => a.canonicalKey.localeCompare(b.canonicalKey));
+}
 
 function prettyJson(value: unknown): string {
   if (value == null) return "";
@@ -57,6 +135,15 @@ export default function PartnerLogs() {
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const seenIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
+  const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem("partner_portal_metadata_locale") : null;
+    return stored === "en" ? "en" : "pt-BR";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("partner_portal_metadata_locale", metadataLocale);
+  }, [metadataLocale]);
 
   const loadRawHistory = useCallback(async () => {
     try {
@@ -177,6 +264,25 @@ export default function PartnerLogs() {
           Timeline consolidada de tentativas de envio e payloads processados. Abra cada evento para ver request, resposta,
           status, erro e baixar o bruto enviado.
         </p>
+        <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1 mt-3">
+          <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
+          <Button
+            size="sm"
+            variant={metadataLocale === "pt-BR" ? "default" : "ghost"}
+            className="h-6 px-2 text-[11px]"
+            onClick={() => setMetadataLocale("pt-BR")}
+          >
+            PT-BR
+          </Button>
+          <Button
+            size="sm"
+            variant={metadataLocale === "en" ? "default" : "ghost"}
+            className="h-6 px-2 text-[11px]"
+            onClick={() => setMetadataLocale("en")}
+          >
+            EN
+          </Button>
+        </div>
       </div>
 
       <Card className="p-4 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
@@ -348,6 +454,43 @@ export default function PartnerLogs() {
                       <pre className="code-block max-h-64 overflow-auto">{selected.item.requestBody}</pre>
                     </div>
                   ) : null}
+                  {(() => {
+                    const entries = parseCanonicalEntriesFromRequestBody(selected.item.requestBody);
+                    if (entries.length === 0) return null;
+                    return (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {metadataLocale === "en" ? "Canonical interpretation (first item)" : "Interpretação canônica (primeiro item)"}
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {entries.map((entry) => (
+                            <div key={`${entry.canonicalKey}-${entry.rawKeys.join(",")}`} className="rounded border p-2 bg-muted/20">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-[11px] font-medium text-foreground">
+                                  {canonicalLabel(entry.canonicalKey, metadataLocale)}
+                                </p>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button type="button" className="text-muted-foreground hover:text-foreground">
+                                      <Info className="h-3 w-3" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="text-xs max-w-xs">
+                                    {metadataLocale === "en" ? "Original field(s): " : "Campo(s) original(is): "}
+                                    {entry.rawKeys.join(", ")}
+                                    <br />
+                                    {metadataLocale === "en" ? "Official field: " : "Campo oficial: "}
+                                    <code>{entry.canonicalKey}</code>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                              <p className="text-xs text-muted-foreground break-words mt-1">{String(entry.value)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {selected.item.responseBody ? (
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Response recebido</p>
