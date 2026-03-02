@@ -36,6 +36,7 @@ import {
   TerminalSquare,
   Code2,
   Database,
+  Layers,
   ScrollText,
   ExternalLink,
 } from "lucide-react";
@@ -93,6 +94,7 @@ const adminNavItems: NavItem[] = [
   { icon: Search, label: "Search/Analytics", href: "/app/admin/search-analytics" },
   { icon: Users, label: "Usuários", href: "/app/admin/usuarios" },
   { icon: Fingerprint, label: "Identificadores", href: "/app/admin/identificadores" },
+  { icon: Layers, label: "Cadeias de Valor", href: "/app/admin/cadeias-valor" },
   { icon: Database, label: "Payloads Parceiros", href: "/app/admin/payloads-parceiros" },
   { icon: ListTodo, label: "Fila de Jobs", href: "/app/admin/jobs" },
 ];

@@ -740,6 +740,29 @@ export interface CanonicalIdentifierResponse {
   created_at: string;
 }
 
+export interface ValueChainPolicy {
+  id: string;
+  code: string;
+  display_name: string;
+  is_active: boolean;
+  is_test_only: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateValueChainPolicyRequest {
+  code: string;
+  display_name: string;
+  is_active?: boolean;
+  is_test_only?: boolean;
+}
+
+export interface UpdateValueChainPolicyRequest {
+  display_name?: string;
+  is_active?: boolean;
+  is_test_only?: boolean;
+}
+
 export interface CreateCanonicalIdentifierRequest {
   value_chain: string;
   identifier_type: string;
