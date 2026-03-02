@@ -37,7 +37,7 @@ export default function AdminValueChains() {
   const [newIsTestOnly, setNewIsTestOnly] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: rows = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-value-chains"],
     queryFn: () => listValueChainPolicies(false),
   });
@@ -176,6 +176,20 @@ export default function AdminValueChains() {
         <Card>
           <CardContent className="pt-6">
             <Skeleton className="h-28 w-full" />
+          </CardContent>
+        </Card>
+      ) : isError ? (
+        <Card>
+          <CardContent className="pt-6 text-center py-8 space-y-3">
+            <p className="text-sm text-destructive">
+              Falha ao carregar cadeias de valor.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {(error as Error)?.message || "Erro inesperado no endpoint /admin/value-chains."}
+            </p>
+            <Button variant="outline" onClick={() => refetch()}>
+              Tentar novamente
+            </Button>
           </CardContent>
         </Card>
       ) : sortedRows.length === 0 ? (
