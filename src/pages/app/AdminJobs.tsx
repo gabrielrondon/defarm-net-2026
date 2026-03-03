@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getAdminItemPipelineDetail,
   getAdminIngestionsSummary,
   getAdminJobsSummary,
   getAdminPipelineStatus,
@@ -12,6 +13,7 @@ import {
   type AdapterJob,
   type AdapterJobStatus,
 } from "@/lib/api/admin-jobs";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -84,19 +86,52 @@ const STATUS_BADGE: Record<
 export default function AdminJobs() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [statusFilter, setStatusFilter] = useState<"all" | AdapterJobStatus>("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [adapterFilter, setAdapterFilter] = useState("");
-  const [qualityFilter, setQualityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | AdapterJobStatus>(
+    (searchParams.get("status") as "all" | AdapterJobStatus) || "all"
+  );
+  const [priorityFilter, setPriorityFilter] = useState(
+    searchParams.get("priority") || "all"
+  );
+  const [adapterFilter, setAdapterFilter] = useState(searchParams.get("adapter") || "");
+  const [qualityFilter, setQualityFilter] = useState(
+    searchParams.get("quality") || "all"
+  );
+  const [errorContainsFilter, setErrorContainsFilter] = useState(
+    searchParams.get("error") || ""
+  );
   const [selectedJob, setSelectedJob] = useState<AdapterJob | null>(null);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(Number(searchParams.get("page") || 0));
   const pageSize = 50;
+
+  const [pipelineItemInput, setPipelineItemInput] = useState("");
+  const [pipelineLookupItemId, setPipelineLookupItemId] = useState<string | null>(null);
 
   const [batchStatus, setBatchStatus] = useState("failed");
   const [batchAdapter, setBatchAdapter] = useState("");
+  const [batchQuality, setBatchQuality] = useState("all");
   const [batchPriority, setBatchPriority] = useState("2");
   const [batchLimit, setBatchLimit] = useState("200");
+
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (statusFilter !== "all") next.set("status", statusFilter);
+    if (priorityFilter !== "all") next.set("priority", priorityFilter);
+    if (adapterFilter.trim()) next.set("adapter", adapterFilter.trim());
+    if (qualityFilter !== "all") next.set("quality", qualityFilter);
+    if (errorContainsFilter.trim()) next.set("error", errorContainsFilter.trim());
+    if (page > 0) next.set("page", String(page));
+    setSearchParams(next, { replace: true });
+  }, [
+    statusFilter,
+    priorityFilter,
+    adapterFilter,
+    qualityFilter,
+    errorContainsFilter,
+    page,
+    setSearchParams,
+  ]);
 
   const jobsQuery = useQuery({
     queryKey: [
@@ -105,6 +140,7 @@ export default function AdminJobs() {
       priorityFilter,
       adapterFilter,
       qualityFilter,
+      errorContainsFilter,
       page,
       pageSize,
     ],
@@ -121,6 +157,7 @@ export default function AdminJobs() {
               : undefined,
         missing_stellar: qualityFilter === "missing_stellar" ? true : undefined,
         missing_ipfs: qualityFilter === "missing_ipfs" ? true : undefined,
+        error_contains: errorContainsFilter.trim() || undefined,
         limit: pageSize,
         offset: page * pageSize,
       }),
@@ -155,6 +192,13 @@ export default function AdminJobs() {
     queryKey: ["admin-ingestions-summary"],
     queryFn: getAdminIngestionsSummary,
     refetchInterval: 15000,
+  });
+
+  const pipelineLookupQuery = useQuery({
+    queryKey: ["admin-item-pipeline", pipelineLookupItemId],
+    queryFn: () => getAdminItemPipelineDetail(pipelineLookupItemId as string),
+    enabled: !!pipelineLookupItemId,
+    retry: 1,
   });
 
   const retryMutation = useMutation({
@@ -196,13 +240,30 @@ export default function AdminJobs() {
   });
 
   const jobs = jobsQuery.data?.data ?? [];
-  const hasNextPage = jobs.length === pageSize;
+  const jobsTotal = jobsQuery.data?.total ?? 0;
+  const hasNextPage = (page + 1) * pageSize < jobsTotal;
   const hasPreviousPage = page > 0;
+  const startRow = jobsTotal === 0 ? 0 : page * pageSize + 1;
+  const endRow = page * pageSize + jobs.length;
   const activeQueueNames = useMemo(
     () => new Set(queueQuery.data?.active_queues ?? []),
     [queueQuery.data?.active_queues]
   );
   const summary = summaryQuery.data?.summary;
+
+  const handleRetryJob = (job: AdapterJob) => {
+    const status = job.status ?? "pending";
+    const isForce = status === "completed";
+    if (
+      isForce &&
+      !window.confirm(
+        "Este job está completed. Reenfileirar com force=true pode gerar nova tentativa de publicação. Deseja continuar?"
+      )
+    ) {
+      return;
+    }
+    retryMutation.mutate({ jobId: job.id, force: isForce });
+  };
 
   return (
     <div className="space-y-6">
@@ -309,6 +370,11 @@ export default function AdminJobs() {
                   {pipelineStatusQuery.data?.pipeline.stuck.pending_confirmation ?? 0}
                 </strong>
               </div>
+              {(pipelineStatusQuery.data?.pipeline.stuck.pending_confirmation ?? 0) > 0 && (
+                <div className="rounded border border-yellow-500/40 bg-yellow-50/40 p-3 text-xs text-yellow-900">
+                  Há anchors em <strong>pending_confirmation</strong>. Se permanecer alto por muito tempo, validar listener/confirmador.
+                </div>
+              )}
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">Top errors</p>
                 {pipelineStatusQuery.data?.errors.top?.length ? (
@@ -319,7 +385,22 @@ export default function AdminJobs() {
                         className="flex items-start justify-between gap-2 text-xs rounded border px-2 py-1"
                       >
                         <span className="text-muted-foreground break-all">{row.error}</span>
-                        <Badge variant="outline">{row.count}</Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline">{row.count}</Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-[10px]"
+                            onClick={() => {
+                              setStatusFilter("completed");
+                              setQualityFilter("has_errors");
+                              setErrorContainsFilter(row.error);
+                              setPage(0);
+                            }}
+                          >
+                            Filtrar
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -367,7 +448,80 @@ export default function AdminJobs() {
                   value={String(ingestionsSummaryQuery.data?.total_events_created ?? 0)}
                 />
               </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Recentes</p>
+                {(ingestionsSummaryQuery.data?.recent?.length ?? 0) === 0 ? (
+                  <p className="text-xs text-muted-foreground">Sem ingestions recentes.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {ingestionsSummaryQuery.data?.recent.slice(0, 5).map((row) => (
+                      <div
+                        key={row.id}
+                        className="grid grid-cols-1 md:grid-cols-6 gap-2 rounded border p-2 text-xs"
+                      >
+                        <span className="font-mono text-muted-foreground">{shortUuid(row.id)}</span>
+                        <span>{row.status}</span>
+                        <span>rows: {row.rows_total}</span>
+                        <span>created: {row.items_created}</span>
+                        <span>updated: {row.items_updated}</span>
+                        <span>{formatTs(row.created_at)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Lookup pipeline por item</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              value={pipelineItemInput}
+              onChange={(e) => setPipelineItemInput(e.target.value)}
+              placeholder="item_id (UUID)"
+            />
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (!pipelineItemInput.trim()) return;
+                setPipelineLookupItemId(pipelineItemInput.trim());
+              }}
+            >
+              Buscar
+            </Button>
+          </div>
+          {pipelineLookupQuery.isLoading && <Skeleton className="h-20 w-full" />}
+          {pipelineLookupQuery.isError && pipelineLookupItemId && (
+            <p className="text-xs text-destructive">
+              Item não encontrado no pipeline ou erro ao consultar.
+            </p>
+          )}
+          {pipelineLookupQuery.data && (
+            <div className="rounded border p-3 text-xs space-y-2">
+              <p className="font-medium text-foreground">
+                {pipelineLookupQuery.data.value_chain} • {pipelineLookupQuery.data.dfid}
+              </p>
+              <p className="text-muted-foreground">
+                fully_tokenized:{" "}
+                <strong>{pipelineLookupQuery.data.stages.fully_tokenized ? "true" : "false"}</strong>
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <KeyValue
+                  label="IPFS"
+                  value={`${pipelineLookupQuery.data.stages.ipfs.status}${pipelineLookupQuery.data.stages.ipfs.cid ? ` • ${pipelineLookupQuery.data.stages.ipfs.cid}` : ""}`}
+                />
+                <KeyValue
+                  label="Stellar"
+                  value={`${pipelineLookupQuery.data.stages.stellar.status}${pipelineLookupQuery.data.stages.stellar.tx_hash ? ` • ${pipelineLookupQuery.data.stages.stellar.tx_hash.slice(0, 12)}…` : ""}`}
+                />
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -470,6 +624,9 @@ export default function AdminJobs() {
                   value={String(queueQuery.data?.xlm_low_balance_threshold ?? 0)}
                 />
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Atualizado em {queueQuery.dataUpdatedAt ? formatTs(new Date(queueQuery.dataUpdatedAt).toISOString()) : "-"}
+              </p>
             </>
           )}
         </CardContent>
@@ -500,6 +657,18 @@ export default function AdminJobs() {
             />
           </div>
           <div>
+            <Label className="text-xs text-muted-foreground">Qualidade</Label>
+            <Select value={batchQuality} onValueChange={setBatchQuality}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="has_errors">Com erros</SelectItem>
+                <SelectItem value="missing_stellar">Sem Stellar</SelectItem>
+                <SelectItem value="missing_ipfs">Sem IPFS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label className="text-xs text-muted-foreground">Prioridade destino</Label>
             <Select value={batchPriority} onValueChange={setBatchPriority}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -528,6 +697,9 @@ export default function AdminJobs() {
                   filter: {
                     status: batchStatus || undefined,
                     adapter: batchAdapter.trim() || undefined,
+                    has_errors: batchQuality === "has_errors" ? true : undefined,
+                    missing_stellar: batchQuality === "missing_stellar" ? true : undefined,
+                    missing_ipfs: batchQuality === "missing_ipfs" ? true : undefined,
                   },
                   priority: Number(batchPriority),
                   limit: Number(batchLimit) || 200,
@@ -550,7 +722,7 @@ export default function AdminJobs() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filtros de Jobs</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs text-muted-foreground">Status</Label>
             <Select
@@ -619,12 +791,23 @@ export default function AdminJobs() {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Erro contém</Label>
+            <Input
+              value={errorContainsFilter}
+              onChange={(e) => {
+                setErrorContainsFilter(e.target.value);
+                setPage(0);
+              }}
+              placeholder="op_low_reserve, timeout, ..."
+            />
+          </div>
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          Página {page + 1} • {jobs.length} job(s) carregados
+          Página {page + 1} • exibindo {startRow}-{endRow} de {jobsTotal}
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -752,12 +935,7 @@ export default function AdminJobs() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-primary"
-                                onClick={() =>
-                                  retryMutation.mutate({
-                                    jobId: job.id,
-                                    force: status === "completed",
-                                  })
-                                }
+                                onClick={() => handleRetryJob(job)}
                                 disabled={retryMutation.isPending}
                               >
                                 <RotateCcw className="h-4 w-4" />
@@ -817,12 +995,7 @@ export default function AdminJobs() {
             {(selectedJob.status === "failed" || selectedJob.status === "completed") && (
               <Button
                 className="w-full"
-                onClick={() =>
-                  retryMutation.mutate({
-                    jobId: selectedJob.id,
-                    force: selectedJob.status === "completed",
-                  })
-                }
+                onClick={() => handleRetryJob(selectedJob)}
                 disabled={retryMutation.isPending}
               >
                 <RotateCcw className="h-4 w-4 mr-2" />

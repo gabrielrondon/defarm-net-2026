@@ -32,6 +32,7 @@ export interface AdapterJob {
 
 export interface JobsListResponse {
   data: AdapterJob[];
+  total: number;
   limit: number;
   offset: number;
 }
@@ -65,6 +66,8 @@ export interface RetryBatchRequest {
     adapter?: string;
     has_errors?: boolean;
     item_ids?: string[];
+    missing_stellar?: boolean;
+    missing_ipfs?: boolean;
   };
   priority?: number;
   limit?: number;
@@ -193,6 +196,7 @@ export async function listAdminJobs(params?: {
   has_errors?: boolean;
   missing_stellar?: boolean;
   missing_ipfs?: boolean;
+  error_contains?: string;
   limit?: number;
   offset?: number;
 }): Promise<JobsListResponse> {

@@ -4102,6 +4102,7 @@ components:
       type: object
       required:
       - data
+      - total
       - limit
       - offset
       properties:
@@ -4109,6 +4110,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdapterJobRecord'
+        total:
+          type: integer
+          format: int64
         limit:
           type: integer
           format: int64
@@ -4266,6 +4270,10 @@ components:
               items:
                 type: string
                 format: uuid
+            missing_stellar:
+              type: boolean
+            missing_ipfs:
+              type: boolean
         priority:
           type: integer
           format: int32
@@ -6881,6 +6889,11 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: error_contains
+        in: query
+        required: false
+        schema:
+          type: string
       - name: limit
         in: query
         required: false
