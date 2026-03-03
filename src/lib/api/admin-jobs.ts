@@ -97,18 +97,35 @@ export async function getAdminJob(jobId: string): Promise<AdapterJob> {
 }
 
 export async function retryAdminJob(jobId: string): Promise<void> {
-  await registryRequest<void>(`/adapter/admin/jobs/${jobId}/retry`, {
-    method: "POST",
-  });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+  try {
+    await registryRequest<void>(`/adapter/admin/jobs/${jobId}/retry`, {
+      method: "POST",
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 export async function retryAdminJobsBatch(
   body: RetryBatchRequest
 ): Promise<RetryBatchResponse> {
-  return registryRequest<RetryBatchResponse>("/adapter/admin/jobs/retry-batch", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+  try {
+    return await registryRequest<RetryBatchResponse>(
+      "/adapter/admin/jobs/retry-batch",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      }
+    );
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 export async function getAdminQueueStatus(): Promise<QueueStatusResponse> {

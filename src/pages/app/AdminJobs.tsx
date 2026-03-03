@@ -86,6 +86,8 @@ export default function AdminJobs() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [adapterFilter, setAdapterFilter] = useState("");
   const [selectedJob, setSelectedJob] = useState<AdapterJob | null>(null);
+  const [page, setPage] = useState(0);
+  const pageSize = 50;
 
   const [batchStatus, setBatchStatus] = useState("failed");
   const [batchAdapter, setBatchAdapter] = useState("");
@@ -93,14 +95,14 @@ export default function AdminJobs() {
   const [batchLimit, setBatchLimit] = useState("200");
 
   const jobsQuery = useQuery({
-    queryKey: ["admin-jobs", statusFilter, priorityFilter, adapterFilter],
+    queryKey: ["admin-jobs", statusFilter, priorityFilter, adapterFilter, page, pageSize],
     queryFn: () =>
       listAdminJobs({
         status: statusFilter === "all" ? undefined : statusFilter,
         priority: priorityFilter === "all" ? undefined : Number(priorityFilter),
         adapter: adapterFilter.trim() || undefined,
-        limit: 100,
-        offset: 0,
+        limit: pageSize,
+        offset: page * pageSize,
       }),
     refetchInterval: 10000,
   });
@@ -126,7 +128,10 @@ export default function AdminJobs() {
     onError: (err: any) =>
       toast({
         title: "Erro ao reprocessar job",
-        description: err.message,
+        description:
+          err.name === "AbortError"
+            ? "Timeout no retry de job (30s). Tente novamente."
+            : err.message,
         variant: "destructive",
       }),
   });
@@ -143,12 +148,17 @@ export default function AdminJobs() {
     onError: (err: any) =>
       toast({
         title: "Erro no retry em lote",
-        description: err.message,
+        description:
+          err.name === "AbortError"
+            ? "Timeout no retry em lote (30s). Tente novamente com limite menor."
+            : err.message,
         variant: "destructive",
       }),
   });
 
   const jobs = jobsQuery.data?.data ?? [];
+  const hasNextPage = jobs.length === pageSize;
+  const hasPreviousPage = page > 0;
   const activeQueueNames = useMemo(
     () => new Set(queueQuery.data?.active_queues ?? []),
     [queueQuery.data?.active_queues]
@@ -209,6 +219,11 @@ export default function AdminJobs() {
         <CardContent className="space-y-4">
           {queueQuery.isLoading ? (
             <Skeleton className="h-24 w-full" />
+          ) : queueQuery.isError ? (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+              Falha ao carregar filas/saldo XLM. Verifique o endpoint
+              <span className="font-mono"> /v1/adapter/admin/queues</span> e permissões admin.
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -315,7 +330,13 @@ export default function AdminJobs() {
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <Label className="text-xs text-muted-foreground">Status</Label>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | AdapterJobStatus)}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v as "all" | AdapterJobStatus);
+                setPage(0);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map((opt) => (
@@ -328,7 +349,13 @@ export default function AdminJobs() {
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Prioridade</Label>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <Select
+              value={priorityFilter}
+              onValueChange={(v) => {
+                setPriorityFilter(v);
+                setPage(0);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {PRIORITY_OPTIONS.map((opt) => (
@@ -343,12 +370,39 @@ export default function AdminJobs() {
             <Label className="text-xs text-muted-foreground">Adapter</Label>
             <Input
               value={adapterFilter}
-              onChange={(e) => setAdapterFilter(e.target.value)}
+              onChange={(e) => {
+                setAdapterFilter(e.target.value);
+                setPage(0);
+              }}
               placeholder="stellar_mainnet / ipfs_pinata"
             />
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          Página {page + 1} • {jobs.length} job(s) carregados
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasPreviousPage || jobsQuery.isFetching}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasNextPage || jobsQuery.isFetching}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
 
       <Card>
         <CardContent className="p-0">
@@ -469,15 +523,21 @@ export default function AdminJobs() {
               <Row label="Concluído" value={formatTs(selectedJob.completed_at)} />
               {selectedJob.error_message && (
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Erro</p>
-                  <pre className="bg-destructive/10 text-destructive rounded p-3 text-xs whitespace-pre-wrap break-all">
-                    {selectedJob.error_message}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Erro</p>
+                <pre className="bg-destructive/10 text-destructive rounded p-3 text-xs whitespace-pre-wrap break-all">
+                  {selectedJob.error_message}
+                </pre>
+              </div>
+            )}
+            {selectedJob.status === "completed" && (
+              <div className="rounded-md border border-green-500/30 bg-green-500/5 p-3 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">completed</span> =
+                publicação concluída para todos os adapters deste job (ex. Stellar/IPFS).
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
       </Dialog>
     </div>
   );
