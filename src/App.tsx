@@ -136,6 +136,22 @@ function RequireWorkspaceAccess({
   return children;
 }
 
+function RequireExactWorkspaceType({
+  children,
+  expected,
+}: {
+  children: ReactNode;
+  expected: WorkspaceType;
+}) {
+  const { isLoading, isAuthenticated, user } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if ((user?.workspace_type || "producer") !== expected) {
+    return <Navigate to="/app" replace />;
+  }
+  return children;
+}
+
 function WorkspaceHome() {
   const { isLoading, isAuthenticated, user } = useAuth();
   if (isLoading) return null;
@@ -354,9 +370,9 @@ const App = () => (
             <Route
               path="/app/governo/docs"
               element={
-                <RequireWorkspaceAccess allowed={["government"]}>
+                <RequireExactWorkspaceType expected="government">
                   <AppLayout><GovernmentDocs /></AppLayout>
-                </RequireWorkspaceAccess>
+                </RequireExactWorkspaceType>
               }
             />
             

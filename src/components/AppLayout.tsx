@@ -350,7 +350,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 {user?.username}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {user?.email} · {workspaceType}
+                {user?.email} · {user?.is_admin ? `admin · ${workspaceType}` : workspaceType}
               </p>
             </div>
           </div>
