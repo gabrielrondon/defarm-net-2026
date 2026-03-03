@@ -19,6 +19,12 @@ export interface AdapterJob {
   max_retries: number | null;
   next_retry_at: string | null;
   error_message: string | null;
+  result: {
+    blockchain_anchors?: Array<Record<string, any>>;
+    storage_refs?: Array<Record<string, any>>;
+    errors?: string[];
+    [k: string]: any;
+  } | null;
   created_at: string | null;
   updated_at: string | null;
   completed_at: string | null;
@@ -36,17 +42,29 @@ export interface JobsSummary {
   processing: number;
   failed: number;
   completed: number;
+  completed_clean: number;
+  completed_with_errors: number;
   due_retries: number;
 }
 
 export interface JobsSummaryResponse {
   summary: JobsSummary;
+  by_value_chain?: Record<
+    string,
+    {
+      total_items: number;
+      with_stellar: number;
+      with_ipfs: number;
+    }
+  >;
 }
 
 export interface RetryBatchRequest {
   filter: {
     status?: string;
     adapter?: string;
+    has_errors?: boolean;
+    item_ids?: string[];
   };
   priority?: number;
   limit?: number;
@@ -72,12 +90,40 @@ export interface QueueStatusResponse {
   active_queues: string[];
 }
 
+export interface TokenizationHealthResponse {
+  total_items: number;
+  by_value_chain: Record<
+    string,
+    {
+      total: number;
+      stellar_anchored: number;
+      ipfs_pinned: number;
+      fully_tokenized: number;
+      missing_stellar: number;
+      missing_ipfs: number;
+    }
+  >;
+  xlm_balance: number | null;
+  xlm_threshold: number;
+  low_xlm_mode: boolean;
+  queue_depths: {
+    p1: number;
+    p2: number;
+    p3: number;
+    p4: number;
+    total: number;
+  };
+}
+
 export async function listAdminJobs(params?: {
   status?: string;
   adapter?: string;
   item_id?: string;
   circuit_id?: string;
   priority?: number;
+  has_errors?: boolean;
+  missing_stellar?: boolean;
+  missing_ipfs?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<JobsListResponse> {
@@ -85,25 +131,25 @@ export async function listAdminJobs(params?: {
   return registryRequest<JobsListResponse>(`/adapter/admin/jobs${qs}`);
 }
 
-export async function getAdminJobsSummary(): Promise<JobsSummary> {
-  const resp = await registryRequest<JobsSummaryResponse>(
-    "/adapter/admin/jobs/summary"
-  );
-  return resp.summary;
+export async function getAdminJobsSummary(): Promise<JobsSummaryResponse> {
+  return registryRequest<JobsSummaryResponse>("/adapter/admin/jobs/summary");
 }
 
 export async function getAdminJob(jobId: string): Promise<AdapterJob> {
   return registryRequest<AdapterJob>(`/adapter/admin/jobs/${jobId}`);
 }
 
-export async function retryAdminJob(jobId: string): Promise<void> {
+export async function retryAdminJob(jobId: string, force = false): Promise<void> {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 30000);
   try {
-    await registryRequest<void>(`/adapter/admin/jobs/${jobId}/retry`, {
+    await registryRequest<void>(
+      `/adapter/admin/jobs/${jobId}/retry${force ? "?force=true" : ""}`,
+      {
       method: "POST",
       signal: controller.signal,
-    });
+      }
+    );
   } finally {
     window.clearTimeout(timeoutId);
   }
@@ -130,4 +176,10 @@ export async function retryAdminJobsBatch(
 
 export async function getAdminQueueStatus(): Promise<QueueStatusResponse> {
   return registryRequest<QueueStatusResponse>("/adapter/admin/queues");
+}
+
+export async function getAdminTokenizationHealth(): Promise<TokenizationHealthResponse> {
+  return registryRequest<TokenizationHealthResponse>(
+    "/adapter/admin/tokenization-health"
+  );
 }

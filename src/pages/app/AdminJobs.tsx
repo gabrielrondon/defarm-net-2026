@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getAdminJobsSummary,
   getAdminQueueStatus,
+  getAdminTokenizationHealth,
   listAdminJobs,
   retryAdminJob,
   retryAdminJobsBatch,
@@ -85,6 +86,7 @@ export default function AdminJobs() {
   const [statusFilter, setStatusFilter] = useState<"all" | AdapterJobStatus>("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [adapterFilter, setAdapterFilter] = useState("");
+  const [qualityFilter, setQualityFilter] = useState("all");
   const [selectedJob, setSelectedJob] = useState<AdapterJob | null>(null);
   const [page, setPage] = useState(0);
   const pageSize = 50;
@@ -95,12 +97,28 @@ export default function AdminJobs() {
   const [batchLimit, setBatchLimit] = useState("200");
 
   const jobsQuery = useQuery({
-    queryKey: ["admin-jobs", statusFilter, priorityFilter, adapterFilter, page, pageSize],
+    queryKey: [
+      "admin-jobs",
+      statusFilter,
+      priorityFilter,
+      adapterFilter,
+      qualityFilter,
+      page,
+      pageSize,
+    ],
     queryFn: () =>
       listAdminJobs({
         status: statusFilter === "all" ? undefined : statusFilter,
         priority: priorityFilter === "all" ? undefined : Number(priorityFilter),
         adapter: adapterFilter.trim() || undefined,
+        has_errors:
+          qualityFilter === "has_errors"
+            ? true
+            : qualityFilter === "clean"
+              ? false
+              : undefined,
+        missing_stellar: qualityFilter === "missing_stellar" ? true : undefined,
+        missing_ipfs: qualityFilter === "missing_ipfs" ? true : undefined,
         limit: pageSize,
         offset: page * pageSize,
       }),
@@ -119,8 +137,15 @@ export default function AdminJobs() {
     refetchInterval: 5000,
   });
 
+  const tokenizationHealthQuery = useQuery({
+    queryKey: ["admin-tokenization-health"],
+    queryFn: getAdminTokenizationHealth,
+    refetchInterval: 15000,
+  });
+
   const retryMutation = useMutation({
-    mutationFn: retryAdminJob,
+    mutationFn: ({ jobId, force }: { jobId: string; force?: boolean }) =>
+      retryAdminJob(jobId, !!force),
     onSuccess: () => {
       invalidateAll(queryClient);
       toast({ title: "Job reenfileirado com sucesso" });
@@ -163,6 +188,7 @@ export default function AdminJobs() {
     () => new Set(queueQuery.data?.active_queues ?? []),
     [queueQuery.data?.active_queues]
   );
+  const summary = summaryQuery.data?.summary;
 
   return (
     <div className="space-y-6">
@@ -204,13 +230,76 @@ export default function AdminJobs() {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <SummaryCard icon={Layers} label="Total" value={sumSummary(summaryQuery.data)} />
-        <SummaryCard icon={Clock} label="Pendentes" value={summaryQuery.data?.pending ?? 0} color="text-yellow-500" />
-        <SummaryCard icon={Clock} label="Agendados" value={summaryQuery.data?.scheduled ?? 0} color="text-amber-500" />
-        <SummaryCard icon={Loader2} label="Processando" value={summaryQuery.data?.processing ?? 0} color="text-blue-500" />
-        <SummaryCard icon={CheckCircle} label="Completos" value={summaryQuery.data?.completed ?? 0} color="text-green-500" />
-        <SummaryCard icon={XCircle} label="Falharam" value={summaryQuery.data?.failed ?? 0} color="text-destructive" />
+        <SummaryCard icon={Layers} label="Total" value={sumSummary(summary)} />
+        <SummaryCard icon={CheckCircle} label="Completos limpos" value={summary?.completed_clean ?? 0} color="text-green-500" />
+        <SummaryCard icon={AlertTriangle} label="Completos c/ erro" value={summary?.completed_with_errors ?? 0} color="text-amber-500" />
+        <SummaryCard icon={Clock} label="Pendentes" value={summary?.pending ?? 0} color="text-yellow-500" />
+        <SummaryCard icon={Loader2} label="Processando" value={summary?.processing ?? 0} color="text-blue-500" />
+        <SummaryCard icon={XCircle} label="Falharam" value={summary?.failed ?? 0} color="text-destructive" />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Saúde de tokenização por cadeia</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {tokenizationHealthQuery.isLoading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : tokenizationHealthQuery.isError ? (
+            <p className="text-sm text-destructive">
+              Não foi possível carregar /v1/adapter/admin/tokenization-health.
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Total de itens: {tokenizationHealthQuery.data?.total_items ?? 0}
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {Object.entries(tokenizationHealthQuery.data?.by_value_chain ?? {}).map(
+                  ([chain, row]) => (
+                    <div key={chain} className="rounded border p-3 text-xs space-y-1">
+                      <p className="font-semibold text-sm">{chain}</p>
+                      <p className="text-muted-foreground">
+                        total: {row.total} • full: {row.fully_tokenized}
+                      </p>
+                      <p className="text-muted-foreground">
+                        missing_stellar: {row.missing_stellar} • missing_ipfs: {row.missing_ipfs}
+                      </p>
+                    </div>
+                  )
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    retryBatchMutation.mutate({
+                      filter: { status: "completed", has_errors: true },
+                      priority: 4,
+                      limit: 500,
+                    })
+                  }
+                  disabled={retryBatchMutation.isPending}
+                >
+                  Reenfileirar completos com erro (P4)
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter("completed");
+                    setQualityFilter("has_errors");
+                    setPage(0);
+                  }}
+                >
+                  Ver somente completos com erro
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -327,7 +416,7 @@ export default function AdminJobs() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filtros de Jobs</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <Label className="text-xs text-muted-foreground">Status</Label>
             <Select
@@ -377,6 +466,25 @@ export default function AdminJobs() {
               placeholder="stellar_mainnet / ipfs_pinata"
             />
           </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Qualidade</Label>
+            <Select
+              value={qualityFilter}
+              onValueChange={(v) => {
+                setQualityFilter(v);
+                setPage(0);
+              }}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="has_errors">Com erros no result</SelectItem>
+                <SelectItem value="clean">Sem erros no result</SelectItem>
+                <SelectItem value="missing_stellar">Sem âncora Stellar</SelectItem>
+                <SelectItem value="missing_ipfs">Sem CID IPFS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
@@ -423,6 +531,7 @@ export default function AdminJobs() {
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Adapter(s)</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Priority</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Qualidade</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tentativas</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Criado</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">Ações</th>
@@ -437,6 +546,15 @@ export default function AdminJobs() {
                     const created = job.created_at
                       ? new Date(job.created_at).toLocaleString("pt-BR")
                       : "-";
+                    const resultErrors = Array.isArray(job.result?.errors)
+                      ? job.result?.errors.length
+                      : 0;
+                    const hasStellar =
+                      Array.isArray(job.result?.blockchain_anchors) &&
+                      job.result.blockchain_anchors.length > 0;
+                    const hasIpfs =
+                      Array.isArray(job.result?.storage_refs) &&
+                      job.result.storage_refs.length > 0;
                     return (
                       <tr
                         key={job.id}
@@ -465,6 +583,22 @@ export default function AdminJobs() {
                             {status}
                           </Badge>
                         </td>
+                        <td className="px-4 py-3">
+                          {status === "completed" ? (
+                            <Badge
+                              variant={resultErrors > 0 ? "destructive" : "outline"}
+                              className="text-[11px]"
+                            >
+                              {resultErrors > 0
+                                ? `parcial (${resultErrors} erro${resultErrors > 1 ? "s" : ""})`
+                                : hasStellar && hasIpfs
+                                  ? "ok (stellar+ipfs)"
+                                  : "incompleto"}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-center">{attempts}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{created}</td>
                         <td className="px-4 py-3 text-right">
@@ -477,12 +611,19 @@ export default function AdminJobs() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {(status === "failed" || status === "retrying") && (
+                            {(status === "failed" ||
+                              status === "retrying" ||
+                              status === "completed") && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-primary"
-                                onClick={() => retryMutation.mutate(job.id)}
+                                onClick={() =>
+                                  retryMutation.mutate({
+                                    jobId: job.id,
+                                    force: status === "completed",
+                                  })
+                                }
                                 disabled={retryMutation.isPending}
                               >
                                 <RotateCcw className="h-4 w-4" />
@@ -521,6 +662,10 @@ export default function AdminJobs() {
               <Row label="Atualizado" value={formatTs(selectedJob.updated_at)} />
               <Row label="Próximo retry" value={formatTs(selectedJob.next_retry_at)} />
               <Row label="Concluído" value={formatTs(selectedJob.completed_at)} />
+              <Row
+                label="Erros no result"
+                value={String(Array.isArray(selectedJob.result?.errors) ? selectedJob.result.errors.length : 0)}
+              />
               {selectedJob.error_message && (
                 <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1">Erro</p>
@@ -532,7 +677,32 @@ export default function AdminJobs() {
             {selectedJob.status === "completed" && (
               <div className="rounded-md border border-green-500/30 bg-green-500/5 p-3 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">completed</span> =
-                publicação concluída para todos os adapters deste job (ex. Stellar/IPFS).
+                processamento finalizado; valide `result.errors`, anchors Stellar e CIDs IPFS para saber se foi full ou parcial.
+              </div>
+            )}
+            {(selectedJob.status === "failed" || selectedJob.status === "completed") && (
+              <Button
+                className="w-full"
+                onClick={() =>
+                  retryMutation.mutate({
+                    jobId: selectedJob.id,
+                    force: selectedJob.status === "completed",
+                  })
+                }
+                disabled={retryMutation.isPending}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reenfileirar {selectedJob.status === "completed" ? "(force=true)" : ""}
+              </Button>
+            )}
+            {Array.isArray(selectedJob.result?.errors) && selectedJob.result.errors.length > 0 && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                <p className="text-xs font-medium text-destructive mb-1">Erros do result</p>
+                <ul className="text-xs text-destructive list-disc ml-4 space-y-1">
+                  {selectedJob.result.errors.slice(0, 8).map((err, idx) => (
+                    <li key={`${idx}-${err}`}>{err}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
@@ -557,6 +727,7 @@ function sumSummary(summary?: {
 function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
   queryClient.invalidateQueries({ queryKey: ["admin-jobs-summary"] });
+  queryClient.invalidateQueries({ queryKey: ["admin-tokenization-health"] });
   queryClient.invalidateQueries({ queryKey: ["admin-queues"] });
 }
 

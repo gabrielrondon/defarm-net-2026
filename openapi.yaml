@@ -4081,6 +4081,10 @@ components:
         error_message:
           type: string
           nullable: true
+        result:
+          type: object
+          nullable: true
+          additionalProperties: true
         created_at:
           type: string
           format: date-time
@@ -4135,6 +4139,8 @@ components:
       - processing
       - failed
       - completed
+      - completed_clean
+      - completed_with_errors
       - due_retries
       properties:
         pending:
@@ -4152,7 +4158,30 @@ components:
         completed:
           type: integer
           format: int64
+        completed_clean:
+          type: integer
+          format: int64
+        completed_with_errors:
+          type: integer
+          format: int64
         due_retries:
+          type: integer
+          format: int64
+    AdapterAdminValueChainSummary:
+      description: Aggregation by value chain.
+      type: object
+      required:
+      - total_items
+      - with_stellar
+      - with_ipfs
+      properties:
+        total_items:
+          type: integer
+          format: int64
+        with_stellar:
+          type: integer
+          format: int64
+        with_ipfs:
           type: integer
           format: int64
     AdapterAdminJobsSummaryResponse:
@@ -4160,9 +4189,14 @@ components:
       type: object
       required:
       - summary
+      - by_value_chain
       properties:
         summary:
           $ref: '#/components/schemas/AdapterAdminJobSummary'
+        by_value_chain:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AdapterAdminValueChainSummary'
     AdapterAdminQueueDepths:
       description: Redis queue depths by priority.
       type: object
@@ -4225,6 +4259,13 @@ components:
               type: string
             adapter:
               type: string
+            has_errors:
+              type: boolean
+            item_ids:
+              type: array
+              items:
+                type: string
+                format: uuid
         priority:
           type: integer
           format: int32
@@ -4253,6 +4294,63 @@ components:
         priority:
           type: integer
           format: int32
+    AdapterAdminTokenizationHealthValueChain:
+      description: Tokenization health counters for a value chain.
+      type: object
+      required:
+      - total
+      - stellar_anchored
+      - ipfs_pinned
+      - fully_tokenized
+      - missing_stellar
+      - missing_ipfs
+      properties:
+        total:
+          type: integer
+          format: int64
+        stellar_anchored:
+          type: integer
+          format: int64
+        ipfs_pinned:
+          type: integer
+          format: int64
+        fully_tokenized:
+          type: integer
+          format: int64
+        missing_stellar:
+          type: integer
+          format: int64
+        missing_ipfs:
+          type: integer
+          format: int64
+    AdapterAdminTokenizationHealthResponse:
+      description: Consolidated tokenization health across value chains.
+      type: object
+      required:
+      - total_items
+      - by_value_chain
+      - xlm_threshold
+      - low_xlm_mode
+      - queue_depths
+      properties:
+        total_items:
+          type: integer
+          format: int64
+        by_value_chain:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AdapterAdminTokenizationHealthValueChain'
+        xlm_balance:
+          type: number
+          format: double
+          nullable: true
+        xlm_threshold:
+          type: number
+          format: double
+        low_xlm_mode:
+          type: boolean
+        queue_depths:
+          $ref: '#/components/schemas/AdapterAdminQueueDepths'
     HealthResponse:
       description: System health status response including component statuses.
       type: object
@@ -6481,6 +6579,21 @@ paths:
           format: int32
           minimum: 1
           maximum: 4
+      - name: has_errors
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: missing_stellar
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: missing_ipfs
+        in: query
+        required: false
+        schema:
+          type: boolean
       - name: limit
         in: query
         required: false
@@ -6545,7 +6658,18 @@ paths:
                   processing: 1
                   failed: 4
                   completed: 120
+                  completed_clean: 100
+                  completed_with_errors: 20
                   due_retries: 1
+                by_value_chain:
+                  BEEF:
+                    total_items: 250
+                    with_stellar: 240
+                    with_ipfs: 250
+                  DEFARM:
+                    total_items: 9800
+                    with_stellar: 1300
+                    with_ipfs: 9800
         '401':
           description: Unauthorized
         '500':
@@ -6580,6 +6704,25 @@ paths:
                 - adapter_jobs:p2
                 - adapter_jobs:p3
                 - adapter_jobs:p4
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/tokenization-health:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get consolidated tokenization health (admin)
+      description: Aggregates stellar/ipfs coverage by value_chain with queue and XLM context.
+      operationId: getAdapterAdminTokenizationHealth
+      responses:
+        '200':
+          description: Tokenization health snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminTokenizationHealthResponse'
         '401':
           description: Unauthorized
         '500':
@@ -6678,6 +6821,11 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: force
+        in: query
+        required: false
+        schema:
+          type: boolean
       responses:
         '202':
           description: Job re-queued
