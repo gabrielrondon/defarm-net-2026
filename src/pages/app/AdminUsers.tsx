@@ -102,12 +102,12 @@ export default function AdminUsers() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [usersResp, adminsResp, wsResp, trustResp] = await Promise.all([
+      const [usersResp, adminsResp, wsResp] = await Promise.all([
         listAdminUsers(),
         listAdmins(),
         listWorkspaces(),
-        listWorkspaceTrustProfiles(),
       ]);
+      const trustResp = await listWorkspaceTrustProfiles().catch(() => [] as WorkspaceTrustProfile[]);
       setUsers(usersResp);
       setAdmins(adminsResp);
       setWorkspaces(wsResp);
