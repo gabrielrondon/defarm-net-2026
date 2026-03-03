@@ -34,6 +34,7 @@ import {
   subscribeLog,
   type PartnerRequestLogEntry,
 } from "@/lib/api/partner-request-log";
+import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
 
 type MetadataLocale = "pt-BR" | "en";
 type FieldDef = { canonical: string; aliases: string[]; labels: Record<MetadataLocale, string> };
@@ -101,15 +102,7 @@ export function PartnerIntake() {
   const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
   const [logEntries, setLogEntries] = useState<PartnerRequestLogEntry[]>(getLogEntries);
   const [logExpanded, setLogExpanded] = useState(false);
-  const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem("partner_portal_metadata_locale") : null;
-    return stored === "en" ? "en" : "pt-BR";
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("partner_portal_metadata_locale", metadataLocale);
-  }, [metadataLocale]);
+  const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
 
   useEffect(() => {
     return subscribeLog(() => setLogEntries(getLogEntries()));
@@ -367,7 +360,9 @@ export function PartnerIntake() {
     <div className="space-y-6">
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-base font-semibold">Ingestão Inteligente (staging)</h3>
+          <h3 className="text-base font-semibold">
+            {metadataLocale === "en" ? "Smart ingestion (staging)" : "Ingestão Inteligente (staging)"}
+          </h3>
           <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1">
             <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
             <Button
@@ -389,7 +384,9 @@ export function PartnerIntake() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Padrão da API: enviar <code>application/json</code> no body da requisição. Como alternativa, também aceitamos arquivo CSV/JSON.
+          {metadataLocale === "en"
+            ? <>API default: send <code>application/json</code> in request body. As alternative, CSV/JSON files are also accepted.</>
+            : <>Padrão da API: enviar <code>application/json</code> no body da requisição. Como alternativa, também aceitamos arquivo CSV/JSON.</>}
         </p>
         <p className="text-xs text-muted-foreground">
           Guia oficial:{" "}
@@ -412,10 +409,14 @@ export function PartnerIntake() {
           </a>
         </p>
         <p className="text-xs text-muted-foreground">
-          Recomendado em produção: enviar em chunks de 50-150 linhas por request. Em login JWT, o circuito de staging é opcional (usamos o padrão quando omitido).
+          {metadataLocale === "en"
+            ? "Production recommendation: send chunks of 50-150 rows per request. With JWT login, staging circuit is optional (default is inferred)."
+            : "Recomendado em produção: enviar em chunks de 50-150 linhas por request. Em login JWT, o circuito de staging é opcional (usamos o padrão quando omitido)."}
         </p>
         <p className="text-xs text-muted-foreground">
-          Template é opcional. Use apenas quando precisar mapear nomes de colunas diferentes do padrão DeFarm.
+          {metadataLocale === "en"
+            ? "Template is optional. Use only when you need column names different from the DeFarm standard."
+            : "Template é opcional. Use apenas quando precisar mapear nomes de colunas diferentes do padrão DeFarm."}
         </p>
         <div className="rounded-lg border p-3 bg-muted/20">
           <p className="text-xs font-medium mb-2">
@@ -443,7 +444,7 @@ export function PartnerIntake() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
-            <SelectTrigger><SelectValue placeholder="Circuito de staging" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={metadataLocale === "en" ? "Staging circuit" : "Circuito de staging"} /></SelectTrigger>
             <SelectContent>
               {circuits.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -451,17 +452,19 @@ export function PartnerIntake() {
             </SelectContent>
           </Select>
           <Select value={intakeInputMode} onValueChange={(value: "json" | "file") => setIntakeInputMode(value)}>
-            <SelectTrigger><SelectValue placeholder="Modo de entrada" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={metadataLocale === "en" ? "Input mode" : "Modo de entrada"} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="json">application/json no body (padrão)</SelectItem>
-              <SelectItem value="file">Arquivo CSV/JSON (alternativo)</SelectItem>
+              <SelectItem value="json">{metadataLocale === "en" ? "application/json in body (default)" : "application/json no body (padrão)"}</SelectItem>
+              <SelectItem value="file">{metadataLocale === "en" ? "CSV/JSON file (alternative)" : "Arquivo CSV/JSON (alternativo)"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {intakeInputMode === "json" ? (
           <label className="block border rounded-md p-3">
-            <p className="text-xs font-medium mb-2">Body JSON (Content-Type: application/json)</p>
+            <p className="text-xs font-medium mb-2">
+              {metadataLocale === "en" ? "JSON body (Content-Type: application/json)" : "Body JSON (Content-Type: application/json)"}
+            </p>
             <textarea
               value={jsonBodyText}
               onChange={(e) => setJsonBodyText(e.target.value)}
@@ -472,7 +475,7 @@ export function PartnerIntake() {
         ) : (
           <label className="border rounded-md px-3 py-2 text-sm flex items-center gap-2 cursor-pointer">
             <FileUp className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate">{file?.name || "Selecionar arquivo (CSV/JSON)"}</span>
+            <span className="truncate">{file?.name || (metadataLocale === "en" ? "Select file (CSV/JSON)" : "Selecionar arquivo (CSV/JSON)")}</span>
             <input
               type="file"
               className="hidden"
@@ -498,10 +501,10 @@ export function PartnerIntake() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={runPreviewNow} disabled={(intakeInputMode === "file" ? !file : !jsonBodyText.trim()) || previewing || sending}>
-              {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Executar preview"}
+              {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : (metadataLocale === "en" ? "Run preview" : "Executar preview")}
             </Button>
             <Button variant="outline" onClick={onSubmit} disabled={(intakeInputMode === "file" ? !file : !jsonBodyText.trim()) || sending}>
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar de verdade"}
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (metadataLocale === "en" ? "Send for real" : "Enviar de verdade")}
             </Button>
           </div>
 

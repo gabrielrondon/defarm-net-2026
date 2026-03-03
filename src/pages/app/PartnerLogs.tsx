@@ -19,6 +19,7 @@ import {
 } from "@/lib/api/partner-request-log";
 import { listRawPayloads, downloadRawPayload, type RawPayloadSummary } from "@/lib/api/partner-routing";
 import { Download, ExternalLink, Info, Languages, Loader2, Radio, ScrollText, Trash2, Webhook } from "lucide-react";
+import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
 
 type TimelineEntry =
   | { source: "api"; id: string; ts: string; item: PartnerRequestLogEntry }
@@ -123,6 +124,7 @@ function buildRawPayloadSummary(row: RawPayloadSummary): string {
 
 export default function PartnerLogs() {
   const { toast } = useToast();
+  const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
   const [loading, setLoading] = useState(true);
   const [rawHistory, setRawHistory] = useState<RawPayloadSummary[]>([]);
   const [localLogs, setLocalLogs] = useState<PartnerRequestLogEntry[]>(getLogEntries);
@@ -135,15 +137,6 @@ export default function PartnerLogs() {
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const seenIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
-  const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem("partner_portal_metadata_locale") : null;
-    return stored === "en" ? "en" : "pt-BR";
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("partner_portal_metadata_locale", metadataLocale);
-  }, [metadataLocale]);
 
   const loadRawHistory = useCallback(async () => {
     try {
@@ -259,10 +252,11 @@ export default function PartnerLogs() {
     <div className="space-y-6">
       <div>
         <p className="section-label mb-1">Parceiro</p>
-        <h1 className="text-foreground">Logs de Ingestão</h1>
+        <h1 className="text-foreground">{metadataLocale === "en" ? "Ingestion Logs" : "Logs de Ingestão"}</h1>
         <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
-          Timeline consolidada de tentativas de envio e payloads processados. Abra cada evento para ver request, resposta,
-          status, erro e baixar o bruto enviado.
+          {metadataLocale === "en"
+            ? "Consolidated timeline of send attempts and processed payloads. Open each event to inspect request, response, status, errors, and raw download."
+            : "Timeline consolidada de tentativas de envio e payloads processados. Abra cada evento para ver request, resposta, status, erro e baixar o bruto enviado."}
         </p>
         <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1 mt-3">
           <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
@@ -288,18 +282,20 @@ export default function PartnerLogs() {
       <Card className="p-4 flex flex-col md:flex-row md:items-center gap-3 md:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} id="auto-refresh-logs" />
-          <Label htmlFor="auto-refresh-logs">Atualizar automaticamente (15s)</Label>
+          <Label htmlFor="auto-refresh-logs">
+            {metadataLocale === "en" ? "Auto refresh (15s)" : "Atualizar automaticamente (15s)"}
+          </Label>
           <Switch checked={liveTail} onCheckedChange={setLiveTail} id="live-tail-logs" />
           <Label htmlFor="live-tail-logs" className="inline-flex items-center gap-1">
             <Radio className={`h-3.5 w-3.5 ${liveTail ? "text-primary" : "text-muted-foreground"}`} />
             Live Tail (3.5s)
           </Label>
           <Switch checked={onlyNew} onCheckedChange={setOnlyNew} id="only-new-logs" />
-          <Label htmlFor="only-new-logs">Somente novos</Label>
+          <Label htmlFor="only-new-logs">{metadataLocale === "en" ? "Only new" : "Somente novos"}</Label>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => void loadRawHistory()}>
-            Atualizar agora
+            {metadataLocale === "en" ? "Refresh now" : "Atualizar agora"}
           </Button>
           <Button
             variant="outline"
@@ -307,7 +303,9 @@ export default function PartnerLogs() {
             disabled={newIds.size === 0}
             onClick={() => setNewIds(new Set())}
           >
-            Marcar {newIds.size} nova(s) como lida(s)
+            {metadataLocale === "en"
+              ? `Mark ${newIds.size} new as read`
+              : `Marcar ${newIds.size} nova(s) como lida(s)`}
           </Button>
           <Button
             variant="ghost"
@@ -322,12 +320,12 @@ export default function PartnerLogs() {
             }}
           >
             <Trash2 className="h-4 w-4 mr-1" />
-            Limpar logs de sessão
+            {metadataLocale === "en" ? "Clear session logs" : "Limpar logs de sessão"}
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link to="/app/webhooks">
               <Webhook className="h-4 w-4 mr-1" />
-              Escutar via Webhook
+              {metadataLocale === "en" ? "Listen via Webhook" : "Escutar via Webhook"}
             </Link>
           </Button>
         </div>
@@ -338,18 +336,18 @@ export default function PartnerLogs() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar endpoint, arquivo, hash, erro..."
+            placeholder={metadataLocale === "en" ? "Search endpoint, file, hash, error..." : "Buscar endpoint, arquivo, hash, erro..."}
           />
           <Select value={sourceFilter} onValueChange={(value: "all" | "api" | "payload") => setSourceFilter(value)}>
-            <SelectTrigger><SelectValue placeholder="Origem" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={metadataLocale === "en" ? "Source" : "Origem"} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tudo</SelectItem>
-              <SelectItem value="api">Tentativas API (sessão atual)</SelectItem>
-              <SelectItem value="payload">Payloads processados (persistido)</SelectItem>
+              <SelectItem value="all">{metadataLocale === "en" ? "All" : "Tudo"}</SelectItem>
+              <SelectItem value="api">{metadataLocale === "en" ? "API attempts (current session)" : "Tentativas API (sessão atual)"}</SelectItem>
+              <SelectItem value="payload">{metadataLocale === "en" ? "Processed payloads (persisted)" : "Payloads processados (persistido)"}</SelectItem>
             </SelectContent>
           </Select>
           <div className="text-xs text-muted-foreground self-center">
-            {filteredTimeline.length} evento(s) na timeline
+            {filteredTimeline.length} {metadataLocale === "en" ? "event(s) in timeline" : "evento(s) na timeline"}
           </div>
         </div>
       </Card>
@@ -357,8 +355,12 @@ export default function PartnerLogs() {
       {filteredTimeline.length === 0 ? (
         <EmptyState
           icon={ScrollText}
-          title="Nenhum log encontrado"
-          description="Envie um arquivo no portal parceiro ou ajuste os filtros para visualizar os eventos."
+          title={metadataLocale === "en" ? "No logs found" : "Nenhum log encontrado"}
+          description={
+            metadataLocale === "en"
+              ? "Send data in the partner portal or adjust filters to view events."
+              : "Envie um arquivo no portal parceiro ou ajuste os filtros para visualizar os eventos."
+          }
         />
       ) : (
         <div className="space-y-2">
