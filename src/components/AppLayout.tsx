@@ -91,7 +91,7 @@ const navByWorkspace: Record<WorkspaceType, string[]> = {
 
 const adminNavItems: NavItem[] = [
   { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas" },
-  { icon: Search, label: "Search/Analytics", href: "/app/admin/search-analytics" },
+  { icon: Search, label: "Busca/Analytics", href: "/app/admin/search-analytics" },
   { icon: Users, label: "Usuários", href: "/app/admin/usuarios" },
   { icon: Fingerprint, label: "Identificadores", href: "/app/admin/identificadores" },
   { icon: Layers, label: "Cadeias de Valor", href: "/app/admin/cadeias-valor" },
@@ -114,7 +114,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const workspaceType = user?.workspace_type || "producer";
   const workspaceMenu = navByWorkspace[workspaceType as WorkspaceType] ?? navByWorkspace.producer;
   const visibleNavItems = user?.is_admin
-    ? navCatalog
+    ? []
     : workspaceMenu
         .map((href) => navCatalog.find((item) => item.href === href))
         .filter((item): item is NavItem => !!item);

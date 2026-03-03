@@ -33,6 +33,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertTriangle,
@@ -113,6 +123,7 @@ export default function AdminJobs() {
   const [batchQuality, setBatchQuality] = useState("all");
   const [batchPriority, setBatchPriority] = useState("2");
   const [batchLimit, setBatchLimit] = useState("200");
+  const [retryConfirmJob, setRetryConfirmJob] = useState<AdapterJob | null>(null);
 
   useEffect(() => {
     const next = new URLSearchParams();
@@ -253,16 +264,11 @@ export default function AdminJobs() {
 
   const handleRetryJob = (job: AdapterJob) => {
     const status = job.status ?? "pending";
-    const isForce = status === "completed";
-    if (
-      isForce &&
-      !window.confirm(
-        "Este job está completed. Reenfileirar com force=true pode gerar nova tentativa de publicação. Deseja continuar?"
-      )
-    ) {
+    if (status === "completed") {
+      setRetryConfirmJob(job);
       return;
     }
-    retryMutation.mutate({ jobId: job.id, force: isForce });
+    retryMutation.mutate({ jobId: job.id, force: false });
   };
 
   return (
@@ -1016,6 +1022,31 @@ export default function AdminJobs() {
         )}
       </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!retryConfirmJob} onOpenChange={(open) => !open && setRetryConfirmJob(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reenfileirar job completed?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esse job já está como <strong>completed</strong>. Reenfileirar com
+              <code className="mx-1">force=true</code> pode criar nova tentativa de publicação.
+              Use apenas para correção operacional.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!retryConfirmJob) return;
+                retryMutation.mutate({ jobId: retryConfirmJob.id, force: true });
+                setRetryConfirmJob(null);
+              }}
+            >
+              Confirmar retry force
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

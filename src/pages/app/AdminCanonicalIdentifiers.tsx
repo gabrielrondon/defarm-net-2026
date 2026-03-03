@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createCanonicalIdentifier,
   listCanonicalIdentifiers,
   updateCanonicalIdentifier,
 } from "@/lib/api/canonical-identifiers";
-import type { CanonicalIdentifierResponse } from "@/lib/api/types";
+import { listValueChainPolicies } from "@/lib/api/value-chains";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,28 +23,46 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Fingerprint, Plus, Search, Loader2 } from "lucide-react";
-
-const VALUE_CHAINS = ["BEEF", "SOY", "CORN", "COFFEE", "COTTON", "POULTRY", "PORK"];
+import { Fingerprint, Plus } from "lucide-react";
 
 export default function AdminCanonicalIdentifiers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedChain, setSelectedChain] = useState("BEEF");
+  const [selectedChain, setSelectedChain] = useState("");
   const [newType, setNewType] = useState("");
-  const [newChain, setNewChain] = useState("BEEF");
+  const [newChain, setNewChain] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const { data: valueChains = [] } = useQuery({
+    queryKey: ["admin-value-chains-for-identifiers"],
+    queryFn: () => listValueChainPolicies(false),
+  });
+
+  const chainCodes = valueChains.map((row) => row.code);
+  const resolvedSelectedChain =
+    selectedChain || chainCodes[0] || "BEEF";
+  const resolvedNewChain =
+    newChain || chainCodes[0] || "BEEF";
+
+  useEffect(() => {
+    if (!selectedChain && chainCodes[0]) {
+      setSelectedChain(chainCodes[0]);
+    }
+    if (!newChain && chainCodes[0]) {
+      setNewChain(chainCodes[0]);
+    }
+  }, [selectedChain, newChain, chainCodes]);
+
   const { data: identifiers = [], isLoading } = useQuery({
-    queryKey: ["canonical-identifiers", selectedChain],
-    queryFn: () => listCanonicalIdentifiers(selectedChain),
+    queryKey: ["canonical-identifiers", resolvedSelectedChain],
+    queryFn: () => listCanonicalIdentifiers(resolvedSelectedChain),
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
       updateCanonicalIdentifier(id, { is_active }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["canonical-identifiers", selectedChain] });
+      queryClient.invalidateQueries({ queryKey: ["canonical-identifiers", resolvedSelectedChain] });
       toast({ title: "Identificador atualizado" });
     },
     onError: (err: any) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
@@ -54,7 +72,10 @@ export default function AdminCanonicalIdentifiers() {
     if (!newType.trim()) return;
     setCreating(true);
     try {
-      await createCanonicalIdentifier({ value_chain: newChain, identifier_type: newType.trim() });
+      await createCanonicalIdentifier({
+        value_chain: resolvedNewChain,
+        identifier_type: newType.trim(),
+      });
       queryClient.invalidateQueries({ queryKey: ["canonical-identifiers"] });
       toast({ title: "Identificador criado" });
       setNewType("");
@@ -89,11 +110,11 @@ export default function AdminCanonicalIdentifiers() {
               <div>
                 <Label>Cadeia de Valor</Label>
                 <select
-                  value={newChain}
+                  value={resolvedNewChain}
                   onChange={(e) => setNewChain(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  {VALUE_CHAINS.map((vc) => (
+                  {chainCodes.map((vc) => (
                     <option key={vc} value={vc}>{vc}</option>
                   ))}
                 </select>
@@ -118,18 +139,26 @@ export default function AdminCanonicalIdentifiers() {
       </div>
 
       {/* Chain selector */}
-      <div className="flex flex-wrap gap-2">
-        {VALUE_CHAINS.map((vc) => (
-          <Button
-            key={vc}
-            variant={selectedChain === vc ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedChain(vc)}
-          >
-            {vc}
-          </Button>
-        ))}
-      </div>
+      {chainCodes.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 text-center text-muted-foreground py-8">
+            Nenhuma cadeia de valor encontrada. Cadastre em Admin → Cadeias de Valor.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {chainCodes.map((vc) => (
+            <Button
+              key={vc}
+              variant={resolvedSelectedChain === vc ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedChain(vc)}
+            >
+              {vc}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Identifiers list */}
       {isLoading ? (
@@ -137,7 +166,7 @@ export default function AdminCanonicalIdentifiers() {
       ) : identifiers.length === 0 ? (
         <Card>
           <CardContent className="pt-6 text-center text-muted-foreground py-8">
-            Nenhum identificador canônico para {selectedChain}.
+            Nenhum identificador canônico para {resolvedSelectedChain}.
           </CardContent>
         </Card>
       ) : (

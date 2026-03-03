@@ -24,6 +24,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Layers, Plus, Trash2 } from "lucide-react";
 
@@ -36,6 +46,7 @@ export default function AdminValueChains() {
   const [newIsActive, setNewIsActive] = useState(true);
   const [newIsTestOnly, setNewIsTestOnly] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ValueChainPolicy | null>(null);
 
   const { data: rows = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-value-chains"],
@@ -264,8 +275,7 @@ export default function AdminValueChains() {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          setDeletingId(row.id);
-                          deleteMutation.mutate(row.id);
+                          setPendingDelete(row);
                         }}
                         disabled={deleteMutation.isPending && deletingId === row.id}
                       >
@@ -280,6 +290,35 @@ export default function AdminValueChains() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover cadeia de valor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove a política <strong>{pendingDelete?.code}</strong> e pode impactar validação de ingestão.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (!pendingDelete) return;
+                setDeletingId(pendingDelete.id);
+                deleteMutation.mutate(pendingDelete.id);
+              }}
+            >
+              {deleteMutation.isPending ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

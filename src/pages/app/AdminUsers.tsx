@@ -36,6 +36,13 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState<string>("all");
+  const [userWorkspaceTypeFilter, setUserWorkspaceTypeFilter] = useState<string>("all");
+  const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
+  const [userAdminFilter, setUserAdminFilter] = useState<string>("all");
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState(20);
 
   const [createMode, setCreateMode] = useState<"existing" | "new">("new");
   const [newUser, setNewUser] = useState({
@@ -94,6 +101,34 @@ export default function AdminUsers() {
     () => (isPartnerRole ? workspaces.filter((w) => w.workspace_type === "partner") : workspaces),
     [workspaces, isPartnerRole]
   );
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    return users.filter((user) => {
+      if (userRoleFilter !== "all" && user.role !== userRoleFilter) return false;
+      if (userWorkspaceTypeFilter !== "all" && (user.workspace_type || "sem-workspace") !== userWorkspaceTypeFilter) {
+        return false;
+      }
+      if (userStatusFilter === "active" && !user.is_active) return false;
+      if (userStatusFilter === "inactive" && user.is_active) return false;
+      if (userAdminFilter === "admin" && !user.is_admin) return false;
+      if (userAdminFilter === "non_admin" && user.is_admin) return false;
+      if (!q) return true;
+      return (
+        (user.full_name || "").toLowerCase().includes(q) ||
+        user.email.toLowerCase().includes(q) ||
+        user.id.toLowerCase().includes(q)
+      );
+    });
+  }, [users, userSearch, userRoleFilter, userWorkspaceTypeFilter, userStatusFilter, userAdminFilter]);
+  const usersTotal = filteredUsers.length;
+  const usersTotalPages = Math.max(1, Math.ceil(usersTotal / usersPageSize));
+  const currentUsersPage = Math.min(usersPage, usersTotalPages);
+  const usersStart = usersTotal === 0 ? 0 : (currentUsersPage - 1) * usersPageSize + 1;
+  const usersEnd = Math.min(usersTotal, currentUsersPage * usersPageSize);
+  const pagedUsers = filteredUsers.slice((currentUsersPage - 1) * usersPageSize, currentUsersPage * usersPageSize);
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userSearch, userRoleFilter, userWorkspaceTypeFilter, userStatusFilter, userAdminFilter, usersPageSize]);
 
   const handleCreateUser = async () => {
     if (!newUser.email) return;
@@ -455,8 +490,84 @@ export default function AdminUsers() {
         <CardHeader>
           <CardTitle>Usuários</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {users.map((user) => (
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <Input
+              placeholder="Buscar por nome, e-mail ou id"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="md:col-span-2"
+            />
+            <Select value={userRoleFilter} onValueChange={setUserRoleFilter}>
+              <SelectTrigger><SelectValue placeholder="Role" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas roles</SelectItem>
+                {USER_ROLES.map((role) => (
+                  <SelectItem key={role} value={role}>{role}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={userWorkspaceTypeFilter} onValueChange={setUserWorkspaceTypeFilter}>
+              <SelectTrigger><SelectValue placeholder="Tipo workspace" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos tipos</SelectItem>
+                {WORKSPACE_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+                <SelectItem value="sem-workspace">sem-workspace</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
+              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="inactive">Inativos</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={userAdminFilter} onValueChange={setUserAdminFilter}>
+              <SelectTrigger><SelectValue placeholder="Admin flag" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="admin">Somente admins</SelectItem>
+                <SelectItem value="non_admin">Somente não-admins</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <p>
+              Exibindo {usersStart}-{usersEnd} de {usersTotal}
+            </p>
+            <div className="flex items-center gap-2">
+              <Select value={String(usersPageSize)} onValueChange={(v) => setUsersPageSize(Number(v))}>
+                <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10/página</SelectItem>
+                  <SelectItem value="20">20/página</SelectItem>
+                  <SelectItem value="50">50/página</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentUsersPage <= 1}
+                onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentUsersPage >= usersTotalPages}
+                onClick={() => setUsersPage((p) => Math.min(usersTotalPages, p + 1))}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+
+          {pagedUsers.map((user) => (
             <div key={user.id} className="border rounded-md p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <p className="font-medium">{user.full_name || "Sem nome"} <span className="text-xs text-muted-foreground">({user.email})</span></p>
@@ -484,6 +595,11 @@ export default function AdminUsers() {
               </div>
             </div>
           ))}
+          {pagedUsers.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhum usuário encontrado para os filtros atuais.
+            </p>
+          )}
         </CardContent>
       </Card>
 

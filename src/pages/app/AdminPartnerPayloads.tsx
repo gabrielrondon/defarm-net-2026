@@ -81,6 +81,8 @@ export default function AdminPartnerPayloads() {
   const [liveTail, setLiveTail] = useState(false);
   const [onlyNew, setOnlyNew] = useState(false);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const seenIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
@@ -118,7 +120,12 @@ export default function AdminPartnerPayloads() {
     return ws ? `${ws.name} (${ws.slug})` : id;
   };
 
-  const selected = filteredRows.find((r) => r.id === selectedId) || filteredRows[0] || null;
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const selected = pagedRows.find((r) => r.id === selectedId) || pagedRows[0] || null;
+  const listStart = filteredRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const listEnd = Math.min(filteredRows.length, currentPage * pageSize);
   const totalBytes = filteredRows.reduce((sum, row) => sum + row.payload_size_bytes, 0);
   const completedCount = filteredRows.filter((row) => row.status === "completed").length;
   const failedCount = filteredRows.filter((row) => row.status === "failed").length;
@@ -151,6 +158,20 @@ export default function AdminPartnerPayloads() {
       }
     }
   }, [rows]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [workspaceId, limit, search, status, onlyNew, pageSize]);
+
+  useEffect(() => {
+    if (!selectedId && selected) {
+      setSelectedId(selected.id);
+      return;
+    }
+    if (selectedId && !pagedRows.some((row) => row.id === selectedId)) {
+      setSelectedId(selected?.id ?? null);
+    }
+  }, [selectedId, pagedRows, selected]);
 
   return (
     <div className="space-y-6">
@@ -291,6 +312,37 @@ export default function AdminPartnerPayloads() {
               {payloadsQuery.isLoading ? "Carregando..." : `${filteredRows.length} registro(s)`}
             </span>
           </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <p>
+              Exibindo {listStart}-{listEnd} de {filteredRows.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10/página</SelectItem>
+                  <SelectItem value="25">25/página</SelectItem>
+                  <SelectItem value="50">50/página</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="rounded-lg border p-3">
@@ -322,7 +374,7 @@ export default function AdminPartnerPayloads() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 max-h-[720px] overflow-auto">
-            {filteredRows.map((row) => (
+            {pagedRows.map((row) => (
               <button
                 key={row.id}
                 type="button"
@@ -365,7 +417,7 @@ export default function AdminPartnerPayloads() {
                 ) : null}
               </button>
             ))}
-            {!payloadsQuery.isLoading && filteredRows.length === 0 ? (
+            {!payloadsQuery.isLoading && pagedRows.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">
                 Nenhum payload encontrado para os filtros atuais.
               </p>
