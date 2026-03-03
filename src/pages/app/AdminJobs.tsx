@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getAdminIngestionsSummary,
   getAdminJobsSummary,
+  getAdminPipelineStatus,
   getAdminQueueStatus,
   getAdminTokenizationHealth,
   listAdminJobs,
@@ -143,6 +145,18 @@ export default function AdminJobs() {
     refetchInterval: 15000,
   });
 
+  const pipelineStatusQuery = useQuery({
+    queryKey: ["admin-pipeline-status"],
+    queryFn: getAdminPipelineStatus,
+    refetchInterval: 15000,
+  });
+
+  const ingestionsSummaryQuery = useQuery({
+    queryKey: ["admin-ingestions-summary"],
+    queryFn: getAdminIngestionsSummary,
+    refetchInterval: 15000,
+  });
+
   const retryMutation = useMutation({
     mutationFn: ({ jobId, force }: { jobId: string; force?: boolean }) =>
       retryAdminJob(jobId, !!force),
@@ -203,7 +217,11 @@ export default function AdminJobs() {
             size="sm"
             onClick={() => invalidateAll(queryClient)}
             disabled={
-              jobsQuery.isFetching || summaryQuery.isFetching || queueQuery.isFetching
+              jobsQuery.isFetching ||
+              summaryQuery.isFetching ||
+              queueQuery.isFetching ||
+              pipelineStatusQuery.isFetching ||
+              ingestionsSummaryQuery.isFetching
             }
           >
             <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
@@ -237,6 +255,122 @@ export default function AdminJobs() {
         <SummaryCard icon={Loader2} label="Processando" value={summary?.processing ?? 0} color="text-blue-500" />
         <SummaryCard icon={XCircle} label="Falharam" value={summary?.failed ?? 0} color="text-destructive" />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Pipeline (funnel)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {pipelineStatusQuery.isLoading ? (
+            <Skeleton className="h-28 w-full" />
+          ) : pipelineStatusQuery.isError ? (
+            <p className="text-sm text-destructive">
+              Não foi possível carregar /v1/adapter/admin/pipeline-status.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <KeyValue
+                  label="Ingested"
+                  value={String(pipelineStatusQuery.data?.pipeline.ingested.total ?? 0)}
+                />
+                <KeyValue
+                  label="DFID"
+                  value={String(pipelineStatusQuery.data?.pipeline.dfid_assigned.total ?? 0)}
+                />
+                <KeyValue
+                  label="IPFS"
+                  value={String(pipelineStatusQuery.data?.pipeline.ipfs_pinned.total ?? 0)}
+                />
+                <KeyValue
+                  label="Stellar"
+                  value={String(pipelineStatusQuery.data?.pipeline.stellar_anchored.total ?? 0)}
+                />
+                <KeyValue
+                  label="Fully tokenized"
+                  value={String(
+                    pipelineStatusQuery.data?.pipeline.fully_tokenized.total ?? 0
+                  )}
+                />
+                <KeyValue
+                  label="Pending confirm."
+                  value={String(
+                    pipelineStatusQuery.data?.pipeline.stuck.pending_confirmation ?? 0
+                  )}
+                />
+              </div>
+              <div className="rounded border border-amber-400/40 bg-amber-50/40 p-3 text-xs text-amber-900">
+                missing_stellar:{" "}
+                <strong>
+                  {pipelineStatusQuery.data?.pipeline.stuck.missing_stellar ?? 0}
+                </strong>{" "}
+                • pending_confirmation:{" "}
+                <strong>
+                  {pipelineStatusQuery.data?.pipeline.stuck.pending_confirmation ?? 0}
+                </strong>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Top errors</p>
+                {pipelineStatusQuery.data?.errors.top?.length ? (
+                  <div className="space-y-1">
+                    {pipelineStatusQuery.data.errors.top.slice(0, 5).map((row, idx) => (
+                      <div
+                        key={`${idx}-${row.error}`}
+                        className="flex items-start justify-between gap-2 text-xs rounded border px-2 py-1"
+                      >
+                        <span className="text-muted-foreground break-all">{row.error}</span>
+                        <Badge variant="outline">{row.count}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Sem erros agregados.</p>
+                )}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Ingestions (summary)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {ingestionsSummaryQuery.isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : ingestionsSummaryQuery.isError ? (
+            <p className="text-sm text-destructive">
+              Não foi possível carregar /v1/adapter/admin/ingestions/summary.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <KeyValue
+                  label="Total ingestions"
+                  value={String(ingestionsSummaryQuery.data?.total_ingestions ?? 0)}
+                />
+                <KeyValue
+                  label="Rows processed"
+                  value={String(ingestionsSummaryQuery.data?.total_rows_processed ?? 0)}
+                />
+                <KeyValue
+                  label="Items created"
+                  value={String(ingestionsSummaryQuery.data?.total_items_created ?? 0)}
+                />
+                <KeyValue
+                  label="Items updated"
+                  value={String(ingestionsSummaryQuery.data?.total_items_updated ?? 0)}
+                />
+                <KeyValue
+                  label="Events created"
+                  value={String(ingestionsSummaryQuery.data?.total_events_created ?? 0)}
+                />
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -727,6 +861,8 @@ function sumSummary(summary?: {
 function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
   queryClient.invalidateQueries({ queryKey: ["admin-jobs-summary"] });
+  queryClient.invalidateQueries({ queryKey: ["admin-pipeline-status"] });
+  queryClient.invalidateQueries({ queryKey: ["admin-ingestions-summary"] });
   queryClient.invalidateQueries({ queryKey: ["admin-tokenization-health"] });
   queryClient.invalidateQueries({ queryKey: ["admin-queues"] });
 }

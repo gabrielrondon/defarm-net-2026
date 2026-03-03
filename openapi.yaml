@@ -4351,6 +4351,293 @@ components:
           type: boolean
         queue_depths:
           $ref: '#/components/schemas/AdapterAdminQueueDepths'
+    AdapterAdminPipelineCount:
+      type: object
+      required:
+      - total
+      properties:
+        total:
+          type: integer
+          format: int64
+    AdapterAdminPipelineCountWithByStatus:
+      type: object
+      required:
+      - total
+      - by_status
+      properties:
+        total:
+          type: integer
+          format: int64
+        by_status:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+    AdapterAdminPipelineCountWithByValueChain:
+      type: object
+      required:
+      - total
+      - by_value_chain
+      properties:
+        total:
+          type: integer
+          format: int64
+        by_value_chain:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+    AdapterAdminPipelineStuck:
+      type: object
+      required:
+      - missing_stellar
+      - pending_confirmation
+      properties:
+        missing_stellar:
+          type: integer
+          format: int64
+        pending_confirmation:
+          type: integer
+          format: int64
+    AdapterAdminPipelineErrorTop:
+      type: object
+      required:
+      - error
+      - count
+      properties:
+        error:
+          type: string
+        count:
+          type: integer
+          format: int64
+    AdapterAdminPipelineStages:
+      type: object
+      required:
+      - ingested
+      - dfid_assigned
+      - ipfs_pinned
+      - stellar_anchored
+      - fully_tokenized
+      - stuck
+      properties:
+        ingested:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByValueChain'
+        dfid_assigned:
+          $ref: '#/components/schemas/AdapterAdminPipelineCount'
+        ipfs_pinned:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByStatus'
+        stellar_anchored:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByStatus'
+        fully_tokenized:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByValueChain'
+        stuck:
+          $ref: '#/components/schemas/AdapterAdminPipelineStuck'
+    AdapterAdminPipelineXlm:
+      type: object
+      required:
+      - threshold
+      - low_mode
+      properties:
+        balance:
+          type: number
+          format: double
+          nullable: true
+        threshold:
+          type: number
+          format: double
+        low_mode:
+          type: boolean
+    AdapterAdminPipelineErrors:
+      type: object
+      required:
+      - top
+      properties:
+        top:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterAdminPipelineErrorTop'
+    AdapterAdminPipelineStatusResponse:
+      type: object
+      required:
+      - pipeline
+      - queue
+      - xlm
+      - errors
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/AdapterAdminPipelineStages'
+        queue:
+          $ref: '#/components/schemas/AdapterAdminQueueDepths'
+        xlm:
+          $ref: '#/components/schemas/AdapterAdminPipelineXlm'
+        errors:
+          $ref: '#/components/schemas/AdapterAdminPipelineErrors'
+    AdapterAdminIngestionRecent:
+      type: object
+      required:
+      - id
+      - status
+      - rows_total
+      - items_created
+      - items_updated
+      - events_created
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        rows_total:
+          type: integer
+          format: int32
+        items_created:
+          type: integer
+          format: int32
+        items_updated:
+          type: integer
+          format: int32
+        events_created:
+          type: integer
+          format: int32
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminIngestionsSummaryResponse:
+      type: object
+      required:
+      - total_ingestions
+      - total_rows_processed
+      - total_items_created
+      - total_items_updated
+      - total_events_created
+      - by_status
+      - recent
+      properties:
+        total_ingestions:
+          type: integer
+          format: int64
+        total_rows_processed:
+          type: integer
+          format: int64
+        total_items_created:
+          type: integer
+          format: int64
+        total_items_updated:
+          type: integer
+          format: int64
+        total_events_created:
+          type: integer
+          format: int64
+        by_status:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        recent:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterAdminIngestionRecent'
+    AdapterAdminItemPipelineStage:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+        at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminItemPipelineDfid:
+      type: object
+      required:
+      - status
+      - value
+      properties:
+        status:
+          type: string
+        value:
+          type: string
+    AdapterAdminItemPipelineIpfs:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+        cid:
+          type: string
+          nullable: true
+        gateway_url:
+          type: string
+          nullable: true
+        uploaded_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminItemPipelineStellar:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+        tx_hash:
+          type: string
+          nullable: true
+        explorer_url:
+          type: string
+          nullable: true
+        anchored_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminItemPipelineStages:
+      type: object
+      required:
+      - created
+      - dfid
+      - ipfs
+      - stellar
+      - fully_tokenized
+      properties:
+        created:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineStage'
+        dfid:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineDfid'
+        ipfs:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineIpfs'
+        stellar:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineStellar'
+        fully_tokenized:
+          type: boolean
+    AdapterAdminItemPipelineResponse:
+      type: object
+      required:
+      - item_id
+      - dfid
+      - value_chain
+      - stages
+      - jobs
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        dfid:
+          type: string
+        value_chain:
+          type: string
+        stages:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineStages'
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterJobRecord'
     HealthResponse:
       description: System health status response including component statuses.
       type: object
@@ -6725,6 +7012,72 @@ paths:
                 $ref: '#/components/schemas/AdapterAdminTokenizationHealthResponse'
         '401':
           description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/pipeline-status:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get pipeline lifecycle status (admin)
+      description: Aggregated funnel for ingestion, DFID, IPFS, Stellar, fully tokenized, queue and top errors.
+      operationId: getAdapterAdminPipelineStatus
+      responses:
+        '200':
+          description: Pipeline status snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminPipelineStatusResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/ingestions/summary:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get ingestion summary (admin)
+      description: Aggregated ingestion counts and recent ingestion receipts.
+      operationId: getAdapterAdminIngestionsSummary
+      responses:
+        '200':
+          description: Ingestion summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminIngestionsSummaryResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/items/pipeline/{item_id}:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get per-item pipeline detail (admin)
+      description: Returns stage-by-stage tokenization detail and recent publish jobs for one item.
+      operationId: getAdapterAdminItemPipeline
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Item pipeline detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminItemPipelineResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
         '500':
           description: Internal server error
   /api/adapter/admin/jobs/{job_id}:

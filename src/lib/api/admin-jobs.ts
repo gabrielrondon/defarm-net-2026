@@ -115,6 +115,75 @@ export interface TokenizationHealthResponse {
   };
 }
 
+export interface PipelineStatusResponse {
+  pipeline: {
+    ingested: { total: number; by_value_chain: Record<string, number> };
+    dfid_assigned: { total: number };
+    ipfs_pinned: { total: number; by_status: Record<string, number> };
+    stellar_anchored: { total: number; by_status: Record<string, number> };
+    fully_tokenized: { total: number; by_value_chain: Record<string, number> };
+    stuck: { missing_stellar: number; pending_confirmation: number };
+  };
+  queue: {
+    p1: number;
+    p2: number;
+    p3: number;
+    p4: number;
+    total: number;
+  };
+  xlm: {
+    balance: number | null;
+    threshold: number;
+    low_mode: boolean;
+  };
+  errors: {
+    top: Array<{ error: string; count: number }>;
+  };
+}
+
+export interface IngestionsSummaryResponse {
+  total_ingestions: number;
+  total_rows_processed: number;
+  total_items_created: number;
+  total_items_updated: number;
+  total_events_created: number;
+  by_status: Record<string, number>;
+  recent: Array<{
+    id: string;
+    status: string;
+    rows_total: number;
+    items_created: number;
+    items_updated: number;
+    events_created: number;
+    created_at: string;
+    completed_at: string | null;
+  }>;
+}
+
+export interface ItemPipelineDetailResponse {
+  item_id: string;
+  dfid: string;
+  value_chain: string;
+  stages: {
+    created: { status: string; at: string | null };
+    dfid: { status: string; value: string };
+    ipfs: {
+      status: string;
+      cid: string | null;
+      gateway_url: string | null;
+      uploaded_at: string | null;
+    };
+    stellar: {
+      status: string;
+      tx_hash: string | null;
+      explorer_url: string | null;
+      anchored_at: string | null;
+    };
+    fully_tokenized: boolean;
+  };
+  jobs: AdapterJob[];
+}
+
 export async function listAdminJobs(params?: {
   status?: string;
   adapter?: string;
@@ -181,5 +250,21 @@ export async function getAdminQueueStatus(): Promise<QueueStatusResponse> {
 export async function getAdminTokenizationHealth(): Promise<TokenizationHealthResponse> {
   return registryRequest<TokenizationHealthResponse>(
     "/adapter/admin/tokenization-health"
+  );
+}
+
+export async function getAdminPipelineStatus(): Promise<PipelineStatusResponse> {
+  return registryRequest<PipelineStatusResponse>("/adapter/admin/pipeline-status");
+}
+
+export async function getAdminIngestionsSummary(): Promise<IngestionsSummaryResponse> {
+  return registryRequest<IngestionsSummaryResponse>("/adapter/admin/ingestions/summary");
+}
+
+export async function getAdminItemPipelineDetail(
+  itemId: string
+): Promise<ItemPipelineDetailResponse> {
+  return registryRequest<ItemPipelineDetailResponse>(
+    `/adapter/admin/items/pipeline/${itemId}`
   );
 }
