@@ -371,6 +371,16 @@ export default function CircuitoDetail() {
               <p className="text-xs text-muted-foreground mt-1">
                 Status operacional: Ativo aparece em listas e fluxos de operação; Inativo mantém histórico, mas sai dos fluxos principais.
               </p>
+              {user?.workspace_type === "government" && (
+                <div className="mt-3">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/app/governo/docs#shared-circuit">
+                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                      Guia gov: circuito compartilhado
+                    </Link>
+                  </Button>
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-2">
                 <button
                   onClick={handleCopyId}

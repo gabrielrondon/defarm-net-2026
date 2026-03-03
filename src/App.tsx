@@ -69,6 +69,7 @@ import PartnerSdkPage from "./pages/app/PartnerSdk";
 import PartnerLogs from "./pages/app/PartnerLogs";
 import OwnershipClaims from "./pages/app/OwnershipClaims";
 import PropertyHerd from "./pages/app/PropertyHerd";
+import GovernmentDocs from "./pages/app/GovernmentDocs";
 
 const queryClient = new QueryClient(); // init
 type WorkspaceType = "partner" | "producer" | "processor" | "certifier" | "government";
@@ -347,6 +348,14 @@ const App = () => (
               element={
                 <RequireWorkspaceAccess allowed={["producer", "processor", "certifier", "government"]}>
                   <AppLayout><ComplianceCheck /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/governo/docs"
+              element={
+                <RequireWorkspaceAccess allowed={["government"]}>
+                  <AppLayout><GovernmentDocs /></AppLayout>
                 </RequireWorkspaceAccess>
               }
             />

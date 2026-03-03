@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Search, 
@@ -14,6 +15,7 @@ import {
   Scale,
   Beef,
   Tractor,
+  BookOpenText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getEvents } from "@/lib/defarm-api";
 import { eventTypeColors, eventTypeLabels } from "@/components/item-detail/constants";
+import { useAuth } from "@/contexts/AuthContext";
 
 const eventTypeIcons: Record<string, typeof Activity> = {
   ItemCreated: Package,
@@ -55,6 +58,7 @@ const eventTypeIcons: Record<string, typeof Activity> = {
 };
 
 export default function EventosList() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
@@ -123,6 +127,16 @@ export default function EventosList() {
         <p className="text-muted-foreground mt-1">
           Histórico completo de eventos e atividades
         </p>
+        {user?.workspace_type === "government" && (
+          <div className="mt-3">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/app/governo/docs#contribute">
+                <BookOpenText className="h-4 w-4 mr-2" />
+                Guia gov: contribuição oficial
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}

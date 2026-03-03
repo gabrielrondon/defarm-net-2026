@@ -39,6 +39,7 @@ import {
   Layers,
   ScrollText,
   ExternalLink,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -70,6 +71,7 @@ const navCatalog: NavItem[] = [
   { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
   { icon: TerminalSquare, label: "CLI", href: "/app/cli" },
   { icon: Code2, label: "SDK", href: "/app/sdk" },
+  { icon: Building2, label: "Docs Governo", href: "/app/governo/docs" },
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
@@ -87,7 +89,7 @@ const navByWorkspace: Record<WorkspaceType, string[]> = {
   producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
-  government: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
+  government: ["/app/governo/docs", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
 };
 
 const adminNavItems: NavItem[] = [
