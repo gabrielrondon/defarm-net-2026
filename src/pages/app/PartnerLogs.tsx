@@ -146,9 +146,9 @@ export default function PartnerLogs() {
       const description =
         err instanceof ApiError
           ? `${err.message}${err.details ? ` · ${err.details}` : ""}`
-          : "Não foi possível carregar histórico de payload.";
+          : (metadataLocale === "en" ? "Could not load payload history." : "Não foi possível carregar histórico de payload.");
       toast({
-        title: "Falha ao carregar logs persistidos",
+        title: metadataLocale === "en" ? "Failed to load persisted logs" : "Falha ao carregar logs persistidos",
         description,
         variant: "destructive",
       });
@@ -425,11 +425,15 @@ export default function PartnerLogs() {
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Detalhes do evento</DialogTitle>
-            <DialogDescription>
+          <DialogTitle>{metadataLocale === "en" ? "Event details" : "Detalhes do evento"}</DialogTitle>
+          <DialogDescription>
               {selected?.source === "api"
-                ? "Request/response da tentativa na sessão atual."
-                : "Detalhes do payload persistido e metadados de processamento."}
+                ? (metadataLocale === "en"
+                    ? "Request/response for current session attempt."
+                    : "Request/response da tentativa na sessão atual.")
+                : (metadataLocale === "en"
+                    ? "Persisted payload details and processing metadata."
+                    : "Detalhes do payload persistido e metadados de processamento.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -438,21 +442,23 @@ export default function PartnerLogs() {
               {selected.source === "api" ? (
                 <div className="space-y-3">
                   <p className="text-sm">
-                    <span className="font-medium">Endpoint:</span>{" "}
+                    <span className="font-medium">{metadataLocale === "en" ? "Endpoint:" : "Endpoint:"}</span>{" "}
                     <code className="text-xs bg-muted px-1 py-0.5 rounded">{selected.item.method} {selected.item.endpoint}</code>
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(selected.item.timestamp).toLocaleString("pt-BR")} · {selected.item.durationMs} ms · status{" "}
-                    {selected.item.status ?? "erro de rede"}
+                    {new Date(selected.item.timestamp).toLocaleString("pt-BR")} · {selected.item.durationMs} ms · {metadataLocale === "en" ? "status" : "status"}{" "}
+                    {selected.item.status ?? (metadataLocale === "en" ? "network error" : "erro de rede")}
                   </p>
                   {selected.item.errorCode ? (
                     <p className="text-sm text-destructive">
-                      {selected.item.errorCode}: {selected.item.errorMessage || "sem mensagem"}
+                      {selected.item.errorCode}: {selected.item.errorMessage || (metadataLocale === "en" ? "no message" : "sem mensagem")}
                     </p>
                   ) : null}
                   {selected.item.requestBody ? (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Request enviado</p>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {metadataLocale === "en" ? "Sent request" : "Request enviado"}
+                      </p>
                       <pre className="code-block max-h-64 overflow-auto">{selected.item.requestBody}</pre>
                     </div>
                   ) : null}
@@ -495,7 +501,9 @@ export default function PartnerLogs() {
                   })()}
                   {selected.item.responseBody ? (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Response recebido</p>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {metadataLocale === "en" ? "Received response" : "Response recebido"}
+                      </p>
                       <pre className="code-block max-h-64 overflow-auto">{selected.item.responseBody}</pre>
                     </div>
                   ) : null}
@@ -503,7 +511,7 @@ export default function PartnerLogs() {
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm">
-                    <span className="font-medium">Arquivo:</span> {selected.item.file_name || "payload"}
+                    <span className="font-medium">{metadataLocale === "en" ? "File:" : "Arquivo:"}</span> {selected.item.file_name || "payload"}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(selected.item.created_at).toLocaleString("pt-BR")} · {selected.item.payload_size_bytes.toLocaleString("pt-BR")} bytes
@@ -512,7 +520,7 @@ export default function PartnerLogs() {
                     sha256: <code>{selected.item.payload_sha256}</code>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    content-type: {selected.item.content_type || "n/a"} · modo: {selected.item.intake_mode}
+                    content-type: {selected.item.content_type || "n/a"} · {metadataLocale === "en" ? "mode" : "modo"}: {selected.item.intake_mode}
                   </p>
                   {selected.item.error_message ? (
                     <p className="text-sm text-destructive">{selected.item.error_message}</p>
@@ -535,24 +543,26 @@ export default function PartnerLogs() {
                           URL.revokeObjectURL(url);
                         } catch {
                           toast({
-                            title: "Falha ao baixar payload bruto",
-                            description: "Não foi possível baixar este arquivo.",
+                            title: metadataLocale === "en" ? "Failed to download raw payload" : "Falha ao baixar payload bruto",
+                            description: metadataLocale === "en" ? "Could not download this file." : "Não foi possível baixar este arquivo.",
                             variant: "destructive",
                           });
                         }
                       }}
                     >
                       <Download className="h-4 w-4 mr-1" />
-                      Baixar bruto
+                      {metadataLocale === "en" ? "Download raw" : "Baixar bruto"}
                     </Button>
                     <Button size="sm" variant="ghost" asChild>
                       <Link to="/app/parceiro">
-                        Portal Parceiro <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        {metadataLocale === "en" ? "Partner Portal" : "Portal Parceiro"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </Link>
                     </Button>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">Metadata de processamento</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {metadataLocale === "en" ? "Processing metadata" : "Metadata de processamento"}
+                    </p>
                     <pre className="code-block max-h-72 overflow-auto">{prettyJson(selected.item.metadata)}</pre>
                   </div>
                 </div>

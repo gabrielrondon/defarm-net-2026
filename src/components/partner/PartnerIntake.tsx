@@ -103,6 +103,7 @@ export function PartnerIntake() {
   const [logEntries, setLogEntries] = useState<PartnerRequestLogEntry[]>(getLogEntries);
   const [logExpanded, setLogExpanded] = useState(false);
   const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
+  const isEn = metadataLocale === "en";
 
   useEffect(() => {
     return subscribeLog(() => setLogEntries(getLogEntries()));
@@ -141,15 +142,15 @@ export function PartnerIntake() {
       try {
         const parsed = JSON.parse(mappingText);
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-          throw new Error("Mapping deve ser um objeto JSON.");
+          throw new Error(isEn ? "Mapping must be a JSON object." : "Mapping deve ser um objeto JSON.");
         }
         inlineMapping = parsed as Record<string, unknown>;
       } catch (err) {
-        const description = err instanceof Error ? err.message : "Mapping JSON inválido.";
+        const description = err instanceof Error ? err.message : (isEn ? "Invalid mapping JSON." : "Mapping JSON inválido.");
         setPreviewError(description);
         if (showToastOnError) {
           toast({
-            title: "Falha na prévia",
+            title: isEn ? "Preview failed" : "Falha na prévia",
             description,
             variant: "destructive",
           });
@@ -179,7 +180,7 @@ export function PartnerIntake() {
       setPreviewUnknown(preview.summary.unresolved_rows);
       setPreviewResult(preview);
     } catch (err) {
-      const description = formatClientError(err, "Falha ao gerar prévia.");
+      const description = formatClientError(err, isEn ? "Failed to generate preview." : "Falha ao gerar prévia.");
       setPreviewRows(0);
       setPreviewResolvable(0);
       setPreviewUnknown(0);
@@ -187,7 +188,7 @@ export function PartnerIntake() {
       setPreviewError(description);
       if (showToastOnError) {
         toast({
-          title: "Falha na prévia",
+          title: isEn ? "Preview failed" : "Falha na prévia",
           description,
           variant: "destructive",
         });
@@ -199,7 +200,9 @@ export function PartnerIntake() {
 
   const formatIssueType = (identifierType: string) => {
     if (identifierType === "unknown") {
-      return "Sem identificador de roteamento (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/IE)";
+      return isEn
+        ? "Missing routing identifier (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/IE)"
+        : "Sem identificador de roteamento (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/IE)";
     }
     return identifierType.toUpperCase();
   };
@@ -230,8 +233,8 @@ export function PartnerIntake() {
       }
     } catch {
       toast({
-        title: "Erro ao carregar ingestões",
-        description: "Não foi possível carregar histórico da ingestão.",
+        title: isEn ? "Failed to load ingestions" : "Erro ao carregar ingestões",
+        description: isEn ? "Could not load ingestion history." : "Não foi possível carregar histórico da ingestão.",
         variant: "destructive",
       });
     } finally {
@@ -261,8 +264,8 @@ export function PartnerIntake() {
       jsonBodyText
     );
     toast({
-      title: "Prévia executada",
-      description: "Validação concluída sem persistir dados.",
+      title: isEn ? "Preview executed" : "Prévia executada",
+      description: isEn ? "Validation completed without persisting data." : "Validação concluída sem persistir dados.",
     });
   };
 
@@ -270,7 +273,9 @@ export function PartnerIntake() {
     if (intakeInputMode === "file" && !file) return;
     if (intakeInputMode === "json" && !jsonBodyText.trim()) return;
     const confirmed = window.confirm(
-      "Este envio vai persistir payload e processar ingestão real. Deseja continuar?"
+      isEn
+        ? "This will persist payload and process real ingestion. Continue?"
+        : "Este envio vai persistir payload e processar ingestão real. Deseja continuar?"
     );
     if (!confirmed) return;
     setSending(true);
@@ -280,7 +285,7 @@ export function PartnerIntake() {
       if (mappingText.length > 0) {
         const parsed = JSON.parse(mappingText);
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-          throw new Error("Mapping deve ser um objeto JSON.");
+          throw new Error(isEn ? "Mapping must be a JSON object." : "Mapping deve ser um objeto JSON.");
         }
         inlineMapping = parsed as Record<string, unknown>;
       }
@@ -301,16 +306,16 @@ export function PartnerIntake() {
             );
       setLastResult(result);
       toast({
-        title: "Ingestão processada",
+        title: isEn ? "Ingestion processed" : "Ingestão processada",
         description: `Status: ${result.summary.status}. Rotas: ${result.summary.routes}.`,
       });
       setPreviewResult(null);
       if (intakeInputMode === "file") setFile(null);
       await load();
     } catch (err) {
-      const description = formatClientError(err, "Não foi possível processar esta requisição.");
+      const description = formatClientError(err, isEn ? "Could not process this request." : "Não foi possível processar esta requisição.");
       toast({
-        title: "Falha na ingestão",
+        title: isEn ? "Ingestion failed" : "Falha na ingestão",
         description,
         variant: "destructive",
       });
@@ -345,11 +350,11 @@ export function PartnerIntake() {
   const inReviewIssueCount = issues.filter((i) => i.status === "in_review").length;
 
   const formatIssueReason = (reason: string) => {
-    if (reason === "missing_identifier") return "sem identificador";
-    if (reason === "missing_value_chain") return "sem value_chain";
-    if (reason === "missing_trackable_identifier") return "sem identificador do ativo";
-    if (reason === "empty_after_normalization") return "identificador inválido";
-    if (reason === "no_routing_rule") return "sem regra de roteamento";
+    if (reason === "missing_identifier") return isEn ? "missing identifier" : "sem identificador";
+    if (reason === "missing_value_chain") return isEn ? "missing value_chain" : "sem value_chain";
+    if (reason === "missing_trackable_identifier") return isEn ? "missing trackable identifier" : "sem identificador do ativo";
+    if (reason === "empty_after_normalization") return isEn ? "invalid identifier after normalization" : "identificador inválido";
+    if (reason === "no_routing_rule") return isEn ? "no routing rule" : "sem regra de roteamento";
     return reason;
   };
 
@@ -389,7 +394,7 @@ export function PartnerIntake() {
             : <>Padrão da API: enviar <code>application/json</code> no body da requisição. Como alternativa, também aceitamos arquivo CSV/JSON.</>}
         </p>
         <p className="text-xs text-muted-foreground">
-          Guia oficial:{" "}
+          {isEn ? "Official guide" : "Guia oficial"}:{" "}
           <a
             href="https://docs.defarm.net/docs/getting-started#preview"
             target="_blank"
@@ -511,26 +516,26 @@ export function PartnerIntake() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Select value={templateId} onValueChange={setTemplateId}>
             <SelectTrigger>
-              <SelectValue placeholder="Template (opcional)" />
+              <SelectValue placeholder={isEn ? "Template (optional)" : "Template (opcional)"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Sem template (padrão DeFarm)</SelectItem>
+              <SelectItem value="none">{isEn ? "No template (DeFarm default)" : "Sem template (padrão DeFarm)"}</SelectItem>
               {templates.map((template) => (
                 <SelectItem key={template.id} value={template.id}>
-                  {template.name}{template.is_default ? " (padrão)" : ""}
+                  {template.name}{template.is_default ? (isEn ? " (default)" : " (padrão)") : ""}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <div className="md:col-span-2 text-xs text-muted-foreground self-center">
             {templateId === "none"
-              ? "Mapeamento automático padrão ativo."
-              : `Template selecionado: ${templates.find((t) => t.id === templateId)?.name || templateId}`}
+              ? (isEn ? "Default automatic mapping enabled." : "Mapeamento automático padrão ativo.")
+              : `${isEn ? "Selected template" : "Template selecionado"}: ${templates.find((t) => t.id === templateId)?.name || templateId}`}
           </div>
         </div>
 
         <label className="block border rounded-md p-3">
-          <p className="text-xs font-medium mb-2">Mapping inline (JSON, opcional)</p>
+          <p className="text-xs font-medium mb-2">{isEn ? "Inline mapping (JSON, optional)" : "Mapping inline (JSON, opcional)"}</p>
           <textarea
             value={inlineMappingText}
             onChange={(e) => setInlineMappingText(e.target.value)}
@@ -538,26 +543,28 @@ export function PartnerIntake() {
             placeholder={`{"columns":{"id_interno":"partner_internal_id","numero_sisbov":"sisbov"}}`}
           />
           <p className="text-[11px] text-muted-foreground mt-2">
-            Use para mapear campos sem criar template. Se enviar template + mapping, o mapping inline tem prioridade.
+            {isEn
+              ? "Use to map fields without creating a template. If template + mapping are sent, inline mapping has priority."
+              : "Use para mapear campos sem criar template. Se enviar template + mapping, o mapping inline tem prioridade."}
           </p>
         </label>
 
         <div className="flex items-center gap-3">
           <Switch checked={autoCreate} onCheckedChange={setAutoCreate} id="auto-create" />
-          <Label htmlFor="auto-create">Criar circuito automaticamente quando identificador não existir</Label>
+          <Label htmlFor="auto-create">{isEn ? "Auto-create circuit when identifier does not exist" : "Criar circuito automaticamente quando identificador não existir"}</Label>
         </div>
 
         {(intakeInputMode === "file" ? !!file : !!jsonBodyText.trim()) ? (
           <div className="rounded-lg border p-3 bg-muted/30">
-            <p className="text-xs font-medium text-foreground mb-2">Prévia real de roteamento (sem tokenizar)</p>
+            <p className="text-xs font-medium text-foreground mb-2">{isEn ? "Real routing preview (no tokenization)" : "Prévia real de roteamento (sem tokenizar)"}</p>
             {previewing ? (
-              <p className="text-xs text-muted-foreground">Analisando payload...</p>
+              <p className="text-xs text-muted-foreground">{isEn ? "Analyzing payload..." : "Analisando payload..."}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
-                <p className="text-muted-foreground">Linhas lidas: <span className="text-foreground font-medium">{previewRows}</span></p>
-                <p className="text-muted-foreground">Com identificador: <span className="text-primary font-medium">{previewResolvable}</span></p>
-                <p className="text-muted-foreground">Sem identificador: <span className="text-destructive font-medium">{previewUnknown}</span></p>
-                <p className="text-muted-foreground">Circuitos novos: <span className="text-foreground font-medium">{previewResult?.summary.created_circuits ?? 0}</span></p>
+                <p className="text-muted-foreground">{isEn ? "Rows read" : "Linhas lidas"}: <span className="text-foreground font-medium">{previewRows}</span></p>
+                <p className="text-muted-foreground">{isEn ? "With identifier" : "Com identificador"}: <span className="text-primary font-medium">{previewResolvable}</span></p>
+                <p className="text-muted-foreground">{isEn ? "Without identifier" : "Sem identificador"}: <span className="text-destructive font-medium">{previewUnknown}</span></p>
+                <p className="text-muted-foreground">{isEn ? "New circuits" : "Circuitos novos"}: <span className="text-foreground font-medium">{previewResult?.summary.created_circuits ?? 0}</span></p>
               </div>
             )}
             {previewError ? (
@@ -567,10 +574,10 @@ export function PartnerIntake() {
               <div className="mt-3 space-y-1">
                 {previewResult.routes.slice(0, 6).map((route) => (
                   <p key={`${route.route_type}-${route.route_value}-${route.circuit_id || "none"}`} className="text-[11px] text-muted-foreground">
-                    {route.route_type.toUpperCase()} {route.route_value} · {route.rows} linha(s) ·{" "}
+                    {route.route_type.toUpperCase()} {route.route_value} · {route.rows} {isEn ? "row(s)" : "linha(s)"} ·{" "}
                     {route.circuit_id
-                      ? `roteia para ${circuitNameMap.get(route.circuit_id) || route.circuit_id}`
-                      : "ficará no staging/fallback"}
+                      ? `${isEn ? "routes to" : "roteia para"} ${circuitNameMap.get(route.circuit_id) || route.circuit_id}`
+                      : (isEn ? "will stay in staging/fallback" : "ficará no staging/fallback")}
                   </p>
                 ))}
               </div>
@@ -581,16 +588,16 @@ export function PartnerIntake() {
         {lastResult ? (
           <div className="rounded-lg border p-3 bg-muted/20 space-y-3">
             <p className="text-xs font-medium text-foreground">
-              Último processamento: {lastResult.summary.status} · {lastResult.summary.total_rows} linha(s)
+              {isEn ? "Last processing" : "Último processamento"}: {lastResult.summary.status} · {lastResult.summary.total_rows} {isEn ? "row(s)" : "linha(s)"}
             </p>
             {lastResult.summary ? (
               <div className="space-y-1">
                 <p className="text-[11px] text-muted-foreground">
-                  rotas: {lastResult.summary.routes} · itens com link: {lastResult.summary.items} · pendências: {lastResult.summary.unresolved_rows}
+                  {isEn ? "routes" : "rotas"}: {lastResult.summary.routes} · {isEn ? "items with link" : "itens com link"}: {lastResult.summary.items} · {isEn ? "issues" : "pendências"}: {lastResult.summary.unresolved_rows}
                 </p>
                 {lastResult.summary.partner_reference ? (
                   <p className="text-[11px] text-muted-foreground">
-                    referência parceira: {lastResult.summary.partner_reference.field}={lastResult.summary.partner_reference.value}
+                    {isEn ? "partner reference" : "referência parceira"}: {lastResult.summary.partner_reference.field}={lastResult.summary.partner_reference.value}
                   </p>
                 ) : null}
                 {lastResult.summary.warnings?.length ? (
@@ -608,24 +615,24 @@ export function PartnerIntake() {
             {lastResult.verbose?.circuit_links?.length ? (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Links diretos para os circuitos com os itens roteados:
+                  {isEn ? "Direct links to routed circuits:" : "Links diretos para os circuitos com os itens roteados:"}
                 </p>
                 {lastResult.verbose.circuit_links.map((link) => (
                   <div key={link.circuit_id} className="flex flex-wrap items-center gap-2">
                     <Button size="sm" variant="outline" asChild>
                       <a href={link.app_url} target="_blank" rel="noopener noreferrer">
-                        Abrir no app <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        {isEn ? "Open in app" : "Abrir no app"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </a>
                     </Button>
                     {link.is_public !== false ? (
                       <Button size="sm" variant="ghost" asChild>
                         <a href={link.public_url} target="_blank" rel="noopener noreferrer">
-                          Página pública <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                          {isEn ? "Public page" : "Página pública"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
                         </a>
                       </Button>
                     ) : (
                       <span className="text-[11px] text-muted-foreground">
-                        Circuito privado (publique para compartilhar link público)
+                        {isEn ? "Private circuit (publish to share public link)" : "Circuito privado (publique para compartilhar link público)"}
                       </span>
                     )}
                     <p className="text-[11px] text-muted-foreground">{link.circuit_id}</p>
@@ -635,14 +642,14 @@ export function PartnerIntake() {
             ) : null}
             {lastResult.errors?.length ? (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Erros retornados por linha:</p>
+                <p className="text-xs text-muted-foreground">{isEn ? "Errors returned per row:" : "Erros retornados por linha:"}</p>
                 {lastResult.errors.slice(0, 20).map((error, idx) => (
                   <div key={`${error.reason_code}-${error.row_index ?? "none"}-${idx}`} className="rounded border p-2 bg-destructive/5">
                     <p className="text-[11px] text-destructive">
                       {error.reason_code} · {error.message}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      linha: {error.row_index ?? "-"} · referência: {error.partner_reference || "-"}
+                      {isEn ? "row" : "linha"}: {error.row_index ?? "-"} · {isEn ? "reference" : "referência"}: {error.partner_reference || "-"}
                     </p>
                   </div>
                 ))}
@@ -651,14 +658,14 @@ export function PartnerIntake() {
             {lastResult.items?.length ? (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Itens resolvidos no upload (DFID + URL + referência):
+                  {isEn ? "Resolved items in upload (DFID + URL + reference):" : "Itens resolvidos no upload (DFID + URL + referência):"}
                 </p>
                 {lastResult.items.slice(0, 20).map((item) => (
                   <div key={item.dfid} className="rounded border p-2 bg-background/60">
                     <div className="flex flex-wrap items-center gap-2">
                       <Button size="sm" variant="outline" asChild>
                         <a href={item.url} target="_blank" rel="noopener noreferrer">
-                          Abrir URL <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                          {isEn ? "Open URL" : "Abrir URL"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
                         </a>
                       </Button>
                       <p className="text-[11px] text-muted-foreground">{item.dfid}</p>
@@ -677,7 +684,7 @@ export function PartnerIntake() {
                     ) : null}
                     {item.routes?.length ? (
                       <p className="text-[11px] text-muted-foreground mt-1">
-                        rotas: {item.routes.map((r) => `${r.route_type}:${r.route_value}`).join(" · ")}
+                        {isEn ? "routes" : "rotas"}: {item.routes.map((r) => `${r.route_type}:${r.route_value}`).join(" · ")}
                       </p>
                     ) : null}
                   </div>
@@ -689,31 +696,31 @@ export function PartnerIntake() {
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h3 className="text-base font-semibold">Histórico de Payload Bruto</h3>
+        <h3 className="text-base font-semibold">{isEn ? "Raw payload history" : "Histórico de Payload Bruto"}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Arquivos enviados</p>
+            <p className="text-xs text-muted-foreground">{isEn ? "Files sent" : "Arquivos enviados"}</p>
             <p className="text-lg font-semibold">{history.length}</p>
           </div>
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Processados com sucesso</p>
+            <p className="text-xs text-muted-foreground">{isEn ? "Processed successfully" : "Processados com sucesso"}</p>
             <p className="text-lg font-semibold text-primary">{completedCount}</p>
           </div>
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Com falha</p>
+            <p className="text-xs text-muted-foreground">{isEn ? "Failed" : "Com falha"}</p>
             <p className="text-lg font-semibold text-destructive">{failedCount}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger><SelectValue placeholder="Filtrar por status" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={isEn ? "Filter by status" : "Filtrar por status"} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="completed">Concluído</SelectItem>
-              <SelectItem value="partial">Parcial</SelectItem>
-              <SelectItem value="failed">Falha</SelectItem>
-              <SelectItem value="processing">Processando</SelectItem>
+              <SelectItem value="all">{isEn ? "All statuses" : "Todos os status"}</SelectItem>
+              <SelectItem value="completed">{isEn ? "Completed" : "Concluído"}</SelectItem>
+              <SelectItem value="partial">{isEn ? "Partial" : "Parcial"}</SelectItem>
+              <SelectItem value="failed">{isEn ? "Failed" : "Falha"}</SelectItem>
+              <SelectItem value="processing">{isEn ? "Processing" : "Processando"}</SelectItem>
             </SelectContent>
           </Select>
           <label className="md:col-span-2 border rounded-md px-3 py-2">
@@ -721,13 +728,17 @@ export function PartnerIntake() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="w-full bg-transparent text-sm outline-none"
-              placeholder="Buscar por nome do arquivo, hash ou erro"
+              placeholder={isEn ? "Search by file name, hash, or error" : "Buscar por nome do arquivo, hash ou erro"}
             />
           </label>
         </div>
 
         {filteredHistory.length === 0 ? (
-          <EmptyState icon={FileUp} title="Nenhum payload registrado" description="Envie um payload JSON (padrão) ou arquivo CSV/JSON (alternativo) para começar." />
+          <EmptyState
+            icon={FileUp}
+            title={isEn ? "No payloads registered" : "Nenhum payload registrado"}
+            description={isEn ? "Send a JSON payload (default) or CSV/JSON file (alternative) to start." : "Envie um payload JSON (padrão) ou arquivo CSV/JSON (alternativo) para começar."}
+          />
         ) : (
           <div className="space-y-2">
             {filteredHistory.map((row) => (
@@ -756,7 +767,7 @@ export function PartnerIntake() {
                 </div>
                 {row.error_message ? (
                   <p className="text-xs text-destructive mt-2">
-                    {row.error_message} · Próxima ação: ajustar template/roteamento e reenviar.
+                    {row.error_message} · {isEn ? "Next action: adjust template/routing and resend." : "Próxima ação: ajustar template/roteamento e reenviar."}
                   </p>
                 ) : null}
                 <div className="mt-2">
@@ -777,15 +788,15 @@ export function PartnerIntake() {
                         URL.revokeObjectURL(url);
                       } catch {
                         toast({
-                          title: "Falha ao baixar payload",
-                          description: "Não foi possível baixar este arquivo bruto.",
+                          title: isEn ? "Failed to download payload" : "Falha ao baixar payload",
+                          description: isEn ? "Could not download raw file." : "Não foi possível baixar este arquivo bruto.",
                           variant: "destructive",
                         });
                       }
                     }}
                   >
                     <Download className="h-4 w-4 mr-1" />
-                    Baixar original
+                    {isEn ? "Download original" : "Baixar original"}
                   </Button>
                 </div>
               </div>
@@ -795,27 +806,27 @@ export function PartnerIntake() {
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h3 className="text-base font-semibold">Pendências de Roteamento</h3>
+        <h3 className="text-base font-semibold">{isEn ? "Routing issues" : "Pendências de Roteamento"}</h3>
         <p className="text-sm text-muted-foreground">
-          Pendências detectadas na ingestão. Assuma e resolva com regra para evitar recorrência.
+          {isEn ? "Issues detected during ingestion. Claim and resolve with rule to avoid recurrence." : "Pendências detectadas na ingestão. Assuma e resolva com regra para evitar recorrência."}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Total listado</p>
+            <p className="text-xs text-muted-foreground">{isEn ? "Total listed" : "Total listado"}</p>
             <p className="text-lg font-semibold">{issues.length}</p>
           </div>
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Abertas</p>
+            <p className="text-xs text-muted-foreground">{isEn ? "Open" : "Abertas"}</p>
             <p className="text-lg font-semibold">{openIssueCount}</p>
           </div>
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Em revisão</p>
+            <p className="text-xs text-muted-foreground">{isEn ? "In review" : "Em revisão"}</p>
             <p className="text-lg font-semibold">{inReviewIssueCount}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Select value={issueTargetCircuitId} onValueChange={setIssueTargetCircuitId}>
-            <SelectTrigger><SelectValue placeholder="Circuito destino para resolução rápida" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={isEn ? "Target circuit for quick resolution" : "Circuito destino para resolução rápida"} /></SelectTrigger>
             <SelectContent>
               {circuits.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -823,7 +834,7 @@ export function PartnerIntake() {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground self-center">
-            Ação rápida: cria regra já vinculando a pendência ao circuito escolhido.
+            {isEn ? "Quick action: create a rule linked to selected circuit." : "Ação rápida: cria regra já vinculando a pendência ao circuito escolhido."}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -834,14 +845,14 @@ export function PartnerIntake() {
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Status da pendência" />
+              <SelectValue placeholder={isEn ? "Issue status" : "Status da pendência"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="open,in_review">Abertas + em revisão</SelectItem>
-              <SelectItem value="open">Só abertas</SelectItem>
-              <SelectItem value="in_review">Só em revisão</SelectItem>
-              <SelectItem value="resolved">Resolvidas</SelectItem>
-              <SelectItem value="rejected">Rejeitadas</SelectItem>
+              <SelectItem value="open,in_review">{isEn ? "Open + in review" : "Abertas + em revisão"}</SelectItem>
+              <SelectItem value="open">{isEn ? "Open only" : "Só abertas"}</SelectItem>
+              <SelectItem value="in_review">{isEn ? "In review only" : "Só em revisão"}</SelectItem>
+              <SelectItem value="resolved">{isEn ? "Resolved" : "Resolvidas"}</SelectItem>
+              <SelectItem value="rejected">{isEn ? "Rejected" : "Rejeitadas"}</SelectItem>
             </SelectContent>
           </Select>
           <label className="md:col-span-2 flex items-center gap-3 text-sm border rounded-md px-3 py-2">
@@ -850,16 +861,16 @@ export function PartnerIntake() {
               onCheckedChange={(checked) => setIssueAssignedToMe(Boolean(checked))}
               id="issue-assigned-to-me"
             />
-            <Label htmlFor="issue-assigned-to-me">Mostrar apenas atribuídas para mim</Label>
+            <Label htmlFor="issue-assigned-to-me">{isEn ? "Show only assigned to me" : "Mostrar apenas atribuídas para mim"}</Label>
           </label>
         </div>
         <div>
           <Button variant="outline" size="sm" onClick={() => void load()}>
-            Atualizar pendências
+            {isEn ? "Refresh issues" : "Atualizar pendências"}
           </Button>
         </div>
         {issues.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma pendência no momento.</p>
+          <p className="text-sm text-muted-foreground">{isEn ? "No issues at the moment." : "Nenhuma pendência no momento."}</p>
         ) : (
           <div className="space-y-2">
             {issues.map((issue) => (
@@ -871,22 +882,22 @@ export function PartnerIntake() {
                   <div>
                     <p className="font-medium text-sm">{issue.identifier_value || "(vazio)"}</p>
                     <p className="text-xs text-muted-foreground">
-                      tipo: {formatIssueType(issue.identifier_type)} · motivo: {formatIssueReason(issue.reason)}
+                      {isEn ? "type" : "tipo"}: {formatIssueType(issue.identifier_type)} · {isEn ? "reason" : "motivo"}: {formatIssueReason(issue.reason)}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      último evento: {new Date(issue.last_seen_at).toLocaleString("pt-BR")}
+                      {isEn ? "last event" : "último evento"}: {new Date(issue.last_seen_at).toLocaleString("pt-BR")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
-                      {issue.occurrences} ocorrência(s)
+                      {issue.occurrences} {isEn ? "occurrence(s)" : "ocorrência(s)"}
                     </span>
                     <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
                       {issue.status}
                     </span>
                     {issue.assigned_to ? (
                       <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
-                        atribuída
+                        {isEn ? "assigned" : "atribuída"}
                       </span>
                     ) : null}
                   </div>
@@ -900,12 +911,12 @@ export function PartnerIntake() {
                       setIssueSavingKey(`assign:${issue.id}`);
                       try {
                         await assignRoutingIssue(issue.id, {});
-                        toast({ title: "Pendência assumida", description: "Agora ela está em revisão para seu usuário." });
+                        toast({ title: isEn ? "Issue claimed" : "Pendência assumida", description: isEn ? "Issue is now in review for your user." : "Agora ela está em revisão para seu usuário." });
                         await load();
                       } catch {
                         toast({
-                          title: "Falha ao assumir pendência",
-                          description: "Não foi possível atribuir a pendência.",
+                          title: isEn ? "Failed to claim issue" : "Falha ao assumir pendência",
+                          description: isEn ? "Could not assign issue." : "Não foi possível atribuir a pendência.",
                           variant: "destructive",
                         });
                       } finally {
@@ -916,7 +927,7 @@ export function PartnerIntake() {
                     {issueSavingKey === `assign:${issue.id}` ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />
                     ) : null}
-                    Assumir
+                    {isEn ? "Claim" : "Assumir"}
                   </Button>
                   <Button
                     variant="outline"
@@ -932,16 +943,16 @@ export function PartnerIntake() {
                       try {
                         await resolveRoutingIssue(issue.id, {
                           resolution_action: "rule_created",
-                          resolution_notes: "Resolvido no Partner Portal",
+                          resolution_notes: isEn ? "Resolved in Partner Portal" : "Resolvido no Partner Portal",
                           create_rule: true,
                           circuit_id: issueTargetCircuitId,
                         });
-                        toast({ title: "Pendência resolvida", description: "Regra criada e pendência encerrada." });
+                        toast({ title: isEn ? "Issue resolved" : "Pendência resolvida", description: isEn ? "Rule created and issue closed." : "Regra criada e pendência encerrada." });
                         await load();
                       } catch {
                         toast({
-                          title: "Falha ao resolver pendência",
-                          description: "Não foi possível criar regra e resolver automaticamente.",
+                          title: isEn ? "Failed to resolve issue" : "Falha ao resolver pendência",
+                          description: isEn ? "Could not create rule and resolve automatically." : "Não foi possível criar regra e resolver automaticamente.",
                           variant: "destructive",
                         });
                       } finally {
@@ -952,7 +963,7 @@ export function PartnerIntake() {
                     {issueSavingKey === `resolve:${issue.id}` ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />
                     ) : null}
-                    Resolver com regra
+                    {isEn ? "Resolve with rule" : "Resolver com regra"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -963,15 +974,15 @@ export function PartnerIntake() {
                       try {
                         await resolveRoutingIssue(issue.id, {
                           resolution_action: "manual_resolution",
-                          resolution_notes: "Resolvido manualmente no Partner Portal",
+                          resolution_notes: isEn ? "Manually resolved in Partner Portal" : "Resolvido manualmente no Partner Portal",
                           create_rule: false,
                         });
-                        toast({ title: "Pendência encerrada", description: "Marcada como resolvida manualmente." });
+                        toast({ title: isEn ? "Issue closed" : "Pendência encerrada", description: isEn ? "Marked as manually resolved." : "Marcada como resolvida manualmente." });
                         await load();
                       } catch {
                         toast({
-                          title: "Falha ao encerrar pendência",
-                          description: "Não foi possível marcar como resolvida.",
+                          title: isEn ? "Failed to close issue" : "Falha ao encerrar pendência",
+                          description: isEn ? "Could not mark as resolved." : "Não foi possível marcar como resolvida.",
                           variant: "destructive",
                         });
                       } finally {
@@ -982,7 +993,7 @@ export function PartnerIntake() {
                     {issueSavingKey === `resolve-manual:${issue.id}` ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />
                     ) : null}
-                    Resolver manual
+                    {isEn ? "Resolve manually" : "Resolver manual"}
                   </Button>
                 </div>
               </div>
@@ -995,7 +1006,7 @@ export function PartnerIntake() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ScrollText className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-base font-semibold">Log de Requisições da API</h3>
+            <h3 className="text-base font-semibold">{isEn ? "API request log" : "Log de Requisições da API"}</h3>
             <span className="text-xs text-muted-foreground">({logEntries.length})</span>
           </div>
           <div className="flex items-center gap-2">
@@ -1006,7 +1017,7 @@ export function PartnerIntake() {
                 onClick={() => { clearLog(); setLogEntries([]); }}
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
-                Limpar
+                {isEn ? "Clear" : "Limpar"}
               </Button>
             ) : null}
             <Button
@@ -1014,15 +1025,17 @@ export function PartnerIntake() {
               size="sm"
               onClick={() => setLogExpanded(!logExpanded)}
             >
-              {logExpanded ? "Recolher" : "Expandir"}
+              {logExpanded ? (isEn ? "Collapse" : "Recolher") : (isEn ? "Expand" : "Expandir")}
             </Button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">
-          Todas as chamadas feitas para endpoints de parceiro nesta sessão. Útil para depuração e verificação.
+          {isEn
+            ? "All calls made to partner endpoints in this session. Useful for debugging and verification."
+            : "Todas as chamadas feitas para endpoints de parceiro nesta sessão. Útil para depuração e verificação."}
         </p>
         {logEntries.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Nenhuma requisição registrada nesta sessão.</p>
+          <p className="text-xs text-muted-foreground">{isEn ? "No requests recorded in this session." : "Nenhuma requisição registrada nesta sessão."}</p>
         ) : (
           <div className={`space-y-1 ${logExpanded ? "" : "max-h-[320px] overflow-y-auto"}`}>
             {logEntries.map((entry) => (
@@ -1051,7 +1064,7 @@ export function PartnerIntake() {
                   </span>
                 ) : (
                   <span className="shrink-0 px-1.5 py-0.5 rounded text-[11px] font-medium bg-destructive/10 text-destructive">
-                    REDE
+                    {isEn ? "NETWORK" : "REDE"}
                   </span>
                 )}
                 <span className="text-muted-foreground shrink-0 w-[60px] text-right">
