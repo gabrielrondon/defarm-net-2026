@@ -71,7 +71,7 @@ import OwnershipClaims from "./pages/app/OwnershipClaims";
 import PropertyHerd from "./pages/app/PropertyHerd";
 
 const queryClient = new QueryClient(); // init
-type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
+type WorkspaceType = "partner" | "producer" | "processor" | "certifier" | "government";
 
 function TokenAwareIndex() {
   const location = useLocation();
@@ -142,7 +142,7 @@ function WorkspaceHome() {
   if (!user?.is_admin) {
     if (user?.workspace_type === "partner") return <Navigate to="/app/parceiro" replace />;
     if (user?.workspace_type === "certifier") return <Navigate to="/app/claims" replace />;
-    if (user?.workspace_type === "processor") return <Navigate to="/app/eventos" replace />;
+    if (user?.workspace_type === "processor" || user?.workspace_type === "government") return <Navigate to="/app/eventos" replace />;
   }
   return <Caderneta />;
 }
@@ -199,7 +199,7 @@ const App = () => (
             <Route
               path="/app/descobrir"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier", "government"]}>
                   <AppLayout><CircuitDiscovery /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -207,7 +207,7 @@ const App = () => (
             <Route
               path="/app/circuitos"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><CircuitosList /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -215,7 +215,7 @@ const App = () => (
             <Route
               path="/app/circuitos/novo"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><NovoCircuito /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -223,7 +223,7 @@ const App = () => (
             <Route
               path="/app/circuitos/:id"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><CircuitoDetail /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -231,7 +231,7 @@ const App = () => (
             <Route
               path="/app/circuitos/:id/editar"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><EditarCircuito /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -239,7 +239,7 @@ const App = () => (
             <Route
               path="/app/circuitos/:id/solicitacoes"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><JoinRequestsAdmin /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -247,7 +247,7 @@ const App = () => (
             <Route
               path="/app/itens"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><ItensList /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -255,7 +255,7 @@ const App = () => (
             <Route
               path="/app/itens/novo"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><NovoItem /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -263,7 +263,7 @@ const App = () => (
             <Route
               path="/app/itens/:id"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><ItemDetail /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -271,7 +271,7 @@ const App = () => (
             <Route
               path="/app/claims"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "certifier", "government"]}>
                   <AppLayout><OwnershipClaims /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -287,7 +287,7 @@ const App = () => (
             <Route
               path="/app/eventos"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><EventosList /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -295,7 +295,7 @@ const App = () => (
             <Route
               path="/app/auditoria"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier", "government"]}>
                   <AppLayout><AuditTrail /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -303,7 +303,7 @@ const App = () => (
             <Route
               path="/app/snapshots"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "certifier", "government"]}>
                   <AppLayout><SnapshotsList /></AppLayout>
                 </RequireWorkspaceAccess>
               }
@@ -345,7 +345,7 @@ const App = () => (
             <Route
               path="/app/compliance"
               element={
-                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier"]}>
+                <RequireWorkspaceAccess allowed={["producer", "processor", "certifier", "government"]}>
                   <AppLayout><ComplianceCheck /></AppLayout>
                 </RequireWorkspaceAccess>
               }

@@ -58,7 +58,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
         ? "/app/parceiro"
         : user?.workspace_type === "certifier"
         ? "/app/claims"
-        : user?.workspace_type === "processor"
+        : user?.workspace_type === "processor" || user?.workspace_type === "government"
         ? "/app/eventos"
         : isPartnerMode
         ? "/app/parceiro"

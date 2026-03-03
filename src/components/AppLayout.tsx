@@ -59,7 +59,7 @@ interface NavItem {
   href: string;
   external?: boolean;
 }
-type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
+type WorkspaceType = "partner" | "producer" | "processor" | "certifier" | "government";
 
 const navCatalog: NavItem[] = [
   { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
@@ -87,6 +87,7 @@ const navByWorkspace: Record<WorkspaceType, string[]> = {
   producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
+  government: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
 };
 
 const adminNavItems: NavItem[] = [

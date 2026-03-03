@@ -12,7 +12,7 @@ export interface AdminUser {
   workspace_id?: string | null;
   workspace_name?: string | null;
   workspace_slug?: string | null;
-  workspace_type?: "partner" | "producer" | "processor" | "certifier" | null;
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | "government" | null;
   workspace_tier?: string | null;
   created_at: string;
   updated_at?: string;
@@ -31,7 +31,7 @@ export interface CreateAdminUserRequest {
   workspace_id?: string;
   workspace_name?: string;
   workspace_slug?: string;
-  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | "government";
   is_admin?: boolean;
 }
 
@@ -39,7 +39,7 @@ export interface CreateAdminUserResponse {
   message: string;
   user_id: string;
   workspace_id: string;
-  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | "government";
   role: string;
   is_admin: boolean;
   set_password_email_requested?: boolean;
@@ -64,7 +64,7 @@ export interface AdminWorkspace {
   name: string;
   slug: string;
   tier: "free" | "basic" | "pro" | "enterprise";
-  workspace_type: "partner" | "producer" | "processor" | "certifier";
+  workspace_type: "partner" | "producer" | "processor" | "certifier" | "government";
   owner_id: string;
   owner_email?: string | null;
   created_at: string;
@@ -75,7 +75,7 @@ export interface CreateWorkspaceRequest {
   name: string;
   slug?: string;
   tier?: "free" | "basic" | "pro" | "enterprise";
-  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | "government";
   owner_user_id: string;
 }
 
@@ -83,7 +83,7 @@ export interface UpdateWorkspaceRequest {
   name?: string;
   slug?: string;
   tier?: "free" | "basic" | "pro" | "enterprise";
-  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | "government";
 }
 
 // --- Adapter Stats ---

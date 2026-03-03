@@ -42,7 +42,7 @@ export interface RegisterRequest {
   full_name: string;
   workspace_slug?: string;
   workspace_name?: string;
-  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | "government";
 }
 
 export interface AuthUser {
@@ -59,7 +59,7 @@ export interface AuthUser {
     name: string;
     slug: string;
     tier: string;
-    workspace_type: "partner" | "producer" | "processor" | "certifier";
+    workspace_type: "partner" | "producer" | "processor" | "certifier" | "government";
     role: string;
   };
 }
@@ -95,7 +95,7 @@ export interface User {
   workspace_id: string;
   workspace_name?: string;
   workspace_slug?: string;
-  workspace_type?: "partner" | "producer" | "processor" | "certifier";
+  workspace_type?: "partner" | "producer" | "processor" | "certifier" | "government";
   role?: string;
   is_admin?: boolean;
   is_active?: boolean;
@@ -226,7 +226,7 @@ export interface UserWorkspaceSummary {
   name: string;
   slug: string;
   tier: string;
-  workspace_type: "partner" | "producer" | "processor" | "certifier";
+  workspace_type: "partner" | "producer" | "processor" | "certifier" | "government";
   role: string;
   is_default: boolean;
 }

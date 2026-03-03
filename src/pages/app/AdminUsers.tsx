@@ -25,10 +25,37 @@ import {
   type AdminUser,
   type AdminWorkspace,
 } from "@/lib/api/admin-users";
+import {
+  deleteWorkspaceTrustProfile,
+  listWorkspaceTrustProfiles,
+  upsertWorkspaceTrustProfile,
+  type WorkspaceSourceType,
+  type WorkspaceTrustProfile,
+} from "@/lib/api/workspace-trust-profiles";
 
-const WORKSPACE_TYPES = ["producer", "partner", "certifier", "processor"] as const;
+const WORKSPACE_TYPES = ["producer", "partner", "certifier", "processor", "government"] as const;
 const WORKSPACE_TIERS = ["free", "basic", "pro", "enterprise"] as const;
 const USER_ROLES = ["owner", "admin", "partner", "editor", "viewer"] as const;
+const TRUST_SOURCE_TYPES: WorkspaceSourceType[] = [
+  "government",
+  "sanitary_agency",
+  "authority",
+  "certifier",
+  "partner",
+  "producer",
+  "processor",
+  "integration",
+  "manual",
+  "system",
+];
+
+function defaultTrustSourceByWorkspaceType(type: AdminWorkspace["workspace_type"]): WorkspaceSourceType {
+  if (type === "government") return "government";
+  if (type === "certifier") return "certifier";
+  if (type === "partner") return "partner";
+  if (type === "processor") return "processor";
+  return "producer";
+}
 
 export default function AdminUsers() {
   const { toast } = useToast();
@@ -36,6 +63,8 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
+  const [trustProfiles, setTrustProfiles] = useState<Record<string, WorkspaceTrustProfile>>({});
+  const [trustDrafts, setTrustDrafts] = useState<Record<string, { source_type: WorkspaceSourceType | "auto"; notes: string }>>({});
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState<string>("all");
   const [userWorkspaceTypeFilter, setUserWorkspaceTypeFilter] = useState<string>("all");
@@ -56,6 +85,8 @@ export default function AdminUsers() {
     workspace_name: "",
     workspace_slug: "",
     workspace_type: "producer" as (typeof WORKSPACE_TYPES)[number],
+    trust_source_type: "auto" as WorkspaceSourceType | "auto",
+    trust_notes: "",
   });
 
   const [newWorkspace, setNewWorkspace] = useState({
@@ -64,19 +95,38 @@ export default function AdminUsers() {
     owner_user_id: "",
     workspace_type: "producer" as (typeof WORKSPACE_TYPES)[number],
     tier: "free" as (typeof WORKSPACE_TIERS)[number],
+    trust_source_type: "auto" as WorkspaceSourceType | "auto",
+    trust_notes: "",
   });
 
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [usersResp, adminsResp, wsResp] = await Promise.all([
+      const [usersResp, adminsResp, wsResp, trustResp] = await Promise.all([
         listAdminUsers(),
         listAdmins(),
         listWorkspaces(),
+        listWorkspaceTrustProfiles(),
       ]);
       setUsers(usersResp);
       setAdmins(adminsResp);
       setWorkspaces(wsResp);
+      const trustMap = trustResp.reduce<Record<string, WorkspaceTrustProfile>>((acc, profile) => {
+        acc[profile.workspace_id] = profile;
+        return acc;
+      }, {});
+      setTrustProfiles(trustMap);
+      setTrustDrafts((prev) => {
+        const next: Record<string, { source_type: WorkspaceSourceType | "auto"; notes: string }> = {};
+        for (const ws of wsResp) {
+          const profile = trustMap[ws.id];
+          next[ws.id] = {
+            source_type: profile?.source_type ?? "auto",
+            notes: profile?.notes ?? prev[ws.id]?.notes ?? "",
+          };
+        }
+        return next;
+      });
     } catch (err) {
       toast({
         title: "Erro ao carregar admin",
@@ -197,6 +247,13 @@ export default function AdminUsers() {
           variant: "destructive",
         });
       }
+      if (createMode === "new" && newUser.trust_source_type !== "auto") {
+        await upsertWorkspaceTrustProfile(
+          res.workspace_id,
+          newUser.trust_source_type,
+          newUser.trust_notes.trim() || undefined
+        );
+      }
       setNewUser({
         full_name: "",
         email: "",
@@ -208,6 +265,8 @@ export default function AdminUsers() {
         workspace_name: "",
         workspace_slug: "",
         workspace_type: "producer",
+        trust_source_type: "auto",
+        trust_notes: "",
       });
       await loadAll();
     } catch (err) {
@@ -222,13 +281,20 @@ export default function AdminUsers() {
   const handleCreateWorkspace = async () => {
     if (!newWorkspace.name || !newWorkspace.owner_user_id) return;
     try {
-      await createWorkspace({
+      const created = await createWorkspace({
         name: newWorkspace.name,
         slug: newWorkspace.slug || undefined,
         owner_user_id: newWorkspace.owner_user_id,
         workspace_type: newWorkspace.workspace_type,
         tier: newWorkspace.tier,
       });
+      if (newWorkspace.trust_source_type !== "auto") {
+        await upsertWorkspaceTrustProfile(
+          created.id,
+          newWorkspace.trust_source_type,
+          newWorkspace.trust_notes.trim() || undefined
+        );
+      }
       toast({ title: "Workspace criado com sucesso" });
       setNewWorkspace({
         name: "",
@@ -236,6 +302,8 @@ export default function AdminUsers() {
         owner_user_id: "",
         workspace_type: "producer",
         tier: "free",
+        trust_source_type: "auto",
+        trust_notes: "",
       });
       await loadAll();
     } catch (err) {
@@ -289,10 +357,55 @@ export default function AdminUsers() {
   const handleWorkspaceType = async (ws: AdminWorkspace, workspace_type: AdminWorkspace["workspace_type"]) => {
     try {
       await updateWorkspace(ws.id, { workspace_type });
+      setTrustDrafts((prev) => {
+        const current = prev[ws.id] ?? { source_type: "auto" as const, notes: "" };
+        if (current.source_type !== "auto") return prev;
+        return {
+          ...prev,
+          [ws.id]: {
+            ...current,
+            notes: current.notes,
+          },
+        };
+      });
       await loadAll();
     } catch (err) {
       toast({
         title: "Falha ao atualizar tipo de workspace",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTrustDraftChange = (
+    workspaceId: string,
+    patch: Partial<{ source_type: WorkspaceSourceType | "auto"; notes: string }>
+  ) => {
+    setTrustDrafts((prev) => ({
+      ...prev,
+      [workspaceId]: {
+        source_type: prev[workspaceId]?.source_type ?? "auto",
+        notes: prev[workspaceId]?.notes ?? "",
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveTrustProfile = async (workspaceId: string) => {
+    const draft = trustDrafts[workspaceId];
+    if (!draft) return;
+    try {
+      if (draft.source_type === "auto") {
+        await deleteWorkspaceTrustProfile(workspaceId);
+      } else {
+        await upsertWorkspaceTrustProfile(workspaceId, draft.source_type, draft.notes.trim() || undefined);
+      }
+      await loadAll();
+      toast({ title: "Fonte de confiança atualizada" });
+    } catch (err) {
+      toast({
+        title: "Falha ao atualizar confiança",
         description: err instanceof Error ? err.message : "Erro inesperado.",
         variant: "destructive",
       });
@@ -403,7 +516,7 @@ export default function AdminUsers() {
           </div>
 
           {createMode === "new" ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
                 <Label>Nome do Workspace</Label>
                 <Input
@@ -433,6 +546,29 @@ export default function AdminUsers() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Fonte de Confiança (opcional)</Label>
+                <Select
+                  value={newUser.trust_source_type}
+                  onValueChange={(v: WorkspaceSourceType | "auto") => setNewUser((p) => ({ ...p, trust_source_type: v }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">{`auto (${defaultTrustSourceByWorkspaceType(newUser.workspace_type)})`}</SelectItem>
+                    {TRUST_SOURCE_TYPES.map((sourceType) => (
+                      <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-4">
+                <Label>Notas de confiança (opcional)</Label>
+                <Input
+                  value={newUser.trust_notes}
+                  onChange={(e) => setNewUser((p) => ({ ...p, trust_notes: e.target.value }))}
+                  placeholder="Ex.: órgão oficial estadual (IAGRO)"
+                />
               </div>
             </div>
           ) : (
@@ -607,7 +743,7 @@ export default function AdminUsers() {
         <CardHeader>
           <CardTitle>Criar Workspace</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div>
             <Label>Nome</Label>
             <Input
@@ -666,7 +802,32 @@ export default function AdminUsers() {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-5">
+          <div>
+            <Label>Fonte de Confiança (opcional)</Label>
+            <Select
+              value={newWorkspace.trust_source_type}
+              onValueChange={(v: WorkspaceSourceType | "auto") =>
+                setNewWorkspace((p) => ({ ...p, trust_source_type: v }))
+              }
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">{`auto (${defaultTrustSourceByWorkspaceType(newWorkspace.workspace_type)})`}</SelectItem>
+                {TRUST_SOURCE_TYPES.map((sourceType) => (
+                  <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-6">
+            <Label>Notas de confiança (opcional)</Label>
+            <Input
+              value={newWorkspace.trust_notes}
+              onChange={(e) => setNewWorkspace((p) => ({ ...p, trust_notes: e.target.value }))}
+              placeholder="Ex.: integração oficial de agência sanitária"
+            />
+          </div>
+          <div className="md:col-span-6">
             <Button onClick={handleCreateWorkspace}>Criar Workspace</Button>
           </div>
         </CardContent>
@@ -682,8 +843,11 @@ export default function AdminUsers() {
               <div>
                 <p className="font-medium">{ws.name} <span className="text-xs text-muted-foreground">({ws.slug})</span></p>
                 <p className="text-xs text-muted-foreground">owner: {ws.owner_email || ws.owner_id}</p>
+                <p className="text-xs text-muted-foreground">
+                  confiança ativa: {trustProfiles[ws.id]?.source_type ?? `auto (${defaultTrustSourceByWorkspaceType(ws.workspace_type)})`}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline">{ws.tier}</Badge>
                 <Select value={ws.workspace_type} onValueChange={(v: AdminWorkspace["workspace_type"]) => handleWorkspaceType(ws, v)}>
                   <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -693,6 +857,27 @@ export default function AdminUsers() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select
+                  value={trustDrafts[ws.id]?.source_type ?? "auto"}
+                  onValueChange={(v: WorkspaceSourceType | "auto") => handleTrustDraftChange(ws.id, { source_type: v })}
+                >
+                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">{`auto (${defaultTrustSourceByWorkspaceType(ws.workspace_type)})`}</SelectItem>
+                    {TRUST_SOURCE_TYPES.map((sourceType) => (
+                      <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={trustDrafts[ws.id]?.notes ?? ""}
+                  onChange={(e) => handleTrustDraftChange(ws.id, { notes: e.target.value })}
+                  placeholder="nota (opcional)"
+                  className="w-56"
+                />
+                <Button variant="outline" onClick={() => handleSaveTrustProfile(ws.id)}>
+                  Salvar confiança
+                </Button>
               </div>
             </div>
           ))}

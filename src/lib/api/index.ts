@@ -17,6 +17,7 @@ export * from "./join-requests";
 export * from "./circuit-adapters";
 export * from "./canonical-identifiers";
 export * from "./value-chains";
+export * from "./workspace-trust-profiles";
 export * from "./anchors";
 export * from "./ownership-claims";
 export * from "./property-links";

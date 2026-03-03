@@ -1,4 +1,4 @@
-export type DemoWorkspaceType = "partner" | "producer" | "processor" | "certifier";
+export type DemoWorkspaceType = "partner" | "producer" | "processor" | "certifier" | "government";
 export type DemoActorId = "producer" | "partner" | "certifier" | "processor" | "admin";
 
 export type DemoActor = {
