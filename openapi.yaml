@@ -4163,6 +4163,96 @@ components:
       properties:
         summary:
           $ref: '#/components/schemas/AdapterAdminJobSummary'
+    AdapterAdminQueueDepths:
+      description: Redis queue depths by priority.
+      type: object
+      required:
+      - p1
+      - p2
+      - p3
+      - p4
+      - total
+      properties:
+        p1:
+          type: integer
+          format: int64
+        p2:
+          type: integer
+          format: int64
+        p3:
+          type: integer
+          format: int64
+        p4:
+          type: integer
+          format: int64
+        total:
+          type: integer
+          format: int64
+    AdapterAdminQueuesResponse:
+      description: Queue depths and XLM low-balance gating status.
+      type: object
+      required:
+      - queue_depths
+      - xlm_low_balance_threshold
+      - low_xlm_mode
+      - active_queues
+      properties:
+        queue_depths:
+          $ref: '#/components/schemas/AdapterAdminQueueDepths'
+        xlm_balance:
+          type: number
+          format: double
+          nullable: true
+        xlm_low_balance_threshold:
+          type: number
+          format: double
+        low_xlm_mode:
+          type: boolean
+        active_queues:
+          type: array
+          items:
+            type: string
+    AdapterAdminBatchRetryRequest:
+      description: Request body for batch requeue by filter.
+      type: object
+      required:
+      - filter
+      properties:
+        filter:
+          type: object
+          properties:
+            status:
+              type: string
+            adapter:
+              type: string
+        priority:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 4
+          default: 4
+        limit:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 5000
+          default: 500
+    AdapterAdminBatchRetryResponse:
+      description: Batch requeue result.
+      type: object
+      required:
+      - queued
+      - queue
+      - priority
+      properties:
+        queued:
+          type: integer
+          format: int64
+        queue:
+          type: string
+        priority:
+          type: integer
+          format: int32
     HealthResponse:
       description: System health status response including component statuses.
       type: object
@@ -6383,6 +6473,14 @@ paths:
         required: false
         schema:
           type: string
+      - name: priority
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 4
       - name: limit
         in: query
         required: false
@@ -6452,6 +6550,40 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
+  /api/adapter/admin/queues:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get queue depth and XLM gating status (admin)
+      description: Returns depth for priority queues p1..p4 and current XLM low-balance gating mode.
+      operationId: getAdapterAdminQueues
+      responses:
+        '200':
+          description: Queue status snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminQueuesResponse'
+              example:
+                queue_depths:
+                  p1: 14
+                  p2: 2
+                  p3: 58
+                  p4: 320
+                  total: 394
+                xlm_balance: 301.494345
+                xlm_low_balance_threshold: 50
+                low_xlm_mode: false
+                active_queues:
+                - adapter_jobs:p1
+                - adapter_jobs:p2
+                - adapter_jobs:p3
+                - adapter_jobs:p4
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
   /api/adapter/admin/jobs/{job_id}:
     get:
       tags:
@@ -6494,6 +6626,41 @@ paths:
           description: Unauthorized
         '404':
           description: Not found
+        '500':
+          description: Internal server error
+  /api/adapter/admin/jobs/retry-batch:
+    post:
+      tags:
+      - Adapters
+      - Admin
+      summary: Retry adapter jobs in batch (admin)
+      description: Requeues multiple jobs with optional filter and target priority.
+      operationId: retryAdapterJobsBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdapterAdminBatchRetryRequest'
+            example:
+              filter:
+                status: failed
+                adapter: stellar_mainnet
+              priority: 4
+              limit: 500
+      responses:
+        '202':
+          description: Batch requeue accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminBatchRetryResponse'
+              example:
+                queued: 142
+                queue: adapter_jobs:p4
+                priority: 4
+        '401':
+          description: Unauthorized
         '500':
           description: Internal server error
   /api/adapter/admin/jobs/{job_id}/retry:
