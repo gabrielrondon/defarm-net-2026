@@ -23,6 +23,9 @@ import {
   Network,
   Languages,
   Info,
+  Tag,
+  FileText,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -114,8 +117,62 @@ type NormalizedMetadataEntry = {
   value: unknown;
 };
 
+type MetadataGroupKey = "identification" | "movement" | "weighing" | "documents" | "other";
+
 const WEIGHT_KEYS = ["weight_kg", "peso_kg", "weight", "peso"];
 const WEIGHT_DATE_KEYS = ["data_peso", "weight_date", "data_pesagem", "date", "occurred_at"];
+
+const METADATA_GROUP_ORDER: MetadataGroupKey[] = [
+  "identification",
+  "movement",
+  "weighing",
+  "documents",
+  "other",
+];
+
+function resolveMetadataGroup(canonicalKey: string): MetadataGroupKey {
+  if (
+    [
+      "value_chain",
+      "sisbov",
+      "chip",
+      "car",
+      "inscricao_estadual",
+      "inscricao_estadual_centro_custo",
+      "animal_id",
+      "partner_internal_id",
+      "category",
+      "breed",
+    ].includes(canonicalKey)
+  ) {
+    return "identification";
+  }
+  if (["movement_type", "stock_motive", "supplier", "description", "stock_location", "batch"].includes(canonicalKey)) {
+    return "movement";
+  }
+  if (["weight_kg", "data_peso"].includes(canonicalKey)) {
+    return "weighing";
+  }
+  if (["document_type", "document_number", "document_date"].includes(canonicalKey)) {
+    return "documents";
+  }
+  return "other";
+}
+
+function metadataGroupTitle(group: MetadataGroupKey, locale: MetadataLocale): string {
+  if (locale === "en") {
+    if (group === "identification") return "Identification";
+    if (group === "movement") return "Movement";
+    if (group === "weighing") return "Weighing";
+    if (group === "documents") return "Documents";
+    return "Additional data";
+  }
+  if (group === "identification") return "Identificação";
+  if (group === "movement") return "Movimentação";
+  if (group === "weighing") return "Pesagem";
+  if (group === "documents") return "Documentos";
+  return "Dados adicionais";
+}
 
 const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
   { canonical: "value_chain", aliases: ["value_chain", "valuechain"], label: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
@@ -126,6 +183,17 @@ const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
     canonical: "inscricao_estadual",
     aliases: ["inscricao_estadual", "ie", "state_registration"],
     label: { "pt-BR": "Inscrição estadual", en: "State registration" },
+  },
+  {
+    canonical: "inscricao_estadual_centro_custo",
+    aliases: [
+      "inscricao_estadual_centro_custo",
+      "inscricao_estadual_do_centro_de_custo",
+      "ie_cc",
+      "state_registration_cost_center",
+      "inscricaeo_estadual_do_centro_de_custo",
+    ],
+    label: { "pt-BR": "Inscrição estadual (centro de custo)", en: "State registration (cost center)" },
   },
   {
     canonical: "partner_internal_id",
@@ -205,6 +273,12 @@ function parseWeightPointFromSnapshot(snapshot: unknown, uploadedAtFallback?: st
 }
 
 function shortHash(value: string, head = 10, tail = 8): string {
+  if (!value) return "-";
+  if (value.length <= head + tail + 3) return value;
+  return `${value.slice(0, head)}...${value.slice(-tail)}`;
+}
+
+function shortMiddle(value: string, head = 4, tail = 4): string {
   if (!value) return "-";
   if (value.length <= head + tail + 3) return value;
   return `${value.slice(0, head)}...${value.slice(-tail)}`;
@@ -661,6 +735,20 @@ export default function PublicItem() {
     return Array.from(grouped.values()).sort((a, b) => a.canonicalKey.localeCompare(b.canonicalKey));
   }, [metadata]);
 
+  const groupedMetadataEntries = useMemo(() => {
+    const grouped = new Map<MetadataGroupKey, NormalizedMetadataEntry[]>();
+    for (const entry of visibleMetadataEntries) {
+      const group = resolveMetadataGroup(entry.canonicalKey);
+      if (!grouped.has(group)) grouped.set(group, []);
+      grouped.get(group)!.push(entry);
+    }
+
+    return METADATA_GROUP_ORDER.map((group) => ({
+      group,
+      entries: grouped.get(group) || [],
+    })).filter((section) => section.entries.length > 0);
+  }, [visibleMetadataEntries]);
+
   const fallbackCanonicalIdentifier = useMemo(() => detectCanonicalIdentifier(metadata), [metadata]);
 
   const canonicalIdentifier = canonicalFromDb
@@ -842,7 +930,7 @@ export default function PublicItem() {
         <div className="rounded-2xl bg-gradient-to-br from-primary/8 via-background to-primary/4 border border-primary/10 p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
             <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Fingerprint className="h-7 w-7 text-primary" />
+              <Package className="h-7 w-7 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground font-mono tracking-tight break-all">
@@ -859,6 +947,19 @@ export default function PublicItem() {
                   <CalendarDays className="h-3 w-3" />
                   {item.year}
                 </span>
+              </div>
+              <div className="mt-3 space-y-1">
+                {canonicalIdentifier && (
+                  <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Tag className="h-3.5 w-3.5" />
+                    {canonicalIdentifier.label}:{" "}
+                    <span className="font-mono text-foreground/90 break-all">{canonicalIdentifier.value}</span>
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {metadataLocale === "en" ? "Last update" : "Última atualização"}:{" "}
+                  {formatDateShort(item.updated_at || item.created_at)}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium self-start">
@@ -919,120 +1020,178 @@ export default function PublicItem() {
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {visibleMetadataEntries.map((entry) => {
-                const { canonicalKey, rawKeys, value } = entry;
-                const normalized = normalizeFieldKey(canonicalKey);
-                const displayLabel = getMetadataLabel(canonicalKey, metadataLocale);
-
-                if (normalized === "sisbov" && (typeof value === "string" || typeof value === "number")) {
-                  const sisbov = String(value);
-                  const refUrl = `${window.location.origin}/i/sisbov/${encodeURIComponent(sisbov)}`;
-                  return (
-                    <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
-                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SISBOV</p>
-                      <a
-                        href={`/i/sisbov/${encodeURIComponent(sisbov)}`}
-                        className="text-sm font-medium text-primary break-all hover:underline"
-                      >
-                        {sisbov}
-                      </a>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, metadataLocale === "en" ? "SISBOV number" : "SISBOV")}>
-                          <Copy className="h-3 w-3 mr-1" />
-                          {metadataLocale === "en" ? "Copy number" : "Copiar número"}
-                        </Button>
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(refUrl, metadataLocale === "en" ? "SISBOV link" : "Link SISBOV")}>
-                          <Link2 className="h-3 w-3 mr-1" />
-                          {metadataLocale === "en" ? "Copy link" : "Copiar link"}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                }
-
-                if (normalized === "car" && (typeof value === "string" || typeof value === "number")) {
-                  const car = String(value);
-                  return (
-                    <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
-                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">CAR</p>
-                      <button
-                        onClick={() => void openCarVerification()}
-                        className="text-sm font-medium text-primary break-all hover:underline text-left"
-                      >
-                        {car}
-                      </button>
-                      <p className="text-[11px] text-muted-foreground">
-                        {carHasOfficialFormat
-                          ? (metadataLocale === "en"
-                              ? "Click to verify compliance and property polygon."
-                              : "Clique para verificar compliance e polígono desse CAR.")
-                          : (metadataLocale === "en"
-                              ? "CAR outside official format; geospatial check may be unavailable."
-                              : "CAR fora do padrão oficial; a consulta geoespacial pode não estar disponível.")}
-                      </p>
-                    </div>
-                  );
-                }
-
-                if (normalized === "weight_kg" && (typeof value === "number" || typeof value === "string")) {
-                  const weight = Number(value);
-                  return (
-                    <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
-                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
-                      <button
-                        onClick={() => setShowWeightDialog(true)}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary"
-                      >
-                        <TrendingUp className="h-4 w-4" />
-                        {Number.isFinite(weight) ? `${weight.toFixed(1)} kg` : String(value)}
-                      </button>
-                      {weightMeta?.date ? (
-                        <p className="text-[11px] text-muted-foreground">
-                          {metadataLocale === "en" ? "Weighing date" : "Data da pesagem"}: {weightMeta.date}
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-muted-foreground">
-                          {metadataLocale === "en" ? "Click to view weight progression." : "Clique para ver evolução de peso."}
-                        </p>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="inline-flex text-muted-foreground hover:text-foreground"
-                            aria-label={metadataLocale === "en" ? "Show original field" : "Mostrar campo original"}
-                          >
-                            <Info className="h-3 w-3" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs text-xs">
-                          {metadataLocale === "en" ? "Original field(s): " : "Campo(s) original(is): "}
-                          {rawKeys.join(", ")}
-                          <br />
-                          {metadataLocale === "en" ? "Official field: " : "Campo oficial: "}
-                          {canonicalKey}
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    {typeof value === "object" ? (
-                      <pre className="text-xs text-foreground mt-1 overflow-x-auto whitespace-pre-wrap break-words">
-                        {compactJson(value)}
-                      </pre>
+            <div className="space-y-4">
+              {groupedMetadataEntries.map(({ group, entries }) => (
+                <div key={group} className="space-y-2.5">
+                  <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/40 px-2.5 py-1">
+                    {group === "identification" ? (
+                      <Tag className="h-3.5 w-3.5 text-primary" />
+                    ) : group === "movement" ? (
+                      <Truck className="h-3.5 w-3.5 text-primary" />
+                    ) : group === "weighing" ? (
+                      <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                    ) : group === "documents" ? (
+                      <FileText className="h-3.5 w-3.5 text-primary" />
                     ) : (
-                      <p className="text-sm font-medium text-foreground mt-0.5 break-words">{String(value ?? "-")}</p>
+                      <Info className="h-3.5 w-3.5 text-primary" />
                     )}
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {metadataGroupTitle(group, metadataLocale)}
+                    </p>
                   </div>
-                );
-              })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {entries.map((entry) => {
+                      const { canonicalKey, rawKeys, value } = entry;
+                      const normalized = normalizeFieldKey(canonicalKey);
+                      const displayLabel = getMetadataLabel(canonicalKey, metadataLocale);
+
+                      if (normalized === "sisbov" && (typeof value === "string" || typeof value === "number")) {
+                        const sisbov = String(value);
+                        const refUrl = `${window.location.origin}/i/sisbov/${encodeURIComponent(sisbov)}`;
+                        return (
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SISBOV</p>
+                            <a
+                              href={`/i/sisbov/${encodeURIComponent(sisbov)}`}
+                              className="text-sm font-medium text-primary break-all hover:underline"
+                            >
+                              {sisbov}
+                            </a>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, metadataLocale === "en" ? "SISBOV number" : "SISBOV")}>
+                                <Copy className="h-3 w-3 mr-1" />
+                                {metadataLocale === "en" ? "Copy number" : "Copiar número"}
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(refUrl, metadataLocale === "en" ? "SISBOV link" : "Link SISBOV")}>
+                                <Link2 className="h-3 w-3 mr-1" />
+                                {metadataLocale === "en" ? "Copy link" : "Copiar link"}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (normalized === "car" && (typeof value === "string" || typeof value === "number")) {
+                        const car = String(value);
+                        return (
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">CAR</p>
+                            <button
+                              onClick={() => void openCarVerification()}
+                              className="text-sm font-medium text-primary break-all hover:underline text-left"
+                            >
+                              {car}
+                            </button>
+                            <p className="text-[11px] text-muted-foreground">
+                              {carHasOfficialFormat
+                                ? (metadataLocale === "en"
+                                    ? "Click to verify compliance and property polygon."
+                                    : "Clique para verificar compliance e polígono desse CAR.")
+                                : (metadataLocale === "en"
+                                    ? "CAR outside official format; geospatial check may be unavailable."
+                                    : "CAR fora do padrão oficial; a consulta geoespacial pode não estar disponível.")}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      if (
+                        (normalized === "inscricao_estadual" || normalized === "inscricao_estadual_centro_custo") &&
+                        (typeof value === "string" || typeof value === "number")
+                      ) {
+                        const ieValue = String(value).trim();
+                        const ieMasked = shortMiddle(ieValue, 4, 3);
+                        return (
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
+                            <p className="text-sm font-medium text-foreground break-all">{ieMasked}</p>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                                onClick={() =>
+                                  void copyText(
+                                    ieValue,
+                                    metadataLocale === "en"
+                                      ? normalized === "inscricao_estadual_centro_custo"
+                                        ? "Cost center state registration"
+                                        : "State registration"
+                                      : normalized === "inscricao_estadual_centro_custo"
+                                      ? "Inscrição estadual do centro de custo"
+                                      : "Inscrição estadual"
+                                  )
+                                }
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                {metadataLocale === "en" ? "Copy number" : "Copiar número"}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (normalized === "weight_kg" && (typeof value === "number" || typeof value === "string")) {
+                        const weight = Number(value);
+                        return (
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
+                            <button
+                              onClick={() => setShowWeightDialog(true)}
+                              className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary"
+                            >
+                              <TrendingUp className="h-4 w-4" />
+                              {Number.isFinite(weight) ? `${weight.toFixed(1)} kg` : String(value)}
+                            </button>
+                            {weightMeta?.date ? (
+                              <p className="text-[11px] text-muted-foreground">
+                                {metadataLocale === "en" ? "Weighing date" : "Data da pesagem"}: {weightMeta.date}
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">
+                                {metadataLocale === "en" ? "Click to view weight progression." : "Clique para ver evolução de peso."}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="inline-flex text-muted-foreground hover:text-foreground"
+                                  aria-label={metadataLocale === "en" ? "Show original field" : "Mostrar campo original"}
+                                >
+                                  <Info className="h-3 w-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs text-xs">
+                                {metadataLocale === "en" ? "Original field(s): " : "Campo(s) original(is): "}
+                                {rawKeys.join(", ")}
+                                <br />
+                                {metadataLocale === "en" ? "Official field: " : "Campo oficial: "}
+                                {canonicalKey}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          {typeof value === "object" ? (
+                            <pre className="text-xs text-foreground mt-1 overflow-x-auto whitespace-pre-wrap break-words">
+                              {compactJson(value)}
+                            </pre>
+                          ) : (
+                            <p className="text-sm font-medium text-foreground mt-0.5 break-words">{String(value ?? "-")}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         )}
