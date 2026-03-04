@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Mail, MapPin } from "lucide-react";
+import { CheckCircle2, Mail, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ const Contato = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -84,10 +85,7 @@ const Contato = () => {
         throw new Error(body?.message || `Falha no envio (${res.status})`);
       }
 
-      toast({
-        title: "Mensagem enviada",
-        description: "Recebemos seu contato. Vamos responder em breve.",
-      });
+      setSubmitted(true);
       setForm({ name: "", email: "", company: "", role: "", website: "", message: "" });
     } catch (err) {
       toast({
@@ -158,80 +156,92 @@ const Contato = () => {
                 <p className="text-sm text-muted-foreground mb-5">
                   Para onboarding de parceiros, integrações ERP/agregadores e dúvidas comerciais.
                 </p>
-                <form className="space-y-4" onSubmit={submitContact}>
-                  <div className="hidden" aria-hidden="true">
-                    <Label htmlFor="contact-website">Website</Label>
-                    <Input
-                      id="contact-website"
-                      tabIndex={-1}
-                      autoComplete="off"
-                      value={form.website}
-                      onChange={(e) => onChange("website", e.target.value)}
-                      placeholder="Deixe este campo vazio"
-                    />
+                {submitted ? (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                      <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-emerald-900">Mensagem enviada com sucesso</h4>
+                    <p className="mt-2 text-sm text-emerald-800">
+                      Recebemos seu contato. Nossa equipe responderá em breve.
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contact-name">Nome *</Label>
-                    <Input
-                      id="contact-name"
-                      value={form.name}
-                      onChange={(e) => onChange("name", e.target.value)}
-                      placeholder="Seu nome completo"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contact-email">E-mail *</Label>
-                    <Input
-                      id="contact-email"
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => onChange("email", e.target.value)}
-                      placeholder="voce@empresa.com"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="contact-company">Empresa</Label>
+                ) : (
+                  <form className="space-y-4" onSubmit={submitContact}>
+                    <div className="hidden" aria-hidden="true">
+                      <Label htmlFor="contact-website">Website</Label>
                       <Input
-                        id="contact-company"
-                        value={form.company}
-                        onChange={(e) => onChange("company", e.target.value)}
-                        placeholder="Nome da empresa"
+                        id="contact-website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={form.website}
+                        onChange={(e) => onChange("website", e.target.value)}
+                        placeholder="Deixe este campo vazio"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="contact-role">Perfil</Label>
-                      <Select value={form.role || "outro"} onValueChange={(value) => onChange("role", value)}>
-                        <SelectTrigger id="contact-role">
-                          <SelectValue placeholder="Selecione um perfil" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {profileOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="contact-name">Nome *</Label>
+                      <Input
+                        id="contact-name"
+                        value={form.name}
+                        onChange={(e) => onChange("name", e.target.value)}
+                        placeholder="Seu nome completo"
+                        required
+                      />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contact-message">Mensagem *</Label>
-                    <Textarea
-                      id="contact-message"
-                      value={form.message}
-                      onChange={(e) => onChange("message", e.target.value)}
-                      placeholder="Descreva sua necessidade e contexto de integração."
-                      rows={6}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Enviando..." : "Enviar mensagem"}
-                  </Button>
-                </form>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-email">E-mail *</Label>
+                      <Input
+                        id="contact-email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => onChange("email", e.target.value)}
+                        placeholder="voce@empresa.com"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-company">Empresa</Label>
+                        <Input
+                          id="contact-company"
+                          value={form.company}
+                          onChange={(e) => onChange("company", e.target.value)}
+                          placeholder="Nome da empresa"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-role">Perfil</Label>
+                        <Select value={form.role || "outro"} onValueChange={(value) => onChange("role", value)}>
+                          <SelectTrigger id="contact-role">
+                            <SelectValue placeholder="Selecione um perfil" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {profileOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-message">Mensagem *</Label>
+                      <Textarea
+                        id="contact-message"
+                        value={form.message}
+                        onChange={(e) => onChange("message", e.target.value)}
+                        placeholder="Descreva sua necessidade e contexto de integração."
+                        rows={6}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Enviando..." : "Enviar mensagem"}
+                    </Button>
+                  </form>
+                )}
               </div>
             </div>
           </div>
