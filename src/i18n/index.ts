@@ -12,7 +12,8 @@ i18n
       en: { translation: en },
       "pt-BR": { translation: ptBR },
     },
-    fallbackLng: "en",
+    fallbackLng: "pt-BR",
+    supportedLngs: ["pt-BR", "en"],
     interpolation: {
       escapeValue: false,
     },

@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 const PENDING_2FA_KEY = "defarm_pending_2fa";
 const PENDING_2FA_FALLBACK_KEY = "defarm_pending_2fa_fallback";
@@ -193,13 +194,16 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
       <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-background to-background">
         <section className="border-b border-border/60 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.18),transparent_58%)]">
           <div className="mx-auto max-w-7xl px-6 py-12 md:py-16">
-            <button
-              onClick={() => navigate(-1)}
-              className="mb-8 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-background border-2 border-foreground rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--foreground))] hover:shadow-[1px_1px_0px_0px_hsl(var(--foreground))] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {t("nav.back")}
-            </button>
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <button
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-background border-2 border-foreground rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--foreground))] hover:shadow-[1px_1px_0px_0px_hsl(var(--foreground))] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("nav.back")}
+              </button>
+              <LanguageToggle />
+            </div>
 
             <div className="grid gap-8 lg:grid-cols-[1.2fr,0.8fr] lg:items-start">
               <div>
