@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, Mail, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { listContactLeads } from "@/lib/api/admin-users";
+import { useToast } from "@/hooks/use-toast";
 
 const ROLES = [
   "partner",
@@ -31,11 +32,75 @@ function formatDateTime(value: string): string {
   return d.toLocaleString("pt-BR");
 }
 
+function csvEscape(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function toCsv(
+  rows: Array<{
+    id: string;
+    name: string;
+    email: string;
+    company?: string | null;
+    role?: string | null;
+    message: string;
+    client_ip?: string | null;
+    source: string;
+    created_at: string;
+  }>
+): string {
+  const headers = [
+    "created_at",
+    "id",
+    "name",
+    "email",
+    "company",
+    "role",
+    "source",
+    "client_ip",
+    "message",
+  ];
+  const lines = [headers.join(",")];
+  for (const row of rows) {
+    lines.push(
+      [
+        row.created_at,
+        row.id,
+        row.name,
+        row.email,
+        row.company || "",
+        row.role || "",
+        row.source,
+        row.client_ip || "",
+        row.message,
+      ]
+        .map((v) => csvEscape(String(v)))
+        .join(",")
+    );
+  }
+  return lines.join("\n");
+}
+
+function downloadCsv(content: string, filename: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminContactLeads() {
+  const { toast } = useToast();
   const [q, setQ] = useState("");
   const [role, setRole] = useState("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   const offset = (page - 1) * limit;
   const queryParams = useMemo(
@@ -61,6 +126,40 @@ export default function AdminContactLeads() {
   const start = total === 0 ? 0 : (currentPage - 1) * limit + 1;
   const end = Math.min(total, currentPage * limit);
 
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      const pageSize = 500;
+      let exportOffset = 0;
+      const allRows: typeof rows = [];
+      while (true) {
+        const resp = await listContactLeads({
+          q: q.trim() || undefined,
+          role: role === "all" ? undefined : role,
+          limit: pageSize,
+          offset: exportOffset,
+        });
+        allRows.push(...resp.rows);
+        exportOffset += resp.rows.length;
+        if (resp.rows.length === 0 || exportOffset >= resp.count) break;
+      }
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      downloadCsv(toCsv(allRows), `contact-leads-${stamp}.csv`);
+      toast({
+        title: "CSV exportado",
+        description: `${allRows.length} lead(s) exportado(s).`,
+      });
+    } catch (err) {
+      toast({
+        title: "Falha ao exportar CSV",
+        description: err instanceof Error ? err.message : "Erro inesperado ao gerar CSV.",
+        variant: "destructive",
+      });
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -75,7 +174,18 @@ export default function AdminContactLeads() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>Filtros</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={exportingCsv || leadsQuery.isLoading}
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              {exportingCsv ? "Exportando..." : "Export CSV"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-4">
           <Input
