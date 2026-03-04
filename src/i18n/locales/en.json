@@ -282,7 +282,34 @@
     "sideDescription": "Manage your circuits, tokenize items and ensure EUDR compliance with the most complete platform in Brazil.",
     "errorTitle": "Login error",
     "errorDescription": "Invalid credentials",
-    "demoErrorTitle": "Demo access error"
+    "demoErrorTitle": "Demo access error",
+    "gov": {
+      "badge": "Government Portal",
+      "title": "Public infrastructure for inter-agency traceability",
+      "subtitle": "Operational PNIB integration, continuous data enrichment, context-based privacy controls, and secure sharing across state and federal institutions.",
+      "kpiOneTitle": "Immediate outcomes",
+      "kpiOneDesc": "Reduced rework, digital audit readiness, and real-time operational visibility.",
+      "kpiTwoTitle": "Trusted governance",
+      "kpiTwoDesc": "Traceable data origin by government workspace with verifiable technical evidence.",
+      "accessTitle": "Government access",
+      "accessDesc": "Sign in with your agency account for operational reading and official contribution.",
+      "contactPrompt": "Need government access?",
+      "contactCta": "Contact DeFarm",
+      "cards": {
+        "pnibTitle": "PNIB and regulatory execution",
+        "pnibDesc": "Integrate official flows with already tokenized field data while preserving end-to-end traceability.",
+        "enrichmentTitle": "Continuous enrichment",
+        "enrichmentDesc": "Agencies add information layers without losing item history or operational integrity.",
+        "privacyTitle": "Privacy with control",
+        "privacyDesc": "Event and context-based visibility balancing public transparency and institutional confidentiality.",
+        "sharingTitle": "Federative sharing",
+        "sharingDesc": "Collaborate across state secretariats, sector agencies, and other public entities with auditable trails.",
+        "complianceTitle": "Verifiable compliance",
+        "complianceDesc": "Technical evidence of origin and updates supports inspections, audits, and risk analysis.",
+        "whyTitle": "Why DeFarm",
+        "whyDesc": "Platform already operating with data partners, stable public contracts, and governance ready to scale."
+      }
+    }
   },
   "register": {
     "title": "Create account",

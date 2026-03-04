@@ -208,48 +208,40 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                   <span className="text-2xl font-bold text-foreground">DeFarm</span>
                 </Link>
                 <p className="mb-3 inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
-                  Portal Governo
+                  {t("login.gov.badge")}
                 </p>
                 <h1 className="max-w-2xl text-4xl font-bold leading-tight text-foreground md:text-5xl">
-                  Infraestrutura pública para rastreabilidade interinstitucional
+                  {t("login.gov.title")}
                 </h1>
                 <p className="mt-5 max-w-2xl text-lg text-muted-foreground">
-                  Integração operacional com PNIB, enriquecimento contínuo de dados, privacidade por
-                  contexto e compartilhamento seguro entre órgãos estaduais e entes federativos.
-                </p>
-                <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-                  Public infrastructure for inter-agency traceability, with contextual privacy controls
-                  and secure data collaboration across state and federal institutions.
+                  {t("login.gov.subtitle")}
                 </p>
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-emerald-200/70 bg-white/80 p-4">
-                    <p className="text-sm font-semibold text-foreground">Ganhos imediatos · Immediate outcomes</p>
+                    <p className="text-sm font-semibold text-foreground">{t("login.gov.kpiOneTitle")}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Redução de retrabalho, auditoria digital e visão operacional em tempo real.
+                      {t("login.gov.kpiOneDesc")}
                     </p>
                   </div>
                   <div className="rounded-xl border border-emerald-200/70 bg-white/80 p-4">
-                    <p className="text-sm font-semibold text-foreground">Governança de confiança · Trusted governance</p>
+                    <p className="text-sm font-semibold text-foreground">{t("login.gov.kpiTwoTitle")}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Origem de dados rastreável por workspace governamental e trilha técnica validável.
+                      {t("login.gov.kpiTwoDesc")}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-border bg-background/95 p-6 shadow-sm backdrop-blur">
-                <h2 className="text-2xl font-bold text-foreground">Acesso governamental</h2>
+                <h2 className="text-2xl font-bold text-foreground">{t("login.gov.accessTitle")}</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Entre com sua conta de agência para leitura operacional e contribuição oficial.
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Sign in with your agency account for operational reading and official contribution.
+                  {t("login.gov.accessDesc")}
                 </p>
                 <div className="mt-6">{loginForm}</div>
                 <p className="mt-6 text-sm text-muted-foreground">
-                  Ainda não possui acesso governamental?{" "}
+                  {t("login.gov.contactPrompt")}{" "}
                   <Link to="/contato?profile=governo_agencia" className="font-medium text-primary hover:underline">
-                    Falar com a DeFarm
+                    {t("login.gov.contactCta")}
                   </Link>
                 </p>
               </div>
@@ -263,72 +255,54 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
               <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
                 <Landmark className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold">PNIB e execução regulatória</h3>
+              <h3 className="text-lg font-semibold">{t("login.gov.cards.pnibTitle")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Integre fluxos oficiais com dados de campo já tokenizados, mantendo rastreabilidade ponta a ponta.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/90">
-                PNIB integration with verifiable operational continuity.
+                {t("login.gov.cards.pnibDesc")}
               </p>
             </article>
             <article className="rounded-2xl border bg-card p-6">
               <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
                 <Database className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold">Enriquecimento contínuo</h3>
+              <h3 className="text-lg font-semibold">{t("login.gov.cards.enrichmentTitle")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Agências adicionam camadas de informação sem perder histórico do item nem integridade operacional.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/90">
-                Progressive data enrichment with full historical traceability.
+                {t("login.gov.cards.enrichmentDesc")}
               </p>
             </article>
             <article className="rounded-2xl border bg-card p-6">
               <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
                 <ShieldCheck className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold">Privacidade com controle</h3>
+              <h3 className="text-lg font-semibold">{t("login.gov.cards.privacyTitle")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Visibilidade por evento e contexto, equilibrando transparência pública e sigilo institucional.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/90">
-                Event-level visibility controls for privacy and compliance.
+                {t("login.gov.cards.privacyDesc")}
               </p>
             </article>
             <article className="rounded-2xl border bg-card p-6">
               <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
                 <Network className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold">Compartilhamento federativo</h3>
+              <h3 className="text-lg font-semibold">{t("login.gov.cards.sharingTitle")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Colabore entre secretarias estaduais, agências setoriais e outros entes com trilha auditável.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/90">
-                Secure data sharing between state and federal public institutions.
+                {t("login.gov.cards.sharingDesc")}
               </p>
             </article>
             <article className="rounded-2xl border bg-card p-6">
               <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
                 <Scale className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold">Conformidade verificável</h3>
+              <h3 className="text-lg font-semibold">{t("login.gov.cards.complianceTitle")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Evidências técnicas de origem e atualização apoiam inspeções, auditorias e análise de risco.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/90">
-                Audit-ready evidence for inspection, risk analysis, and public accountability.
+                {t("login.gov.cards.complianceDesc")}
               </p>
             </article>
             <article className="rounded-2xl border bg-card p-6">
               <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
                 <Sparkles className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-semibold">Por que DeFarm</h3>
+              <h3 className="text-lg font-semibold">{t("login.gov.cards.whyTitle")}</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Plataforma já operando com parceiros de dados, contrato público estável e governança preparada para escalar.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/90">
-                Production-grade platform with stable public contracts and scalable governance.
+                {t("login.gov.cards.whyDesc")}
               </p>
             </article>
           </div>
