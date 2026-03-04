@@ -339,6 +339,17 @@ function compactJson(value: unknown): string {
   }
 }
 
+function weightSourceLabel(source: WeightPoint["source"], locale: MetadataLocale): string {
+  if (locale === "en") {
+    if (source === "event") return "public event";
+    if (source === "cid") return "versioned content";
+    return "metadata";
+  }
+  if (source === "event") return "evento público";
+  if (source === "cid") return "conteúdo versionado";
+  return "metadata";
+}
+
 function readString(record: Record<string, unknown>, keys: string[]): string | undefined {
   for (const key of keys) {
     const value = record[key];
@@ -1203,7 +1214,11 @@ export default function PublicItem() {
             </div>
             <div>
               <h2 className="text-base font-semibold text-foreground">Registros Decentralizados</h2>
-              <p className="text-xs text-muted-foreground">Identidade on-chain + versões de conteúdo IPFS</p>
+              <p className="text-xs text-muted-foreground">
+                {metadataLocale === "en"
+                  ? "On-chain identity + verifiable versioned content"
+                  : "Identidade on-chain + conteúdo versionado verificável"}
+              </p>
             </div>
           </div>
 
@@ -1292,8 +1307,9 @@ export default function PublicItem() {
               <div>
                 <h2 className="text-base font-semibold text-foreground">Histórico</h2>
                 <p className="text-xs text-muted-foreground">
-                  {realEvents.length} público{realEvents.length !== 1 ? "s" : ""} · {operationalEvents.length} técnico
-                  {operationalEvents.length !== 1 ? "s" : ""}
+                  {metadataLocale === "en"
+                    ? `${realEvents.length} public · ${operationalEvents.length} technical`
+                    : `${realEvents.length} público${realEvents.length !== 1 ? "s" : ""} · ${operationalEvents.length} técnico${operationalEvents.length !== 1 ? "s" : ""}`}
                 </p>
               </div>
             </div>
@@ -1306,12 +1322,12 @@ export default function PublicItem() {
                 {showOperational ? (
                   <>
                     <EyeOff className="h-3.5 w-3.5" />
-                    Ocultar operacionais
+                    {metadataLocale === "en" ? "Hide technical" : "Ocultar operacionais"}
                   </>
                 ) : (
                   <>
                     <Eye className="h-3.5 w-3.5" />
-                    Mostrar técnicos
+                    {metadataLocale === "en" ? "Show technical" : "Mostrar técnicos"}
                   </>
                 )}
               </button>
@@ -1321,10 +1337,16 @@ export default function PublicItem() {
           {!isAuthenticated ? (
             <div className="rounded-xl border border-border bg-muted/30 py-8 px-5 text-center">
               <Lock className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-sm text-foreground font-medium">Histórico visível para usuários logados</p>
-              <p className="text-xs text-muted-foreground mt-1">Entre na DeFarm para visualizar a timeline detalhada.</p>
+              <p className="text-sm text-foreground font-medium">
+                {metadataLocale === "en" ? "History visible for logged-in users" : "Histórico visível para usuários logados"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {metadataLocale === "en"
+                  ? "Sign in to DeFarm to view detailed timeline context."
+                  : "Entre na DeFarm para visualizar a timeline detalhada."}
+              </p>
               <Link to="/login" className="inline-block mt-4">
-                <Button size="sm">Entrar na DeFarm</Button>
+                <Button size="sm">{metadataLocale === "en" ? "Sign in to DeFarm" : "Entrar na DeFarm"}</Button>
               </Link>
             </div>
           ) : isLoadingEvents ? (
@@ -1334,13 +1356,15 @@ export default function PublicItem() {
           ) : visibleEvents.length === 0 ? (
             <div className="rounded-xl border border-border bg-muted/30 py-12 text-center">
               <Activity className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-foreground font-medium">Sem eventos públicos neste item.</p>
+              <p className="text-sm text-foreground font-medium">
+                {metadataLocale === "en" ? "No public events for this item." : "Sem eventos públicos neste item."}
+              </p>
               {operationalEvents.length > 0 && !showOperational ? (
                 <>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Há {operationalEvents.length} evento{operationalEvents.length !== 1 ? "s" : ""} técnico
-                    {operationalEvents.length !== 1 ? "s" : ""} disponível
-                    {operationalEvents.length !== 1 ? "is" : ""} para visualização.
+                    {metadataLocale === "en"
+                      ? `${operationalEvents.length} technical event${operationalEvents.length !== 1 ? "s are" : " is"} available to view.`
+                      : `Há ${operationalEvents.length} evento${operationalEvents.length !== 1 ? "s" : ""} técnico${operationalEvents.length !== 1 ? "s" : ""} disponível${operationalEvents.length !== 1 ? "is" : ""} para visualização.`}
                   </p>
                   <Button
                     size="sm"
@@ -1349,12 +1373,14 @@ export default function PublicItem() {
                     onClick={() => setShowOperational(true)}
                   >
                     <Eye className="h-3.5 w-3.5 mr-1.5" />
-                    Mostrar técnicos
+                    {metadataLocale === "en" ? "Show technical" : "Mostrar técnicos"}
                   </Button>
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Eventos podem existir com visibilidade privada (circuit_only/selective).
+                  {metadataLocale === "en"
+                    ? "Events may exist with private visibility (circuit_only/selective)."
+                    : "Eventos podem existir com visibilidade privada (circuit_only/selective)."}
                 </p>
               )}
             </div>
@@ -1580,8 +1606,41 @@ export default function PublicItem() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} domain={["dataMin - 5", "dataMax + 5"]} />
-                    <RechartsTooltip />
-                    <Line type="monotone" dataKey="weight" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
+                    <RechartsTooltip
+                      formatter={(value: number, _name, item) => {
+                        const payload = item?.payload as WeightPoint | undefined;
+                        const src = payload ? weightSourceLabel(payload.source, metadataLocale) : "-";
+                        const inferred = payload?.inferredDate
+                          ? metadataLocale === "en"
+                            ? " (inferred date)"
+                            : " (data inferida)"
+                          : "";
+                        return [
+                          `${Number(value).toFixed(1)} kg · ${src}${inferred}`,
+                          metadataLocale === "en" ? "Weight" : "Peso",
+                        ];
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="weight"
+                      stroke="#22c55e"
+                      strokeWidth={2}
+                      dot={(props) => {
+                        const payload = props.payload as WeightPoint;
+                        const inferred = payload?.inferredDate;
+                        return (
+                          <circle
+                            cx={props.cx}
+                            cy={props.cy}
+                            r={inferred ? 4 : 3}
+                            fill={inferred ? "#f59e0b" : "#22c55e"}
+                            stroke="#ffffff"
+                            strokeWidth={1}
+                          />
+                        );
+                      }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -1593,7 +1652,12 @@ export default function PublicItem() {
                       {p.date}
                       {p.inferredDate ? "*" : ""}
                     </span>
-                    <span className="font-medium">{p.weight.toFixed(1)} kg</span>
+                    <span className="font-medium">
+                      {p.weight.toFixed(1)} kg
+                      <span className="ml-1 text-[10px] text-muted-foreground">
+                        · {weightSourceLabel(p.source, metadataLocale)}
+                      </span>
+                    </span>
                   </div>
                 ))}
               </div>
