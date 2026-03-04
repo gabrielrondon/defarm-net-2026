@@ -60,8 +60,17 @@ const NARRATIVE_META: Record<DemoActor["id"], Omit<NarrativeStep, "id" | "actor"
       "Circuitos compartilhados",
     ],
   },
+  government: {
+    title: "Etapa 5 - Governo / Agencia Oficial",
+    objective: "Demonstrar leitura governamental, auditoria e contribuicao de eventos oficiais.",
+    highlights: [
+      "Leitura por API key no circuito staging",
+      "Contribuicao oficial (inspecao, validacao, sanidade)",
+      "Governanca com source/trust profile",
+    ],
+  },
   admin: {
-    title: "Etapa 5 - Administracao DeFarm",
+    title: "Etapa 6 - Administracao DeFarm",
     objective: "Encerrar com governanca da plataforma e operacao central.",
     highlights: [
       "Gestao de usuarios e workspaces",
@@ -152,6 +161,7 @@ export default function DemoNarrativa() {
             <Badge variant="secondary">/_demo/narrativa/partner</Badge>
             <Badge variant="secondary">/_demo/narrativa/certifier</Badge>
             <Badge variant="secondary">/_demo/narrativa/processor</Badge>
+            <Badge variant="secondary">/_demo/narrativa/government</Badge>
             <Badge variant="secondary">/_demo/narrativa/admin</Badge>
           </div>
           <div className="mt-3">
