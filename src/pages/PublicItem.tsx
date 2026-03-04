@@ -113,6 +113,9 @@ type NormalizedMetadataEntry = {
   value: unknown;
 };
 
+const WEIGHT_KEYS = ["weight_kg", "peso_kg", "weight", "peso"];
+const WEIGHT_DATE_KEYS = ["data_peso", "weight_date", "data_pesagem", "date", "occurred_at"];
+
 const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
   { canonical: "value_chain", aliases: ["value_chain", "valuechain"], label: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
   { canonical: "sisbov", aliases: ["sisbov"], label: { "pt-BR": "SISBOV", en: "SISBOV" } },
@@ -180,11 +183,11 @@ function parseWeightPointFromSnapshot(snapshot: unknown, uploadedAtFallback?: st
       : null));
 
   if (!metadata) return null;
-  const rawWeight = metadata.weight_kg;
+  const rawWeight = readAliasValue(metadata, WEIGHT_KEYS);
   const weight = typeof rawWeight === "number" ? rawWeight : Number(rawWeight);
   if (!Number.isFinite(weight)) return null;
 
-  const rawDate = metadata.data_peso;
+  const rawDate = readAliasValue(metadata, WEIGHT_DATE_KEYS);
   const date =
     (typeof rawDate === "string" && rawDate.trim()) ||
     uploadedAtFallback ||
@@ -216,6 +219,19 @@ function normalizeFieldKey(key: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+function readAliasValue(record: Record<string, unknown>, aliases: string[]): unknown {
+  for (const alias of aliases) {
+    const value = record[alias];
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  const normalizedAliases = new Set(aliases.map((alias) => normalizeFieldKey(alias)));
+  for (const [key, value] of Object.entries(record)) {
+    if (!normalizedAliases.has(normalizeFieldKey(key))) continue;
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
 }
 
 function formatFallbackMetadataLabel(key: string): string {
@@ -534,8 +550,8 @@ export default function PublicItem() {
   const metadata = useMemo(() => ((item?.metadata || {}) as Record<string, unknown>), [item?.metadata]);
 
   const weightMeta = useMemo(() => {
-    const weightRaw = metadata.weight_kg;
-    const dateRaw = metadata.data_peso;
+    const weightRaw = readAliasValue(metadata, WEIGHT_KEYS);
+    const dateRaw = readAliasValue(metadata, WEIGHT_DATE_KEYS);
     const weight = typeof weightRaw === "number" ? weightRaw : Number(weightRaw);
     const date = typeof dateRaw === "string" ? dateRaw : null;
     if (!Number.isFinite(weight)) return null;
@@ -557,13 +573,11 @@ export default function PublicItem() {
     for (const event of events) {
       if (event.event_type !== "item_weighed") continue;
       const payload = (event.payload || {}) as Record<string, unknown>;
-      const weightRaw = payload.weight_kg;
+      const weightRaw = readAliasValue(payload, WEIGHT_KEYS);
       const weight = typeof weightRaw === "number" ? weightRaw : Number(weightRaw);
       if (!Number.isFinite(weight)) continue;
-      const occurredAt =
-        (typeof payload.occurred_at === "string" && payload.occurred_at) ||
-        (typeof payload.data_peso === "string" && payload.data_peso) ||
-        event.created_at;
+      const occurredAtRaw = readAliasValue(payload, WEIGHT_DATE_KEYS);
+      const occurredAt = (typeof occurredAtRaw === "string" && occurredAtRaw) || event.created_at;
       points.push({
         date: occurredAt,
         label: formatDateShort(occurredAt),
