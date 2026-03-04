@@ -156,8 +156,11 @@ export default function Cadastro() {
             </div>
 
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              Cadastro público cria workspace do tipo <span className="font-semibold text-foreground">Produtor</span>.
-              Tipos de workspace como parceiro, certificador ou processador são configurados pelo admin.
+              Este cadastro cria workspace do tipo <span className="font-semibold text-foreground">Produtor</span>.{" "}
+              Se você é ERP, agregador de dados, parceiro, certificador ou processador,{" "}
+              <Link to="/contato" className="font-semibold text-primary underline-offset-2 hover:underline">
+                contate a DeFarm
+              </Link>.
             </div>
 
             <div className="space-y-2">
