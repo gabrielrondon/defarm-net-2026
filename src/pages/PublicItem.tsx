@@ -1418,7 +1418,9 @@ export default function PublicItem() {
               </div>
               {hasInferredWeightDates && (
                 <p className="text-xs text-muted-foreground">
-                  * Não foi informada a data da pesagem. O gráfico usa a data do processamento/envio dos dados.
+                  {metadataLocale === "en"
+                    ? "* Weighing date was not provided. The chart uses the data processing/submission date."
+                    : "* Não foi informada a data da pesagem. O gráfico usa a data do processamento/envio dos dados."}
                 </p>
               )}
             </div>
