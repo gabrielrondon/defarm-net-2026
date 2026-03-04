@@ -1292,8 +1292,8 @@ export default function PublicItem() {
               <div>
                 <h2 className="text-base font-semibold text-foreground">Histórico</h2>
                 <p className="text-xs text-muted-foreground">
-                  {realEvents.length} evento{realEvents.length !== 1 ? "s" : ""} registrado{realEvents.length !== 1 ? "s" : ""}
-                  {operationalEvents.length > 0 && <span> · {operationalEvents.length} técnico/operacional(is)</span>}
+                  {realEvents.length} público{realEvents.length !== 1 ? "s" : ""} · {operationalEvents.length} técnico
+                  {operationalEvents.length !== 1 ? "s" : ""}
                 </p>
               </div>
             </div>
@@ -1334,7 +1334,29 @@ export default function PublicItem() {
           ) : visibleEvents.length === 0 ? (
             <div className="rounded-xl border border-border bg-muted/30 py-12 text-center">
               <Activity className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Nenhum evento público disponível.</p>
+              <p className="text-sm text-foreground font-medium">Sem eventos públicos neste item.</p>
+              {operationalEvents.length > 0 && !showOperational ? (
+                <>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Há {operationalEvents.length} evento{operationalEvents.length !== 1 ? "s" : ""} técnico
+                    {operationalEvents.length !== 1 ? "s" : ""} disponível
+                    {operationalEvents.length !== 1 ? "is" : ""} para visualização.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setShowOperational(true)}
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1.5" />
+                    Mostrar técnicos
+                  </Button>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Eventos podem existir com visibilidade privada (circuit_only/selective).
+                </p>
+              )}
             </div>
           ) : (
             <div className="relative">
