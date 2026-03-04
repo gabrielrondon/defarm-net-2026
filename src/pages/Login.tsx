@@ -19,7 +19,7 @@ type Pending2FA = {
 };
 
 interface LoginProps {
-  forcedMode?: "default" | "partner";
+  forcedMode?: "default" | "partner" | "government";
 }
 
 export default function Login({ forcedMode = "default" }: LoginProps) {
@@ -36,6 +36,9 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
   const isPartnerHost =
     typeof window !== "undefined" &&
     window.location.hostname.toLowerCase() === "partners.defarm.net";
+  const isGovHost =
+    typeof window !== "undefined" &&
+    window.location.hostname.toLowerCase() === "gov.defarm.net";
   const isPartnerMode = useMemo(() => {
     if (forcedMode === "partner") return true;
     if (isPartnerHost) return true;
@@ -43,6 +46,13 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
     const workspace = (searchParams.get("workspace") || "").toLowerCase();
     return mode === "partner" || workspace === "partner";
   }, [forcedMode, isPartnerHost, searchParams]);
+  const isGovernmentMode = useMemo(() => {
+    if (forcedMode === "government") return true;
+    if (isGovHost) return true;
+    const mode = (searchParams.get("mode") || "").toLowerCase();
+    const workspace = (searchParams.get("workspace") || "").toLowerCase();
+    return mode === "government" || workspace === "government";
+  }, [forcedMode, isGovHost, searchParams]);
 
   useEffect(() => {
     const demoEmail = searchParams.get("demo_email");
@@ -56,15 +66,19 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
     const destination =
       user?.workspace_type === "partner"
         ? "/app/parceiro"
+        : user?.workspace_type === "government"
+        ? "/app/governo/docs"
         : user?.workspace_type === "certifier"
         ? "/app/claims"
-        : user?.workspace_type === "processor" || user?.workspace_type === "government"
+        : user?.workspace_type === "processor"
         ? "/app/eventos"
         : isPartnerMode
         ? "/app/parceiro"
+        : isGovernmentMode
+        ? "/app/governo/docs"
         : "/app";
     navigate(destination, { replace: true });
-  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, navigate]);
+  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +93,13 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
         };
         sessionStorage.setItem(PENDING_2FA_KEY, JSON.stringify(payload));
         localStorage.setItem(PENDING_2FA_FALLBACK_KEY, JSON.stringify(payload));
-        navigate(isPartnerMode ? "/login/2fa?mode=partner" : "/login/2fa");
+        navigate(
+          isPartnerMode
+            ? "/login/2fa?mode=partner"
+            : isGovernmentMode
+            ? "/login/2fa?mode=government"
+            : "/login/2fa"
+        );
         return;
       }
     } catch (error) {
@@ -118,11 +138,17 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                {isPartnerMode ? "Portal de Parceiros" : t("login.welcome")}
+                {isPartnerMode
+                  ? "Portal de Parceiros"
+                  : isGovernmentMode
+                  ? "Portal Governo"
+                  : t("login.welcome")}
               </h1>
               <p className="text-muted-foreground">
                 {isPartnerMode
                   ? "Acesse com sua conta de parceiro para enviar dados e acompanhar integrações."
+                  : isGovernmentMode
+                  ? "Acesse com sua conta governamental para leitura e contribuição oficial."
                   : t("login.subtitle")}
               </p>
             </div>
@@ -199,11 +225,19 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
                 {t("login.createAccount")}
               </Link>
             </p>
-            {!isPartnerMode && (
+            {!isPartnerMode && !isGovernmentMode && (
               <p className="text-center text-muted-foreground mt-2 text-sm">
                 É parceiro?{" "}
                 <Link to="/partner-login" className="text-primary font-medium hover:underline">
                   Entrar no portal parceiro
+                </Link>
+              </p>
+            )}
+            {!isPartnerMode && !isGovernmentMode && (
+              <p className="text-center text-muted-foreground mt-1 text-sm">
+                É agência/governo?{" "}
+                <Link to="/gov-login" className="text-primary font-medium hover:underline">
+                  Entrar no portal gov
                 </Link>
               </p>
             )}

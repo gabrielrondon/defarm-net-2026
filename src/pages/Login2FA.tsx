@@ -55,12 +55,19 @@ export default function Login2FA() {
   const isPartnerHost =
     typeof window !== "undefined" &&
     window.location.hostname.toLowerCase() === "partners.defarm.net";
+  const isGovHost =
+    typeof window !== "undefined" &&
+    window.location.hostname.toLowerCase() === "gov.defarm.net";
   const isPartnerMode = useMemo(() => {
     if (isPartnerHost) return true;
     return (searchParams.get("mode") || "").toLowerCase() === "partner";
   }, [isPartnerHost, searchParams]);
+  const isGovernmentMode = useMemo(() => {
+    if (isGovHost) return true;
+    return (searchParams.get("mode") || "").toLowerCase() === "government";
+  }, [isGovHost, searchParams]);
 
-  const backHref = isPartnerMode ? "/partner-login" : "/login";
+  const backHref = isPartnerMode ? "/partner-login" : isGovernmentMode ? "/gov-login" : "/login";
 
   // Redirect to login if no valid pending 2FA challenge
   useEffect(() => {
@@ -78,15 +85,19 @@ export default function Login2FA() {
     const destination =
       user?.workspace_type === "partner"
         ? "/app/parceiro"
+        : user?.workspace_type === "government"
+        ? "/app/governo/docs"
         : user?.workspace_type === "certifier"
         ? "/app/claims"
-        : user?.workspace_type === "processor" || user?.workspace_type === "government"
+        : user?.workspace_type === "processor"
         ? "/app/eventos"
         : isPartnerMode
         ? "/app/parceiro"
+        : isGovernmentMode
+        ? "/app/governo/docs"
         : "/app";
     navigate(destination, { replace: true });
-  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, navigate]);
+  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate]);
 
   const normalizedCode = twofaCode.trim().replace(/\s+/g, "");
   const canSubmit = isValidTwofaInput(normalizedCode) && !!pending;

@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 
@@ -103,8 +103,15 @@ function TokenAwareIndex() {
     const isPartnerHost =
       typeof window !== "undefined" &&
       window.location.hostname.toLowerCase() === "partners.defarm.net";
+    const isGovHost =
+      typeof window !== "undefined" &&
+      window.location.hostname.toLowerCase() === "gov.defarm.net";
     if (isPartnerHost) {
       navigate("/partner-login", { replace: true });
+      return;
+    }
+    if (isGovHost) {
+      navigate("/gov-login", { replace: true });
     }
   }, [location.search, navigate]);
 
@@ -183,8 +190,9 @@ function WorkspaceHome() {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!user?.is_admin) {
     if (user?.workspace_type === "partner") return <Navigate to="/app/parceiro" replace />;
+    if (user?.workspace_type === "government") return <Navigate to="/app/governo/docs" replace />;
     if (user?.workspace_type === "certifier") return <Navigate to="/app/claims" replace />;
-    if (user?.workspace_type === "processor" || user?.workspace_type === "government") return <Navigate to="/app/eventos" replace />;
+    if (user?.workspace_type === "processor") return <Navigate to="/app/eventos" replace />;
   }
   return <Caderneta />;
 }
@@ -215,6 +223,8 @@ const App = () => (
             <Route path="/entrar" element={<Navigate to="/login" replace />} />
             <Route path="/partner-login" element={<Login forcedMode="partner" />} />
             <Route path="/parceiros/login" element={<Login forcedMode="partner" />} />
+            <Route path="/gov-login" element={<Login forcedMode="government" />} />
+            <Route path="/governo/login" element={<Login forcedMode="government" />} />
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-senha" element={<ResetSenha />} />
