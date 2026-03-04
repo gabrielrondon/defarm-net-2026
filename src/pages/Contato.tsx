@@ -19,6 +19,7 @@ const Contato = () => {
     email: "",
     company: "",
     role: "",
+    website: "",
     message: "",
   });
 
@@ -62,6 +63,7 @@ const Contato = () => {
           email: form.email.trim(),
           company: form.company.trim() || null,
           role: form.role.trim() || null,
+          website: form.website.trim() || null,
           message: form.message.trim(),
         }),
       });
@@ -74,7 +76,7 @@ const Contato = () => {
         title: "Mensagem enviada",
         description: "Recebemos seu contato. Vamos responder em breve.",
       });
-      setForm({ name: "", email: "", company: "", role: "", message: "" });
+      setForm({ name: "", email: "", company: "", role: "", website: "", message: "" });
     } catch (err) {
       toast({
         title: "Falha ao enviar",
@@ -145,6 +147,17 @@ const Contato = () => {
                   Para onboarding de parceiros, integrações ERP/agregadores e dúvidas comerciais.
                 </p>
                 <form className="space-y-4" onSubmit={submitContact}>
+                  <div className="hidden" aria-hidden="true">
+                    <Label htmlFor="contact-website">Website</Label>
+                    <Input
+                      id="contact-website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={form.website}
+                      onChange={(e) => onChange("website", e.target.value)}
+                      placeholder="Deixe este campo vazio"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="contact-name">Nome *</Label>
                     <Input
