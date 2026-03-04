@@ -4,7 +4,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Loader2,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Network,
+  Database,
+  Scale,
+  Landmark,
+  Sparkles,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import logoIcon from "@/assets/logo-icon.png";
@@ -113,6 +125,193 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
     }
   };
 
+  const loginForm = (
+    <form onSubmit={handleSubmit} className="space-y-6" autoComplete="on">
+      <div className="space-y-2">
+        <Label htmlFor="email">{t("login.email")}</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="username"
+          placeholder={t("register.emailPlaceholder")}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="h-12"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">{t("login.password")}</Label>
+          <Link to="/esqueci-senha" className="text-sm text-primary hover:underline">
+            {t("login.forgotPassword")}
+          </Link>
+        </div>
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="h-12 pr-12"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="w-full h-12 btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold text-lg"
+      >
+        {isLoading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <>
+            {t("login.signIn")}
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </>
+        )}
+      </Button>
+    </form>
+  );
+
+  if (isGovernmentMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-background to-background">
+        <section className="border-b border-border/60 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.18),transparent_58%)]">
+          <div className="mx-auto max-w-7xl px-6 py-12 md:py-16">
+            <button
+              onClick={() => navigate(-1)}
+              className="mb-8 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-background border-2 border-foreground rounded-lg shadow-[3px_3px_0px_0px_hsl(var(--foreground))] hover:shadow-[1px_1px_0px_0px_hsl(var(--foreground))] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              {t("nav.back")}
+            </button>
+
+            <div className="grid gap-8 lg:grid-cols-[1.2fr,0.8fr] lg:items-start">
+              <div>
+                <Link to="/" className="mb-8 inline-flex items-center gap-3">
+                  <img src={logoIcon} alt="DeFarm" className="h-10 w-10" />
+                  <span className="text-2xl font-bold text-foreground">DeFarm</span>
+                </Link>
+                <p className="mb-3 inline-flex rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+                  Portal Governo
+                </p>
+                <h1 className="max-w-2xl text-4xl font-bold leading-tight text-foreground md:text-5xl">
+                  Infraestrutura nacional para rastreabilidade interinstitucional
+                </h1>
+                <p className="mt-5 max-w-2xl text-lg text-muted-foreground">
+                  Integração com PNIB, enriquecimento contínuo de dados, privacidade por contexto e
+                  compartilhamento seguro entre órgãos estaduais e entes federativos.
+                </p>
+                <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-emerald-200/70 bg-white/80 p-4">
+                    <p className="text-sm font-semibold text-foreground">Ganhos imediatos</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Redução de retrabalho, auditoria digital e visão operacional em tempo real.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-200/70 bg-white/80 p-4">
+                    <p className="text-sm font-semibold text-foreground">Governança de confiança</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Origem de dados rastreável por workspace governamental e trilha técnica validável.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-background/95 p-6 shadow-sm backdrop-blur">
+                <h2 className="text-2xl font-bold text-foreground">Acesso governamental</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Entre com sua conta de agência para leitura operacional e contribuição oficial.
+                </p>
+                <div className="mt-6">{loginForm}</div>
+                <p className="mt-6 text-sm text-muted-foreground">
+                  Ainda não possui acesso governamental?{" "}
+                  <Link to="/contato?profile=governo_agencia" className="font-medium text-primary hover:underline">
+                    Falar com a DeFarm
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-6 py-14 md:py-16">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <article className="rounded-2xl border bg-card p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
+                <Landmark className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold">PNIB e execução regulatória</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Integre fluxos oficiais com dados de campo já tokenizados, mantendo rastreabilidade ponta a ponta.
+              </p>
+            </article>
+            <article className="rounded-2xl border bg-card p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
+                <Database className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold">Enriquecimento contínuo</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Agências adicionam camadas de informação sem perder histórico do item nem integridade operacional.
+              </p>
+            </article>
+            <article className="rounded-2xl border bg-card p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold">Privacidade com controle</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Visibilidade por evento e contexto, equilibrando transparência pública e sigilo institucional.
+              </p>
+            </article>
+            <article className="rounded-2xl border bg-card p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
+                <Network className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold">Compartilhamento federativo</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Colabore entre secretarias estaduais, agências setoriais e outros entes com trilha auditável.
+              </p>
+            </article>
+            <article className="rounded-2xl border bg-card p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
+                <Scale className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold">Conformidade verificável</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Evidências técnicas de origem e atualização apoiam inspeções, auditorias e análise de risco.
+              </p>
+            </article>
+            <article className="rounded-2xl border bg-card p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-2 text-primary">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-semibold">Por que DeFarm</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Plataforma já operando com parceiros de dados, contrato público estável e governança preparada para escalar.
+              </p>
+            </article>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left side - Form */}
@@ -153,70 +352,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
               </p>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="on">
-              <div className="space-y-2">
-                <Label htmlFor="email">{t("login.email")}</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  placeholder={t("register.emailPlaceholder")}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-12"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">{t("login.password")}</Label>
-                  <Link
-                    to="/esqueci-senha"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    {t("login.forgotPassword")}
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-12 pr-12"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-12 btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold text-lg"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    {t("login.signIn")}
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </>
-                )}
-              </Button>
-            </form>
+            {loginForm}
 
             {/* Sign up link */}
             <p className="text-center text-muted-foreground mt-6">
