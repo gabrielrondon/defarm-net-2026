@@ -97,6 +97,7 @@ type WeightPoint = {
   label: string;
   weight: number;
   source: "metadata" | "event" | "cid";
+  inferredDate?: boolean;
 };
 
 type MetadataLocale = "pt-BR" | "en";
@@ -188,16 +189,18 @@ function parseWeightPointFromSnapshot(snapshot: unknown, uploadedAtFallback?: st
   if (!Number.isFinite(weight)) return null;
 
   const rawDate = readAliasValue(metadata, WEIGHT_DATE_KEYS);
+  const hasExplicitDate = typeof rawDate === "string" && rawDate.trim().length > 0;
   const date =
-    (typeof rawDate === "string" && rawDate.trim()) ||
+    (hasExplicitDate ? rawDate.trim() : "") ||
     uploadedAtFallback ||
     new Date().toISOString();
 
   return {
     date,
-    label: formatDateShort(date),
+    label: `${formatDateShort(date)}${hasExplicitDate ? "" : "*"}`,
     weight,
     source: "cid",
+    inferredDate: !hasExplicitDate,
   };
 }
 
@@ -553,20 +556,24 @@ export default function PublicItem() {
     const weightRaw = readAliasValue(metadata, WEIGHT_KEYS);
     const dateRaw = readAliasValue(metadata, WEIGHT_DATE_KEYS);
     const weight = typeof weightRaw === "number" ? weightRaw : Number(weightRaw);
-    const date = typeof dateRaw === "string" ? dateRaw : null;
+    const hasExplicitDate = typeof dateRaw === "string" && dateRaw.trim().length > 0;
+    const date = hasExplicitDate ? dateRaw.trim() : null;
     if (!Number.isFinite(weight)) return null;
-    return { weight, date };
+    return { weight, date, inferredDate: !hasExplicitDate };
   }, [metadata]);
 
   const weightHistory = useMemo<WeightPoint[]>(() => {
     const points: WeightPoint[] = [];
 
     if (weightMeta) {
+      const fallbackDate = item?.updated_at || item?.created_at || new Date().toISOString();
+      const finalDate = weightMeta.date || fallbackDate;
       points.push({
-        date: weightMeta.date || item?.updated_at || item?.created_at || new Date().toISOString(),
-        label: weightMeta.date || formatDateShort(item?.updated_at || item?.created_at || new Date().toISOString()),
+        date: finalDate,
+        label: `${weightMeta.date || formatDateShort(fallbackDate)}${weightMeta.inferredDate ? "*" : ""}`,
         weight: weightMeta.weight,
         source: "metadata",
+        inferredDate: weightMeta.inferredDate,
       });
     }
 
@@ -577,12 +584,14 @@ export default function PublicItem() {
       const weight = typeof weightRaw === "number" ? weightRaw : Number(weightRaw);
       if (!Number.isFinite(weight)) continue;
       const occurredAtRaw = readAliasValue(payload, WEIGHT_DATE_KEYS);
-      const occurredAt = (typeof occurredAtRaw === "string" && occurredAtRaw) || event.created_at;
+      const hasExplicitDate = typeof occurredAtRaw === "string" && occurredAtRaw.trim().length > 0;
+      const occurredAt = (hasExplicitDate ? occurredAtRaw.trim() : "") || event.created_at;
       points.push({
         date: occurredAt,
-        label: formatDateShort(occurredAt),
+        label: `${formatDateShort(occurredAt)}${hasExplicitDate ? "" : "*"}`,
         weight,
         source: "event",
+        inferredDate: !hasExplicitDate,
       });
     }
 
@@ -599,6 +608,11 @@ export default function PublicItem() {
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
   }, [events, item?.created_at, item?.updated_at, weightMeta, cidWeightHistory]);
+
+  const hasInferredWeightDates = useMemo(
+    () => weightHistory.some((point) => point.inferredDate),
+    [weightHistory]
+  );
 
   const visibleMetadataEntries = useMemo<NormalizedMetadataEntry[]>(() => {
     const technicalKeys = new Set([
@@ -1394,11 +1408,19 @@ export default function PublicItem() {
               <div className="space-y-2">
                 {weightHistory.map((p, idx) => (
                   <div key={`${p.date}-${idx}`} className="text-xs flex items-center justify-between border rounded px-2 py-1.5">
-                    <span className="text-muted-foreground">{p.date}</span>
+                    <span className="text-muted-foreground">
+                      {p.date}
+                      {p.inferredDate ? "*" : ""}
+                    </span>
                     <span className="font-medium">{p.weight.toFixed(1)} kg</span>
                   </div>
                 ))}
               </div>
+              {hasInferredWeightDates && (
+                <p className="text-xs text-muted-foreground">
+                  * Não foi informada a data da pesagem. O gráfico usa a data do processamento/envio dos dados.
+                </p>
+              )}
             </div>
           )}
         </DialogContent>
