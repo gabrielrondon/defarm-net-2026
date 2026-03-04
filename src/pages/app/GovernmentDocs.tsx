@@ -22,11 +22,11 @@ const sections = [
     title: "Leitura operacional",
     description: "Com API key workspace_ingestion, a agência consulta dados tokenizados e evolução operacional.",
     bullets: [
-      "GET /v1/items/api-key",
-      "GET /v1/items/{id}/api-key",
-      "GET /v1/events/api-key",
-      "GET /v1/circuits/api-key",
-      "GET /v1/receipts/api-key",
+      "GET /v1/items",
+      "GET /v1/items/{id}",
+      "GET /v1/events",
+      "GET /v1/circuits",
+      "GET /v1/receipts",
     ],
   },
   {
@@ -160,4 +160,3 @@ export default function GovernmentDocs() {
     </div>
   );
 }
-
