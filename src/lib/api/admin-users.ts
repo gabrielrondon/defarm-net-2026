@@ -1,4 +1,4 @@
-import { authRequest } from "./client";
+import { authRequest, buildQueryString } from "./client";
 
 // --- Admin User Management (via Gateway /api/admin/*) ---
 
@@ -69,6 +69,32 @@ export interface AdminWorkspace {
   owner_email?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ContactLead {
+  id: string;
+  name: string;
+  email: string;
+  company?: string | null;
+  role?: string | null;
+  message: string;
+  client_ip?: string | null;
+  source: string;
+  created_at: string;
+}
+
+export interface ListContactLeadsResponse {
+  rows: ContactLead[];
+  count: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ListContactLeadsParams {
+  limit?: number;
+  offset?: number;
+  role?: string;
+  q?: string;
 }
 
 export interface CreateWorkspaceRequest {
@@ -176,4 +202,11 @@ export async function updateWorkspace(workspaceId: string, data: UpdateWorkspace
 // Adapter Stats endpoint
 export async function getAdapterStats(): Promise<AdapterStatsResponse> {
   return authRequest<AdapterStatsResponse>("/api/admin/adapter/stats");
+}
+
+export async function listContactLeads(
+  params: ListContactLeadsParams = {}
+): Promise<ListContactLeadsResponse> {
+  const query = buildQueryString(params as Record<string, any>);
+  return authRequest<ListContactLeadsResponse>(`/api/admin/contact-leads${query}`);
 }

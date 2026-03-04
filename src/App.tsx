@@ -63,6 +63,7 @@ import AdminValueChains from "./pages/app/AdminValueChains";
 import AdminJobs from "./pages/app/AdminJobs";
 import AdminSearchAnalytics from "./pages/app/AdminSearchAnalytics";
 import AdminPartnerPayloads from "./pages/app/AdminPartnerPayloads";
+import AdminContactLeads from "./pages/app/AdminContactLeads";
 import PartnerPortal from "./pages/app/PartnerPortal";
 import WebhooksPage from "./pages/app/Webhooks";
 import PartnerCliPage from "./pages/app/PartnerCli";
@@ -491,6 +492,14 @@ const App = () => (
               element={
                 <RequireAdmin>
                   <AppLayout><AdminValueChains /></AppLayout>
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/app/admin/leads-contato"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminContactLeads /></AppLayout>
                 </RequireAdmin>
               }
             />
