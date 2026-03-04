@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -136,6 +137,26 @@ function RequireWorkspaceAccess({
   return children;
 }
 
+function GovDocsAccessDenied() {
+  return (
+    <div className="max-w-2xl mx-auto py-10">
+      <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+        <h1 className="text-2xl font-semibold text-foreground">Acesso restrito</h1>
+        <p className="text-muted-foreground">
+          A área <code>/app/governo/docs</code> é exclusiva para workspaces do tipo{" "}
+          <code>government</code>.
+        </p>
+        <p className="text-muted-foreground">
+          Se você precisa desse acesso, peça ao administrador para ajustar o tipo do workspace.
+        </p>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/app">Voltar para o app</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function RequireExactWorkspaceType({
   children,
   expected,
@@ -147,7 +168,11 @@ function RequireExactWorkspaceType({
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if ((user?.workspace_type || "producer") !== expected) {
-    return <Navigate to="/app" replace />;
+    return (
+      <AppLayout>
+        <GovDocsAccessDenied />
+      </AppLayout>
+    );
   }
   return children;
 }
