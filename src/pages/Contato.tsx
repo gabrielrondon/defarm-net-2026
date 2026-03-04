@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { GATEWAY_BASE } from "@/lib/api/client";
 
@@ -22,6 +23,17 @@ const Contato = () => {
     website: "",
     message: "",
   });
+
+  const profileOptions = [
+    { value: "erp", label: "ERP" },
+    { value: "agregador_dados", label: "Agregador de dados" },
+    { value: "parceiro_dados", label: "Parceiro de dados" },
+    { value: "certificador", label: "Certificador / OESA" },
+    { value: "processador", label: "Processador / Frigorífico" },
+    { value: "governo_agencia", label: "Governo / Agência" },
+    { value: "produtor", label: "Produtor" },
+    { value: "outro", label: "Outro" },
+  ] as const;
 
   const contactInfo = [
     {
@@ -191,12 +203,18 @@ const Contato = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="contact-role">Perfil</Label>
-                      <Input
-                        id="contact-role"
-                        value={form.role}
-                        onChange={(e) => onChange("role", e.target.value)}
-                        placeholder="ERP, parceiro, certificador..."
-                      />
+                      <Select value={form.role || "outro"} onValueChange={(value) => onChange("role", value)}>
+                        <SelectTrigger id="contact-role">
+                          <SelectValue placeholder="Selecione um perfil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {profileOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="space-y-2">
