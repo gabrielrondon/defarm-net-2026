@@ -76,6 +76,14 @@ const partnerSections: NavSection[] = [
       { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
     ],
   },
+  {
+    title: "Desenvolvimento",
+    items: [
+      { icon: Database, label: "SDK", href: "/app/sdk" },
+      { icon: ScrollText, label: "CLI", href: "/app/cli" },
+      { icon: BookOpen, label: "Documentação", href: "/app/docs" },
+    ],
+  },
 ];
 
 const producerSections: NavSection[] = [
@@ -154,6 +162,8 @@ const adminSections: NavSection[] = [
       { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
       { icon: Key, label: "API Keys", href: "/app/api-keys" },
       { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
+      { icon: Database, label: "SDK", href: "/app/sdk" },
+      { icon: ScrollText, label: "CLI", href: "/app/cli" },
     ],
   },
   {
