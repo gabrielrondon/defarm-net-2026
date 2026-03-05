@@ -33,8 +33,6 @@ import {
   Search,
   Key,
   Webhook,
-  TerminalSquare,
-  Code2,
   Database,
   ScrollText,
 } from "lucide-react";
@@ -56,34 +54,128 @@ interface NavItem {
   label: string;
   href: string;
 }
+
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
 type WorkspaceType = "partner" | "producer" | "processor" | "certifier";
 
-const navCatalog: NavItem[] = [
-  { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
-  { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
-  { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
-  { icon: Key, label: "API Keys", href: "/app/api-keys" },
-  { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
-  { icon: TerminalSquare, label: "CLI", href: "/app/cli" },
-  { icon: Code2, label: "SDK", href: "/app/sdk" },
-  { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
-  { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
-  { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
-  { icon: Package, label: "Itens", href: "/app/itens" },
-  { icon: Activity, label: "Eventos", href: "/app/eventos" },
-  { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
-  { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
-  { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
-  { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
-  { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance" },
+const partnerSections: NavSection[] = [
+  {
+    items: [
+      { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
+    ],
+  },
+  {
+    title: "Operação",
+    items: [
+      { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
+      { icon: Key, label: "API Keys", href: "/app/api-keys" },
+      { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
+    ],
+  },
 ];
 
-const navByWorkspace: Record<WorkspaceType, string[]> = {
-  partner: ["/app/parceiro", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
-  producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance"],
-  certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
-  processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
-};
+const producerSections: NavSection[] = [
+  {
+    items: [
+      { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
+    ],
+  },
+  {
+    title: "Rastreio",
+    items: [
+      { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
+      { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
+      { icon: Package, label: "Itens", href: "/app/itens" },
+      { icon: Activity, label: "Eventos", href: "/app/eventos" },
+    ],
+  },
+  {
+    title: "Serviços",
+    items: [
+      { icon: Landmark, label: "Finance", href: "/app/finance" },
+      { icon: ClipboardCheck, label: "Compliance", href: "/app/compliance" },
+    ],
+  },
+];
+
+const certifierSections: NavSection[] = [
+  {
+    title: "Rastreio",
+    items: [
+      { icon: Users, label: "Propriedades", href: "/app/claims" },
+      { icon: Users, label: "Rebanho", href: "/app/propriedades/rebanho" },
+      { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
+      { icon: Package, label: "Itens", href: "/app/itens" },
+      { icon: Activity, label: "Eventos", href: "/app/eventos" },
+    ],
+  },
+  {
+    title: "Verificação",
+    items: [
+      { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
+      { icon: ClipboardCheck, label: "Compliance", href: "/app/compliance" },
+    ],
+  },
+];
+
+const processorSections: NavSection[] = [
+  {
+    title: "Rastreio",
+    items: [
+      { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
+      { icon: Package, label: "Itens", href: "/app/itens" },
+      { icon: Activity, label: "Eventos", href: "/app/eventos" },
+    ],
+  },
+  {
+    title: "Verificação & Serviços",
+    items: [
+      { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
+      { icon: Landmark, label: "Finance", href: "/app/finance" },
+      { icon: ClipboardCheck, label: "Compliance", href: "/app/compliance" },
+    ],
+  },
+];
+
+const adminSections: NavSection[] = [
+  {
+    items: [
+      { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
+      { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
+    ],
+  },
+  {
+    title: "Parceiro",
+    items: [
+      { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
+      { icon: Key, label: "API Keys", href: "/app/api-keys" },
+      { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
+    ],
+  },
+  {
+    title: "Rastreio",
+    items: [
+      { icon: Users, label: "Propriedades", href: "/app/claims" },
+      { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
+      { icon: Package, label: "Itens", href: "/app/itens" },
+      { icon: Activity, label: "Eventos", href: "/app/eventos" },
+      { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
+      { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
+      { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
+    ],
+  },
+  {
+    title: "Serviços",
+    items: [
+      { icon: Landmark, label: "Finance", href: "/app/finance" },
+      { icon: ClipboardCheck, label: "Compliance", href: "/app/compliance" },
+    ],
+  },
+];
 
 const adminNavItems: NavItem[] = [
   { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas" },
@@ -93,6 +185,13 @@ const adminNavItems: NavItem[] = [
   { icon: Database, label: "Payloads Parceiros", href: "/app/admin/payloads-parceiros" },
   { icon: ListTodo, label: "Fila de Jobs", href: "/app/admin/jobs" },
 ];
+
+const sectionsByWorkspace: Record<WorkspaceType, NavSection[]> = {
+  partner: partnerSections,
+  producer: producerSections,
+  certifier: certifierSections,
+  processor: processorSections,
+};
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -107,12 +206,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [demoSwitchLoading, setDemoSwitchLoading] = useState(false);
   const [showProducerHint, setShowProducerHint] = useState(false);
   const workspaceType = user?.workspace_type || "producer";
-  const workspaceMenu = navByWorkspace[workspaceType as WorkspaceType] ?? navByWorkspace.producer;
-  const visibleNavItems = user?.is_admin
-    ? navCatalog
-    : workspaceMenu
-        .map((href) => navCatalog.find((item) => item.href === href))
-        .filter((item): item is NavItem => !!item);
+  
+  const sections = user?.is_admin
+    ? adminSections
+    : sectionsByWorkspace[workspaceType as WorkspaceType] ?? producerSections;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -233,15 +330,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-64 h-screen bg-background border-r border-border flex flex-col transition-transform duration-300 lg:translate-x-0",
+          "fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-56 h-screen bg-background border-r border-border flex flex-col transition-transform duration-300 lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
-          <Link to="/app" className="flex items-center gap-3">
-            <img src={logoIcon} alt="DeFarm" className="h-8 w-8" />
-            <span className="text-lg font-bold text-foreground">DeFarm</span>
+        <div className="h-14 flex items-center justify-between px-4 border-b border-border">
+          <Link to="/app" className="flex items-center gap-2.5">
+            <img src={logoIcon} alt="DeFarm" className="h-7 w-7" />
+            <span className="text-base font-bold text-foreground">DeFarm</span>
           </Link>
           <button
             className="lg:hidden p-2 hover:bg-muted rounded-lg"
@@ -252,38 +349,44 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {visibleNavItems.map((item) => {
-            const isActive = location.pathname === item.href || 
-              (item.href !== "/app" && location.pathname.startsWith(item.href));
-            
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+          {sections.map((section, sectionIdx) => (
+            <div key={sectionIdx} className={sectionIdx > 0 ? "mt-5" : ""}>
+              {section.title && (
+                <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">
+                  {section.title}
+                </p>
+              )}
+              {section.items.map((item) => {
+                const isActive = location.pathname === item.href || 
+                  (item.href !== "/app" && location.pathname.startsWith(item.href));
+                
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
 
-          {/* Admin section - only visible to admin users */}
+          {/* Admin section */}
           {user?.is_admin && (
-            <>
-              <div className="pt-4 pb-1 px-3">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Admin
-                </span>
-              </div>
+            <div className="mt-5">
+              <p className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">
+                Admin
+              </p>
               {adminNavItems.map((item) => {
                 const isActive = location.pathname === item.href ||
                   location.pathname.startsWith(item.href);
@@ -294,57 +397,56 @@ export function AppLayout({ children }: AppLayoutProps) {
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className="h-4 w-4 shrink-0" />
                     {item.label}
-                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
                   </Link>
                 );
               })}
-            </>
+            </div>
           )}
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center">
-              <span className="text-sm font-semibold text-primary">
+        <div className="p-3 border-t border-border">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+              <span className="text-xs font-semibold text-primary">
                 {user?.username?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
+              <p className="text-[13px] font-medium text-foreground truncate">
                 {user?.username}
               </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user?.email} · {workspaceType}
+              <p className="text-[11px] text-muted-foreground truncate">
+                {workspaceType}
               </p>
             </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <Button
               variant="ghost"
               size="sm"
-              className="flex-1 justify-start"
+              className="flex-1 justify-start h-8 text-xs"
               onClick={() => navigate("/app/configuracoes")}
             >
-              <Settings className="h-4 w-4 mr-2" />
+              <Settings className="h-3.5 w-3.5 mr-1.5" />
               Config
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-destructive"
+              className="h-8 text-muted-foreground hover:text-destructive"
               onClick={handleLogout}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -353,7 +455,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-16 border-b border-border flex items-center px-4 lg:px-6 gap-4">
+        <header className="h-14 border-b border-border flex items-center px-4 lg:px-6 gap-4">
           <button
             className="lg:hidden p-2 hover:bg-muted rounded-lg"
             onClick={() => setSidebarOpen(true)}
@@ -362,8 +464,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           </button>
           
           <div className="flex-1" />
-          
-          {/* You can add search, notifications, etc. here */}
         </header>
 
         {/* Page content */}
