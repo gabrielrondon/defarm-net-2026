@@ -398,6 +398,14 @@ const App = () => (
                 </RequireWorkspaceAccess>
               }
             />
+            <Route
+              path="/app/docs"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerDocs /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
             
             {/* Admin routes */}
