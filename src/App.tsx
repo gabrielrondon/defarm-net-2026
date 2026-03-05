@@ -368,6 +368,22 @@ const App = () => (
               }
             />
             <Route
+              path="/app/parceiro/ingestao"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerIngestao /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/parceiro/roteamento"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerRoteamento /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
               path="/app/parceiro/logs"
               element={
                 <RequireWorkspaceAccess allowed={["partner"]}>
