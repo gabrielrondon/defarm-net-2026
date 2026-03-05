@@ -1,26 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
-import { createEmbedToken, deleteRoutingRule, listRoutingRules, upsertRoutingRule, type RoutingRule } from "@/lib/api/partner-routing";
+import { deleteRoutingRule, listRoutingRules, upsertRoutingRule, type RoutingRule } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
-import { Copy, ExternalLink, Loader2, Route, Trash2 } from "lucide-react";
+import { Loader2, Route, Trash2 } from "lucide-react";
 
 const IDENTIFIERS = [
-  { value: "land_dfid", label: "LAND DFID" },
   { value: "car", label: "CAR" },
-  { value: "ccir", label: "CCIR" },
-  { value: "cib", label: "CIB" },
+  { value: "land_dfid", label: "LAND DFID" },
   { value: "cnpj", label: "CNPJ" },
   { value: "cpf", label: "CPF" },
-  { value: "incra", label: "INCRA" },
+  { value: "ccir", label: "CCIR" },
   { value: "nirf", label: "NIRF" },
-  { value: "matricula", label: "MATRÍCULA" },
-  { value: "georef", label: "GEOREF (município/UF ou referência geográfica)" },
+  { value: "georef", label: "GEOREF" },
 ] as const;
 
 export function PartnerRouting() {
@@ -32,7 +28,6 @@ export function PartnerRouting() {
   const [identifierValue, setIdentifierValue] = useState("");
   const [circuitId, setCircuitId] = useState("");
   const [saving, setSaving] = useState(false);
-  const [shareLinks, setShareLinks] = useState<Record<string, { url: string; expiresAt: string }>>({});
 
   const circuitNameMap = useMemo(
     () => new Map(circuits.map((c) => [c.id, c.name])),
@@ -46,20 +41,14 @@ export function PartnerRouting() {
       setRules(rulesData);
       setCircuits(circuitsData);
       if (!circuitId && circuitsData[0]) setCircuitId(circuitsData[0].id);
-    } catch (error) {
-      toast({
-        title: "Erro no roteamento",
-        description: "Não foi possível carregar regras de roteamento.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Erro ao carregar roteamento", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   }, [toast, circuitId]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const onSaveRule = async () => {
     if (!identifierValue.trim() || !circuitId) return;
@@ -72,13 +61,9 @@ export function PartnerRouting() {
       });
       setIdentifierValue("");
       await load();
-      toast({ title: "Regra salva", description: "Roteamento atualizado com sucesso." });
-    } catch (error) {
-      toast({
-        title: "Falha ao salvar",
-        description: "Não foi possível salvar a regra de roteamento.",
-        variant: "destructive",
-      });
+      toast({ title: "Regra salva" });
+    } catch {
+      toast({ title: "Falha ao salvar regra", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -90,32 +75,7 @@ export function PartnerRouting() {
       await load();
       toast({ title: "Regra removida" });
     } catch {
-      toast({
-        title: "Falha ao remover",
-        description: "A regra não pôde ser removida.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const onGenerateEmbed = async (targetCircuitId: string) => {
-    try {
-      const response = await createEmbedToken({ circuit_id: targetCircuitId, expires_in_minutes: 60 });
-      setShareLinks((prev) => ({
-        ...prev,
-        [targetCircuitId]: { url: response.embed_url, expiresAt: response.expires_at },
-      }));
-      await navigator.clipboard.writeText(response.embed_url);
-      toast({
-        title: "Link da página do cliente gerado",
-        description: "Link copiado para a área de transferência. Você também pode copiar o snippet de embed.",
-      });
-    } catch {
-      toast({
-        title: "Erro ao gerar link",
-        description: "Não foi possível gerar a página compartilhável deste cliente.",
-        variant: "destructive",
-      });
+      toast({ title: "Falha ao remover", variant: "destructive" });
     }
   };
 
@@ -128,128 +88,66 @@ export function PartnerRouting() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* New rule form */}
-      <div>
-        <p className="section-label mb-1">Roteamento</p>
-        <h2 className="text-foreground">Roteamento por Cliente</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          Defina para qual circuito cada identificador deve ir. Evita mistura de dados entre clientes.
-        </p>
-      </div>
-
-      <Card className="p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div className="space-y-6">
+      {/* Add rule */}
+      <div className="rounded-xl bg-muted/40 p-4">
+        <p className="text-sm font-medium text-foreground mb-3">Nova regra</p>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
           <Select value={identifierType} onValueChange={setIdentifierType}>
-            <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {IDENTIFIERS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              {IDENTIFIERS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Input
             value={identifierValue}
             onChange={(e) => setIdentifierValue(e.target.value)}
-            placeholder="Valor do identificador"
+            placeholder="Valor"
           />
           <Select value={circuitId} onValueChange={setCircuitId}>
-            <SelectTrigger><SelectValue placeholder="Circuito destino" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Circuito" /></SelectTrigger>
             <SelectContent>
-              {circuits.map((circuit) => (
-                <SelectItem key={circuit.id} value={circuit.id}>{circuit.name}</SelectItem>
+              {circuits.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Button onClick={onSaveRule} disabled={saving || !identifierValue.trim() || !circuitId}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar regra"}
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
           </Button>
         </div>
-      </Card>
+      </div>
 
-      {/* Active rules */}
+      {/* Rules list */}
       <div>
-        <p className="section-label mb-3">Regras ativas · {rules.length}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
+          Regras ativas · {rules.length}
+        </p>
         {rules.length === 0 ? (
           <EmptyState
             icon={Route}
-            title="Nenhuma regra cadastrada"
-            description="Crie a primeira regra de roteamento acima para direcionar dados ao circuito correto."
+            title="Nenhuma regra"
+            description="Crie a primeira regra acima."
           />
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-border rounded-xl border">
             {rules.map((rule) => (
-              <Card key={rule.id} className="p-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        {rule.identifier_type}
-                      </span>
-                      <span className="font-mono text-sm text-foreground truncate">{rule.identifier_value}</span>
-                      {rule.auto_created && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">auto</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      → {circuitNameMap.get(rule.circuit_id) || rule.circuit_id}
-                    </p>
-                    {shareLinks[rule.circuit_id] && (
-                      <p className="text-xs text-muted-foreground">
-                        Link válido até {new Date(shareLinks[rule.circuit_id].expiresAt).toLocaleString("pt-BR")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => onGenerateEmbed(rule.circuit_id)}>
-                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                      Página cliente
-                    </Button>
-                    {shareLinks[rule.circuit_id] && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs"
-                          onClick={() => window.open(shareLinks[rule.circuit_id].url, "_blank", "noopener,noreferrer")}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                          Abrir
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs"
-                          onClick={async () => {
-                            const snippet = `<iframe src="${shareLinks[rule.circuit_id].url}" width="100%" height="720" style="border:0;border-radius:12px;" loading="lazy"></iframe>`;
-                            await navigator.clipboard.writeText(snippet);
-                            toast({ title: "Snippet copiado", description: "Cole no portal do seu cliente." });
-                          }}
-                        >
-                          <Copy className="h-3.5 w-3.5 mr-1" />
-                          Embed
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-xs"
-                      onClick={async () => {
-                        const link = shareLinks[rule.circuit_id]?.url || `${window.location.origin}/app/circuitos/${rule.circuit_id}`;
-                        await navigator.clipboard.writeText(link);
-                        toast({ title: "Link copiado" });
-                      }}
-                    >
-                      <Copy className="h-3.5 w-3.5 mr-1" />
-                      Link
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive hover:text-destructive" onClick={() => onDelete(rule.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+              <div key={rule.id} className="flex items-center justify-between px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-foreground">
+                    <span className="text-muted-foreground text-xs uppercase mr-2">{rule.identifier_type}</span>
+                    <span className="font-mono">{rule.identifier_value}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    → {circuitNameMap.get(rule.circuit_id) || rule.circuit_id}
+                  </p>
                 </div>
-              </Card>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => onDelete(rule.id)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             ))}
           </div>
         )}
