@@ -66,6 +66,8 @@ import WebhooksPage from "./pages/app/Webhooks";
 import PartnerCliPage from "./pages/app/PartnerCli";
 import PartnerSdkPage from "./pages/app/PartnerSdk";
 import PartnerDocs from "./pages/app/PartnerDocs";
+import PartnerRoteamento from "./pages/app/PartnerRoteamento";
+import PartnerIngestao from "./pages/app/PartnerIngestao";
 import PartnerLogs from "./pages/app/PartnerLogs";
 import OwnershipClaims from "./pages/app/OwnershipClaims";
 import PropertyHerd from "./pages/app/PropertyHerd";
@@ -363,6 +365,22 @@ const App = () => (
               element={
                 <RequireWorkspaceAccess allowed={["partner"]}>
                   <AppLayout><PartnerPortal /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/parceiro/ingestao"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerIngestao /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/parceiro/roteamento"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerRoteamento /></AppLayout>
                 </RequireWorkspaceAccess>
               }
             />

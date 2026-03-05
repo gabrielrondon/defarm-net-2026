@@ -71,6 +71,8 @@ const partnerSections: NavSection[] = [
   {
     title: "Operação",
     items: [
+      { icon: Database, label: "Ingestão", href: "/app/parceiro/ingestao" },
+      { icon: Activity, label: "Roteamento", href: "/app/parceiro/roteamento" },
       { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
       { icon: Key, label: "API Keys", href: "/app/api-keys" },
       { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
