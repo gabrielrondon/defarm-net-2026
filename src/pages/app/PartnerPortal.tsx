@@ -2,15 +2,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import {
   PartnerOverview,
-  PartnerKit,
   PartnerRouting,
   PartnerIntake,
 } from "@/components/partner";
-import { BarChart3, PackageOpen, Route, Database } from "lucide-react";
+import { BarChart3, Route, Database } from "lucide-react";
 
 const tabs = [
   { value: "overview", label: "Visão Geral", icon: BarChart3 },
-  { value: "kit", label: "Kit Parceiro", icon: PackageOpen },
   { value: "routing", label: "Roteamento", icon: Route },
   { value: "intake", label: "Intake", icon: Database },
 ] as const;
@@ -24,7 +22,7 @@ export default function PartnerPortal() {
         <p className="section-label mb-1">Parceiro</p>
         <h1 className="text-foreground">Portal do Parceiro</h1>
         <p className="text-sm text-muted-foreground mt-1.5 max-w-lg">
-          Envie dados, acompanhe processamento e mantenha o roteamento dos seus clientes.
+          Envie dados, acompanhe processamento e gerencie o roteamento dos seus clientes.
         </p>
       </div>
 
@@ -44,7 +42,6 @@ export default function PartnerPortal() {
 
         <TabsContent value={activeTab}>
           {activeTab === "overview" ? <PartnerOverview /> : null}
-          {activeTab === "kit" ? <PartnerKit /> : null}
           {activeTab === "routing" ? <PartnerRouting /> : null}
           {activeTab === "intake" ? <PartnerIntake /> : null}
         </TabsContent>
