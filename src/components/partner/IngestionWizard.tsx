@@ -69,8 +69,17 @@ export function IngestionWizard() {
   useEffect(() => {
     async function init() {
       try {
-        const data = await getCircuits();
-        setCircuits(data);
+        // Try dedicated endpoint first, fallback to first circuit
+        const [circuitsData, defaultCircuit] = await Promise.allSettled([
+          getCircuits(),
+          getPartnerDefaultCircuit(),
+        ]);
+        if (circuitsData.status === "fulfilled") setCircuits(circuitsData.value);
+        if (defaultCircuit.status === "fulfilled" && defaultCircuit.value?.id) {
+          setDefaultCircuitId(defaultCircuit.value.id);
+        } else if (circuitsData.status === "fulfilled" && circuitsData.value[0]) {
+          setDefaultCircuitId(circuitsData.value[0].id);
+        }
       } catch {
         // ignore
       } finally {
