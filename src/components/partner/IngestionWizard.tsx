@@ -7,6 +7,7 @@ import {
   partnerIntake,
   partnerIntakePreview,
   getPartnerDefaultCircuit,
+  type DefaultCircuitResponse,
   type PartnerIntakePreviewResponse,
   type PartnerIntakeResponse,
 } from "@/lib/api/partner-routing";
