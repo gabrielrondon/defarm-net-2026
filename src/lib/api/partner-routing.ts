@@ -1,4 +1,5 @@
 import { buildQueryString, registryFileRequest, registryPublicRequest, registryRequest } from "./client";
+import type { Circuit } from "./types";
 
 export interface RoutingRule {
   id: string;
