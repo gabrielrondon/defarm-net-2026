@@ -209,8 +209,24 @@ export interface EmbedPortfolioResponse {
   recent_event_proofs: EmbedEventProof[];
 }
 
-export async function getPartnerDefaultCircuit(): Promise<Circuit> {
-  return registryRequest<Circuit>("/partner/default-circuit");
+export interface DefaultCircuitResponse {
+  circuit_id: string;
+  name: string;
+  is_staging: boolean;
+  source: "ApiKeyMetadata" | "PartnerStagingFlag" | "Fallback" | "WorkspaceSetting";
+  workspace_id: string;
+  changed: boolean;
+}
+
+export async function getPartnerDefaultCircuit(): Promise<DefaultCircuitResponse> {
+  return registryRequest<DefaultCircuitResponse>("/partner/default-circuit");
+}
+
+export async function updatePartnerDefaultCircuit(circuitId: string): Promise<DefaultCircuitResponse> {
+  return registryRequest<DefaultCircuitResponse>("/partner/default-circuit", {
+    method: "PUT",
+    body: JSON.stringify({ circuit_id: circuitId }),
+  });
 }
 
 export async function listRoutingRules(identifierType?: string): Promise<RoutingRule[]> {
