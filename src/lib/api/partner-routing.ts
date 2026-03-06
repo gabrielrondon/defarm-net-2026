@@ -1,4 +1,5 @@
 import { buildQueryString, registryFileRequest, registryPublicRequest, registryRequest } from "./client";
+import type { Circuit } from "./types";
 
 export interface RoutingRule {
   id: string;
@@ -206,6 +207,10 @@ export interface EmbedPortfolioResponse {
     recent_items: Record<string, unknown>[];
   };
   recent_event_proofs: EmbedEventProof[];
+}
+
+export async function getPartnerDefaultCircuit(): Promise<Circuit> {
+  return registryRequest<Circuit>("/partner/default-circuit");
 }
 
 export async function listRoutingRules(identifierType?: string): Promise<RoutingRule[]> {

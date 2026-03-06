@@ -6,6 +6,7 @@ import { getCircuits } from "@/lib/api/circuits";
 import {
   partnerIntake,
   partnerIntakePreview,
+  getPartnerDefaultCircuit,
   type PartnerIntakePreviewResponse,
   type PartnerIntakeResponse,
 } from "@/lib/api/partner-routing";
@@ -41,7 +42,7 @@ export function IngestionWizard() {
   const [result, setResult] = useState<PartnerIntakeResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const defaultCircuitId = useMemo(() => circuits[0]?.id || "", [circuits]);
+  const [defaultCircuitId, setDefaultCircuitId] = useState("");
 
   const testCircuit = useMemo(
     () =>
@@ -68,8 +69,17 @@ export function IngestionWizard() {
   useEffect(() => {
     async function init() {
       try {
-        const data = await getCircuits();
-        setCircuits(data);
+        // Try dedicated endpoint first, fallback to first circuit
+        const [circuitsData, defaultCircuit] = await Promise.allSettled([
+          getCircuits(),
+          getPartnerDefaultCircuit(),
+        ]);
+        if (circuitsData.status === "fulfilled") setCircuits(circuitsData.value);
+        if (defaultCircuit.status === "fulfilled" && defaultCircuit.value?.id) {
+          setDefaultCircuitId(defaultCircuit.value.id);
+        } else if (circuitsData.status === "fulfilled" && circuitsData.value[0]) {
+          setDefaultCircuitId(circuitsData.value[0].id);
+        }
       } catch {
         // ignore
       } finally {
