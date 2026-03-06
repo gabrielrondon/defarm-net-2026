@@ -176,12 +176,51 @@ export function IngestionWizard() {
     );
   }
 
+  if (noCircuit) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 space-y-3 animate-fade-in">
+        <XCircle className="h-8 w-8 text-muted-foreground/40" />
+        <p className="text-sm font-medium text-foreground">Nenhum circuito elegível encontrado</p>
+        <p className="text-xs text-muted-foreground text-center max-w-xs">
+          Não foi possível identificar um circuito padrão para este workspace. Entre em contato com o suporte ou crie um circuito primeiro.
+        </p>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/app/circuitos/novo">Criar circuito</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const sourceLabel: Record<string, string> = {
+    ApiKeyMetadata: "via API Key",
+    PartnerStagingFlag: "staging",
+    Fallback: "fallback",
+    WorkspaceSetting: "configuração",
+  };
+
   const stepLabels = { upload: "Upload", preview: "Preview", test: "Teste", done: "Produção" } as const;
   const stepOrder = { upload: 0, preview: 1, test: 2, done: 3 };
   const currentOrder = { upload: 0, preview: 1, test: 2, production: 3, done: 3, error: -1 }[step];
 
   return (
     <div className="space-y-6">
+      {/* Resolved circuit badge */}
+      {defaultCircuitInfo && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground animate-fade-in">
+          <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+          <span>
+            Circuito: <span className="font-medium text-foreground">{defaultCircuitInfo.name}</span>
+          </span>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono">
+            {sourceLabel[defaultCircuitInfo.source] || defaultCircuitInfo.source}
+          </span>
+          {defaultCircuitInfo.is_staging && (
+            <span className="rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 text-[10px]">
+              staging
+            </span>
+          )}
+        </div>
+      )}
       {/* Step indicator */}
       <div className="flex items-center gap-1 text-xs text-muted-foreground">
         {(["upload", "preview", "test", "done"] as const).map((s, i) => {
