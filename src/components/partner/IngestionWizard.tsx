@@ -44,6 +44,8 @@ export function IngestionWizard() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [defaultCircuitId, setDefaultCircuitId] = useState("");
+  const [defaultCircuitInfo, setDefaultCircuitInfo] = useState<DefaultCircuitResponse | null>(null);
+  const [noCircuit, setNoCircuit] = useState(false);
 
   const testCircuit = useMemo(
     () =>
@@ -70,16 +72,28 @@ export function IngestionWizard() {
   useEffect(() => {
     async function init() {
       try {
-        // Try dedicated endpoint first, fallback to first circuit
         const [circuitsData, defaultCircuit] = await Promise.allSettled([
           getCircuits(),
           getPartnerDefaultCircuit(),
         ]);
         if (circuitsData.status === "fulfilled") setCircuits(circuitsData.value);
-        if (defaultCircuit.status === "fulfilled" && defaultCircuit.value?.id) {
-          setDefaultCircuitId(defaultCircuit.value.id);
-        } else if (circuitsData.status === "fulfilled" && circuitsData.value[0]) {
-          setDefaultCircuitId(circuitsData.value[0].id);
+
+        if (defaultCircuit.status === "fulfilled" && defaultCircuit.value?.circuit_id) {
+          setDefaultCircuitId(defaultCircuit.value.circuit_id);
+          setDefaultCircuitInfo(defaultCircuit.value);
+        } else if (defaultCircuit.status === "rejected") {
+          const err = defaultCircuit.reason;
+          if (err instanceof ApiError && err.status === 404) {
+            setNoCircuit(true);
+          } else if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+            toast({ title: "Erro de autenticação", description: "Sem permissão para acessar o circuito padrão.", variant: "destructive" });
+          } else {
+            // Fallback transitório
+            if (circuitsData.status === "fulfilled" && circuitsData.value[0]) {
+              console.warn("[IngestionWizard] GET /partner/default-circuit falhou, usando fallback circuits[0]", err);
+              setDefaultCircuitId(circuitsData.value[0].id);
+            }
+          }
         }
       } catch {
         // ignore
