@@ -6,6 +6,7 @@ import { getCircuits } from "@/lib/api/circuits";
 import {
   partnerIntake,
   partnerIntakePreview,
+  getPartnerDefaultCircuit,
   type PartnerIntakePreviewResponse,
   type PartnerIntakeResponse,
 } from "@/lib/api/partner-routing";
