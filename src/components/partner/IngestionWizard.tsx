@@ -42,7 +42,7 @@ export function IngestionWizard() {
   const [result, setResult] = useState<PartnerIntakeResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const defaultCircuitId = useMemo(() => circuits[0]?.id || "", [circuits]);
+  const [defaultCircuitId, setDefaultCircuitId] = useState("");
 
   const testCircuit = useMemo(
     () =>
