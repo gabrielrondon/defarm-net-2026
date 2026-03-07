@@ -240,6 +240,17 @@ export default function ApiKeys() {
             <div>
               <h1 className="text-2xl font-bold text-foreground">API Keys</h1>
               <p className="text-muted-foreground">Gerencie suas chaves de acesso para integração</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Documentação:{" "}
+                <a
+                  href="https://docs.defarm.net/docs/getting-started#api-key"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline underline-offset-2"
+                >
+                  como usar API key no quickstart
+                </a>
+              </p>
             </div>
           </div>
           <Button

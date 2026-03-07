@@ -5,6 +5,18 @@ import type {
   UpdateCircuitAdapterRequest,
 } from "./types";
 
+export interface PendingTokenizationResponse {
+  circuit_id: string;
+  pending_items: number;
+}
+
+export interface TokenizePendingResponse {
+  circuit_id: string;
+  pending_items_before: number;
+  enqueued_jobs: number;
+  adapters: string[];
+}
+
 export async function listCircuitAdapters(
   circuitId: string
 ): Promise<CircuitAdapter[]> {
@@ -51,4 +63,26 @@ export async function deleteCircuitAdapter(
   await registryRequest(`/circuits/${circuitId}/adapters/${adapterId}`, {
     method: "DELETE",
   });
+}
+
+export async function getPendingTokenizationCount(
+  circuitId: string
+): Promise<PendingTokenizationResponse> {
+  return registryRequest<PendingTokenizationResponse>(
+    `/circuits/${circuitId}/adapters/pending-tokenization`
+  );
+}
+
+export async function tokenizePendingItems(
+  circuitId: string,
+  params?: { limit?: number; priority?: number }
+): Promise<TokenizePendingResponse> {
+  const search = new URLSearchParams();
+  if (params?.limit) search.set("limit", String(params.limit));
+  if (params?.priority) search.set("priority", String(params.priority));
+  const query = search.toString();
+  return registryRequest<TokenizePendingResponse>(
+    `/circuits/${circuitId}/adapters/tokenize-pending${query ? `?${query}` : ""}`,
+    { method: "POST" }
+  );
 }

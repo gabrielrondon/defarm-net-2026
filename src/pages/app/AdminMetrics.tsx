@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAdapterStats, type AdapterStatsResponse } from "@/lib/api/admin-users";
 import {
@@ -12,19 +14,25 @@ import {
   CheckCircle,
   XCircle,
   Layers,
+  RefreshCw,
 } from "lucide-react";
 
 export default function AdminMetrics() {
-  const [stats, setStats] = useState<AdapterStatsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const statsQuery = useQuery<AdapterStatsResponse>({
+    queryKey: ["admin-adapter-stats"],
+    queryFn: getAdapterStats,
+    refetchInterval: 15000,
+  });
 
-  useEffect(() => {
-    getAdapterStats()
-      .then(setStats)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const stats = statsQuery.data;
+  const loading = statsQuery.isLoading;
+  const error = statsQuery.isError
+    ? (statsQuery.error as Error)?.message || "Falha ao carregar métricas."
+    : null;
+  const lastUpdated = useMemo(() => {
+    if (!statsQuery.dataUpdatedAt) return "-";
+    return new Date(statsQuery.dataUpdatedAt).toLocaleString("pt-BR");
+  }, [statsQuery.dataUpdatedAt]);
 
   if (loading) {
     return (
@@ -60,8 +68,20 @@ export default function AdminMetrics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Métricas do Sistema</h1>
-        <Badge variant="outline" className="text-xs">Admin Only</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">Admin Only</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => statsQuery.refetch()}
+            disabled={statsQuery.isFetching}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${statsQuery.isFetching ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
+        </div>
       </div>
+      <p className="text-xs text-muted-foreground">Última atualização: {lastUpdated}</p>
 
       {/* Jobs */}
       <div>

@@ -32,42 +32,30 @@ const RESPONSE_EXAMPLE = `{
   "summary": {
     "status": "completed",
     "total_rows": 2,
+    "processed_rows": 2,
     "unresolved_rows": 0,
-    "routed_batches": 1,
-    "items_linked": 2,
+    "routes": 1,
+    "items": 2,
     "created_circuits": 0,
-    "circuits_linked": 1,
     "partner_reference": { "field": "external_id", "value": "cowpro-0001" }
   },
-  "raw_payload_id": "uuid",
-  "status": "completed",
-  "routed_batches": [
+  "items": [
     {
-      "identifier_type": "cnpj",
-      "identifier_value": "12345678000190",
-      "rows": 2,
-      "status": "completed",
-      "item_links": [
-        {
-          "item_id": "uuid",
-          "dfid": "DFID-BEEF-BR-2026-000123-abc123",
-          "app_url": "https://defarm.net/app/itens/<item_id>",
-          "public_url": "https://defarm.net/i/<dfid>",
-          "identifiers": [
-            { "identifier_type": "SISBOV", "value": "105500497219983", "is_canonical": true }
-          ],
-          "input_references": [
-            { "field": "external_id", "value": "cowpro-0001" }
-          ]
-        }
-      ]
+      "dfid": "DFID-BEEF-BR-2026-000123-abc123",
+      "url": "https://defarm.net/i/DFID-BEEF-BR-2026-000123-abc123",
+      "partner_reference": "cowpro-0001",
+      "asset_reference": { "identifier_type": "sisbov", "value": "105500497219983" }
     }
   ],
-  "circuit_links": [
+  "errors": [],
+  "routes": [
     {
+      "route_type": "cnpj",
+      "route_value": "12345678000190",
       "circuit_id": "uuid",
-      "app_url": "https://defarm.net/app/circuitos/<uuid>",
-      "public_url": "https://defarm.net/c/<uuid>"
+      "rows": 2,
+      "status": "completed",
+      "items": 2
     }
   ]
 }`;
@@ -86,10 +74,8 @@ const result = await client.upload({
   autoCreateCircuit: true,
 });
 
-for (const batch of result.routed_batches) {
-  for (const item of batch.item_links) {
-    console.log(item.dfid, item.public_url, item.is_public);
-  }
+for (const item of result.items) {
+  console.log(item.dfid, item.url, item.partner_reference);
 }`;
 
 const TEMPLATE_API_EXAMPLE = `# 1) Criar template (JWT)
@@ -306,8 +292,8 @@ export function PartnerKit() {
         <Card className="p-4 space-y-3">
           <p className="text-sm font-medium text-foreground">Resposta útil para navegação</p>
           <p className="text-xs text-muted-foreground">
-            Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">routed_batches.item_links</code> para abrir item por item (DFID + identificadores) e
-            <code className="text-xs bg-muted px-1 py-0.5 rounded ml-1">circuit_links</code> para portfólio por cliente.
+            Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">items[].url</code> para abrir item por item (DFID + identificadores) e
+            <code className="text-xs bg-muted px-1 py-0.5 rounded ml-1">errors[]</code> para saber exatamente o que corrigir.
           </p>
           <pre className="code-block">{RESPONSE_EXAMPLE}</pre>
         </Card>
@@ -321,7 +307,7 @@ export function PartnerKit() {
           <li>Opcional: rodar preview em <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions/preview</code> para validar o lote.</li>
           <li>Enviar em chunks (recomendado 50-150 linhas por request) para <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions</code>.</li>
           <li>Resolver pendências em Roteamento.</li>
-          <li>Abrir <code className="text-xs bg-muted px-1 py-0.5 rounded">circuit_links</code> retornados para ver o portfólio imediatamente.</li>
+          <li>Consumir <code className="text-xs bg-muted px-1 py-0.5 rounded">items[].url</code> e reconciliar via <code className="text-xs bg-muted px-1 py-0.5 rounded">partner_reference</code>.</li>
         </ol>
         <a href="/app/api-keys" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-3">
           <Link2 className="h-3.5 w-3.5" />

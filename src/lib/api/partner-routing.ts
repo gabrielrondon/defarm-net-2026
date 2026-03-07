@@ -57,7 +57,7 @@ export interface ListRawPayloadsResponse {
 export interface IntakeBatchResult {
   identifier_type: string;
   identifier_value: string;
-  circuit_id: string;
+  circuit_id?: string | null;
   rows: number;
   receipt_id?: string | null;
   status: string;
@@ -65,78 +65,80 @@ export interface IntakeBatchResult {
 }
 
 export interface PartnerIntakeResponse {
+  dry_run?: boolean | null;
   summary: {
     status: string;
     total_rows: number;
+    processed_rows: number;
     unresolved_rows: number;
-    routed_batches: number;
-    items_linked: number;
+    routes: number;
+    items: number;
     created_circuits: number;
-    circuits_linked: number;
+    impacted_circuits: number;
+    items_created: number;
+    items_enriched: number;
+    events_detected?: number | null;
     partner_reference?: {
       field: string;
       value: string;
     } | null;
     warnings?: string[];
   };
-  raw_payload_id: string;
-  source_circuit_id?: string | null;
-  workspace_id: string;
-  total_rows: number;
-  routed_batches: IntakeBatchResult[];
+  items: {
+    dfid?: string | null;
+    url?: string | null;
+    partner_reference?: string | null;
+    asset_reference?: {
+      identifier_type: string;
+      value: string;
+    } | null;
+    url_refs?: Record<string, string> | null;
+    would_create?: boolean | null;
+    events_preview?:
+      | {
+          event_type: string;
+          payload: unknown;
+        }[]
+      | null;
+    routes: {
+      route_type: string;
+      route_value: string;
+      circuit_id?: string | null;
+    }[];
+  }[];
+  errors: {
+    row_index?: number | null;
+    partner_reference?: string | null;
+    reason_code: string;
+    message: string;
+    value_chain?: string | null;
+    identifier_type?: string | null;
+    identifier_value?: string | null;
+  }[];
   routes: {
     route_type: string;
     route_value: string;
-    circuit_id: string;
+    circuit_id?: string | null;
     rows: number;
     status: string;
     items: number;
   }[];
-  items: {
-    dfid: string;
-    url: string;
-    partner_reference?: string | null;
-    routes: {
-      route_type: string;
-      route_value: string;
+  verbose?: {
+    raw_payload_id: string;
+    source_circuit_id?: string | null;
+    workspace_id: string;
+    total_rows: number;
+    unresolved_rows: number;
+    routed_batches: IntakeBatchResult[];
+    created_circuits: string[];
+    circuit_links?: {
       circuit_id: string;
+      app_url: string;
+      public_url: string;
+      is_public?: boolean;
     }[];
-  }[];
-  unresolved_rows: number;
-  created_circuits: string[];
-  circuit_links?: {
-    circuit_id: string;
-    app_url: string;
-    public_url: string;
-    is_public?: boolean;
-  }[];
-  status: string;
-}
-
-export interface PartnerIntakePreviewPlanItem {
-  identifier_type: string;
-  identifier_value: string;
-  identifier_value_normalized: string;
-  rows: number;
-  circuit_id?: string | null;
-  status: "routed_existing" | "would_auto_create" | "unresolved";
-  reason?: string | null;
-}
-
-export interface PartnerIntakePreviewResponse {
-  source_circuit_id: string;
-  workspace_id: string;
-  total_rows: number;
-  resolvable_rows: number;
-  unresolved_rows: number;
-  matched_rows: number;
-  would_auto_create_rows: number;
-  unresolved_identifiers: {
-    identifier_type: string;
-    identifier_value: string;
-    reason: string;
-  }[];
-  routing_plan: PartnerIntakePreviewPlanItem[];
+    status: string;
+  } | null;
 }
 
 export interface RoutingIssueSummary {
@@ -262,13 +264,56 @@ export async function partnerIntake(
   });
 }
 
+function buildJsonIntakeBody(
+  payload: unknown,
+  options?: {
+    sourceCircuitId?: string;
+    autoCreateCircuit?: boolean;
+    templateId?: string;
+    inlineMapping?: Record<string, unknown>;
+  }
+): unknown {
+  const autoCreate = options?.autoCreateCircuit ?? true;
+  const base =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? { ...(payload as Record<string, unknown>) }
+      : { items: Array.isArray(payload) ? payload : [] };
+
+  if (options?.sourceCircuitId) {
+    base.source_circuit_id = options.sourceCircuitId;
+  }
+  base.auto_create_circuit = autoCreate;
+  if (options?.templateId) {
+    base.template_id = options.templateId;
+  }
+  if (options?.inlineMapping && Object.keys(options.inlineMapping).length > 0) {
+    base.mapping = options.inlineMapping;
+  }
+  return base;
+}
+
+export async function partnerIntakeJson(
+  payload: unknown,
+  options?: {
+    sourceCircuitId?: string;
+    autoCreateCircuit?: boolean;
+    templateId?: string;
+    inlineMapping?: Record<string, unknown>;
+  }
+): Promise<PartnerIntakeResponse> {
+  return registryRequest<PartnerIntakeResponse>("/partner/ingestions", {
+    method: "POST",
+    body: JSON.stringify(buildJsonIntakeBody(payload, options)),
+  });
+}
+
 export async function partnerIntakePreview(
   file: File,
   sourceCircuitId?: string,
   autoCreateCircuit = true,
   templateId?: string,
   inlineMapping?: Record<string, unknown>
-): Promise<PartnerIntakePreviewResponse> {
+): Promise<PartnerIntakeResponse> {
   const formData = new FormData();
   formData.append("file", file);
   if (sourceCircuitId) {
@@ -282,10 +327,25 @@ export async function partnerIntakePreview(
     formData.append("mapping", JSON.stringify(inlineMapping));
   }
 
-  return registryRequest<PartnerIntakePreviewResponse>("/partner/ingestions/preview", {
+  return registryRequest<PartnerIntakeResponse>("/partner/ingestions/preview", {
     method: "POST",
     headers: {},
     body: formData as unknown as BodyInit,
+  });
+}
+
+export async function partnerIntakePreviewJson(
+  payload: unknown,
+  options?: {
+    sourceCircuitId?: string;
+    autoCreateCircuit?: boolean;
+    templateId?: string;
+    inlineMapping?: Record<string, unknown>;
+  }
+): Promise<PartnerIntakeResponse> {
+  return registryRequest<PartnerIntakeResponse>("/partner/ingestions/preview", {
+    method: "POST",
+    body: JSON.stringify(buildJsonIntakeBody(payload, options)),
   });
 }
 

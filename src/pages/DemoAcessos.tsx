@@ -130,6 +130,7 @@ export default function DemoAcessos() {
             <Badge variant="secondary">/_demo/acessos/partner</Badge>
             <Badge variant="secondary">/_demo/acessos/certifier</Badge>
             <Badge variant="secondary">/_demo/acessos/processor</Badge>
+            <Badge variant="secondary">/_demo/acessos/government</Badge>
             <Badge variant="secondary">/_demo/acessos/admin</Badge>
           </div>
         </div>
@@ -138,7 +139,7 @@ export default function DemoAcessos() {
           <Card>
             <CardHeader>
               <CardTitle>Nenhum ator encontrado</CardTitle>
-              <CardDescription>Use um tipo valido: producer, partner, certifier, processor ou admin.</CardDescription>
+              <CardDescription>Use um tipo valido: producer, partner, certifier, processor, government ou admin.</CardDescription>
             </CardHeader>
           </Card>
         ) : (

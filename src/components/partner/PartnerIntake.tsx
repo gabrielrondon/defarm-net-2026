@@ -1,70 +1,324 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
 import {
+  assignRoutingIssue,
   downloadRawPayload,
   listRawPayloads,
+  listRoutingIssueItems,
   partnerIntake,
+  partnerIntakeJson,
+  partnerIntakePreview,
+  partnerIntakePreviewJson,
+  resolveRoutingIssue,
   type PartnerIntakeResponse,
   type RawPayloadSummary,
+  type RoutingIssueItem,
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
-import { Download, FileUp, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, FileUp, Info, Languages, Loader2, ScrollText, Trash2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useAuth } from "@/contexts/AuthContext";
 import { ApiError } from "@/lib/api/client";
+import { listIngestionTemplates } from "@/lib/api/ingestion-templates";
+import type { IngestionTemplate } from "@/lib/api/types";
+import {
+  clearLog,
+  getLogEntries,
+  subscribeLog,
+  type PartnerRequestLogEntry,
+} from "@/lib/api/partner-request-log";
+import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
+
+type MetadataLocale = "pt-BR" | "en";
+type FieldDef = { canonical: string; aliases: string[]; labels: Record<MetadataLocale, string> };
+
+const FIELD_DEFS: FieldDef[] = [
+  { canonical: "value_chain", aliases: ["value_chain", "valuechain"], labels: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
+  { canonical: "sisbov", aliases: ["sisbov"], labels: { "pt-BR": "SISBOV", en: "SISBOV" } },
+  { canonical: "chip", aliases: ["chip", "rfid"], labels: { "pt-BR": "Chip", en: "Chip" } },
+  { canonical: "inscricao_estadual", aliases: ["inscricao_estadual", "ie"], labels: { "pt-BR": "Inscrição estadual", en: "State registration" } },
+  { canonical: "car", aliases: ["car"], labels: { "pt-BR": "CAR", en: "CAR" } },
+  { canonical: "weight_kg", aliases: ["weight_kg", "weight", "peso_kg", "peso"], labels: { "pt-BR": "Peso (kg)", en: "Weight (kg)" } },
+  { canonical: "data_peso", aliases: ["data_peso", "data_pesagem", "weight_date", "date"], labels: { "pt-BR": "Data da pesagem", en: "Weighing date" } },
+  {
+    canonical: "partner_internal_id",
+    aliases: ["partner_internal_id", "partner_reference", "external_id", "animal_id"],
+    labels: { "pt-BR": "Referência do parceiro", en: "Partner reference" },
+  },
+];
+
+const FIELD_LABELS = new Map(FIELD_DEFS.map((f) => [f.canonical, f.labels] as const));
+
+function canonicalFieldLabel(canonical: string, locale: MetadataLocale): string {
+  return FIELD_LABELS.get(canonical)?.[locale] || canonical;
+}
 
 export function PartnerIntake() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [circuits, setCircuits] = useState<Circuit[]>([]);
   const [sourceCircuitId, setSourceCircuitId] = useState("");
+  const [templateId, setTemplateId] = useState("none");
+  const [inlineMappingText, setInlineMappingText] = useState("");
+  const [templates, setTemplates] = useState<IngestionTemplate[]>([]);
+  const [intakeInputMode, setIntakeInputMode] = useState<"json" | "file">("json");
+  const [jsonBodyText, setJsonBodyText] = useState(
+    `{
+  "items": [
+    {
+      "value_chain": "BEEF",
+      "sisbov": "BR990000777000001",
+      "car": "MT-5107248.29C8.4496.42A7",
+      "partner_internal_id": "demo-0001"
+    }
+  ]
+}`
+  );
   const [autoCreate, setAutoCreate] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState<RawPayloadSummary[]>([]);
+  const [issues, setIssues] = useState<RoutingIssueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchText, setSearchText] = useState("");
+  const [issueTargetCircuitId, setIssueTargetCircuitId] = useState("");
+  const [issueStatusFilter, setIssueStatusFilter] = useState<string>("open,in_review");
+  const [issueAssignedToMe, setIssueAssignedToMe] = useState(false);
+  const [issueSavingKey, setIssueSavingKey] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewRows, setPreviewRows] = useState(0);
+  const [previewResolvable, setPreviewResolvable] = useState(0);
+  const [previewUnknown, setPreviewUnknown] = useState(0);
+  const [previewResult, setPreviewResult] = useState<PartnerIntakeResponse | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [lastResult, setLastResult] = useState<PartnerIntakeResponse | null>(null);
+  const [logEntries, setLogEntries] = useState<PartnerRequestLogEntry[]>(getLogEntries);
+  const [logExpanded, setLogExpanded] = useState(false);
+  const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
+  const isEn = metadataLocale === "en";
+
+  useEffect(() => {
+    return subscribeLog(() => setLogEntries(getLogEntries()));
+  }, []);
+
+  const formatClientError = (err: unknown, fallback: string) => {
+    if (err instanceof ApiError) {
+      return `${err.message}${err.details ? ` · ${err.details}` : ""} (HTTP ${err.status} / ${err.code})`;
+    }
+    if (err instanceof Error) {
+      return err.message;
+    }
+    return fallback;
+  };
+
+  const buildPreValidation = async (
+    selectedFile: File | null,
+    selectedSourceCircuitId?: string,
+    selectedTemplateId?: string,
+    selectedInlineMappingText?: string,
+    showToastOnError = false,
+    selectedMode?: "json" | "file",
+    selectedJsonBodyText?: string
+  ) => {
+    setPreviewRows(0);
+    setPreviewResolvable(0);
+    setPreviewUnknown(0);
+    setPreviewResult(null);
+    setPreviewError(null);
+    const mode = selectedMode || intakeInputMode;
+    if (mode === "file" && !selectedFile) return;
+    if (mode === "json" && !(selectedJsonBodyText ?? jsonBodyText).trim()) return;
+    const mappingText = (selectedInlineMappingText ?? inlineMappingText).trim();
+    let inlineMapping: Record<string, unknown> | undefined;
+    if (mappingText.length > 0) {
+      try {
+        const parsed = JSON.parse(mappingText);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error(isEn ? "Mapping must be a JSON object." : "Mapping deve ser um objeto JSON.");
+        }
+        inlineMapping = parsed as Record<string, unknown>;
+      } catch (err) {
+        const description = err instanceof Error ? err.message : (isEn ? "Invalid mapping JSON." : "Mapping JSON inválido.");
+        setPreviewError(description);
+        if (showToastOnError) {
+          toast({
+            title: isEn ? "Preview failed" : "Falha na prévia",
+            description,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+    }
+    setPreviewing(true);
+    try {
+      const preview =
+        mode === "file"
+          ? await partnerIntakePreview(
+              selectedFile as File,
+              selectedSourceCircuitId,
+              autoCreate,
+              selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined,
+              inlineMapping
+            )
+          : await partnerIntakePreviewJson(JSON.parse((selectedJsonBodyText ?? jsonBodyText).trim()), {
+              sourceCircuitId: selectedSourceCircuitId,
+              autoCreateCircuit: autoCreate,
+              templateId: selectedTemplateId && selectedTemplateId !== "none" ? selectedTemplateId : undefined,
+              inlineMapping,
+            });
+      setPreviewRows(preview.summary.total_rows);
+      setPreviewResolvable(preview.summary.processed_rows);
+      setPreviewUnknown(preview.summary.unresolved_rows);
+      setPreviewResult(preview);
+    } catch (err) {
+      const description = formatClientError(err, isEn ? "Failed to generate preview." : "Falha ao gerar prévia.");
+      setPreviewRows(0);
+      setPreviewResolvable(0);
+      setPreviewUnknown(0);
+      setPreviewResult(null);
+      setPreviewError(description);
+      if (showToastOnError) {
+        toast({
+          title: isEn ? "Preview failed" : "Falha na prévia",
+          description,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const formatIssueType = (identifierType: string) => {
+    if (identifierType === "unknown") {
+      return isEn
+        ? "Missing routing identifier (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/IE)"
+        : "Sem identificador de roteamento (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/IE)";
+    }
+    return identifierType.toUpperCase();
+  };
+
+  const circuitNameMap = useMemo(() => new Map(circuits.map((c) => [c.id, c.name])), [circuits]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [circuitsData, rawData] = await Promise.all([
+      const [circuitsData, rawData, issuesData, templatesData] = await Promise.all([
         getCircuits(),
         listRawPayloads(40),
+        listRoutingIssueItems({ status: issueStatusFilter, assigned_to_me: issueAssignedToMe, limit: 200 }),
+        listIngestionTemplates().catch(() => [] as IngestionTemplate[]),
       ]);
       setCircuits(circuitsData);
       setHistory(rawData.rows);
+      setIssues(issuesData.issues);
+      setTemplates(templatesData);
       if (!sourceCircuitId && circuitsData[0]) {
         const staging = circuitsData.find(
           (c) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true"
         );
         setSourceCircuitId(staging?.id || circuitsData[0].id);
       }
+      if (!issueTargetCircuitId && circuitsData[0]) {
+        setIssueTargetCircuitId(circuitsData[0].id);
+      }
     } catch {
-      toast({ title: "Erro ao carregar", variant: "destructive" });
+      toast({
+        title: isEn ? "Failed to load ingestions" : "Erro ao carregar ingestões",
+        description: isEn ? "Could not load ingestion history." : "Não foi possível carregar histórico da ingestão.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [toast, sourceCircuitId]);
+  }, [toast, sourceCircuitId, issueTargetCircuitId, issueStatusFilter, issueAssignedToMe]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (intakeInputMode !== "file" || !file) return;
+    void buildPreValidation(file, sourceCircuitId, templateId, inlineMappingText);
+  }, [intakeInputMode, file, sourceCircuitId, autoCreate, templateId, inlineMappingText]);
+
+  const runPreviewNow = async () => {
+    if (intakeInputMode === "file" && !file) return;
+    if (intakeInputMode === "json" && !jsonBodyText.trim()) return;
+    await buildPreValidation(
+      file,
+      sourceCircuitId || undefined,
+      templateId,
+      inlineMappingText,
+      true,
+      intakeInputMode,
+      jsonBodyText
+    );
+    toast({
+      title: isEn ? "Preview executed" : "Prévia executada",
+      description: isEn ? "Validation completed without persisting data." : "Validação concluída sem persistir dados.",
+    });
+  };
 
   const onSubmit = async () => {
-    if (!file) return;
+    if (intakeInputMode === "file" && !file) return;
+    if (intakeInputMode === "json" && !jsonBodyText.trim()) return;
+    const confirmed = window.confirm(
+      isEn
+        ? "This will persist payload and process real ingestion. Continue?"
+        : "Este envio vai persistir payload e processar ingestão real. Deseja continuar?"
+    );
+    if (!confirmed) return;
     setSending(true);
     try {
-      await partnerIntake(file, sourceCircuitId, autoCreate);
-      toast({ title: "Arquivo processado" });
-      setFile(null);
+      const mappingText = inlineMappingText.trim();
+      let inlineMapping: Record<string, unknown> | undefined;
+      if (mappingText.length > 0) {
+        const parsed = JSON.parse(mappingText);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error(isEn ? "Mapping must be a JSON object." : "Mapping deve ser um objeto JSON.");
+        }
+        inlineMapping = parsed as Record<string, unknown>;
+      }
+      const result =
+        intakeInputMode === "json"
+          ? await partnerIntakeJson(JSON.parse(jsonBodyText.trim()), {
+              sourceCircuitId,
+              autoCreateCircuit: autoCreate,
+              templateId: templateId !== "none" ? templateId : undefined,
+              inlineMapping,
+            })
+          : await partnerIntake(
+              file as File,
+              sourceCircuitId,
+              autoCreate,
+              templateId !== "none" ? templateId : undefined,
+              inlineMapping
+            );
+      setLastResult(result);
+      toast({
+        title: isEn ? "Ingestion processed" : "Ingestão processada",
+        description: `Status: ${result.summary.status}. Rotas: ${result.summary.routes}.`,
+      });
+      setPreviewResult(null);
+      if (intakeInputMode === "file") setFile(null);
       await load();
     } catch (err) {
-      const msg = err instanceof ApiError
-        ? `${err.message} (${err.status})`
-        : err instanceof Error ? err.message : "Erro na ingestão.";
-      toast({ title: "Falha", description: msg, variant: "destructive" });
+      const description = formatClientError(err, isEn ? "Could not process this request." : "Não foi possível processar esta requisição.");
+      toast({
+        title: isEn ? "Ingestion failed" : "Falha na ingestão",
+        description,
+        variant: "destructive",
+      });
     } finally {
       setSending(false);
     }
@@ -78,104 +332,448 @@ export function PartnerIntake() {
     );
   }
 
-  const filteredHistory = history.filter((row) =>
-    statusFilter === "all" || row.status === statusFilter
-  );
+  const filteredHistory = history.filter((row) => {
+    const byStatus = statusFilter === "all" || row.status === statusFilter;
+    const search = searchText.trim().toLowerCase();
+    if (!search) return byStatus;
+    return (
+      byStatus &&
+      ((row.file_name || "").toLowerCase().includes(search) ||
+        row.payload_sha256.toLowerCase().includes(search) ||
+        (row.error_message || "").toLowerCase().includes(search))
+    );
+  });
 
   const completedCount = history.filter((h) => h.status === "completed").length;
   const failedCount = history.filter((h) => h.status === "failed").length;
+  const openIssueCount = issues.filter((i) => i.status === "open").length;
+  const inReviewIssueCount = issues.filter((i) => i.status === "in_review").length;
+
+  const formatIssueReason = (reason: string) => {
+    if (reason === "missing_identifier") return isEn ? "missing identifier" : "sem identificador";
+    if (reason === "missing_value_chain") return isEn ? "missing value_chain" : "sem value_chain";
+    if (reason === "missing_trackable_identifier") return isEn ? "missing trackable identifier" : "sem identificador do ativo";
+    if (reason === "empty_after_normalization") return isEn ? "invalid identifier after normalization" : "identificador inválido";
+    if (reason === "no_routing_rule") return isEn ? "no routing rule" : "sem regra de roteamento";
+    return reason;
+  };
+
+  const canAutoResolveWithRule = (issue: RoutingIssueItem) =>
+    issue.identifier_type !== "unknown" && issue.identifier_value.trim().length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Upload */}
-      <div className="rounded-xl bg-muted/40 p-4 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">
+            {metadataLocale === "en" ? "Smart ingestion (staging)" : "Ingestão Inteligente (staging)"}
+          </h3>
+          <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1">
+            <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
+            <Button
+              size="sm"
+              variant={metadataLocale === "pt-BR" ? "default" : "ghost"}
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setMetadataLocale("pt-BR")}
+            >
+              PT-BR
+            </Button>
+            <Button
+              size="sm"
+              variant={metadataLocale === "en" ? "default" : "ghost"}
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setMetadataLocale("en")}
+            >
+              EN
+            </Button>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {metadataLocale === "en"
+            ? <>API default: send <code>application/json</code> in request body. As alternative, CSV/JSON files are also accepted.</>
+            : <>Padrão da API: enviar <code>application/json</code> no body da requisição. Como alternativa, também aceitamos arquivo CSV/JSON.</>}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {isEn ? "Official guide" : "Guia oficial"}:{" "}
+          <a
+            href="https://docs.defarm.net/docs/getting-started#preview"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            quickstart + preview
+          </a>
+          {" · "}
+          <a
+            href="https://docs.defarm.net/docs/api#upload"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            formato de upload
+          </a>
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {metadataLocale === "en"
+            ? "Production recommendation: send chunks of 50-150 rows per request. With JWT login, staging circuit is optional (default is inferred)."
+            : "Recomendado em produção: enviar em chunks de 50-150 linhas por request. Em login JWT, o circuito de staging é opcional (usamos o padrão quando omitido)."}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {metadataLocale === "en"
+            ? "Template is optional. Use only when you need column names different from the DeFarm standard."
+            : "Template é opcional. Use apenas quando precisar mapear nomes de colunas diferentes do padrão DeFarm."}
+        </p>
+        <div className="rounded-lg border p-3 bg-muted/20">
+          <p className="text-xs font-medium mb-2">
+            {metadataLocale === "en" ? "Official fields (aliases accepted)" : "Campos oficiais (aliases aceitos)"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {FIELD_DEFS.map((field) => (
+              <Tooltip key={field.canonical}>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border bg-background text-muted-foreground">
+                    {canonicalFieldLabel(field.canonical, metadataLocale)}
+                    <Info className="h-3 w-3" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs">
+                  {metadataLocale === "en" ? "Official field: " : "Campo oficial: "}
+                  <code>{field.canonical}</code>
+                  <br />
+                  {metadataLocale === "en" ? "Accepted aliases: " : "Aliases aceitos: "}
+                  {field.aliases.join(", ")}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Select value={sourceCircuitId} onValueChange={setSourceCircuitId}>
-            <SelectTrigger><SelectValue placeholder="Circuito" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={metadataLocale === "en" ? "Staging circuit" : "Circuito de staging"} /></SelectTrigger>
             <SelectContent>
               {circuits.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-
-          <label className="border rounded-lg px-3 py-2 text-sm flex items-center gap-2 cursor-pointer bg-background">
-            <FileUp className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="truncate text-muted-foreground">{file?.name || "Selecionar arquivo"}</span>
-            <input
-              type="file"
-              className="hidden"
-              accept=".csv,.json,text/csv,application/json"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-          </label>
-
-          <Button onClick={onSubmit} disabled={!file || sending}>
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Processar"}
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Switch checked={autoCreate} onCheckedChange={setAutoCreate} id="auto-create" />
-          <Label htmlFor="auto-create" className="text-sm">Criar circuito automaticamente</Label>
-        </div>
-      </div>
-
-      {/* Stats + History */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Histórico · {history.length}
-          </p>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-8 text-xs w-28"><SelectValue /></SelectTrigger>
+          <Select value={intakeInputMode} onValueChange={(value: "json" | "file") => setIntakeInputMode(value)}>
+            <SelectTrigger><SelectValue placeholder={metadataLocale === "en" ? "Input mode" : "Modo de entrada"} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="completed">Sucesso</SelectItem>
-              <SelectItem value="failed">Falha</SelectItem>
+              <SelectItem value="json">{metadataLocale === "en" ? "application/json in body (default)" : "application/json no body (padrão)"}</SelectItem>
+              <SelectItem value="file">{metadataLocale === "en" ? "CSV/JSON file (alternative)" : "Arquivo CSV/JSON (alternativo)"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="rounded-xl bg-muted/40 px-3 py-2">
-            <p className="text-[11px] uppercase text-muted-foreground">Enviados</p>
-            <p className="text-lg font-semibold text-foreground">{history.length}</p>
+        {intakeInputMode === "json" ? (
+          <label className="block border rounded-md p-3">
+            <p className="text-xs font-medium mb-2">
+              {metadataLocale === "en" ? "JSON body (Content-Type: application/json)" : "Body JSON (Content-Type: application/json)"}
+            </p>
+            <textarea
+              value={jsonBodyText}
+              onChange={(e) => setJsonBodyText(e.target.value)}
+              className="w-full min-h-[130px] bg-transparent text-xs font-mono outline-none resize-y"
+              placeholder={`{"items":[{"value_chain":"BEEF","sisbov":"...","car":"..."}]}`}
+            />
+          </label>
+        ) : (
+          <label className="border rounded-md px-3 py-2 text-sm flex items-center gap-2 cursor-pointer">
+            <FileUp className="h-4 w-4 text-muted-foreground" />
+            <span className="truncate">{file?.name || (metadataLocale === "en" ? "Select file (CSV/JSON)" : "Selecionar arquivo (CSV/JSON)")}</span>
+            <input
+              type="file"
+              className="hidden"
+              accept=".csv,.json,text/csv,application/json"
+              onChange={async (e) => {
+                const selected = e.target.files?.[0] || null;
+                setFile(selected);
+                if (selected) {
+                  await buildPreValidation(
+                    selected,
+                    sourceCircuitId || undefined,
+                    templateId,
+                    inlineMappingText,
+                    true,
+                    "file",
+                    jsonBodyText
+                  );
+                }
+              }}
+            />
+          </label>
+        )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={runPreviewNow} disabled={(intakeInputMode === "file" ? !file : !jsonBodyText.trim()) || previewing || sending}>
+              {previewing ? <Loader2 className="h-4 w-4 animate-spin" /> : (metadataLocale === "en" ? "Run preview" : "Executar preview")}
+            </Button>
+            <Button variant="outline" onClick={onSubmit} disabled={(intakeInputMode === "file" ? !file : !jsonBodyText.trim()) || sending}>
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : (metadataLocale === "en" ? "Send for real" : "Enviar de verdade")}
+            </Button>
           </div>
-          <div className="rounded-xl bg-muted/40 px-3 py-2">
-            <p className="text-[11px] uppercase text-muted-foreground">Sucesso</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Select value={templateId} onValueChange={setTemplateId}>
+            <SelectTrigger>
+              <SelectValue placeholder={isEn ? "Template (optional)" : "Template (opcional)"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{isEn ? "No template (DeFarm default)" : "Sem template (padrão DeFarm)"}</SelectItem>
+              {templates.map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.name}{template.is_default ? (isEn ? " (default)" : " (padrão)") : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="md:col-span-2 text-xs text-muted-foreground self-center">
+            {templateId === "none"
+              ? (isEn ? "Default automatic mapping enabled." : "Mapeamento automático padrão ativo.")
+              : `${isEn ? "Selected template" : "Template selecionado"}: ${templates.find((t) => t.id === templateId)?.name || templateId}`}
+          </div>
+        </div>
+
+        <label className="block border rounded-md p-3">
+          <p className="text-xs font-medium mb-2">{isEn ? "Inline mapping (JSON, optional)" : "Mapping inline (JSON, opcional)"}</p>
+          <textarea
+            value={inlineMappingText}
+            onChange={(e) => setInlineMappingText(e.target.value)}
+            className="w-full min-h-[88px] bg-transparent text-xs font-mono outline-none resize-y"
+            placeholder={`{"columns":{"id_interno":"partner_internal_id","numero_sisbov":"sisbov"}}`}
+          />
+          <p className="text-[11px] text-muted-foreground mt-2">
+            {isEn
+              ? "Use to map fields without creating a template. If template + mapping are sent, inline mapping has priority."
+              : "Use para mapear campos sem criar template. Se enviar template + mapping, o mapping inline tem prioridade."}
+          </p>
+        </label>
+
+        <div className="flex items-center gap-3">
+          <Switch checked={autoCreate} onCheckedChange={setAutoCreate} id="auto-create" />
+          <Label htmlFor="auto-create">{isEn ? "Auto-create circuit when identifier does not exist" : "Criar circuito automaticamente quando identificador não existir"}</Label>
+        </div>
+
+        {(intakeInputMode === "file" ? !!file : !!jsonBodyText.trim()) ? (
+          <div className="rounded-lg border p-3 bg-muted/30">
+            <p className="text-xs font-medium text-foreground mb-2">{isEn ? "Real routing preview (no tokenization)" : "Prévia real de roteamento (sem tokenizar)"}</p>
+            {previewing ? (
+              <p className="text-xs text-muted-foreground">{isEn ? "Analyzing payload..." : "Analisando payload..."}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                <p className="text-muted-foreground">{isEn ? "Rows read" : "Linhas lidas"}: <span className="text-foreground font-medium">{previewRows}</span></p>
+                <p className="text-muted-foreground">{isEn ? "With identifier" : "Com identificador"}: <span className="text-primary font-medium">{previewResolvable}</span></p>
+                <p className="text-muted-foreground">{isEn ? "Without identifier" : "Sem identificador"}: <span className="text-destructive font-medium">{previewUnknown}</span></p>
+                <p className="text-muted-foreground">{isEn ? "New circuits" : "Circuitos novos"}: <span className="text-foreground font-medium">{previewResult?.summary.created_circuits ?? 0}</span></p>
+              </div>
+            )}
+            {previewError ? (
+              <p className="text-xs text-destructive mt-2">{previewError}</p>
+            ) : null}
+            {!previewing && previewResult?.routes?.length ? (
+              <div className="mt-3 space-y-1">
+                {previewResult.routes.slice(0, 6).map((route) => (
+                  <p key={`${route.route_type}-${route.route_value}-${route.circuit_id || "none"}`} className="text-[11px] text-muted-foreground">
+                    {route.route_type.toUpperCase()} {route.route_value} · {route.rows} {isEn ? "row(s)" : "linha(s)"} ·{" "}
+                    {route.circuit_id
+                      ? `${isEn ? "routes to" : "roteia para"} ${circuitNameMap.get(route.circuit_id) || route.circuit_id}`
+                      : (isEn ? "will stay in staging/fallback" : "ficará no staging/fallback")}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {lastResult ? (
+          <div className="rounded-lg border p-3 bg-muted/20 space-y-3">
+            <p className="text-xs font-medium text-foreground">
+              {isEn ? "Last processing" : "Último processamento"}: {lastResult.summary.status} · {lastResult.summary.total_rows} {isEn ? "row(s)" : "linha(s)"}
+            </p>
+            {lastResult.summary ? (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">
+                  {isEn ? "routes" : "rotas"}: {lastResult.summary.routes} · {isEn ? "items with link" : "itens com link"}: {lastResult.summary.items} · {isEn ? "issues" : "pendências"}: {lastResult.summary.unresolved_rows}
+                </p>
+                {lastResult.summary.partner_reference ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    {isEn ? "partner reference" : "referência parceira"}: {lastResult.summary.partner_reference.field}={lastResult.summary.partner_reference.value}
+                  </p>
+                ) : null}
+                {lastResult.summary.warnings?.length ? (
+                  <div className="mt-2 rounded border border-yellow-500/30 bg-yellow-500/5 p-2 space-y-1">
+                    {lastResult.summary.warnings.map((w, i) => (
+                      <p key={i} className="text-[11px] text-yellow-700 dark:text-yellow-400 flex items-start gap-1.5">
+                        <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                        {w}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {lastResult.verbose?.circuit_links?.length ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {isEn ? "Direct links to routed circuits:" : "Links diretos para os circuitos com os itens roteados:"}
+                </p>
+                {lastResult.verbose.circuit_links.map((link) => (
+                  <div key={link.circuit_id} className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={link.app_url} target="_blank" rel="noopener noreferrer">
+                        {isEn ? "Open in app" : "Abrir no app"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                      </a>
+                    </Button>
+                    {link.is_public !== false ? (
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href={link.public_url} target="_blank" rel="noopener noreferrer">
+                          {isEn ? "Public page" : "Página pública"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        {isEn ? "Private circuit (publish to share public link)" : "Circuito privado (publique para compartilhar link público)"}
+                      </span>
+                    )}
+                    <p className="text-[11px] text-muted-foreground">{link.circuit_id}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {lastResult.errors?.length ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">{isEn ? "Errors returned per row:" : "Erros retornados por linha:"}</p>
+                {lastResult.errors.slice(0, 20).map((error, idx) => (
+                  <div key={`${error.reason_code}-${error.row_index ?? "none"}-${idx}`} className="rounded border p-2 bg-destructive/5">
+                    <p className="text-[11px] text-destructive">
+                      {error.reason_code} · {error.message}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {isEn ? "row" : "linha"}: {error.row_index ?? "-"} · {isEn ? "reference" : "referência"}: {error.partner_reference || "-"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {lastResult.items?.length ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {isEn ? "Resolved items in upload (DFID + URL + reference):" : "Itens resolvidos no upload (DFID + URL + referência):"}
+                </p>
+                {lastResult.items.slice(0, 20).map((item) => (
+                  <div key={item.dfid} className="rounded border p-2 bg-background/60">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <a href={item.url} target="_blank" rel="noopener noreferrer">
+                          {isEn ? "Open URL" : "Abrir URL"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        </a>
+                      </Button>
+                      <p className="text-[11px] text-muted-foreground">{item.dfid}</p>
+                    </div>
+                    {item.partner_reference ? (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        partner_reference: {item.partner_reference}
+                      </p>
+                    ) : null}
+                    {item.asset_reference ? (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {metadataLocale === "en" ? "asset reference" : "referência do ativo"}:{" "}
+                        {canonicalFieldLabel(item.asset_reference.identifier_type.toLowerCase(), metadataLocale)}
+                        ({item.asset_reference.identifier_type})={item.asset_reference.value}
+                      </p>
+                    ) : null}
+                    {item.routes?.length ? (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {isEn ? "routes" : "rotas"}: {item.routes.map((r) => `${r.route_type}:${r.route_value}`).join(" · ")}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <h3 className="text-base font-semibold">{isEn ? "Raw payload history" : "Histórico de Payload Bruto"}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{isEn ? "Files sent" : "Arquivos enviados"}</p>
+            <p className="text-lg font-semibold">{history.length}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{isEn ? "Processed successfully" : "Processados com sucesso"}</p>
             <p className="text-lg font-semibold text-primary">{completedCount}</p>
           </div>
-          <div className="rounded-xl bg-muted/40 px-3 py-2">
-            <p className="text-[11px] uppercase text-muted-foreground">Falha</p>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{isEn ? "Failed" : "Com falha"}</p>
             <p className="text-lg font-semibold text-destructive">{failedCount}</p>
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger><SelectValue placeholder={isEn ? "Filter by status" : "Filtrar por status"} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{isEn ? "All statuses" : "Todos os status"}</SelectItem>
+              <SelectItem value="completed">{isEn ? "Completed" : "Concluído"}</SelectItem>
+              <SelectItem value="partial">{isEn ? "Partial" : "Parcial"}</SelectItem>
+              <SelectItem value="failed">{isEn ? "Failed" : "Falha"}</SelectItem>
+              <SelectItem value="processing">{isEn ? "Processing" : "Processando"}</SelectItem>
+            </SelectContent>
+          </Select>
+          <label className="md:col-span-2 border rounded-md px-3 py-2">
+            <input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full bg-transparent text-sm outline-none"
+              placeholder={isEn ? "Search by file name, hash, or error" : "Buscar por nome do arquivo, hash ou erro"}
+            />
+          </label>
+        </div>
+
         {filteredHistory.length === 0 ? (
-          <EmptyState icon={FileUp} title="Nenhum payload" description="Envie um arquivo acima." />
+          <EmptyState
+            icon={FileUp}
+            title={isEn ? "No payloads registered" : "Nenhum payload registrado"}
+            description={isEn ? "Send a JSON payload (default) or CSV/JSON file (alternative) to start." : "Envie um payload JSON (padrão) ou arquivo CSV/JSON (alternativo) para começar."}
+          />
         ) : (
-          <div className="divide-y divide-border rounded-xl border">
-            {filteredHistory.slice(0, 20).map((row) => (
-              <div key={row.id} className="flex items-center justify-between px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{row.file_name || "payload"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(row.created_at).toLocaleString("pt-BR")} · {(row.payload_size_bytes / 1024).toFixed(0)}KB
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full ${
-                    row.status === "completed" ? "bg-primary/10 text-primary"
-                      : row.status === "failed" ? "bg-destructive/10 text-destructive"
-                        : "bg-muted text-muted-foreground"
+          <div className="space-y-2">
+            {filteredHistory.map((row) => (
+              <div key={row.id} className="rounded-lg border p-3">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-sm">{row.file_name || "payload"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(row.created_at).toLocaleString("pt-BR")} · {row.payload_size_bytes.toLocaleString("pt-BR")} bytes · sha256 {row.payload_sha256.slice(0, 12)}...
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      staging: {row.source_circuit_id ? (circuitNameMap.get(row.source_circuit_id) || row.source_circuit_id) : "n/a"}
+                    </p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full border ${
+                    row.status === "completed"
+                      ? "bg-primary/10 text-primary border-primary/20"
+                      : row.status === "partial"
+                        ? "bg-muted text-muted-foreground border-border"
+                        : row.status === "failed"
+                          ? "bg-destructive/10 text-destructive border-destructive/20"
+                          : "bg-muted text-muted-foreground border-border"
                   }`}>
                     {row.status}
                   </span>
+                </div>
+                {row.error_message ? (
+                  <p className="text-xs text-destructive mt-2">
+                    {row.error_message} · {isEn ? "Next action: adjust template/routing and resend." : "Próxima ação: ajustar template/roteamento e reenviar."}
+                  </p>
+                ) : null}
+                <div className="mt-2">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-7 w-7 p-0"
                     onClick={async () => {
                       try {
                         const { blob, fileName } = await downloadRawPayload(row.id, {
@@ -189,18 +787,303 @@ export function PartnerIntake() {
                         a.click();
                         URL.revokeObjectURL(url);
                       } catch {
-                        toast({ title: "Falha ao baixar", variant: "destructive" });
+                        toast({
+                          title: isEn ? "Failed to download payload" : "Falha ao baixar payload",
+                          description: isEn ? "Could not download raw file." : "Não foi possível baixar este arquivo bruto.",
+                          variant: "destructive",
+                        });
                       }
                     }}
                   >
-                    <Download className="h-3.5 w-3.5" />
+                    <Download className="h-4 w-4 mr-1" />
+                    {isEn ? "Download original" : "Baixar original"}
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <h3 className="text-base font-semibold">{isEn ? "Routing issues" : "Pendências de Roteamento"}</h3>
+        <p className="text-sm text-muted-foreground">
+          {isEn ? "Issues detected during ingestion. Claim and resolve with rule to avoid recurrence." : "Pendências detectadas na ingestão. Assuma e resolva com regra para evitar recorrência."}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{isEn ? "Total listed" : "Total listado"}</p>
+            <p className="text-lg font-semibold">{issues.length}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{isEn ? "Open" : "Abertas"}</p>
+            <p className="text-lg font-semibold">{openIssueCount}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">{isEn ? "In review" : "Em revisão"}</p>
+            <p className="text-lg font-semibold">{inReviewIssueCount}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Select value={issueTargetCircuitId} onValueChange={setIssueTargetCircuitId}>
+            <SelectTrigger><SelectValue placeholder={isEn ? "Target circuit for quick resolution" : "Circuito destino para resolução rápida"} /></SelectTrigger>
+            <SelectContent>
+              {circuits.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground self-center">
+            {isEn ? "Quick action: create a rule linked to selected circuit." : "Ação rápida: cria regra já vinculando a pendência ao circuito escolhido."}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Select
+            value={issueStatusFilter}
+            onValueChange={(value) => {
+              setIssueStatusFilter(value);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={isEn ? "Issue status" : "Status da pendência"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open,in_review">{isEn ? "Open + in review" : "Abertas + em revisão"}</SelectItem>
+              <SelectItem value="open">{isEn ? "Open only" : "Só abertas"}</SelectItem>
+              <SelectItem value="in_review">{isEn ? "In review only" : "Só em revisão"}</SelectItem>
+              <SelectItem value="resolved">{isEn ? "Resolved" : "Resolvidas"}</SelectItem>
+              <SelectItem value="rejected">{isEn ? "Rejected" : "Rejeitadas"}</SelectItem>
+            </SelectContent>
+          </Select>
+          <label className="md:col-span-2 flex items-center gap-3 text-sm border rounded-md px-3 py-2">
+            <Switch
+              checked={issueAssignedToMe}
+              onCheckedChange={(checked) => setIssueAssignedToMe(Boolean(checked))}
+              id="issue-assigned-to-me"
+            />
+            <Label htmlFor="issue-assigned-to-me">{isEn ? "Show only assigned to me" : "Mostrar apenas atribuídas para mim"}</Label>
+          </label>
+        </div>
+        <div>
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            {isEn ? "Refresh issues" : "Atualizar pendências"}
+          </Button>
+        </div>
+        {issues.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{isEn ? "No issues at the moment." : "Nenhuma pendência no momento."}</p>
+        ) : (
+          <div className="space-y-2">
+            {issues.map((issue) => (
+              <div
+                key={issue.id}
+                className="rounded-lg border p-3 space-y-2"
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div>
+                    <p className="font-medium text-sm">{issue.identifier_value || "(vazio)"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isEn ? "type" : "tipo"}: {formatIssueType(issue.identifier_type)} · {isEn ? "reason" : "motivo"}: {formatIssueReason(issue.reason)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {isEn ? "last event" : "último evento"}: {new Date(issue.last_seen_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
+                      {issue.occurrences} {isEn ? "occurrence(s)" : "ocorrência(s)"}
+                    </span>
+                    <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
+                      {issue.status}
+                    </span>
+                    {issue.assigned_to ? (
+                      <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
+                        {isEn ? "assigned" : "atribuída"}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={issueSavingKey === `assign:${issue.id}` || issue.assigned_to === user?.id}
+                    onClick={async () => {
+                      setIssueSavingKey(`assign:${issue.id}`);
+                      try {
+                        await assignRoutingIssue(issue.id, {});
+                        toast({ title: isEn ? "Issue claimed" : "Pendência assumida", description: isEn ? "Issue is now in review for your user." : "Agora ela está em revisão para seu usuário." });
+                        await load();
+                      } catch {
+                        toast({
+                          title: isEn ? "Failed to claim issue" : "Falha ao assumir pendência",
+                          description: isEn ? "Could not assign issue." : "Não foi possível atribuir a pendência.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIssueSavingKey(null);
+                      }
+                    }}
+                  >
+                    {issueSavingKey === `assign:${issue.id}` ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    {isEn ? "Claim" : "Assumir"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={
+                      !issueTargetCircuitId ||
+                      !canAutoResolveWithRule(issue) ||
+                      !issue.can_resolve ||
+                      issueSavingKey === `resolve:${issue.id}`
+                    }
+                    onClick={async () => {
+                      setIssueSavingKey(`resolve:${issue.id}`);
+                      try {
+                        await resolveRoutingIssue(issue.id, {
+                          resolution_action: "rule_created",
+                          resolution_notes: isEn ? "Resolved in Partner Portal" : "Resolvido no Partner Portal",
+                          create_rule: true,
+                          circuit_id: issueTargetCircuitId,
+                        });
+                        toast({ title: isEn ? "Issue resolved" : "Pendência resolvida", description: isEn ? "Rule created and issue closed." : "Regra criada e pendência encerrada." });
+                        await load();
+                      } catch {
+                        toast({
+                          title: isEn ? "Failed to resolve issue" : "Falha ao resolver pendência",
+                          description: isEn ? "Could not create rule and resolve automatically." : "Não foi possível criar regra e resolver automaticamente.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIssueSavingKey(null);
+                      }
+                    }}
+                  >
+                    {issueSavingKey === `resolve:${issue.id}` ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    {isEn ? "Resolve with rule" : "Resolver com regra"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!issue.can_resolve || issueSavingKey === `resolve-manual:${issue.id}`}
+                    onClick={async () => {
+                      setIssueSavingKey(`resolve-manual:${issue.id}`);
+                      try {
+                        await resolveRoutingIssue(issue.id, {
+                          resolution_action: "manual_resolution",
+                          resolution_notes: isEn ? "Manually resolved in Partner Portal" : "Resolvido manualmente no Partner Portal",
+                          create_rule: false,
+                        });
+                        toast({ title: isEn ? "Issue closed" : "Pendência encerrada", description: isEn ? "Marked as manually resolved." : "Marcada como resolvida manualmente." });
+                        await load();
+                      } catch {
+                        toast({
+                          title: isEn ? "Failed to close issue" : "Falha ao encerrar pendência",
+                          description: isEn ? "Could not mark as resolved." : "Não foi possível marcar como resolvida.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIssueSavingKey(null);
+                      }
+                    }}
+                  >
+                    {issueSavingKey === `resolve-manual:${issue.id}` ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : null}
+                    {isEn ? "Resolve manually" : "Resolver manual"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ScrollText className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-base font-semibold">{isEn ? "API request log" : "Log de Requisições da API"}</h3>
+            <span className="text-xs text-muted-foreground">({logEntries.length})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {logEntries.length > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { clearLog(); setLogEntries([]); }}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                {isEn ? "Clear" : "Limpar"}
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLogExpanded(!logExpanded)}
+            >
+              {logExpanded ? (isEn ? "Collapse" : "Recolher") : (isEn ? "Expand" : "Expandir")}
+            </Button>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {isEn
+            ? "All calls made to partner endpoints in this session. Useful for debugging and verification."
+            : "Todas as chamadas feitas para endpoints de parceiro nesta sessão. Útil para depuração e verificação."}
+        </p>
+        {logEntries.length === 0 ? (
+          <p className="text-xs text-muted-foreground">{isEn ? "No requests recorded in this session." : "Nenhuma requisição registrada nesta sessão."}</p>
+        ) : (
+          <div className={`space-y-1 ${logExpanded ? "" : "max-h-[320px] overflow-y-auto"}`}>
+            {logEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded border px-3 py-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs"
+              >
+                <span className="text-muted-foreground shrink-0 w-[140px]">
+                  {new Date(entry.timestamp).toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "2-digit" })}
+                </span>
+                <span className="font-mono font-medium shrink-0">
+                  {entry.method}
+                </span>
+                <span className="font-mono text-muted-foreground truncate flex-1" title={entry.endpoint}>
+                  {entry.endpoint}
+                </span>
+                {entry.status != null ? (
+                  <span className={`shrink-0 px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                    entry.status >= 200 && entry.status < 300
+                      ? "bg-primary/10 text-primary"
+                      : entry.status >= 400
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-muted text-muted-foreground"
+                  }`}>
+                    {entry.status}
+                  </span>
+                ) : (
+                  <span className="shrink-0 px-1.5 py-0.5 rounded text-[11px] font-medium bg-destructive/10 text-destructive">
+                    {isEn ? "NETWORK" : "REDE"}
+                  </span>
+                )}
+                <span className="text-muted-foreground shrink-0 w-[60px] text-right">
+                  {entry.durationMs}ms
+                </span>
+                {entry.errorCode ? (
+                  <span className="text-destructive truncate" title={entry.errorMessage || undefined}>
+                    {entry.errorCode}{entry.errorMessage ? `: ${entry.errorMessage}` : ""}
+                  </span>
+                ) : entry.responseSummary ? (
+                  <span className="text-muted-foreground truncate" title={entry.responseSummary}>
+                    {entry.responseSummary}
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

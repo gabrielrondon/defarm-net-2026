@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const INPUT_TYPES: { value: CheckInputType; label: string; placeholder: string; description: string }[] = [
   { value: "CNPJ", label: "CNPJ", placeholder: "12.345.678/0001-90", description: "Pessoa Jurídica" },
@@ -166,6 +168,7 @@ function SourceCard({ source }: { source: CheckSource }) {
 }
 
 export default function ComplianceCheck() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [inputType, setInputType] = useState<CheckInputType>("CNPJ");
   const [inputValue, setInputValue] = useState("");
@@ -221,6 +224,16 @@ export default function ComplianceCheck() {
         <p className="text-muted-foreground mt-1">
           Verificação de compliance socioambiental — 13 fontes governamentais em tempo real
         </p>
+        {user?.workspace_type === "government" && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/app/governo/docs#read">Guia gov: leitura operacional</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/app/governo/docs#shared-circuit">Guia gov: circuito compartilhado</Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Input Card */}

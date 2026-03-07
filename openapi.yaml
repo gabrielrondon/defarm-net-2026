@@ -82,8 +82,10 @@ tags:
   description: Admin-only operations (API keys, canonical identifiers).
 - name: Partner API Keys
   description: Partner API key issuance and usage metrics.
+- name: Partner Upload
+  description: Intelligent partner intake flows — upload, preview, and reconciliation.
 - name: Partner Routing
-  description: Intelligent partner intake, routing rules, and raw payload history.
+  description: Routing rules, issue tracking, and raw payload history.
 - name: Embed
   description: Short-lived embed tokens and portfolio retrieval for partner/client UX.
 - name: Webhooks
@@ -100,6 +102,8 @@ tags:
   description: User-submitted property claims (property-first identifiers recommended) and admin verification with auto-circuit surfacing.
 - name: Property Links
   description: Item-to-property provenance annotations forming a custody/movement trail (item_property_links).
+- name: Property Compliance
+  description: Compliance snapshots by LAND property and circuit-level property compliance views.
 - name: Property Party Roles
   description: Temporal relationship model between LAND properties and parties (owner/operator/manager).
 components:
@@ -2096,6 +2100,7 @@ components:
           nullable: true
     UpsertRoutingRuleRequest:
       type: object
+      description: 'Create or update a routing rule that maps a partner identifier to a destination circuit.'
       required:
       - identifier_type
       - identifier_value
@@ -2103,23 +2108,33 @@ components:
       properties:
         identifier_type:
           type: string
+          description: 'Type of routing identifier. Determines how the value is normalized and matched during ingestion.'
           enum:
           - car
-          - cnpj
-          - cpf
+          - ccir
           - incra
           - nirf
+          - cib
+          - matricula
+          - georef
           - land_dfid
+          - inscricao_estadual
+          - cnpj
+          - cpf
         identifier_value:
           type: string
+          description: 'The identifier value to match (e.g. a CAR number, CNPJ, CPF). Automatically normalized on save.'
         circuit_id:
           type: string
           format: uuid
+          description: 'Destination circuit ID where matching rows will be routed.'
         notes:
           type: string
           nullable: true
+          description: 'Optional free-text note about this rule (e.g. farm name, client reference).'
     RoutingRuleResponse:
       type: object
+      description: 'A routing rule that maps a partner identifier to a destination circuit.'
       required:
       - id
       - workspace_id
@@ -2135,35 +2150,48 @@ components:
         id:
           type: string
           format: uuid
+          description: 'Unique ID of this routing rule.'
         workspace_id:
           type: string
           format: uuid
+          description: 'Workspace that owns this rule.'
         identifier_type:
           type: string
+          description: 'Type of routing identifier (e.g. car, cnpj, cpf).'
         identifier_value:
           type: string
+          description: 'Original identifier value as provided.'
         identifier_value_normalized:
           type: string
+          description: 'Normalized form used for matching (e.g. digits-only for CPF/CNPJ).'
         circuit_id:
           type: string
           format: uuid
+          description: 'Destination circuit for rows matching this rule.'
         is_active:
           type: boolean
+          description: 'Whether this rule is currently active. Inactive rules are ignored during routing.'
         auto_created:
           type: boolean
+          description: 'True if this rule was auto-created during ingestion (auto_create_circuit=true).'
         notes:
           type: string
           nullable: true
+          description: 'Free-text note about this rule.'
         created_by:
           type: string
           format: uuid
           nullable: true
+          description: 'User ID that created the rule. Null for auto-created rules.'
         created_at:
           type: string
+          description: 'Creation timestamp (RFC 3339).'
         updated_at:
           type: string
+          description: 'Last update timestamp (RFC 3339).'
     RawPayloadSummary:
       type: object
+      description: 'Summary of a persisted raw payload for audit and replay.'
       required:
       - id
       - workspace_id
@@ -2177,56 +2205,71 @@ components:
         id:
           type: string
           format: uuid
+          description: 'Unique ID of this raw payload record.'
         workspace_id:
           type: string
           format: uuid
+          description: 'Workspace that submitted this payload.'
         source_circuit_id:
           type: string
           format: uuid
           nullable: true
+          description: 'Staging circuit used for this ingestion.'
         intake_mode:
           type: string
+          description: 'How the payload was submitted (e.g. multipart, json).'
         content_type:
           type: string
           nullable: true
+          description: 'MIME type of the original file (e.g. text/csv, application/json).'
         file_name:
           type: string
           nullable: true
+          description: 'Original file name if uploaded via multipart.'
         payload_size_bytes:
           type: integer
           format: int32
+          description: 'Size of the raw payload in bytes.'
         payload_sha256:
           type: string
+          description: 'SHA-256 hash of the payload for integrity verification.'
         status:
           type: string
+          description: 'Processing status of this payload (e.g. processed, failed).'
         error_message:
           type: string
           nullable: true
-        item_links:
-          type: array
-          items:
-            $ref: '#/components/schemas/PartnerItemLink'
-        metadata: {}
+          description: 'Error message if processing failed.'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: 'Ingestion context metadata (e.g. template_id, mapping used, auth method).'
         created_at:
           type: string
+          description: 'Submission timestamp (RFC 3339).'
         processed_at:
           type: string
           nullable: true
+          description: 'Processing completion timestamp (RFC 3339). Null if not yet processed.'
     ListRawPayloadsResponse:
       type: object
+      description: 'Paginated list of raw ingestion payloads.'
       required:
       - rows
       - count
       properties:
         rows:
           type: array
+          description: 'Raw payload records.'
           items:
             $ref: '#/components/schemas/RawPayloadSummary'
         count:
           type: integer
           format: int32
+          description: 'Total number of records matching the query.'
     IntakeBatchResult:
       type: object
+      description: 'Detailed result for one routing batch (verbose only).'
       required:
       - identifier_type
       - identifier_value
@@ -2236,242 +2279,451 @@ components:
       properties:
         identifier_type:
           type: string
+          description: 'Type of routing identifier for this batch (e.g. car, cnpj).'
         identifier_value:
           type: string
+          description: 'Value of the routing identifier.'
         circuit_id:
           type: string
           format: uuid
+          description: 'Destination circuit for this batch.'
         rows:
           type: integer
           format: int32
+          description: 'Number of rows in this batch.'
         receipt_id:
           type: string
           format: uuid
           nullable: true
+          description: 'Receipt ID for audit tracking. Null if batch failed.'
         status:
           type: string
+          description: 'Batch processing outcome.'
+          enum:
+          - completed
+          - failed
         error_message:
           type: string
           nullable: true
+          description: 'Error details if the batch failed.'
     PartnerIntakeResponse:
       type: object
+      description: 'Response returned after processing an ingestion. Contains a summary with counters, a flat list of processed items, per-row errors, and aggregated route information.'
       required:
       - summary
-      - raw_payload_id
-      - source_circuit_id
-      - workspace_id
-      - total_rows
-      - routed_batches
-      - unresolved_rows
-      - created_circuits
-      - circuit_links
-      - status
+      - items
+      - errors
+      - routes
       properties:
+        dry_run:
+          type: boolean
+          nullable: true
+          description: Present and true when response comes from preview simulation.
         summary:
           $ref: '#/components/schemas/PartnerIntakeSummary'
-        raw_payload_id:
-          type: string
-          format: uuid
-        source_circuit_id:
-          type: string
-          format: uuid
-        workspace_id:
-          type: string
-          format: uuid
-        total_rows:
-          type: integer
-          format: int32
-        routed_batches:
+        items:
           type: array
+          description: Processed items in flat format for easy integration.
           items:
-            $ref: '#/components/schemas/IntakeBatchResult'
-        unresolved_rows:
-          type: integer
-          format: int32
-        created_circuits:
+            $ref: '#/components/schemas/PartnerItemOutput'
+        errors:
           type: array
+          description: Per-row errors for precise reconciliation in the partner's system.
           items:
-            type: string
-            format: uuid
-        circuit_links:
+            $ref: '#/components/schemas/PartnerIntakeErrorOutput'
+        routes:
           type: array
+          description: Aggregated routes by routing identifier.
           items:
-            $ref: '#/components/schemas/PartnerCircuitLink'
-        status:
-          type: string
+            $ref: '#/components/schemas/PartnerRouteOutput'
+        verbose:
+          allOf:
+          - $ref: '#/components/schemas/PartnerIntakeVerbose'
+          nullable: true
     PartnerIntakeSummary:
       type: object
+      description: 'High-level counters for the ingestion result. Use for dashboards and logs without parsing the full response.'
       required:
       - status
       - total_rows
+      - processed_rows
       - unresolved_rows
-      - routed_batches
-      - items_linked
+      - routes
+      - items
       - created_circuits
-      - circuits_linked
+      - impacted_circuits
+      - items_created
+      - items_enriched
       properties:
         status:
           type: string
+          description: 'Overall ingestion outcome.'
+          enum:
+          - completed
+          - partial
+          - failed
         total_rows:
           type: integer
           format: int32
+          description: 'Total number of rows received in the payload.'
+        processed_rows:
+          type: integer
+          format: int32
+          description: 'Rows successfully processed and routed to circuits.'
         unresolved_rows:
           type: integer
           format: int32
-        routed_batches:
+          description: 'Rows that could not be routed (missing identifier or no matching rule).'
+        routes:
           type: integer
           format: int32
-        items_linked:
+          description: 'Number of distinct routing destinations used.'
+        items:
           type: integer
           format: int32
+          description: 'Total items created or enriched in this ingestion.'
         created_circuits:
           type: integer
           format: int32
-        circuits_linked:
+          description: 'Circuits auto-created during this ingestion (when auto_create_circuit=true).'
+        impacted_circuits:
           type: integer
           format: int32
+          description: 'Total distinct circuits that received items (existing + newly created).'
+        items_created:
+          type: integer
+          format: int32
+          description: 'Items created for the first time (new DFID generated).'
+        items_enriched:
+          type: integer
+          format: int32
+          description: 'Existing items updated with new data from this ingestion.'
+        events_detected:
+          type: integer
+          format: int32
+          nullable: true
+          description: 'Preview only. Total events that would be detected from row data.'
         partner_reference:
           allOf:
           - $ref: '#/components/schemas/PartnerInputReference'
           nullable: true
-    PartnerIntakePreviewPlanItem:
+          description: 'Present only when the batch resolves to a single unique partner reference. Shortcut for reconciliation.'
+        warnings:
+          type: array
+          description: Operational warnings for the integrator.
+          items:
+            type: string
+    PartnerUploadJsonEnvelope:
       type: object
+      title: JSON Envelope with Controls
+      description: 'Envelope format with control fields. Use when you need to specify
+        template_id, mapping, source_circuit_id, or other ingestion options alongside
+        your data rows.'
       required:
-      - identifier_type
-      - identifier_value
-      - identifier_value_normalized
-      - rows
-      - status
+      - items
       properties:
-        identifier_type:
-          type: string
-        identifier_value:
-          type: string
-        identifier_value_normalized:
-          type: string
-        rows:
-          type: integer
-          format: int32
-        circuit_id:
-          type: string
-          format: uuid
-          nullable: true
-        status:
-          type: string
-        reason:
-          type: string
-          nullable: true
-    PartnerIntakePreviewResponse:
-      type: object
-      required:
-      - source_circuit_id
-      - workspace_id
-      - total_rows
-      - resolvable_rows
-      - unresolved_rows
-      - matched_rows
-      - would_auto_create_rows
-      - unresolved_identifiers
-      - routing_plan
-      properties:
+        items:
+          type: array
+          description: 'Array of data rows. Each row must contain value_chain (e.g.
+            BEEF) and one traceable asset identifier (e.g. sisbov/chip for BEEF).
+            Routing identifier is recommended (e.g. car, cnpj, cpf, ie).'
+          items:
+            type: object
+            additionalProperties: true
+            description: 'A single data row. Required fields: value_chain and one traceable
+              asset identifier. Routing identifier is recommended (car/cnpj/cpf/ie/etc.);
+              if omitted, routing may fallback to source circuit when enabled.'
         source_circuit_id:
           type: string
           format: uuid
-        workspace_id:
+          nullable: true
+          description: Optional source staging circuit. If omitted, DeFarm infers workspace staging.
+        template_id:
           type: string
           format: uuid
-        total_rows:
-          type: integer
-          format: int32
-        resolvable_rows:
-          type: integer
-          format: int32
-        unresolved_rows:
-          type: integer
-          format: int32
-        matched_rows:
-          type: integer
-          format: int32
-        would_auto_create_rows:
-          type: integer
-          format: int32
-        unresolved_identifiers:
-          type: array
-          items: {}
-        routing_plan:
-          type: array
-          items:
-            $ref: '#/components/schemas/PartnerIntakePreviewPlanItem'
+          nullable: true
+          description: Optional template for column remapping before routing/tokenization.
+        mapping:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Optional inline mapping. Overrides template mapping when both are provided.
+        auto_create_circuit:
+          type: boolean
+          description: Auto-create destination circuit when no routing rule matches.
+          default: true
+        fallback_to_source_circuit:
+          type: boolean
+          description: When unresolved, optionally fallback to source circuit.
+          default: true
+    PartnerUploadJsonRequest:
+      description: 'JSON body for ingestion. Two formats accepted: (1) a direct array
+        of row objects for simplicity, or (2) a JSON envelope when you need control
+        fields like template_id, mapping, or source_circuit_id.'
+      oneOf:
+      - type: array
+        title: Direct JSON Array
+        description: 'Simple format: send an array of row objects directly. Each object
+          must contain value_chain and a traceable asset identifier (e.g. sisbov/chip
+          for BEEF). Routing identifier is recommended (e.g. car, cnpj, cpf, ie).'
+        items:
+          type: object
+          additionalProperties: true
+          description: 'A single data row. Required per row: value_chain (e.g. BEEF)
+            and one traceable asset identifier (e.g. sisbov or chip for BEEF). Routing
+            identifier is recommended (e.g. car, cnpj, cpf, ie) to route directly
+            to destination circuits; without it, fallback-to-source behavior applies
+            when enabled.'
+      - $ref: '#/components/schemas/PartnerUploadJsonEnvelope'
     PartnerCircuitLink:
       type: object
+      description: 'Link to a circuit that received items during ingestion (verbose only).'
       required:
       - circuit_id
       - app_url
       - public_url
+      - is_public
       properties:
         circuit_id:
           type: string
           format: uuid
+          description: 'Circuit ID.'
         app_url:
           type: string
+          description: 'URL to view this circuit in the DeFarm portal.'
         public_url:
           type: string
-    PartnerItemIdentifier:
-      type: object
-      required:
-      - identifier_type
-      - value
-      - is_canonical
-      properties:
-        identifier_type:
-          type: string
-        value:
-          type: string
-        is_canonical:
+          description: 'Public URL for this circuit on defarm.net.'
+        is_public:
           type: boolean
+          description: 'Whether this circuit is publicly accessible.'
     PartnerInputReference:
       type: object
+      description: 'Reference to the partner input field used for batch-level reconciliation.'
       required:
       - field
       - value
       properties:
         field:
           type: string
+          description: 'Name of the input field used as reference (e.g. partner_internal_id).'
         value:
           type: string
-    PartnerItemLink:
+          description: 'Value of the reference field from the input.'
+    PartnerItemRoute:
       type: object
+      description: 'Circuit routing information for a single item.'
       required:
-      - item_id
-      - dfid
-      - circuit_id
-      - app_url
-      - public_url
-      - identifiers
-      - input_references
+      - route_type
+      - route_value
       properties:
-        item_id:
+        route_type:
           type: string
-          format: uuid
-        dfid:
+          description: 'Type of routing identifier used (e.g. car, cnpj).'
+        route_value:
           type: string
+          description: 'Value of the routing identifier.'
         circuit_id:
           type: string
           format: uuid
-        app_url:
+          nullable: true
+          description: 'Destination circuit ID.'
+    PartnerPreviewEventOutput:
+      type: object
+      required:
+      - event_type
+      - payload
+      properties:
+        event_type:
           type: string
-        public_url:
+        payload: {}
+    PartnerItemOutput:
+      type: object
+      description: 'A single processed item with its DFID, public URL, and routing information.'
+      required:
+      - routes
+      properties:
+        dfid:
           type: string
-        identifiers:
+          nullable: true
+          description: 'DeFarm Identifier assigned to this item. Format: DFID-{CHAIN}-{CC}-{YYYY}-{SEQ}-{CS}.'
+        url:
+          type: string
+          nullable: true
+          description: 'Public URL for this item on defarm.net.'
+        url_refs:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: 'Canonical reference links by identifier type (e.g. sisbov, chip). Only present for identifiers detected for this item.'
+        partner_reference:
+          type: string
+          nullable: true
+          description: 'Value of partner_internal_id from the input row, for reconciliation. Null when not provided in the input.'
+        asset_reference:
+          allOf:
+          - $ref: '#/components/schemas/PartnerAssetReference'
+          nullable: true
+          description: 'Primary traceable asset identifier detected for this item (e.g. sisbov, chip).'
+        would_create:
+          type: boolean
+          nullable: true
+          description: Preview only. True when the row would create a new item instead of enriching.
+        events_preview:
           type: array
+          nullable: true
+          description: Preview only. Events that would be detected from the row payload.
           items:
-            $ref: '#/components/schemas/PartnerItemIdentifier'
-        input_references:
+            $ref: '#/components/schemas/PartnerPreviewEventOutput'
+        routes:
           type: array
+          description: 'Circuits this item was routed to.'
           items:
-            $ref: '#/components/schemas/PartnerInputReference'
+            $ref: '#/components/schemas/PartnerItemRoute'
+    PartnerIntakeErrorOutput:
+      type: object
+      description: 'Error detail for a single row that failed validation or routing.'
+      required:
+      - reason_code
+      - message
+      properties:
+        row_index:
+          type: integer
+          format: int32
+          nullable: true
+          description: '0-based row position in the original payload. Null for payload-level errors.'
+        partner_reference:
+          type: string
+          nullable: true
+          description: 'Value of partner_internal_id from the failed row, for reconciliation.'
+        reason_code:
+          type: string
+          description: 'Machine-readable error code for this row.'
+          enum:
+          - missing_value_chain
+          - missing_trackable_identifier
+          - missing_identifier
+          - empty_after_normalization
+          - no_routing_rule
+        message:
+          type: string
+          description: 'Human-readable error description with suggested next step.'
+        value_chain:
+          type: string
+          nullable: true
+          description: 'Value chain from the row, if present (e.g. BEEF, DAIRY).'
+        identifier_type:
+          type: string
+          nullable: true
+          description: 'Type of the identifier involved in the error (e.g. sisbov, car).'
+        identifier_value:
+          type: string
+          nullable: true
+          description: 'Value of the identifier involved in the error.'
+    PartnerAssetReference:
+      type: object
+      description: 'Primary traceable asset identifier for an item.'
+      required:
+      - identifier_type
+      - value
+      properties:
+        identifier_type:
+          type: string
+          description: 'Type of the asset identifier (e.g. sisbov, chip, ear_tag).'
+        value:
+          type: string
+          description: 'The identifier value.'
+    PartnerIntakeVerbose:
+      type: object
+      description: 'Detailed operational fields returned when ?verbose=true. Useful for debugging and internal tooling.'
+      required:
+      - raw_payload_id
+      - source_circuit_id
+      - workspace_id
+      - total_rows
+      - unresolved_rows
+      - routed_batches
+      - created_circuits
+      - circuit_links
+      - status
+      properties:
+        raw_payload_id:
+          type: string
+          format: uuid
+          description: 'ID of the persisted raw payload. Use with /v1/partner/ingestions/raw/{id}/download to retrieve it.'
+        source_circuit_id:
+          type: string
+          format: uuid
+          description: 'Staging circuit used for this ingestion.'
+        workspace_id:
+          type: string
+          format: uuid
+          description: 'Workspace that processed this ingestion.'
+        total_rows:
+          type: integer
+          format: int32
+          description: 'Total rows in the payload.'
+        unresolved_rows:
+          type: integer
+          format: int32
+          description: 'Rows that could not be routed.'
+        routed_batches:
+          type: array
+          description: 'Detailed per-batch routing results.'
+          items:
+            $ref: '#/components/schemas/IntakeBatchResult'
+        created_circuits:
+          type: array
+          description: 'IDs of circuits auto-created during this ingestion.'
+          items:
+            type: string
+            format: uuid
+        circuit_links:
+          type: array
+          description: 'Links to circuits that received items (app and public URLs).'
+          items:
+            $ref: '#/components/schemas/PartnerCircuitLink'
+        status:
+          type: string
+    PartnerRouteOutput:
+      type: object
+      description: 'Aggregated routing result for one identifier group (e.g. all rows with the same CAR).'
+      required:
+      - route_type
+      - route_value
+      - rows
+      - status
+      - items
+      properties:
+        route_type:
+          type: string
+          description: 'Type of routing identifier used (e.g. car, cnpj, cpf).'
+        route_value:
+          type: string
+          description: 'Value of the routing identifier (e.g. MT-1234.56789.0000.00).'
+        circuit_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Destination circuit that received the items.'
+        rows:
+          type: integer
+          format: int32
+          description: 'Number of input rows routed to this circuit.'
+        status:
+          type: string
+          description: 'Routing outcome for this identifier group.'
+          enum:
+          - completed
+          - failed
+        items:
+          type: integer
+          format: int32
+          description: 'Number of items created or enriched for this route.'
     RoutingIssueSummary:
       type: object
+      description: 'An unresolved routing identifier seen during ingestion.'
       required:
       - identifier_type
       - identifier_value
@@ -2479,24 +2731,30 @@ components:
       properties:
         identifier_type:
           type: string
+          description: 'Type of the unresolved identifier (e.g. car, cnpj).'
         identifier_value:
           type: string
+          description: 'Value of the unresolved identifier.'
         occurrences:
           type: integer
           format: int64
+          description: 'Number of times this identifier appeared across recent ingestions.'
     RoutingIssuesResponse:
       type: object
+      description: 'List of unresolved routing identifiers for triage.'
       required:
       - issues
       - count
       properties:
         issues:
           type: array
+          description: 'Unresolved routing issues.'
           items:
             $ref: '#/components/schemas/RoutingIssueSummary'
         count:
           type: integer
           format: int32
+          description: 'Total number of unresolved issues.'
     RoutingIssueItem:
       type: object
       required:
@@ -2773,20 +3031,81 @@ components:
         count:
           type: integer
           format: int32
+    RefreshComplianceRequest:
+      type: object
+      properties:
+        force:
+          type: boolean
+          nullable: true
+    PropertyComplianceResponse:
+      type: object
+      required:
+      - property_dfid
+      - status
+      - source
+      properties:
+        property_dfid:
+          type: string
+        car:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [ok, warning, blocked, unknown]
+        score:
+          type: integer
+          format: int32
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        details_json:
+          type: object
+          nullable: true
+          additionalProperties: true
+        checked_at:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          nullable: true
+        source:
+          type: string
+    CircuitComplianceListResponse:
+      type: object
+      required:
+      - circuit_id
+      - count
+      - properties
+      properties:
+        circuit_id:
+          type: string
+          format: uuid
+        count:
+          type: integer
+          format: int32
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropertyComplianceResponse'
     CreateEmbedTokenRequest:
       type: object
+      description: 'Request to create a short-lived embed token for a circuit.'
       required:
       - circuit_id
       properties:
         circuit_id:
           type: string
           format: uuid
+          description: 'Circuit to generate the embed token for.'
         expires_in_minutes:
           type: integer
           format: int64
           nullable: true
+          description: 'Token lifetime in minutes. Defaults to 60 if not specified.'
     CreateEmbedTokenResponse:
       type: object
+      description: 'Response with the generated embed token and its URL.'
       required:
       - token
       - expires_at
@@ -2794,12 +3113,16 @@ components:
       properties:
         token:
           type: string
+          description: 'The embed token value. Pass as ?token= to the embed portfolio endpoint.'
         expires_at:
           type: string
+          description: 'Token expiration timestamp (RFC 3339).'
         embed_url:
           type: string
+          description: 'Ready-to-use URL for embedding the portfolio in an iframe or webview.'
     EmbedEventProof:
       type: object
+      description: 'A recent event with blockchain/IPFS proof, for end-client visualization.'
       required:
       - id
       - event_type
@@ -2808,27 +3131,37 @@ components:
         id:
           type: string
           format: uuid
+          description: 'Event ID.'
         event_type:
           type: string
+          description: 'Type of event (e.g. item_weighed, item_vaccinated).'
         item_id:
           type: string
           format: uuid
           nullable: true
+          description: 'Item associated with this event.'
         created_at:
           type: string
+          description: 'Event timestamp (RFC 3339).'
         stellar_tx_hash:
           type: string
           nullable: true
+          description: 'Stellar blockchain transaction hash anchoring this event.'
         ipfs_cid:
           type: string
           nullable: true
+          description: 'IPFS content identifier for the event metadata.'
     EmbedPortfolioResponse:
       type: object
+      description: 'Portfolio data resolved from an embed token, for end-client visualization.'
       required:
       - portfolio
       - recent_event_proofs
       properties:
-        portfolio: {}
+        portfolio:
+          type: object
+          additionalProperties: true
+          description: 'Circuit portfolio data including items, metadata, and summary counts. Structure varies by circuit configuration.'
         recent_event_proofs:
           type: array
           items:
@@ -3439,6 +3772,34 @@ components:
           type: string
           format: uuid
           nullable: true
+        event_owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+        event_owner_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        trust_score:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: Computed trust score for this event.
+        trust_level:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          description: Trust level derived from trust_score.
+        trust_factors:
+          type: object
+          additionalProperties: true
+          description: Detailed scoring factors used to compute trust_score.
+        trust_model_version:
+          type: string
+          description: Version of the trust scoring model.
     CreateEventRequest:
       type: object
       required:
@@ -3465,6 +3826,133 @@ components:
         payload: {}
         metadata:
           nullable: true
+        visibility:
+          type: string
+          nullable: true
+          enum:
+          - public
+          - private
+          - circuit_only
+          - selective
+        visible_to_roles:
+          type: array
+          nullable: true
+          items:
+            type: string
+    UpdateEventVisibilityRequest:
+      type: object
+      required:
+      - visibility
+      properties:
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - circuit_only
+          - selective
+        visible_to_roles:
+          type: array
+          nullable: true
+          items:
+            type: string
+    GrantEventDelegationRequest:
+      type: object
+      required:
+      - delegate_workspace_id
+      properties:
+        delegate_workspace_id:
+          type: string
+          format: uuid
+        can_manage_visibility:
+          type: boolean
+          nullable: true
+        can_manage_disclosure:
+          type: boolean
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+    EventDelegationResponse:
+      type: object
+      required:
+      - id
+      - event_id
+      - owner_workspace_id
+      - delegate_workspace_id
+      - can_manage_visibility
+      - can_manage_disclosure
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        owner_workspace_id:
+          type: string
+          format: uuid
+        delegate_workspace_id:
+          type: string
+          format: uuid
+        granted_by_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        can_manage_visibility:
+          type: boolean
+        can_manage_disclosure:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_by_user_id:
+          type: string
+          format: uuid
+          nullable: true
+    EventGovernanceResponse:
+      type: object
+      required:
+      - event_id
+      - caller_can_manage_visibility
+      - caller_can_manage_disclosure
+      - delegations
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        event_owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+        event_owner_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        caller_can_manage_visibility:
+          type: boolean
+        caller_can_manage_disclosure:
+          type: boolean
+        delegations:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventDelegationResponse'
     GenerateProofRequest:
       description: Request payload to generate cryptographic proof for data.
       type: object
@@ -3593,6 +4081,10 @@ components:
         error_message:
           type: string
           nullable: true
+        result:
+          type: object
+          nullable: true
+          additionalProperties: true
         created_at:
           type: string
           format: date-time
@@ -3610,6 +4102,7 @@ components:
       type: object
       required:
       - data
+      - total
       - limit
       - offset
       properties:
@@ -3617,6 +4110,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdapterJobRecord'
+        total:
+          type: integer
+          format: int64
         limit:
           type: integer
           format: int64
@@ -3647,6 +4143,8 @@ components:
       - processing
       - failed
       - completed
+      - completed_clean
+      - completed_with_errors
       - due_retries
       properties:
         pending:
@@ -3664,7 +4162,30 @@ components:
         completed:
           type: integer
           format: int64
+        completed_clean:
+          type: integer
+          format: int64
+        completed_with_errors:
+          type: integer
+          format: int64
         due_retries:
+          type: integer
+          format: int64
+    AdapterAdminValueChainSummary:
+      description: Aggregation by value chain.
+      type: object
+      required:
+      - total_items
+      - with_stellar
+      - with_ipfs
+      properties:
+        total_items:
+          type: integer
+          format: int64
+        with_stellar:
+          type: integer
+          format: int64
+        with_ipfs:
           type: integer
           format: int64
     AdapterAdminJobsSummaryResponse:
@@ -3672,9 +4193,459 @@ components:
       type: object
       required:
       - summary
+      - by_value_chain
       properties:
         summary:
           $ref: '#/components/schemas/AdapterAdminJobSummary'
+        by_value_chain:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AdapterAdminValueChainSummary'
+    AdapterAdminQueueDepths:
+      description: Redis queue depths by priority.
+      type: object
+      required:
+      - p1
+      - p2
+      - p3
+      - p4
+      - total
+      properties:
+        p1:
+          type: integer
+          format: int64
+        p2:
+          type: integer
+          format: int64
+        p3:
+          type: integer
+          format: int64
+        p4:
+          type: integer
+          format: int64
+        total:
+          type: integer
+          format: int64
+    AdapterAdminQueuesResponse:
+      description: Queue depths and XLM low-balance gating status.
+      type: object
+      required:
+      - queue_depths
+      - xlm_low_balance_threshold
+      - low_xlm_mode
+      - active_queues
+      properties:
+        queue_depths:
+          $ref: '#/components/schemas/AdapterAdminQueueDepths'
+        xlm_balance:
+          type: number
+          format: double
+          nullable: true
+        xlm_low_balance_threshold:
+          type: number
+          format: double
+        low_xlm_mode:
+          type: boolean
+        active_queues:
+          type: array
+          items:
+            type: string
+    AdapterAdminBatchRetryRequest:
+      description: Request body for batch requeue by filter.
+      type: object
+      required:
+      - filter
+      properties:
+        filter:
+          type: object
+          properties:
+            status:
+              type: string
+            adapter:
+              type: string
+            has_errors:
+              type: boolean
+            item_ids:
+              type: array
+              items:
+                type: string
+                format: uuid
+            missing_stellar:
+              type: boolean
+            missing_ipfs:
+              type: boolean
+        priority:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 4
+          default: 4
+        limit:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 5000
+          default: 500
+    AdapterAdminBatchRetryResponse:
+      description: Batch requeue result.
+      type: object
+      required:
+      - queued
+      - queue
+      - priority
+      properties:
+        queued:
+          type: integer
+          format: int64
+        queue:
+          type: string
+        priority:
+          type: integer
+          format: int32
+    AdapterAdminTokenizationHealthValueChain:
+      description: Tokenization health counters for a value chain.
+      type: object
+      required:
+      - total
+      - stellar_anchored
+      - ipfs_pinned
+      - fully_tokenized
+      - missing_stellar
+      - missing_ipfs
+      properties:
+        total:
+          type: integer
+          format: int64
+        stellar_anchored:
+          type: integer
+          format: int64
+        ipfs_pinned:
+          type: integer
+          format: int64
+        fully_tokenized:
+          type: integer
+          format: int64
+        missing_stellar:
+          type: integer
+          format: int64
+        missing_ipfs:
+          type: integer
+          format: int64
+    AdapterAdminTokenizationHealthResponse:
+      description: Consolidated tokenization health across value chains.
+      type: object
+      required:
+      - total_items
+      - by_value_chain
+      - xlm_threshold
+      - low_xlm_mode
+      - queue_depths
+      properties:
+        total_items:
+          type: integer
+          format: int64
+        by_value_chain:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AdapterAdminTokenizationHealthValueChain'
+        xlm_balance:
+          type: number
+          format: double
+          nullable: true
+        xlm_threshold:
+          type: number
+          format: double
+        low_xlm_mode:
+          type: boolean
+        queue_depths:
+          $ref: '#/components/schemas/AdapterAdminQueueDepths'
+    AdapterAdminPipelineCount:
+      type: object
+      required:
+      - total
+      properties:
+        total:
+          type: integer
+          format: int64
+    AdapterAdminPipelineCountWithByStatus:
+      type: object
+      required:
+      - total
+      - by_status
+      properties:
+        total:
+          type: integer
+          format: int64
+        by_status:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+    AdapterAdminPipelineCountWithByValueChain:
+      type: object
+      required:
+      - total
+      - by_value_chain
+      properties:
+        total:
+          type: integer
+          format: int64
+        by_value_chain:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+    AdapterAdminPipelineStuck:
+      type: object
+      required:
+      - missing_stellar
+      - pending_confirmation
+      properties:
+        missing_stellar:
+          type: integer
+          format: int64
+        pending_confirmation:
+          type: integer
+          format: int64
+    AdapterAdminPipelineErrorTop:
+      type: object
+      required:
+      - error
+      - count
+      properties:
+        error:
+          type: string
+        count:
+          type: integer
+          format: int64
+    AdapterAdminPipelineStages:
+      type: object
+      required:
+      - ingested
+      - dfid_assigned
+      - ipfs_pinned
+      - stellar_anchored
+      - fully_tokenized
+      - stuck
+      properties:
+        ingested:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByValueChain'
+        dfid_assigned:
+          $ref: '#/components/schemas/AdapterAdminPipelineCount'
+        ipfs_pinned:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByStatus'
+        stellar_anchored:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByStatus'
+        fully_tokenized:
+          $ref: '#/components/schemas/AdapterAdminPipelineCountWithByValueChain'
+        stuck:
+          $ref: '#/components/schemas/AdapterAdminPipelineStuck'
+    AdapterAdminPipelineXlm:
+      type: object
+      required:
+      - threshold
+      - low_mode
+      properties:
+        balance:
+          type: number
+          format: double
+          nullable: true
+        threshold:
+          type: number
+          format: double
+        low_mode:
+          type: boolean
+    AdapterAdminPipelineErrors:
+      type: object
+      required:
+      - top
+      properties:
+        top:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterAdminPipelineErrorTop'
+    AdapterAdminPipelineStatusResponse:
+      type: object
+      required:
+      - pipeline
+      - queue
+      - xlm
+      - errors
+      properties:
+        pipeline:
+          $ref: '#/components/schemas/AdapterAdminPipelineStages'
+        queue:
+          $ref: '#/components/schemas/AdapterAdminQueueDepths'
+        xlm:
+          $ref: '#/components/schemas/AdapterAdminPipelineXlm'
+        errors:
+          $ref: '#/components/schemas/AdapterAdminPipelineErrors'
+    AdapterAdminIngestionRecent:
+      type: object
+      required:
+      - id
+      - status
+      - rows_total
+      - items_created
+      - items_updated
+      - events_created
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        rows_total:
+          type: integer
+          format: int32
+        items_created:
+          type: integer
+          format: int32
+        items_updated:
+          type: integer
+          format: int32
+        events_created:
+          type: integer
+          format: int32
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminIngestionsSummaryResponse:
+      type: object
+      required:
+      - total_ingestions
+      - total_rows_processed
+      - total_items_created
+      - total_items_updated
+      - total_events_created
+      - by_status
+      - recent
+      properties:
+        total_ingestions:
+          type: integer
+          format: int64
+        total_rows_processed:
+          type: integer
+          format: int64
+        total_items_created:
+          type: integer
+          format: int64
+        total_items_updated:
+          type: integer
+          format: int64
+        total_events_created:
+          type: integer
+          format: int64
+        by_status:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        recent:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterAdminIngestionRecent'
+    AdapterAdminItemPipelineStage:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+        at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminItemPipelineDfid:
+      type: object
+      required:
+      - status
+      - value
+      properties:
+        status:
+          type: string
+        value:
+          type: string
+    AdapterAdminItemPipelineIpfs:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+        cid:
+          type: string
+          nullable: true
+        gateway_url:
+          type: string
+          nullable: true
+        uploaded_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminItemPipelineStellar:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+        tx_hash:
+          type: string
+          nullable: true
+        explorer_url:
+          type: string
+          nullable: true
+        anchored_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdapterAdminItemPipelineStages:
+      type: object
+      required:
+      - created
+      - dfid
+      - ipfs
+      - stellar
+      - fully_tokenized
+      properties:
+        created:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineStage'
+        dfid:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineDfid'
+        ipfs:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineIpfs'
+        stellar:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineStellar'
+        fully_tokenized:
+          type: boolean
+    AdapterAdminItemPipelineResponse:
+      type: object
+      required:
+      - item_id
+      - dfid
+      - value_chain
+      - stages
+      - jobs
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        dfid:
+          type: string
+        value_chain:
+          type: string
+        stages:
+          $ref: '#/components/schemas/AdapterAdminItemPipelineStages'
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdapterJobRecord'
     HealthResponse:
       description: System health status response including component statuses.
       type: object
@@ -4704,6 +5675,27 @@ components:
         entity_id:
           type: string
           format: uuid
+        trust_score:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Event trust score (null for blockchain/storage timeline rows).
+        trust_level:
+          type: string
+          nullable: true
+          enum:
+          - low
+          - medium
+          - high
+        trust_factors:
+          nullable: true
+          type: object
+          additionalProperties: true
+        trust_model_version:
+          type: string
+          nullable: true
     Timeline:
       description: Reconstructed timeline merged from events, blockchain anchors and storage refs.
       type: object
@@ -5874,6 +6866,34 @@ paths:
         required: false
         schema:
           type: string
+      - name: priority
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 4
+      - name: has_errors
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: missing_stellar
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: missing_ipfs
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: error_contains
+        in: query
+        required: false
+        schema:
+          type: string
       - name: limit
         in: query
         required: false
@@ -5938,9 +6958,139 @@ paths:
                   processing: 1
                   failed: 4
                   completed: 120
+                  completed_clean: 100
+                  completed_with_errors: 20
                   due_retries: 1
+                by_value_chain:
+                  BEEF:
+                    total_items: 250
+                    with_stellar: 240
+                    with_ipfs: 250
+                  DEFARM:
+                    total_items: 9800
+                    with_stellar: 1300
+                    with_ipfs: 9800
         '401':
           description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/queues:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get queue depth and XLM gating status (admin)
+      description: Returns depth for priority queues p1..p4 and current XLM low-balance gating mode.
+      operationId: getAdapterAdminQueues
+      responses:
+        '200':
+          description: Queue status snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminQueuesResponse'
+              example:
+                queue_depths:
+                  p1: 14
+                  p2: 2
+                  p3: 58
+                  p4: 320
+                  total: 394
+                xlm_balance: 301.494345
+                xlm_low_balance_threshold: 50
+                low_xlm_mode: false
+                active_queues:
+                - adapter_jobs:p1
+                - adapter_jobs:p2
+                - adapter_jobs:p3
+                - adapter_jobs:p4
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/tokenization-health:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get consolidated tokenization health (admin)
+      description: Aggregates stellar/ipfs coverage by value_chain with queue and XLM context.
+      operationId: getAdapterAdminTokenizationHealth
+      responses:
+        '200':
+          description: Tokenization health snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminTokenizationHealthResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/pipeline-status:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get pipeline lifecycle status (admin)
+      description: Aggregated funnel for ingestion, DFID, IPFS, Stellar, fully tokenized, queue and top errors.
+      operationId: getAdapterAdminPipelineStatus
+      responses:
+        '200':
+          description: Pipeline status snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminPipelineStatusResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/ingestions/summary:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get ingestion summary (admin)
+      description: Aggregated ingestion counts and recent ingestion receipts.
+      operationId: getAdapterAdminIngestionsSummary
+      responses:
+        '200':
+          description: Ingestion summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminIngestionsSummaryResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /api/adapter/admin/items/pipeline/{item_id}:
+    get:
+      tags:
+      - Adapters
+      - Admin
+      summary: Get per-item pipeline detail (admin)
+      description: Returns stage-by-stage tokenization detail and recent publish jobs for one item.
+      operationId: getAdapterAdminItemPipeline
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Item pipeline detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminItemPipelineResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
         '500':
           description: Internal server error
   /api/adapter/admin/jobs/{job_id}:
@@ -5987,6 +7137,41 @@ paths:
           description: Not found
         '500':
           description: Internal server error
+  /api/adapter/admin/jobs/retry-batch:
+    post:
+      tags:
+      - Adapters
+      - Admin
+      summary: Retry adapter jobs in batch (admin)
+      description: Requeues multiple jobs with optional filter and target priority.
+      operationId: retryAdapterJobsBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdapterAdminBatchRetryRequest'
+            example:
+              filter:
+                status: failed
+                adapter: stellar_mainnet
+              priority: 4
+              limit: 500
+      responses:
+        '202':
+          description: Batch requeue accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterAdminBatchRetryResponse'
+              example:
+                queued: 142
+                queue: adapter_jobs:p4
+                priority: 4
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
   /api/adapter/admin/jobs/{job_id}/retry:
     post:
       tags:
@@ -6002,6 +7187,11 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: force
+        in: query
+        required: false
+        schema:
+          type: boolean
       responses:
         '202':
           description: Job re-queued
@@ -8279,11 +9469,11 @@ paths:
           description: Admin key required
         '500':
           description: Internal server error
-  /v1/partner/api-keys:
+  /api/partner/api-keys:
     post:
       tags:
       - Partner API Keys
-      summary: POST /v1/partner/api-keys
+      summary: Create partner API key
       description: 'Create a new API key for partner integrations.
 
 
@@ -8322,7 +9512,7 @@ paths:
     get:
       tags:
       - Partner API Keys
-      summary: GET /v1/partner/api-keys
+      summary: List partner API keys
       description: 'List your API keys across all circuits.
 
 
@@ -8343,11 +9533,11 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /v1/partner/api-keys/{id}:
+  /api/partner/api-keys/{id}:
     delete:
       tags:
       - Partner API Keys
-      summary: DELETE /v1/partner/api-keys/{id}
+      summary: Revoke partner API key
       description: 'Revoke (deactivate) an API key immediately.
 
 
@@ -8374,11 +9564,11 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /v1/partner/api-keys/{id}/metrics:
+  /api/partner/api-keys/{id}/metrics:
     get:
       tags:
       - Partner API Keys
-      summary: GET /v1/partner/api-keys/{id}/metrics
+      summary: Get API key usage metrics
       description: 'Get usage metrics for a specific API key.
 
 
@@ -8409,7 +9599,7 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
-  /v1/partner/routing-rules:
+  /api/partner/routing-rules:
     get:
       tags:
       - Partner Routing
@@ -8433,6 +9623,7 @@ paths:
                   $ref: '#/components/schemas/RoutingRuleResponse'
       security:
       - bearerAuth: []
+      - apiKeyAuth: []
     post:
       tags:
       - Partner Routing
@@ -8454,7 +9645,7 @@ paths:
                 $ref: '#/components/schemas/RoutingRuleResponse'
       security:
       - bearerAuth: []
-  /v1/partner/routing-rules/{id}:
+  /api/partner/routing-rules/{id}:
     delete:
       tags:
       - Partner Routing
@@ -8472,7 +9663,7 @@ paths:
           description: Routing rule deactivated
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/raw:
+  /api/partner/ingestions/raw:
     get:
       tags:
       - Partner Routing
@@ -8501,7 +9692,8 @@ paths:
                 $ref: '#/components/schemas/ListRawPayloadsResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/raw/{id}/download:
+      - apiKeyAuth: []
+  /api/partner/ingestions/raw/{id}/download:
     get:
       tags:
       - Partner Routing
@@ -8527,7 +9719,8 @@ paths:
                 type: string
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues:
+      - apiKeyAuth: []
+  /api/partner/ingestions/issues:
     get:
       tags:
       - Partner Routing
@@ -8543,7 +9736,8 @@ paths:
                 $ref: '#/components/schemas/RoutingIssuesResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/items:
+      - apiKeyAuth: []
+  /api/partner/ingestions/issues/items:
     get:
       tags:
       - Partner Routing
@@ -8576,7 +9770,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueItemsResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/{id}/assign:
+  /api/partner/ingestions/issues/{id}/assign:
     patch:
       tags:
       - Partner Routing
@@ -8605,7 +9799,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/{id}/resolve:
+  /api/partner/ingestions/issues/{id}/resolve:
     put:
       tags:
       - Partner Routing
@@ -8634,7 +9828,7 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/issues/{id}/reopen:
+  /api/partner/ingestions/issues/{id}/reopen:
     put:
       tags:
       - Partner Routing
@@ -8657,17 +9851,56 @@ paths:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
       security:
       - bearerAuth: []
-  /v1/partner/ingestions/intake:
+  /api/partner/ingestions:
     post:
       tags:
-      - Partner Routing
-      summary: '[LEGACY] Partner ingestions alias'
-      description: Legacy alias kept for backward compatibility. Use `/v1/partner/ingestions` for all new integrations.
-      deprecated: true
-      operationId: partner_intake
+      - Partner Upload
+      summary: Send data for intelligent ingestion
+      description: >-
+        Send CSV or JSON data for intelligent ingestion into DeFarm.
+        Required per row:
+        (1) `value_chain` (e.g. BEEF, DAIRY, SOY);
+        (2) one traceable asset identifier (e.g. for BEEF use `sisbov`, `chip`, or both).
+        Routing identifier is recommended (e.g. `car`, `cnpj`, `cpf`, `inscricao_estadual`/`ie`) to route directly to destination circuits.
+        If routing identifier is missing, unresolved rows can fallback to source circuit when `fallback_to_source_circuit=true`.
+        DeFarm persists the original payload, applies routing rules, and creates or updates items automatically.
+        Auth: Bearer JWT or `x-api-key` with scope `workspace_ingestion`.
+        In both cases `source_circuit_id` is optional — the staging circuit is inferred automatically.
+      operationId: create_partner_ingestion
+      parameters:
+      - name: verbose
+        in: query
+        description: When true, includes detailed operational fields in the `verbose` object.
+        required: false
+        schema:
+          type: boolean
       requestBody:
         required: true
         content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerUploadJsonRequest'
+            examples:
+              jsonArray:
+                summary: Direct JSON array body
+                value:
+                - sisbov: '105500497219983'
+                  car: MT-1234.56789.0000.00
+                  value_chain: BEEF
+              jsonEnvelope:
+                summary: JSON envelope with controls
+                value:
+                  source_circuit_id: 11111111-1111-1111-1111-111111111111
+                  template_id: 22222222-2222-2222-2222-222222222222
+                  mapping:
+                    columns:
+                      id_interno: partner_internal_id
+                      numero_sisbov: sisbov
+                  auto_create_circuit: true
+                  items:
+                  - sisbov: '105500497219983'
+                    car: MT-1234.56789.0000.00
+                    value_chain: BEEF
           multipart/form-data:
             schema:
               type: object
@@ -8680,47 +9913,28 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT or x-api-key scope=workspace_ingestion).
+                template_id:
+                  type: string
+                  format: uuid
+                  description: Optional. Applies a saved ingestion template (column mapping) before routing/tokenization.
+                mapping:
+                  type: object
+                  additionalProperties: true
+                  description: Optional inline mapping JSON. Overrides template mapping when both are provided.
                 auto_create_circuit:
                   type: boolean
                   description: Auto-create destination circuit when no routing rule matches.
+                fallback_to_source_circuit:
+                  type: boolean
+                  description: When no routing rule matches and auto_create_circuit is false, route unresolved rows to the source staging circuit instead of returning an error. Default true.
       responses:
-        '201':
-          description: Intake processed
+        '200':
+          description: Ingestion failed with actionable errors
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerIntakeResponse'
-      security:
-      - bearerAuth: []
-      - apiKeyAuth: []
-  /v1/partner/ingestions:
-    post:
-      tags:
-      - Partner Routing
-      summary: Partner ingestions (primary)
-      description: 'Primary endpoint for partner ingestion. Minimum per row is `value_chain` + traceable asset identifier (BEEF/DAIRY: SISBOV preferred or CHIP). Property/party identifiers (CAR/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/LAND_DFID/IE/CNPJ/CPF) are routing/context fields. `partner_internal_id` is recommended for reconciliation.'
-      operationId: create_partner_ingestion
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-              - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                source_circuit_id:
-                  type: string
-                  format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
-                auto_create_circuit:
-                  type: boolean
-                  description: Auto-create destination circuit when no routing rule matches.
-      responses:
         '201':
           description: Ingestion processed
           content:
@@ -8730,53 +9944,47 @@ paths:
       security:
       - bearerAuth: []
       - apiKeyAuth: []
-  /v1/partner/ingestions/intake/preview:
+  /api/partner/ingestions/preview:
     post:
       tags:
-      - Partner Routing
-      summary: '[LEGACY] Partner ingestions preview alias'
-      description: Legacy alias kept for backward compatibility. Use `/v1/partner/ingestions/preview` for all new integrations.
-      deprecated: true
-      operationId: partner_intake_preview
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-              - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                source_circuit_id:
-                  type: string
-                  format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
-                auto_create_circuit:
-                  type: boolean
-                  description: Simulate auto-creation when no routing rule matches.
-      responses:
-        '200':
-          description: Preview generated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PartnerIntakePreviewResponse'
-      security:
-      - bearerAuth: []
-      - apiKeyAuth: []
-  /v1/partner/ingestions/preview:
-    post:
-      tags:
-      - Partner Routing
-      summary: Partner ingestions preview (primary)
-      description: Primary endpoint for dry-run preview. Validates payload and simulates routing without side effects.
+      - Partner Upload
+      summary: Preview ingestion (no side effects)
+      description: >-
+        Dry-run validation of CSV/JSON data. Simulates routing outcomes without storing
+        the payload, creating circuits, or tokenizing items.
+        Each row must contain `value_chain` and one traceable asset identifier (e.g. for BEEF: `sisbov`, `chip`, or both).
+        Routing identifier is recommended (e.g. `car`, `cnpj`, `cpf`, `inscricao_estadual`/`ie`) for direct destination routing.
+        If routing identifier is missing, unresolved rows can fallback to source circuit when `fallback_to_source_circuit=true`.
+        Returns the same contract shape as ingestion (`summary`, `items`, `routes`, `errors`) with `dry_run=true`,
+        but without creating DFIDs or persisting side effects.
       operationId: preview_partner_ingestion
       requestBody:
         required: true
         content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartnerUploadJsonRequest'
+            examples:
+              jsonArray:
+                summary: Direct JSON array body
+                value:
+                - sisbov: '105500497219983'
+                  car: MT-1234.56789.0000.00
+                  value_chain: BEEF
+              jsonEnvelope:
+                summary: JSON envelope with controls
+                value:
+                  source_circuit_id: 11111111-1111-1111-1111-111111111111
+                  template_id: 22222222-2222-2222-2222-222222222222
+                  mapping:
+                    columns:
+                      id_interno: partner_internal_id
+                      numero_sisbov: sisbov
+                  auto_create_circuit: true
+                  items:
+                  - sisbov: '105500497219983'
+                    car: MT-1234.56789.0000.00
+                    value_chain: BEEF
           multipart/form-data:
             schema:
               type: object
@@ -8789,7 +9997,15 @@ paths:
                 source_circuit_id:
                   type: string
                   format: uuid
-                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT partner workspace or x-api-key scope=workspace_ingestion).
+                  description: Optional. When omitted, DeFarm infers the workspace staging circuit (JWT or x-api-key scope=workspace_ingestion).
+                template_id:
+                  type: string
+                  format: uuid
+                  description: Optional. Applies a saved ingestion template (column mapping) before routing simulation.
+                mapping:
+                  type: object
+                  additionalProperties: true
+                  description: Optional inline mapping JSON. Overrides template mapping when both are provided.
                 auto_create_circuit:
                   type: boolean
                   description: Simulate auto-creation when no routing rule matches.
@@ -8799,7 +10015,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PartnerIntakePreviewResponse'
+                $ref: '#/components/schemas/PartnerIntakeResponse'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10751,6 +11967,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/items/public/resolve/{identifier_type}/{identifier_value}:
+    get:
+      tags:
+      - Items
+      summary: Resolve public item by identifier
+      description: '**Public endpoint** - No authentication required.
+
+
+        Resolve a canonical identifier (for example `sisbov` or `chip`) to the current
+        public DeFarm item URL.
+        '
+      operationId: resolve_public_item_by_identifier
+      parameters:
+      - name: identifier_type
+        in: path
+        description: Identifier type (for example sisbov, chip, ie, cnpj, cpf).
+        required: true
+        schema:
+          type: string
+      - name: identifier_value
+        in: path
+        description: Raw identifier value. Server applies normalization rules by type.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Identifier resolved to a public item
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - dfid
+                - url
+                properties:
+                  dfid:
+                    type: string
+                    example: DFID-BEEF-BR-2026-000123-abc123
+                  url:
+                    type: string
+                    example: https://defarm.net/i/DFID-BEEF-BR-2026-000123-abc123
+        '400':
+          description: Invalid identifier type or value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Item not found or not publicly accessible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/search:
     post:
       tags:
@@ -11418,6 +12694,151 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/events/{id}/visibility:
+    put:
+      tags:
+      - Events
+      summary: PUT /events/:id/visibility
+      description: Update event visibility settings (owner/delegate/admin).
+      operationId: update_event_visibility
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventVisibilityRequest'
+      responses:
+        '200':
+          description: Event visibility updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '403':
+          description: Not owner/delegate/admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/governance:
+    get:
+      tags:
+      - Events
+      summary: GET /events/:id/governance
+      description: Returns owner metadata and active delegations for event governance controls in UI.
+      operationId: get_event_governance
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Event governance metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventGovernanceResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/delegations:
+    post:
+      tags:
+      - Events
+      summary: POST /events/:id/delegations
+      description: Grant or update delegated governance permissions for an event.
+      operationId: grant_event_delegation
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantEventDelegationRequest'
+      responses:
+        '201':
+          description: Delegation granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDelegationResponse'
+        '403':
+          description: Only owner/admin can delegate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/events/{id}/delegations/{delegation_id}:
+    delete:
+      tags:
+      - Events
+      summary: DELETE /events/:id/delegations/:delegation_id
+      description: Revoke active delegation for event governance.
+      operationId: revoke_event_delegation
+      parameters:
+      - name: id
+        in: path
+        description: Event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: delegation_id
+        in: path
+        description: Delegation ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Delegation revoked
+        '403':
+          description: Only owner/admin can revoke
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Delegation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/items/{id}/timeline:
     get:
       tags:
@@ -11723,7 +13144,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /v1/ingestion/templates:
+  /api/ingestion/templates:
     get:
       tags:
       - Items
@@ -11774,7 +13195,7 @@ paths:
           description: Missing or invalid authentication
         '403':
           description: Requires partner workspace
-  /v1/ingestion/templates/{id}:
+  /api/ingestion/templates/{id}:
     put:
       tags:
       - Items
@@ -14025,6 +15446,124 @@ paths:
           description: Unauthorized
       security:
       - bearerAuth: []
+  /api/properties/{property_dfid}/compliance:
+    get:
+      tags:
+      - Property Compliance
+      summary: Get latest compliance snapshot for a LAND property
+      operationId: get_property_compliance
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        description: LAND DFID (DFID-LAND-...)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Compliance snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyComplianceResponse'
+        '400':
+          description: Invalid property DFID
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/properties/{property_dfid}/compliance/refresh:
+    post:
+      tags:
+      - Property Compliance
+      summary: Refresh compliance snapshot for a LAND property
+      operationId: refresh_property_compliance
+      parameters:
+      - name: property_dfid
+        in: path
+        required: true
+        description: LAND DFID (DFID-LAND-...)
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshComplianceRequest'
+      responses:
+        '200':
+          description: Compliance refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertyComplianceResponse'
+        '400':
+          description: Invalid property DFID
+        '404':
+          description: LAND item without CAR
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+  /api/circuits/{id}/properties/compliance:
+    get:
+      tags:
+      - Property Compliance
+      summary: List property compliance for a circuit
+      operationId: list_circuit_property_compliance
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: active_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+      responses:
+        '200':
+          description: Circuit property compliance list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitComplianceListResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Circuit not found
+      security:
+      - bearerAuth: []
+  /api/circuits/{id}/properties/compliance/public:
+    get:
+      tags:
+      - Property Compliance
+      summary: Public property compliance for a public circuit
+      description: Returns compliance entries only when the circuit is public and `settings.public_show_compliance=true`.
+      operationId: list_circuit_property_compliance_public
+      security: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Public compliance list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitComplianceListResponse'
+        '403':
+          description: Public compliance not enabled
+        '404':
+          description: Circuit not found
   /api/properties/{property_dfid}/parties:
     post:
       tags:

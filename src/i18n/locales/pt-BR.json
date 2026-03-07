@@ -282,7 +282,34 @@
     "sideDescription": "Gerencie seus circuitos, tokenize itens e garanta compliance EUDR com a plataforma mais completa do Brasil.",
     "errorTitle": "Erro ao entrar",
     "errorDescription": "Credenciais inválidas",
-    "demoErrorTitle": "Erro no acesso Demo"
+    "demoErrorTitle": "Erro no acesso Demo",
+    "gov": {
+      "badge": "Portal Governo",
+      "title": "Infraestrutura pública para rastreabilidade interinstitucional",
+      "subtitle": "Integração operacional com PNIB, enriquecimento contínuo de dados, privacidade por contexto e compartilhamento seguro entre órgãos estaduais e entes federativos.",
+      "kpiOneTitle": "Ganhos imediatos",
+      "kpiOneDesc": "Redução de retrabalho, auditoria digital e visão operacional em tempo real.",
+      "kpiTwoTitle": "Governança de confiança",
+      "kpiTwoDesc": "Origem de dados rastreável por workspace governamental e trilha técnica validável.",
+      "accessTitle": "Acesso governamental",
+      "accessDesc": "Entre com sua conta de agência para leitura operacional e contribuição oficial.",
+      "contactPrompt": "Ainda não possui acesso governamental?",
+      "contactCta": "Falar com a DeFarm",
+      "cards": {
+        "pnibTitle": "PNIB e execução regulatória",
+        "pnibDesc": "Integre fluxos oficiais com dados de campo já tokenizados, mantendo rastreabilidade ponta a ponta.",
+        "enrichmentTitle": "Enriquecimento contínuo",
+        "enrichmentDesc": "Agências adicionam camadas de informação sem perder histórico do item nem integridade operacional.",
+        "privacyTitle": "Privacidade com controle",
+        "privacyDesc": "Visibilidade por evento e contexto, equilibrando transparência pública e sigilo institucional.",
+        "sharingTitle": "Compartilhamento federativo",
+        "sharingDesc": "Colabore entre secretarias estaduais, agências setoriais e outros entes com trilha auditável.",
+        "complianceTitle": "Conformidade verificável",
+        "complianceDesc": "Evidências técnicas de origem e atualização apoiam inspeções, auditorias e análise de risco.",
+        "whyTitle": "Por que DeFarm",
+        "whyDesc": "Plataforma já operando com parceiros de dados, contrato público estável e governança preparada para escalar."
+      }
+    }
   },
   "register": {
     "title": "Criar conta",

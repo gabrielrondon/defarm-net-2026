@@ -25,10 +25,37 @@ import {
   type AdminUser,
   type AdminWorkspace,
 } from "@/lib/api/admin-users";
+import {
+  deleteWorkspaceTrustProfile,
+  listWorkspaceTrustProfiles,
+  upsertWorkspaceTrustProfile,
+  type WorkspaceSourceType,
+  type WorkspaceTrustProfile,
+} from "@/lib/api/workspace-trust-profiles";
 
-const WORKSPACE_TYPES = ["producer", "partner", "certifier", "processor"] as const;
+const WORKSPACE_TYPES = ["producer", "partner", "certifier", "processor", "government"] as const;
 const WORKSPACE_TIERS = ["free", "basic", "pro", "enterprise"] as const;
 const USER_ROLES = ["owner", "admin", "partner", "editor", "viewer"] as const;
+const TRUST_SOURCE_TYPES: WorkspaceSourceType[] = [
+  "government",
+  "sanitary_agency",
+  "authority",
+  "certifier",
+  "partner",
+  "producer",
+  "processor",
+  "integration",
+  "manual",
+  "system",
+];
+
+function defaultTrustSourceByWorkspaceType(type: AdminWorkspace["workspace_type"]): WorkspaceSourceType {
+  if (type === "government") return "government";
+  if (type === "certifier") return "certifier";
+  if (type === "partner") return "partner";
+  if (type === "processor") return "processor";
+  return "producer";
+}
 
 export default function AdminUsers() {
   const { toast } = useToast();
@@ -36,6 +63,15 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
+  const [trustProfiles, setTrustProfiles] = useState<Record<string, WorkspaceTrustProfile>>({});
+  const [trustDrafts, setTrustDrafts] = useState<Record<string, { source_type: WorkspaceSourceType | "auto"; notes: string }>>({});
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState<string>("all");
+  const [userWorkspaceTypeFilter, setUserWorkspaceTypeFilter] = useState<string>("all");
+  const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
+  const [userAdminFilter, setUserAdminFilter] = useState<string>("all");
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState(20);
 
   const [createMode, setCreateMode] = useState<"existing" | "new">("new");
   const [newUser, setNewUser] = useState({
@@ -49,6 +85,8 @@ export default function AdminUsers() {
     workspace_name: "",
     workspace_slug: "",
     workspace_type: "producer" as (typeof WORKSPACE_TYPES)[number],
+    trust_source_type: "auto" as WorkspaceSourceType | "auto",
+    trust_notes: "",
   });
 
   const [newWorkspace, setNewWorkspace] = useState({
@@ -57,6 +95,8 @@ export default function AdminUsers() {
     owner_user_id: "",
     workspace_type: "producer" as (typeof WORKSPACE_TYPES)[number],
     tier: "free" as (typeof WORKSPACE_TIERS)[number],
+    trust_source_type: "auto" as WorkspaceSourceType | "auto",
+    trust_notes: "",
   });
 
   const loadAll = async () => {
@@ -67,9 +107,26 @@ export default function AdminUsers() {
         listAdmins(),
         listWorkspaces(),
       ]);
+      const trustResp = await listWorkspaceTrustProfiles().catch(() => [] as WorkspaceTrustProfile[]);
       setUsers(usersResp);
       setAdmins(adminsResp);
       setWorkspaces(wsResp);
+      const trustMap = trustResp.reduce<Record<string, WorkspaceTrustProfile>>((acc, profile) => {
+        acc[profile.workspace_id] = profile;
+        return acc;
+      }, {});
+      setTrustProfiles(trustMap);
+      setTrustDrafts((prev) => {
+        const next: Record<string, { source_type: WorkspaceSourceType | "auto"; notes: string }> = {};
+        for (const ws of wsResp) {
+          const profile = trustMap[ws.id];
+          next[ws.id] = {
+            source_type: profile?.source_type ?? "auto",
+            notes: profile?.notes ?? prev[ws.id]?.notes ?? "",
+          };
+        }
+        return next;
+      });
     } catch (err) {
       toast({
         title: "Erro ao carregar admin",
@@ -94,6 +151,34 @@ export default function AdminUsers() {
     () => (isPartnerRole ? workspaces.filter((w) => w.workspace_type === "partner") : workspaces),
     [workspaces, isPartnerRole]
   );
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    return users.filter((user) => {
+      if (userRoleFilter !== "all" && user.role !== userRoleFilter) return false;
+      if (userWorkspaceTypeFilter !== "all" && (user.workspace_type || "sem-workspace") !== userWorkspaceTypeFilter) {
+        return false;
+      }
+      if (userStatusFilter === "active" && !user.is_active) return false;
+      if (userStatusFilter === "inactive" && user.is_active) return false;
+      if (userAdminFilter === "admin" && !user.is_admin) return false;
+      if (userAdminFilter === "non_admin" && user.is_admin) return false;
+      if (!q) return true;
+      return (
+        (user.full_name || "").toLowerCase().includes(q) ||
+        user.email.toLowerCase().includes(q) ||
+        user.id.toLowerCase().includes(q)
+      );
+    });
+  }, [users, userSearch, userRoleFilter, userWorkspaceTypeFilter, userStatusFilter, userAdminFilter]);
+  const usersTotal = filteredUsers.length;
+  const usersTotalPages = Math.max(1, Math.ceil(usersTotal / usersPageSize));
+  const currentUsersPage = Math.min(usersPage, usersTotalPages);
+  const usersStart = usersTotal === 0 ? 0 : (currentUsersPage - 1) * usersPageSize + 1;
+  const usersEnd = Math.min(usersTotal, currentUsersPage * usersPageSize);
+  const pagedUsers = filteredUsers.slice((currentUsersPage - 1) * usersPageSize, currentUsersPage * usersPageSize);
+  useEffect(() => {
+    setUsersPage(1);
+  }, [userSearch, userRoleFilter, userWorkspaceTypeFilter, userStatusFilter, userAdminFilter, usersPageSize]);
 
   const handleCreateUser = async () => {
     if (!newUser.email) return;
@@ -162,6 +247,13 @@ export default function AdminUsers() {
           variant: "destructive",
         });
       }
+      if (createMode === "new" && newUser.trust_source_type !== "auto") {
+        await upsertWorkspaceTrustProfile(
+          res.workspace_id,
+          newUser.trust_source_type,
+          newUser.trust_notes.trim() || undefined
+        );
+      }
       setNewUser({
         full_name: "",
         email: "",
@@ -173,6 +265,8 @@ export default function AdminUsers() {
         workspace_name: "",
         workspace_slug: "",
         workspace_type: "producer",
+        trust_source_type: "auto",
+        trust_notes: "",
       });
       await loadAll();
     } catch (err) {
@@ -187,13 +281,20 @@ export default function AdminUsers() {
   const handleCreateWorkspace = async () => {
     if (!newWorkspace.name || !newWorkspace.owner_user_id) return;
     try {
-      await createWorkspace({
+      const created = await createWorkspace({
         name: newWorkspace.name,
         slug: newWorkspace.slug || undefined,
         owner_user_id: newWorkspace.owner_user_id,
         workspace_type: newWorkspace.workspace_type,
         tier: newWorkspace.tier,
       });
+      if (newWorkspace.trust_source_type !== "auto") {
+        await upsertWorkspaceTrustProfile(
+          created.id,
+          newWorkspace.trust_source_type,
+          newWorkspace.trust_notes.trim() || undefined
+        );
+      }
       toast({ title: "Workspace criado com sucesso" });
       setNewWorkspace({
         name: "",
@@ -201,6 +302,8 @@ export default function AdminUsers() {
         owner_user_id: "",
         workspace_type: "producer",
         tier: "free",
+        trust_source_type: "auto",
+        trust_notes: "",
       });
       await loadAll();
     } catch (err) {
@@ -254,10 +357,55 @@ export default function AdminUsers() {
   const handleWorkspaceType = async (ws: AdminWorkspace, workspace_type: AdminWorkspace["workspace_type"]) => {
     try {
       await updateWorkspace(ws.id, { workspace_type });
+      setTrustDrafts((prev) => {
+        const current = prev[ws.id] ?? { source_type: "auto" as const, notes: "" };
+        if (current.source_type !== "auto") return prev;
+        return {
+          ...prev,
+          [ws.id]: {
+            ...current,
+            notes: current.notes,
+          },
+        };
+      });
       await loadAll();
     } catch (err) {
       toast({
         title: "Falha ao atualizar tipo de workspace",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTrustDraftChange = (
+    workspaceId: string,
+    patch: Partial<{ source_type: WorkspaceSourceType | "auto"; notes: string }>
+  ) => {
+    setTrustDrafts((prev) => ({
+      ...prev,
+      [workspaceId]: {
+        source_type: prev[workspaceId]?.source_type ?? "auto",
+        notes: prev[workspaceId]?.notes ?? "",
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveTrustProfile = async (workspaceId: string) => {
+    const draft = trustDrafts[workspaceId];
+    if (!draft) return;
+    try {
+      if (draft.source_type === "auto") {
+        await deleteWorkspaceTrustProfile(workspaceId);
+      } else {
+        await upsertWorkspaceTrustProfile(workspaceId, draft.source_type, draft.notes.trim() || undefined);
+      }
+      await loadAll();
+      toast({ title: "Fonte de confiança atualizada" });
+    } catch (err) {
+      toast({
+        title: "Falha ao atualizar confiança",
         description: err instanceof Error ? err.message : "Erro inesperado.",
         variant: "destructive",
       });
@@ -368,7 +516,7 @@ export default function AdminUsers() {
           </div>
 
           {createMode === "new" ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
                 <Label>Nome do Workspace</Label>
                 <Input
@@ -398,6 +546,29 @@ export default function AdminUsers() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Fonte de Confiança (opcional)</Label>
+                <Select
+                  value={newUser.trust_source_type}
+                  onValueChange={(v: WorkspaceSourceType | "auto") => setNewUser((p) => ({ ...p, trust_source_type: v }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">{`auto (${defaultTrustSourceByWorkspaceType(newUser.workspace_type)})`}</SelectItem>
+                    {TRUST_SOURCE_TYPES.map((sourceType) => (
+                      <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-4">
+                <Label>Notas de confiança (opcional)</Label>
+                <Input
+                  value={newUser.trust_notes}
+                  onChange={(e) => setNewUser((p) => ({ ...p, trust_notes: e.target.value }))}
+                  placeholder="Ex.: órgão oficial estadual (IAGRO)"
+                />
               </div>
             </div>
           ) : (
@@ -455,8 +626,84 @@ export default function AdminUsers() {
         <CardHeader>
           <CardTitle>Usuários</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {users.map((user) => (
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <Input
+              placeholder="Buscar por nome, e-mail ou id"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="md:col-span-2"
+            />
+            <Select value={userRoleFilter} onValueChange={setUserRoleFilter}>
+              <SelectTrigger><SelectValue placeholder="Role" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas roles</SelectItem>
+                {USER_ROLES.map((role) => (
+                  <SelectItem key={role} value={role}>{role}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={userWorkspaceTypeFilter} onValueChange={setUserWorkspaceTypeFilter}>
+              <SelectTrigger><SelectValue placeholder="Tipo workspace" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos tipos</SelectItem>
+                {WORKSPACE_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+                <SelectItem value="sem-workspace">sem-workspace</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={userStatusFilter} onValueChange={setUserStatusFilter}>
+              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos status</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="inactive">Inativos</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={userAdminFilter} onValueChange={setUserAdminFilter}>
+              <SelectTrigger><SelectValue placeholder="Admin flag" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="admin">Somente admins</SelectItem>
+                <SelectItem value="non_admin">Somente não-admins</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <p>
+              Exibindo {usersStart}-{usersEnd} de {usersTotal}
+            </p>
+            <div className="flex items-center gap-2">
+              <Select value={String(usersPageSize)} onValueChange={(v) => setUsersPageSize(Number(v))}>
+                <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10/página</SelectItem>
+                  <SelectItem value="20">20/página</SelectItem>
+                  <SelectItem value="50">50/página</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentUsersPage <= 1}
+                onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentUsersPage >= usersTotalPages}
+                onClick={() => setUsersPage((p) => Math.min(usersTotalPages, p + 1))}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+
+          {pagedUsers.map((user) => (
             <div key={user.id} className="border rounded-md p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <p className="font-medium">{user.full_name || "Sem nome"} <span className="text-xs text-muted-foreground">({user.email})</span></p>
@@ -484,6 +731,11 @@ export default function AdminUsers() {
               </div>
             </div>
           ))}
+          {pagedUsers.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhum usuário encontrado para os filtros atuais.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -491,7 +743,7 @@ export default function AdminUsers() {
         <CardHeader>
           <CardTitle>Criar Workspace</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div>
             <Label>Nome</Label>
             <Input
@@ -550,7 +802,32 @@ export default function AdminUsers() {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-5">
+          <div>
+            <Label>Fonte de Confiança (opcional)</Label>
+            <Select
+              value={newWorkspace.trust_source_type}
+              onValueChange={(v: WorkspaceSourceType | "auto") =>
+                setNewWorkspace((p) => ({ ...p, trust_source_type: v }))
+              }
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">{`auto (${defaultTrustSourceByWorkspaceType(newWorkspace.workspace_type)})`}</SelectItem>
+                {TRUST_SOURCE_TYPES.map((sourceType) => (
+                  <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-6">
+            <Label>Notas de confiança (opcional)</Label>
+            <Input
+              value={newWorkspace.trust_notes}
+              onChange={(e) => setNewWorkspace((p) => ({ ...p, trust_notes: e.target.value }))}
+              placeholder="Ex.: integração oficial de agência sanitária"
+            />
+          </div>
+          <div className="md:col-span-6">
             <Button onClick={handleCreateWorkspace}>Criar Workspace</Button>
           </div>
         </CardContent>
@@ -566,8 +843,11 @@ export default function AdminUsers() {
               <div>
                 <p className="font-medium">{ws.name} <span className="text-xs text-muted-foreground">({ws.slug})</span></p>
                 <p className="text-xs text-muted-foreground">owner: {ws.owner_email || ws.owner_id}</p>
+                <p className="text-xs text-muted-foreground">
+                  confiança ativa: {trustProfiles[ws.id]?.source_type ?? `auto (${defaultTrustSourceByWorkspaceType(ws.workspace_type)})`}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline">{ws.tier}</Badge>
                 <Select value={ws.workspace_type} onValueChange={(v: AdminWorkspace["workspace_type"]) => handleWorkspaceType(ws, v)}>
                   <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -577,6 +857,27 @@ export default function AdminUsers() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Select
+                  value={trustDrafts[ws.id]?.source_type ?? "auto"}
+                  onValueChange={(v: WorkspaceSourceType | "auto") => handleTrustDraftChange(ws.id, { source_type: v })}
+                >
+                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">{`auto (${defaultTrustSourceByWorkspaceType(ws.workspace_type)})`}</SelectItem>
+                    {TRUST_SOURCE_TYPES.map((sourceType) => (
+                      <SelectItem key={sourceType} value={sourceType}>{sourceType}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={trustDrafts[ws.id]?.notes ?? ""}
+                  onChange={(e) => handleTrustDraftChange(ws.id, { notes: e.target.value })}
+                  placeholder="nota (opcional)"
+                  className="w-56"
+                />
+                <Button variant="outline" onClick={() => handleSaveTrustProfile(ws.id)}>
+                  Salvar confiança
+                </Button>
               </div>
             </div>
           ))}

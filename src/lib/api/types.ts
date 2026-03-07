@@ -740,6 +740,29 @@ export interface CanonicalIdentifierResponse {
   created_at: string;
 }
 
+export interface ValueChainPolicy {
+  id: string;
+  code: string;
+  display_name: string;
+  is_active: boolean;
+  is_test_only: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateValueChainPolicyRequest {
+  code: string;
+  display_name: string;
+  is_active?: boolean;
+  is_test_only?: boolean;
+}
+
+export interface UpdateValueChainPolicyRequest {
+  display_name?: string;
+  is_active?: boolean;
+  is_test_only?: boolean;
+}
+
 export interface CreateCanonicalIdentifierRequest {
   value_chain: string;
   identifier_type: string;
@@ -1025,6 +1048,37 @@ export interface PublicItem {
   metadata?: Record<string, unknown> | null;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface PublicCanonicalIdentifier {
+  identifier_type: string;
+  value: string;
+}
+
+export interface PublicIdentityAnchor {
+  transaction_hash: string;
+  chain_type: string;
+  anchor_type: string;
+  status: string;
+  anchored_at: string;
+}
+
+export interface PublicContentVersion {
+  version: number;
+  cid: string;
+  status: string;
+  uploaded_at: string;
+  gateway_url: string;
+  is_latest: boolean;
+}
+
+export interface PublicItemProofs {
+  dfid: string;
+  item_id: string;
+  identity_anchor?: PublicIdentityAnchor | null;
+  nft_mint_anchor?: PublicIdentityAnchor | null;
+  content_versions: PublicContentVersion[];
+  cid_update_events_count: number;
 }
 
 export interface PublicItemEvent {

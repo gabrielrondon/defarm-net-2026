@@ -1,10 +1,40 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Mail, MapPin } from "lucide-react";
+import { CheckCircle2, Mail, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { GATEWAY_BASE } from "@/lib/api/client";
 
 const Contato = () => {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    company: "",
+    role: "",
+    website: "",
+    message: "",
+  });
+
+  const profileOptions = [
+    { value: "erp", label: "ERP" },
+    { value: "agregador_dados", label: "Agregador de dados" },
+    { value: "parceiro_dados", label: "Parceiro de dados" },
+    { value: "certificador", label: "Certificador / OESA" },
+    { value: "processador", label: "Processador / Frigorífico" },
+    { value: "governo_agencia", label: "Governo / Agência" },
+    { value: "produtor", label: "Produtor" },
+    { value: "outro", label: "Outro" },
+  ] as const;
 
   const contactInfo = [
     {
@@ -20,6 +50,53 @@ const Contato = () => {
       href: "#",
     },
   ];
+
+  const onChange = (field: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const submitContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha nome, e-mail e mensagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${GATEWAY_BASE}/auth/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          company: form.company.trim() || null,
+          role: form.role.trim() || null,
+          website: form.website.trim() || null,
+          message: form.message.trim(),
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.message || `Falha no envio (${res.status})`);
+      }
+
+      setSubmitted(true);
+      setForm({ name: "", email: "", company: "", role: "", website: "", message: "" });
+    } catch (err) {
+      toast({
+        title: "Falha ao enviar",
+        description: err instanceof Error ? err.message : "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -42,7 +119,7 @@ const Contato = () => {
         {/* Contact Section */}
         <section className="pb-20">
           <div className="section-container">
-            <div className="max-w-xl mx-auto">
+            <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-8">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground mb-4">
@@ -72,6 +149,99 @@ const Contato = () => {
                     </a>
                   ))}
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-border/70 bg-card p-6">
+                <h3 className="text-xl font-bold text-foreground mb-2">Fale com a DeFarm</h3>
+                <p className="text-sm text-muted-foreground mb-5">
+                  Para onboarding de parceiros, integrações ERP/agregadores e dúvidas comerciais.
+                </p>
+                {submitted ? (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                      <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-emerald-900">Mensagem enviada com sucesso</h4>
+                    <p className="mt-2 text-sm text-emerald-800">
+                      Recebemos seu contato. Nossa equipe responderá em breve.
+                    </p>
+                  </div>
+                ) : (
+                  <form className="space-y-4" onSubmit={submitContact}>
+                    <div className="hidden" aria-hidden="true">
+                      <Label htmlFor="contact-website">Website</Label>
+                      <Input
+                        id="contact-website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={form.website}
+                        onChange={(e) => onChange("website", e.target.value)}
+                        placeholder="Deixe este campo vazio"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-name">Nome *</Label>
+                      <Input
+                        id="contact-name"
+                        value={form.name}
+                        onChange={(e) => onChange("name", e.target.value)}
+                        placeholder="Seu nome completo"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-email">E-mail *</Label>
+                      <Input
+                        id="contact-email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => onChange("email", e.target.value)}
+                        placeholder="voce@empresa.com"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-company">Empresa</Label>
+                        <Input
+                          id="contact-company"
+                          value={form.company}
+                          onChange={(e) => onChange("company", e.target.value)}
+                          placeholder="Nome da empresa"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-role">Perfil</Label>
+                        <Select value={form.role || "outro"} onValueChange={(value) => onChange("role", value)}>
+                          <SelectTrigger id="contact-role">
+                            <SelectValue placeholder="Selecione um perfil" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {profileOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contact-message">Mensagem *</Label>
+                      <Textarea
+                        id="contact-message"
+                        value={form.message}
+                        onChange={(e) => onChange("message", e.target.value)}
+                        placeholder="Descreva sua necessidade e contexto de integração."
+                        rows={6}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Enviando..." : "Enviar mensagem"}
+                    </Button>
+                  </form>
+                )}
               </div>
             </div>
           </div>
