@@ -16,9 +16,9 @@
       "cta": "Começar agora",
       "secondaryCta": "Ver como funciona",
       "stats": {
-        "0": { "value": "20.000+", "label": "Gados rastreados" },
-        "1": { "value": "143", "label": "Produtores ativos" },
-        "2": { "value": "98%", "label": "Satisfação" }
+        "0": { "value": "<5 min", "label": "Tokenização por ativo" },
+        "1": { "value": "99.9%", "label": "Uptime da API" },
+        "2": { "value": "2", "label": "Blockchains suportadas" }
       },
       "features": {
         "0": "Blockchain imutável",
