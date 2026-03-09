@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/tooltip";
 
 const partners = [
-  { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: "https://esalqtec.com.br/incubadas-e-associadas/" },
-  { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined },
-  { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net" },
-  { name: "Cow Pro", logo: cowproLogo, relationKey: "cowpro" as const, url: undefined },
-  { name: "Gerbov", logo: gerbovLogo, relationKey: "gerbov" as const, url: "https://gerbov.com.br" },
+  { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: "https://esalqtec.com.br/incubadas-e-associadas/", height: "h-9" },
+  { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined, height: "h-10" },
+  { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net", height: "h-8" },
+  { name: "Cow Pro", logo: cowproLogo, relationKey: "cowpro" as const, url: undefined, height: "h-8" },
+  { name: "Gerbov", logo: gerbovLogo, relationKey: "gerbov" as const, url: "https://gerbov.com.br", height: "h-9" },
 ];
 
 export function PartnersSection() {
