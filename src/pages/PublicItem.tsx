@@ -52,6 +52,7 @@ import {
   REAL_LIFE_EVENT_TYPES,
 } from "@/components/item-detail/constants";
 import logoIcon from "@/assets/logo-icon.png";
+import cowproLogo from "@/assets/partners/cowpro.png";
 import { AssetQRCode } from "@/components/AssetQRCode";
 import type { PublicItemEvent } from "@/lib/api/types";
 import type { CheckResponse } from "@/lib/check-api/types";
@@ -118,9 +119,19 @@ type NormalizedMetadataEntry = {
 };
 
 type MetadataGroupKey = "identification" | "movement" | "weighing" | "documents" | "other";
+type ProofOfLifeEvent = {
+  eventId: string;
+  occurredAt: string;
+  latitude: number | null;
+  longitude: number | null;
+  activityStatus?: string;
+  signalQuality?: string;
+  deviceId?: string;
+};
 
 const WEIGHT_KEYS = ["weight_kg", "peso_kg", "weight", "peso"];
 const WEIGHT_DATE_KEYS = ["data_peso", "weight_date", "data_pesagem", "date", "occurred_at"];
+const DEFAULT_PROOF_OF_LIFE_EXPECTED_30D = 4;
 
 const METADATA_GROUP_ORDER: MetadataGroupKey[] = [
   "identification",
@@ -450,6 +461,47 @@ function trustBadge(level?: string | null, score?: number | null): { text: strin
   return { text: "Confiança n/d", className: "bg-muted text-muted-foreground" };
 }
 
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function toTitle(value?: string): string {
+  if (!value) return "Unknown";
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+}
+
+function formatUtcDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const iso = date.toISOString();
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+}
+
+function toProofOfLifeEvent(event: PublicItemEvent): ProofOfLifeEvent | null {
+  if (event.event_type !== "custom") return null;
+  const payload = (event.payload || {}) as Record<string, unknown>;
+  if (payload.custom_type !== "proof_of_life") return null;
+
+  const occurredAtRaw = typeof payload.occurred_at === "string" ? payload.occurred_at : event.created_at;
+  const occurredAt = new Date(occurredAtRaw);
+  if (Number.isNaN(occurredAt.getTime())) return null;
+
+  return {
+    eventId: event.id,
+    occurredAt: occurredAt.toISOString(),
+    latitude: toNumber(payload.latitude),
+    longitude: toNumber(payload.longitude),
+    activityStatus: typeof payload.activity_status === "string" ? payload.activity_status : undefined,
+    signalQuality: typeof payload.signal_quality === "string" ? payload.signal_quality : undefined,
+    deviceId: typeof payload.device_id === "string" ? payload.device_id : undefined,
+  };
+}
+
 export default function PublicItem() {
   const { dfid, identifierType, identifierValue } = useParams<{
     dfid?: string;
@@ -479,6 +531,7 @@ export default function PublicItem() {
   const [showIdentityDialog, setShowIdentityDialog] = useState(false);
   const [showCidDialog, setShowCidDialog] = useState(false);
   const [showCircuitsDialog, setShowCircuitsDialog] = useState(false);
+  const [showProofOfLifeDialog, setShowProofOfLifeDialog] = useState(false);
   const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem("public_item_locale") : null;
     return stored === "en" ? "en" : "pt-BR";
@@ -801,6 +854,38 @@ export default function PublicItem() {
     return Array.from(new Set(ids));
   }, [events]);
 
+  const proofOfLifeEvents = useMemo<ProofOfLifeEvent[]>(() => {
+    return events
+      .map(toProofOfLifeEvent)
+      .filter((event): event is ProofOfLifeEvent => !!event)
+      .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+  }, [events]);
+
+  const latestProofOfLife = proofOfLifeEvents[0] || null;
+
+  const proofOfLife30Days = useMemo(() => {
+    const nowMs = Date.now();
+    const threshold = nowMs - 30 * 24 * 60 * 60 * 1000;
+    return proofOfLifeEvents.filter((event) => new Date(event.occurredAt).getTime() >= threshold).length;
+  }, [proofOfLifeEvents]);
+
+  const proofOfLifeExpected30Days = useMemo(() => {
+    if (!latestProofOfLife) return DEFAULT_PROOF_OF_LIFE_EXPECTED_30D;
+    const fromPayload = events.find((event) => event.id === latestProofOfLife.eventId)?.payload as
+      | Record<string, unknown>
+      | undefined;
+    const expected = toNumber(fromPayload?.expected_checkins_30d);
+    return expected && expected > 0 ? Math.floor(expected) : DEFAULT_PROOF_OF_LIFE_EXPECTED_30D;
+  }, [events, latestProofOfLife]);
+
+  const proofOfLifeStatusLabel = useMemo(() => {
+    if (!latestProofOfLife) return "Unknown";
+    const isActive = latestProofOfLife.activityStatus?.toLowerCase() === "active";
+    const hasLocation = latestProofOfLife.latitude !== null && latestProofOfLife.longitude !== null;
+    if (isActive && hasLocation) return "Active & Located";
+    return toTitle(latestProofOfLife.activityStatus);
+  }, [latestProofOfLife]);
+
   const carAuthExpired = useMemo(() => {
     if (!carError) return false;
     const msg = carError.toLowerCase();
@@ -1003,6 +1088,56 @@ export default function PublicItem() {
             identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
             latestCid={latestContentVersion?.cid || undefined}
           />
+        )}
+
+        {latestProofOfLife && (
+          <section className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/60 p-5">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-base font-semibold text-emerald-900">🟢 Proof of Life</p>
+                <p className="text-xs text-emerald-700 mt-1">
+                  Last check-in: {formatUtcDateTime(latestProofOfLife.occurredAt)}
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 border border-emerald-200 px-2.5 py-1">
+                <span className="text-[11px] uppercase tracking-wide text-emerald-700">by</span>
+                <img src={cowproLogo} alt="CowPro" className="h-4 w-auto object-contain" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+              <p className="text-emerald-900">
+                <span className="font-medium">Location:</span>{" "}
+                {latestProofOfLife.latitude !== null && latestProofOfLife.longitude !== null
+                  ? `${latestProofOfLife.latitude.toFixed(4)}, ${latestProofOfLife.longitude.toFixed(4)}`
+                  : "Unavailable"}
+              </p>
+              <p className="text-emerald-900">
+                <span className="font-medium">Status:</span> {proofOfLifeStatusLabel}
+              </p>
+              <p className="text-emerald-900">
+                <span className="font-medium">Signal:</span> {toTitle(latestProofOfLife.signalQuality)}
+              </p>
+              <p className="text-emerald-900">
+                <span className="font-medium">Device:</span> {latestProofOfLife.deviceId || "Unknown"}
+              </p>
+            </div>
+            <div className="mt-3 border-t border-emerald-200/80 pt-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm text-emerald-900">
+                  <span className="font-medium">Last 30 days:</span> {proofOfLife30Days}/{proofOfLifeExpected30Days} check-ins{" "}
+                  {proofOfLife30Days >= proofOfLifeExpected30Days ? "✓" : ""}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                  onClick={() => setShowProofOfLifeDialog(true)}
+                >
+                  Ver localizações
+                </Button>
+              </div>
+            </div>
+          </section>
         )}
 
         {visibleMetadataEntries.length > 0 && (
@@ -1583,6 +1718,42 @@ export default function PublicItem() {
                   <span className="font-mono text-xs break-all">{circuitId}</span>
                   <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 </a>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showProofOfLifeDialog} onOpenChange={setShowProofOfLifeDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Proof of Life · CowPro</DialogTitle>
+            <DialogDescription>Últimos check-ins públicos (mais recente primeiro).</DialogDescription>
+          </DialogHeader>
+
+          {proofOfLifeEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum check-in encontrado para este item.</p>
+          ) : (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+              {proofOfLifeEvents.map((checkin, index) => (
+                <div key={`${checkin.eventId}-${index}`} className="rounded-lg border border-border p-3 space-y-1">
+                  <p className="text-xs text-muted-foreground">{formatUtcDateTime(checkin.occurredAt)}</p>
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Location:</span>{" "}
+                    {checkin.latitude !== null && checkin.longitude !== null
+                      ? `${checkin.latitude.toFixed(4)}, ${checkin.longitude.toFixed(4)}`
+                      : "Unavailable"}
+                  </p>
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Status:</span> {toTitle(checkin.activityStatus)}
+                  </p>
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Signal:</span> {toTitle(checkin.signalQuality)}
+                  </p>
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Device:</span> {checkin.deviceId || "Unknown"}
+                  </p>
+                </div>
               ))}
             </div>
           )}
