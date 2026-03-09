@@ -1093,9 +1093,19 @@ export default function PublicItem() {
         {latestProofOfLife && (
           <section className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/60 p-5">
             <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="text-base font-semibold text-emerald-900">🟢 Proof of Life</p>
-                <p className="text-xs text-emerald-700 mt-1">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative inline-flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500/45 motion-safe:animate-ping" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-600 ring-2 ring-emerald-100" />
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white/90 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-emerald-800">
+                    <Activity className="h-3 w-3" />
+                    Live telemetry
+                  </span>
+                </div>
+                <p className="text-base font-semibold text-emerald-950">Proof of Life</p>
+                <p className="text-xs text-emerald-700">
                   Last check-in: {formatUtcDateTime(latestProofOfLife.occurredAt)}
                 </p>
               </div>
