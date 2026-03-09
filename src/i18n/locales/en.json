@@ -16,7 +16,7 @@
       "cta": "Get Started",
       "secondaryCta": "See how it works",
       "stats": {
-        "0": { "value": "<5 min", "label": "Tokenization per asset" },
+        "0": { "value": "<1 min", "label": "Tokenization per asset" },
         "1": { "value": "99.9%", "label": "API uptime" },
         "2": { "value": "2", "label": "Blockchains supported" }
       },
