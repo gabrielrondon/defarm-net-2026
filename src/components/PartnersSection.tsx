@@ -3,6 +3,7 @@ import esalqtecLogo from "@/assets/partners/esalqtec.png";
 import stellarLogo from "@/assets/partners/stellar.png";
 import rbbLogo from "@/assets/partners/rbb.png";
 import cowproLogo from "@/assets/partners/cowpro.png";
+import gerbovLogo from "@/assets/partners/gerbov.png";
 import {
   Tooltip,
   TooltipContent,
@@ -15,6 +16,7 @@ const partners = [
   { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined },
   { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net" },
   { name: "Cow Pro", logo: cowproLogo, relationKey: "cowpro" as const, url: undefined },
+  { name: "Gerbov", logo: gerbovLogo, relationKey: "gerbov" as const, url: "https://gerbov.com.br" },
 ];
 
 export function PartnersSection() {
