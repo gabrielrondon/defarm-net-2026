@@ -16,9 +16,9 @@
       "cta": "Get Started",
       "secondaryCta": "See how it works",
       "stats": {
-        "0": { "value": "20,000+", "label": "Cattle traced" },
-        "1": { "value": "143", "label": "Active producers" },
-        "2": { "value": "98%", "label": "Satisfaction" }
+        "0": { "value": "<1 min", "label": "Tokenization per asset" },
+        "1": { "value": "99.9%", "label": "API uptime" },
+        "2": { "value": "2", "label": "Blockchains supported" }
       },
       "features": {
         "0": "Immutable blockchain",
@@ -502,6 +502,7 @@
     "esalqtec": "Associate member",
     "stellar": "Support grant",
     "rbb": "Observer node",
-    "cowpro": "Data Partner: Proof of Life"
+    "cowpro": "Data Partner: Proof of Life",
+    "gerbov": "Data Partner: ERP"
   }
 }

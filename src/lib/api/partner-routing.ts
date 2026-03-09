@@ -1,4 +1,5 @@
 import { buildQueryString, registryFileRequest, registryPublicRequest, registryRequest } from "./client";
+import type { Circuit } from "./types";
 
 export interface RoutingRule {
   id: string;
@@ -208,6 +209,26 @@ export interface EmbedPortfolioResponse {
     recent_items: Record<string, unknown>[];
   };
   recent_event_proofs: EmbedEventProof[];
+}
+
+export interface DefaultCircuitResponse {
+  circuit_id: string;
+  name: string;
+  is_staging: boolean;
+  source: "ApiKeyMetadata" | "PartnerStagingFlag" | "Fallback" | "WorkspaceSetting";
+  workspace_id: string;
+  changed: boolean;
+}
+
+export async function getPartnerDefaultCircuit(): Promise<DefaultCircuitResponse> {
+  return registryRequest<DefaultCircuitResponse>("/partner/default-circuit");
+}
+
+export async function updatePartnerDefaultCircuit(circuitId: string): Promise<DefaultCircuitResponse> {
+  return registryRequest<DefaultCircuitResponse>("/partner/default-circuit", {
+    method: "PUT",
+    body: JSON.stringify({ circuit_id: circuitId }),
+  });
 }
 
 export async function listRoutingRules(identifierType?: string): Promise<RoutingRule[]> {

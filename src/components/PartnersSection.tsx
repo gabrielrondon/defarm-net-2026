@@ -3,6 +3,7 @@ import esalqtecLogo from "@/assets/partners/esalqtec.png";
 import stellarLogo from "@/assets/partners/stellar.png";
 import rbbLogo from "@/assets/partners/rbb.png";
 import cowproLogo from "@/assets/partners/cowpro.png";
+import gerbovLogo from "@/assets/partners/gerbov.png";
 import {
   Tooltip,
   TooltipContent,
@@ -11,10 +12,11 @@ import {
 } from "@/components/ui/tooltip";
 
 const partners = [
-  { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: "https://esalqtec.com.br/incubadas-e-associadas/" },
-  { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined },
-  { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net" },
-  { name: "Cow Pro", logo: cowproLogo, relationKey: "cowpro" as const, url: undefined },
+  { name: "EsalqTec", logo: esalqtecLogo, relationKey: "esalqtec" as const, url: "https://esalqtec.com.br/incubadas-e-associadas/", height: "h-10" },
+  { name: "Stellar Development Foundation", logo: stellarLogo, relationKey: "stellar" as const, url: undefined, height: "h-10" },
+  { name: "Rede Blockchain Brasil", logo: rbbLogo, relationKey: "rbb" as const, url: "https://rbb.defarm.net", height: "h-10" },
+  { name: "Cow Pro", logo: cowproLogo, relationKey: "cowpro" as const, url: undefined, height: "h-7" },
+  { name: "Gerbov", logo: gerbovLogo, relationKey: "gerbov" as const, url: "https://gerbov.com.br", height: "h-9" },
 ];
 
 export function PartnersSection() {
@@ -38,7 +40,7 @@ export function PartnersSection() {
                   <img
                     src={partner.logo}
                     alt={partner.name}
-                    className="h-10 w-auto object-contain max-w-[180px]"
+                    className={`${partner.height} w-auto object-contain max-w-[160px]`}
                   />
                 </div>
               );
