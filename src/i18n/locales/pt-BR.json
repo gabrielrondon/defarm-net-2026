@@ -16,7 +16,7 @@
       "cta": "Começar agora",
       "secondaryCta": "Ver como funciona",
       "stats": {
-        "0": { "value": "<5 min", "label": "Tokenização por ativo" },
+        "0": { "value": "<1 min", "label": "Tokenização por ativo" },
         "1": { "value": "99.9%", "label": "Uptime da API" },
         "2": { "value": "2", "label": "Blockchains suportadas" }
       },
