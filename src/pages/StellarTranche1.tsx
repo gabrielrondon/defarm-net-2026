@@ -518,7 +518,31 @@ const StellarTranche1 = () => {
         {/* Demo script + links */}
         <section className="py-16 bg-muted/40 border-y">
           <div className="section-container">
-            <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-6">
+            <div className="max-w-5xl mx-auto space-y-6">
+              <Card className="overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Rocket className="h-5 w-5 text-primary" /> Recorded tranche 1 demo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Public video walkthrough of the tranche 1 operational flow: CLI, SDK, item ingestion, events, and proof-ready timeline.
+                  </p>
+                  <div className="aspect-video w-full overflow-hidden rounded-xl border bg-black">
+                    <iframe
+                      className="h-full w-full"
+                      src="https://www.youtube.com/embed/nqwb729goEg"
+                      title="DeFarm Stellar Tranche 1 demo"
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="grid lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl flex items-center gap-2"><Rocket className="h-5 w-5 text-primary" /> Live demo script (10 min)</CardTitle>
@@ -545,11 +569,15 @@ const StellarTranche1 = () => {
                   <Link className="flex items-center gap-2 text-primary hover:underline" to="/stellar">
                     Grant overview page <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
+                  <a className="flex items-center gap-2 text-primary hover:underline" href="https://youtu.be/nqwb729goEg" target="_blank" rel="noopener noreferrer">
+                    Tranche 1 demo video <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
                   <p className="text-muted-foreground pt-1">
                     Technical docs: <code className="text-xs bg-muted px-1.5 py-0.5 rounded">engines/docs/partner/quickstart-cli-sdk.md</code>
                   </p>
                 </CardContent>
               </Card>
+            </div>
             </div>
           </div>
         </section>

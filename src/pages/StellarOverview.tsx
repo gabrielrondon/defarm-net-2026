@@ -148,6 +148,27 @@ const StellarOverview = () => {
           </div>
         </section>
 
+        <section className="py-10">
+          <div className="section-container">
+            <div className="max-w-5xl mx-auto">
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="pt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-primary">Start here</p>
+                    <h2 className="text-2xl font-bold">Want to see the completed MVP?</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Open the Tranche 1 page to view the shipped CLI, SDK, live workflow, and recorded demo.
+                    </p>
+                  </div>
+                  <Button asChild className="btn-offset shrink-0">
+                    <Link to="/stellar/tranche1">See Tranche 1 <ArrowRight className="h-4 w-4" /></Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Architecture */}
         <section className="py-16">
           <div className="section-container">
