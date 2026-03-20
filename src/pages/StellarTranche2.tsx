@@ -140,7 +140,7 @@ const StellarTranche2 = () => {
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild className="btn-offset">
-                  <a href="#playground">Jump to tranche2 playground <ArrowRight className="h-4 w-4" /></a>
+                  <a href="#examples">Jump to tranche2 code examples <ArrowRight className="h-4 w-4" /></a>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/stellar">Back to grant overview</Link>
@@ -236,11 +236,11 @@ const StellarTranche2 = () => {
           </div>
         </section>
 
-        <section id="playground" className="py-16">
+        <section id="examples" className="py-16">
           <div className="section-container">
             <div className="max-w-5xl mx-auto">
-              <h2 className="text-3xl font-bold mb-2">Tranche 2 playground</h2>
-              <p className="text-muted-foreground mb-8">Core command groups for selective disclosure, receipts, and Soroban testnet anchoring.</p>
+              <h2 className="text-3xl font-bold mb-2">Tranche 2 code examples</h2>
+              <p className="text-muted-foreground mb-8">Reference commands for selective disclosure, receipts, and Soroban testnet anchoring.</p>
 
               <div className="grid lg:grid-cols-3 gap-6 mb-10">
                 <Card className="border-primary/20">

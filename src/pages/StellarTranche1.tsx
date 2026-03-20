@@ -96,10 +96,23 @@ npx @defarm/cli events list --circuit <circuit_id>`,
   {
     title: "Run bulk ingest and publish evidence",
     goal: "Move from single-item test to partner-scale flow and generate delivery evidence.",
-    commands: `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
+    commands: `curl -X POST "https://gateway.defarm.net/v1/partner/ingestions" \\
   -H "x-api-key: <partner_api_key>" \\
   -H "Content-Type: application/json" \\
-  -d '{ "circuit_id":"<circuit_id>", "items":[{ "value_chain":"BEEF","country":"BR","year":2026,"identifiers":[{"identifier_type":"sisbov","identifier_value":"105500497219983"}],"metadata":{"source":"partner_bulk"}} ] }'
+  -d '{
+    "source_circuit_id":"<circuit_id>",
+    "fallback_to_source_circuit": true,
+    "auto_create_circuit": true,
+    "items":[
+      {
+        "value_chain":"BEEF",
+        "country":"BR",
+        "year":"2026",
+        "sisbov":"105500497219983",
+        "source":"partner_bulk"
+      }
+    ]
+  }'
 
 # Optional UI checks
 # /app/circuitos/<circuit_id>
@@ -157,24 +170,21 @@ npm install @defarm/sdk
 defarm workspace init --gateway https://gateway.defarm.net
 defarm auth login --email <partner_email> --password '<partner_password>'`;
 
-const apiSnippet = `curl -X POST "https://gateway.defarm.net/api/items/bulk" \\
-  -H "Authorization: Bearer <token>" \\
+const apiSnippet = `curl -X POST "https://gateway.defarm.net/v1/partner/ingestions" \\
+  -H "x-api-key: <partner_api_key>" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "circuit_id": "<uuid>",
+    "source_circuit_id": "<uuid>",
+    "fallback_to_source_circuit": true,
+    "auto_create_circuit": true,
     "items": [
       {
         "value_chain": "BEEF",
         "country": "BR",
-        "year": 2026,
-        "identifiers": [
-          { "identifier_type": "sisbov",
-            "identifier_value": "105500497219983" }
-        ],
-        "metadata": {
-          "source": "partner",
-          "lot": "Calves - Serra"
-        }
+        "year": "2026",
+        "sisbov": "105500497219983",
+        "source": "partner",
+        "lot": "Calves - Serra"
       }
     ]
   }'`;
@@ -196,18 +206,21 @@ sdk.setApiKey(process.env.DEFARM_API_KEY!);
 const circuits = await sdk.circuits.list();
 const circuit = circuits[0];
 
-// Create an item
-const item = await sdk.items.create({
-  value_chain: "BEEF",
-  country: "BR",
-  year: 2026,
-  circuit_id: circuit.id,
-  metadata: {
-    canonical_type: "sisbov",
-    canonical_id: "105500497219983",
+// Create or enrich an item through the partner ingestion flow
+const ingestion = await sdk.items.createViaIngestion({
+  source_circuit_id: circuit.id,
+  fallback_to_source_circuit: true,
+  auto_create_circuit: true,
+  items: [{
+    value_chain: "BEEF",
+    country: "BR",
+    year: "2026",
+    sisbov: "105500497219983",
     source: "partner",
-  },
+  }],
 });
+
+const item = ingestion.items[0];
 
 // Record a vaccination event
 await sdk.events.add({
@@ -310,12 +323,42 @@ const StellarTranche1 = () => {
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild className="btn-offset">
-                  <a href="#playground">Jump to playground <ArrowRight className="h-4 w-4" /></a>
+                  <a href="#examples">Jump to code examples <ArrowRight className="h-4 w-4" /></a>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/stellar">Back to grant overview</Link>
                 </Button>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12">
+          <div className="section-container">
+            <div className="max-w-5xl mx-auto">
+              <Card className="overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Rocket className="h-5 w-5 text-primary" /> Recorded tranche 1 demo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Public video walkthrough of the tranche 1 operational flow: CLI, SDK, item ingestion, events, and proof-ready timeline.
+                  </p>
+                  <div className="aspect-video w-full overflow-hidden rounded-xl border bg-black">
+                    <iframe
+                      className="h-full w-full"
+                      src="https://www.youtube.com/embed/nqwb729goEg"
+                      title="DeFarm Stellar Tranche 1 demo"
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
@@ -414,8 +457,8 @@ const StellarTranche1 = () => {
           </div>
         </section>
 
-        {/* Playground */}
-        <section id="playground" className="py-16">
+        {/* Code examples */}
+        <section id="examples" className="py-16">
           <div className="section-container">
             <div className="max-w-5xl mx-auto">
               <h2 className="text-3xl font-bold mb-2">Install on any laptop (real setup)</h2>
@@ -454,9 +497,9 @@ const StellarTranche1 = () => {
 
               <CodeBlock code={installSnippet} language="bash" />
 
-              <h2 className="text-3xl font-bold mb-2">Interactive playground</h2>
+              <h2 className="text-3xl font-bold mb-2">Code examples</h2>
               <p className="text-muted-foreground mb-8">
-                Three ways to integrate — pick the one that fits your workflow and try the commands below.
+                Three ways to integrate. Use the examples below as reference for terminal, API, or SDK flows.
               </p>
 
               {/* Capability cards */}
@@ -488,7 +531,7 @@ const StellarTranche1 = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="text-sm text-muted-foreground">
-                    Single bulk ingestion endpoint for the Partner Portal and direct integrations (<code className="text-xs bg-muted px-1 rounded">POST /api/items/bulk</code>).
+                    Single ingestion endpoint for the Partner Portal and direct integrations (<code className="text-xs bg-muted px-1 rounded">POST /v1/partner/ingestions</code>).
                   </CardContent>
                 </Card>
               </div>
@@ -518,31 +561,7 @@ const StellarTranche1 = () => {
         {/* Demo script + links */}
         <section className="py-16 bg-muted/40 border-y">
           <div className="section-container">
-            <div className="max-w-5xl mx-auto space-y-6">
-              <Card className="overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Rocket className="h-5 w-5 text-primary" /> Recorded tranche 1 demo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Public video walkthrough of the tranche 1 operational flow: CLI, SDK, item ingestion, events, and proof-ready timeline.
-                  </p>
-                  <div className="aspect-video w-full overflow-hidden rounded-xl border bg-black">
-                    <iframe
-                      className="h-full w-full"
-                      src="https://www.youtube.com/embed/nqwb729goEg"
-                      title="DeFarm Stellar Tranche 1 demo"
-                      loading="lazy"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="grid lg:grid-cols-2 gap-6">
+            <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl flex items-center gap-2"><Rocket className="h-5 w-5 text-primary" /> Live demo script (10 min)</CardTitle>
@@ -577,7 +596,6 @@ const StellarTranche1 = () => {
                   </p>
                 </CardContent>
               </Card>
-            </div>
             </div>
           </div>
         </section>
