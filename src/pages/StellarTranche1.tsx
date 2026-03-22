@@ -349,7 +349,7 @@ const StellarTranche1 = () => {
                   <div className="aspect-video w-full overflow-hidden rounded-xl border bg-black">
                     <iframe
                       className="h-full w-full"
-                      src="https://www.youtube.com/embed/nqwb729goEg"
+                      src="https://www.youtube.com/embed/YBOkI_6jc9g"
                       title="DeFarm Stellar Tranche 1 demo"
                       loading="lazy"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -588,7 +588,7 @@ const StellarTranche1 = () => {
                   <Link className="flex items-center gap-2 text-primary hover:underline" to="/stellar">
                     Grant overview page <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
-                  <a className="flex items-center gap-2 text-primary hover:underline" href="https://youtu.be/nqwb729goEg" target="_blank" rel="noopener noreferrer">
+                  <a className="flex items-center gap-2 text-primary hover:underline" href="https://youtu.be/YBOkI_6jc9g" target="_blank" rel="noopener noreferrer">
                     Tranche 1 demo video <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                   <p className="text-muted-foreground pt-1">
