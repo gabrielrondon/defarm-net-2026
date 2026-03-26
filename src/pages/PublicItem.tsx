@@ -618,26 +618,53 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
       }
 
       if (uniquePropertyCoords.length >= 2) {
-        // Animated dashed route
-        L_.polyline(uniquePropertyCoords, {
-          color: "#6366f1",
-          weight: 3,
-          opacity: 0.6,
-          dashArray: "8 6",
-        }).addTo(map);
-        // Subtle glow line underneath
+        // Glow line underneath
         L_.polyline(uniquePropertyCoords, {
           color: "#818cf8",
-          weight: 8,
-          opacity: 0.15,
+          weight: 12,
+          opacity: 0.2,
         }).addTo(map);
+        // Main dashed route
+        L_.polyline(uniquePropertyCoords, {
+          color: "#6366f1",
+          weight: 4,
+          opacity: 0.8,
+          dashArray: "12 8",
+        }).addTo(map);
+      }
+
+      // Add text labels for unique property locations
+      const labeledCoords = new Set<string>();
+      for (const pt of points.filter((p) => p.isProperty)) {
+        const key = `${pt.lat},${pt.lon}`;
+        if (labeledCoords.has(key)) continue;
+        labeledCoords.add(key);
+        const shortName = pt.label.replace(/^(Saída|Chegada|Vinculado):\s*/, "").replace(/^Fazenda\s+/, "Faz. ");
+        const labelIcon = L_.divIcon({
+          className: "",
+          html: `<div style="
+            background:rgba(255,255,255,0.92);
+            color:#1e293b;
+            font-size:11px;
+            font-weight:600;
+            padding:2px 8px;
+            border-radius:6px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.3);
+            white-space:nowrap;
+            pointer-events:none;
+            transform:translateY(-22px);
+          ">${shortName}</div>`,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
+        });
+        L_.marker([pt.lat, pt.lon], { icon: labelIcon, interactive: false }).addTo(map);
       }
 
       // Create markers for each point
       points.forEach((pt, idx) => {
         const color = EVENT_ICON_COLORS[pt.eventType] || "#8b5cf6";
         const isProperty = pt.isProperty;
-        const size = isProperty ? 18 : 11;
+        const size = isProperty ? 24 : 14;
         const border = isProperty ? 3 : 2;
         const emoji = EVENT_ICON_EMOJI[pt.eventType] || "📌";
 
@@ -648,7 +675,7 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
             width:${size}px;height:${size}px;
             border-radius:50%;
             border:${border}px solid white;
-            box-shadow:0 2px 6px rgba(0,0,0,0.35);
+            box-shadow:0 2px 8px rgba(0,0,0,0.4);
             transition: transform 0.2s, box-shadow 0.2s;
           " data-idx="${idx}"></div>`,
           iconSize: [size, size],
@@ -732,9 +759,9 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
           ))}
       </div>
 
-      {/* Map + Timeline side by side */}
-      <div className="flex gap-3" style={{ height: "440px" }}>
-        {/* Timeline */}
+      {/* Map + Timeline */}
+      <div className="flex gap-3 h-[320px] sm:h-[440px]">
+        {/* Timeline sidebar — desktop only */}
         <div
           ref={timelineRef}
           className="w-52 shrink-0 overflow-y-auto rounded-xl border border-border bg-muted/20 p-2 space-y-0.5 hidden sm:block"
@@ -775,6 +802,34 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
             className="rounded-xl border border-border overflow-hidden h-full"
           />
         </div>
+      </div>
+
+      {/* Mobile timeline — horizontal scroll below map */}
+      <div className="flex gap-2 overflow-x-auto pb-2 sm:hidden -mx-1 px-1">
+        {points.map((pt, idx) => {
+          const color = EVENT_ICON_COLORS[pt.eventType] || "#8b5cf6";
+          const isActive = selectedIdx === idx;
+          return (
+            <button
+              key={idx}
+              onClick={() => focusPoint(idx)}
+              className={`shrink-0 rounded-lg px-3 py-2 text-xs border transition-all ${
+                isActive
+                  ? "bg-primary/10 border-primary/30"
+                  : "bg-muted/30 border-border"
+              }`}
+              style={{ minWidth: "120px" }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                <span className="text-muted-foreground tabular-nums">{pt.date}</span>
+              </div>
+              <p className={`mt-0.5 truncate ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                {EVENT_ICON_EMOJI[pt.eventType] || ""} {pt.detail.length > 28 ? pt.detail.slice(0, 28) + "…" : pt.detail}
+              </p>
+            </button>
+          );
+        })}
       </div>
 
       {/* Legend */}
@@ -1392,7 +1447,7 @@ export default function PublicItem() {
               <Package className="h-7 w-7 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground font-mono tracking-tight break-all">
+              <h1 className="text-sm sm:text-lg md:text-2xl font-bold text-foreground font-mono tracking-tight break-all">
                 {item.dfid}
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -1451,6 +1506,38 @@ export default function PublicItem() {
             identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
             latestCid={latestContentVersion?.cid || undefined}
           />
+        )}
+
+        {hasJourneyData && (
+          <section
+            className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/60 p-5 sm:p-6 cursor-pointer group"
+            onClick={() => setShowJourneyDialog(true)}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-500/20 transition-colors">
+                <MapPinned className="h-7 w-7 text-indigo-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-indigo-950">Jornada do Animal</h2>
+                <p className="text-sm text-indigo-700/70 mt-1">
+                  {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} propriedade{new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)).size !== 1 ? "s" : ""} · {journeyPoints.length} eventos geolocalizados · mapa interativo com timeline
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {Array.from(
+                    (() => { const locs = new Map<string, string>(); for (const pt of journeyPoints.filter((p) => p.isProperty)) { const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`; if (!locs.has(key)) locs.set(key, pt.label.replace(/^(Saída|Chegada|Vinculado):\s*/, "")); } return locs.values(); })()
+                  ).map((name) => (
+                    <span key={name} className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 text-indigo-700 px-2 py-0.5 text-[11px] font-medium">
+                      📍 {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 self-start sm:self-center">
+                <MapPinned className="h-4 w-4 mr-1.5" />
+                Ver mapa
+              </Button>
+            </div>
+          </section>
         )}
 
         {latestProofOfLife && (
@@ -1806,28 +1893,6 @@ export default function PublicItem() {
             </div>
           )}
         </section>
-
-        {hasJourneyData && (
-          <section className="rounded-xl border border-border p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                  <MapPinned className="h-4.5 w-4.5 text-indigo-600" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground">Jornada do Animal</h2>
-                  <p className="text-xs text-muted-foreground">
-                    {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} propriedade{new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)).size !== 1 ? "s" : ""} · {journeyPoints.length} eventos geolocalizados
-                  </p>
-                </div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => setShowJourneyDialog(true)}>
-                <MapPinned className="h-4 w-4 mr-1.5" />
-                Ver mapa
-              </Button>
-            </div>
-          </section>
-        )}
 
         <section>
           <div className="flex items-center justify-between mb-4">
