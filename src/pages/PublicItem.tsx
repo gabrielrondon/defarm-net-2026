@@ -1,4 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -26,6 +28,7 @@ import {
   Tag,
   FileText,
   Truck,
+  MapPinned,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -57,7 +60,7 @@ import { AssetQRCode } from "@/components/AssetQRCode";
 import type { PublicItemEvent } from "@/lib/api/types";
 import type { CheckResponse } from "@/lib/check-api/types";
 import { executeCheck } from "@/lib/check-api";
-import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
+import { getCarGeoJSON, getCarMetadata, type CarGeoJSON, type CarMetadata } from "@/lib/check-api/car";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
@@ -502,6 +505,165 @@ function toProofOfLifeEvent(event: PublicItemEvent): ProofOfLifeEvent | null {
   };
 }
 
+type JourneyPointDef = {
+  lat: number;
+  lon: number;
+  label: string;
+  date: string;
+  eventType: string;
+  detail: string;
+  isProperty: boolean;
+};
+
+const EVENT_ICON_COLORS: Record<string, string> = {
+  item_born: "#10b981",
+  item_weighed: "#06b6d4",
+  item_vaccinated: "#22c55e",
+  item_treated: "#14b8a6",
+  item_classified: "#f59e0b",
+  item_slaughtered: "#ef4444",
+  item_movement: "#6366f1",
+  item_property_linked: "#3b82f6",
+  item_property_unlinked: "#f43f5e",
+};
+
+function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || points.length === 0) return;
+    // Dynamic import already at top; L is imported
+    const L_ = L;
+
+    if (mapInstance.current) {
+      mapInstance.current.remove();
+      mapInstance.current = null;
+    }
+
+    const map = L_.map(mapRef.current, {
+      zoomControl: true,
+      attributionControl: false,
+    });
+
+    L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 18,
+    }).addTo(map);
+
+    // Deduplicate property locations for larger markers
+    const propertyPoints = points.filter((p) => p.isProperty);
+    const eventPoints = points.filter((p) => !p.isProperty);
+
+    // Group events by approximate location (within ~0.01 degrees)
+    const locationGroups = new Map<string, JourneyPointDef[]>();
+    for (const pt of eventPoints) {
+      const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`;
+      if (!locationGroups.has(key)) locationGroups.set(key, []);
+      locationGroups.get(key)!.push(pt);
+    }
+
+    // Draw route line between properties (in chronological order)
+    const uniquePropertyCoords: [number, number][] = [];
+    const seenCoords = new Set<string>();
+    for (const pt of propertyPoints) {
+      const key = `${pt.lat},${pt.lon}`;
+      if (!seenCoords.has(key)) {
+        seenCoords.add(key);
+        uniquePropertyCoords.push([pt.lat, pt.lon]);
+      }
+    }
+
+    if (uniquePropertyCoords.length >= 2) {
+      L_.polyline(uniquePropertyCoords, {
+        color: "#6366f1",
+        weight: 3,
+        opacity: 0.7,
+        dashArray: "10 6",
+      }).addTo(map);
+    }
+
+    // Property markers (larger, with label)
+    const seenPropertyMarkers = new Set<string>();
+    for (const pt of propertyPoints) {
+      const key = `${pt.lat},${pt.lon}`;
+      if (seenPropertyMarkers.has(key)) continue;
+      seenPropertyMarkers.add(key);
+
+      const icon = L_.divIcon({
+        className: "",
+        html: `<div style="background:#3b82f6;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+
+      const sameLocation = propertyPoints.filter((p) => `${p.lat},${p.lon}` === key);
+      const popupHtml = sameLocation
+        .map((p) => `<div style="margin-bottom:4px;"><strong>${p.label}</strong><br/><span style="font-size:11px;color:#666;">${p.date} — ${p.detail}</span></div>`)
+        .join("");
+
+      L_.marker([pt.lat, pt.lon], { icon })
+        .addTo(map)
+        .bindPopup(`<div style="font-size:13px;max-width:260px;">${popupHtml}</div>`, { maxWidth: 280 });
+    }
+
+    // Event markers (smaller, colored by type)
+    for (const [, group] of locationGroups) {
+      const pt = group[0];
+      const color = EVENT_ICON_COLORS[pt.eventType] || "#8b5cf6";
+      const icon = L_.divIcon({
+        className: "",
+        html: `<div style="background:${color};width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
+        iconSize: [10, 10],
+        iconAnchor: [5, 5],
+      });
+
+      const popupLines = group
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((p) => `<div style="margin-bottom:3px;"><span style="font-size:11px;color:#888;">${p.date}</span><br/><span style="font-size:12px;">${p.detail}</span></div>`)
+        .join("");
+
+      const locationLabel = group[0].label;
+      const popupHtml = `<div style="font-size:13px;max-width:260px;"><strong>${locationLabel}</strong><div style="margin-top:4px;">${popupLines}</div></div>`;
+
+      L_.marker([pt.lat, pt.lon], { icon })
+        .addTo(map)
+        .bindPopup(popupHtml, { maxWidth: 280 });
+    }
+
+    // Fit bounds
+    const allCoords: [number, number][] = points.map((p) => [p.lat, p.lon]);
+    if (allCoords.length > 0) {
+      map.fitBounds(L_.latLngBounds(allCoords), { padding: [50, 50], maxZoom: 13 });
+    }
+
+    mapInstance.current = map;
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, [points]);
+
+  return (
+    <div className="space-y-3">
+      <div
+        ref={mapRef}
+        className="rounded-xl border border-border overflow-hidden"
+        style={{ height: "420px" }}
+      />
+      <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm" /> Propriedade</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-cyan-500 border border-white shadow-sm" /> Pesagem</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 border border-white shadow-sm" /> Vacinação</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-teal-500 border border-white shadow-sm" /> Tratamento</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 border border-white shadow-sm" /> Classificação</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 border border-white shadow-sm" /> Movimentação</span>
+      </div>
+    </div>
+  );
+}
+
 export default function PublicItem() {
   const { dfid, identifierType, identifierValue } = useParams<{
     dfid?: string;
@@ -526,12 +688,16 @@ export default function PublicItem() {
   const [carGeojson, setCarGeojson] = useState<CarGeoJSON | null>(null);
   const [carGeoLoading, setCarGeoLoading] = useState(false);
   const [carGeoError, setCarGeoError] = useState<string | null>(null);
+  const [carMetadata, setCarMetadata] = useState<CarMetadata | null>(null);
+  const [carMetaLoading, setCarMetaLoading] = useState(false);
+  const [carDialogValue, setCarDialogValue] = useState<string | null>(null);
 
   const [showWeightDialog, setShowWeightDialog] = useState(false);
   const [showIdentityDialog, setShowIdentityDialog] = useState(false);
   const [showCidDialog, setShowCidDialog] = useState(false);
   const [showCircuitsDialog, setShowCircuitsDialog] = useState(false);
   const [showProofOfLifeDialog, setShowProofOfLifeDialog] = useState(false);
+  const [showJourneyDialog, setShowJourneyDialog] = useState(false);
   const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem("public_item_locale") : null;
     return stored === "en" ? "en" : "pt-BR";
@@ -886,6 +1052,64 @@ export default function PublicItem() {
     return toTitle(latestProofOfLife.activityStatus);
   }, [latestProofOfLife]);
 
+  const journeyPoints = useMemo<JourneyPointDef[]>(() => {
+    const points: JourneyPoint[] = [];
+    for (const e of events) {
+      const p = (e.payload || {}) as Record<string, unknown>;
+      const coords = p.coordinates as { lat?: number; lon?: number } | undefined;
+      const fromCoords = p.from_coordinates as { lat?: number; lon?: number } | undefined;
+      const toCoords = p.to_coordinates as { lat?: number; lon?: number } | undefined;
+      const occurred = typeof p.occurred_at === "string" ? p.occurred_at : "";
+      const etype = e.event_type;
+      const eLabel = eventTypeLabels[etype] || etype;
+
+      if (etype === "item_movement" && fromCoords?.lat && fromCoords?.lon && toCoords?.lat && toCoords?.lon) {
+        points.push({
+          lat: fromCoords.lat, lon: fromCoords.lon,
+          label: `Saída: ${typeof p.from_location === "string" ? p.from_location : "Origem"}`,
+          date: occurred, eventType: etype,
+          detail: `${eLabel} → ${typeof p.to_location === "string" ? p.to_location : "?"} ${typeof p.gta_number === "string" ? `(GTA: ${p.gta_number})` : ""}`,
+          isProperty: true,
+        });
+        points.push({
+          lat: toCoords.lat, lon: toCoords.lon,
+          label: `Chegada: ${typeof p.to_location === "string" ? p.to_location : "Destino"}`,
+          date: occurred, eventType: etype,
+          detail: `${eLabel} — ${typeof p.distancia_km === "number" ? `${p.distancia_km}km` : ""}`,
+          isProperty: true,
+        });
+        continue;
+      }
+
+      if (etype === "item_property_linked" && coords?.lat && coords?.lon) {
+        points.push({
+          lat: coords.lat, lon: coords.lon,
+          label: typeof p.property_dfid === "string" ? p.property_dfid : "Propriedade",
+          date: occurred, eventType: etype,
+          detail: `Vinculado — ${typeof p.car === "string" ? p.car : ""}`,
+          isProperty: true,
+        });
+        continue;
+      }
+
+      if (coords?.lat && coords?.lon) {
+        let detail = eLabel;
+        if (typeof p.weight_kg === "number") detail = `${eLabel}: ${p.weight_kg}kg`;
+        else if (typeof p.vaccine === "string") detail = `${eLabel}: ${p.vaccine}`;
+        else if (typeof p.treatment === "string") detail = `${eLabel}: ${p.treatment}`;
+        else if (typeof p.classification === "string") detail = `${eLabel}: ${p.classification}`;
+        points.push({
+          lat: coords.lat, lon: coords.lon,
+          label: typeof p.location === "string" ? p.location : eLabel,
+          date: occurred, eventType: etype, detail, isProperty: false,
+        });
+      }
+    }
+    return points.sort((a, b) => a.date.localeCompare(b.date));
+  }, [events]);
+
+  const hasJourneyData = journeyPoints.length > 0;
+
   const carAuthExpired = useMemo(() => {
     if (!carError) return false;
     const msg = carError.toLowerCase();
@@ -908,9 +1132,11 @@ export default function PublicItem() {
 
   const openCarVerification = async () => {
     if (!carValue) return;
+    setCarDialogValue(carValue);
     setShowCarDialog(true);
     setCarGeojson(null);
     setCarResult(null);
+    setCarMetadata(null);
 
     if (!carHasOfficialFormat) {
       setCarGeoError(null);
@@ -918,6 +1144,7 @@ export default function PublicItem() {
       return;
     }
 
+    // Fetch GeoJSON (public, no auth needed)
     setCarGeoLoading(true);
     setCarGeoError(null);
     getCarGeoJSON(carValue, { skipAuth: true })
@@ -926,6 +1153,15 @@ export default function PublicItem() {
         setCarGeoError(null);
       })
       .finally(() => setCarGeoLoading(false));
+
+    // Fetch metadata (public, no auth needed)
+    setCarMetaLoading(true);
+    getCarMetadata(carValue, { skipAuth: true })
+      .then((meta) => setCarMetadata(meta))
+      .catch((err) => {
+        console.warn("[CAR Metadata] Failed to fetch:", err);
+      })
+      .finally(() => setCarMetaLoading(false));
 
     if (!isAuthenticated) {
       return;
@@ -1203,12 +1439,13 @@ export default function PublicItem() {
 
                       if (normalized === "sisbov" && (typeof value === "string" || typeof value === "number")) {
                         const sisbov = String(value);
-                        const refUrl = `${window.location.origin}/i/sisbov/${encodeURIComponent(sisbov)}`;
+                        const sisbovDfidUrl = resolvedDfid ? `/i/${encodeURIComponent(resolvedDfid)}` : `/i/sisbov/${encodeURIComponent(sisbov)}`;
+                        const refUrl = `${window.location.origin}${sisbovDfidUrl}`;
                         return (
                           <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SISBOV</p>
                             <a
-                              href={`/i/sisbov/${encodeURIComponent(sisbov)}`}
+                              href={sisbovDfidUrl}
                               className="text-sm font-medium text-primary break-all hover:underline"
                             >
                               {sisbov}
@@ -1443,6 +1680,28 @@ export default function PublicItem() {
           )}
         </section>
 
+        {hasJourneyData && (
+          <section className="rounded-xl border border-border p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                  <MapPinned className="h-4.5 w-4.5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">Jornada do Animal</h2>
+                  <p className="text-xs text-muted-foreground">
+                    {journeyPoints.filter((p) => p.isProperty).length} local{journeyPoints.filter((p) => p.isProperty).length !== 1 ? "is" : ""} · {journeyPoints.length} eventos geolocalizados
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setShowJourneyDialog(true)}>
+                <MapPinned className="h-4 w-4 mr-1.5" />
+                Ver mapa
+              </Button>
+            </div>
+          </section>
+        )}
+
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
@@ -1606,14 +1865,43 @@ export default function PublicItem() {
                             </button>
                             {isExpanded && (
                               <div className="mt-2 rounded-lg bg-muted/50 p-3 space-y-1">
-                                {Object.entries(event.payload!).map(([k, v]) => (
-                                  <div key={k} className="flex gap-2 text-xs">
-                                    <span className="text-muted-foreground min-w-[100px]">{k}:</span>
-                                    <span className="text-foreground break-all font-mono">
-                                      {typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}
-                                    </span>
-                                  </div>
-                                ))}
+                                {Object.entries(event.payload!).map(([k, v]) => {
+                                  const strVal = typeof v === "object" ? JSON.stringify(v) : String(v ?? "-");
+                                  const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
+                                  return (
+                                    <div key={k} className="flex gap-2 text-xs">
+                                      <span className="text-muted-foreground min-w-[100px]">{k}:</span>
+                                      {isCarField ? (
+                                        <button
+                                          onClick={() => {
+                                            setCarDialogValue(v as string);
+                                            setCarGeojson(null);
+                                            setCarMetadata(null);
+                                            setCarResult(null);
+                                            setCarError(null);
+                                            setCarGeoError(null);
+                                            setShowCarDialog(true);
+                                            setCarGeoLoading(true);
+                                            setCarMetaLoading(true);
+                                            getCarGeoJSON(v as string, { skipAuth: true })
+                                              .then((geo) => setCarGeojson(geo))
+                                              .catch(() => {})
+                                              .finally(() => setCarGeoLoading(false));
+                                            getCarMetadata(v as string, { skipAuth: true })
+                                              .then((meta) => setCarMetadata(meta))
+                                              .catch(() => {})
+                                              .finally(() => setCarMetaLoading(false));
+                                          }}
+                                          className="text-primary hover:underline break-all font-mono text-left"
+                                        >
+                                          {strVal}
+                                        </button>
+                                      ) : (
+                                        <span className="text-foreground break-all font-mono">{strVal}</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -1637,6 +1925,7 @@ export default function PublicItem() {
             setCarGeoError(null);
             setCarLoading(false);
             setCarGeoLoading(false);
+            setCarMetaLoading(false);
           }
         }}
       >
@@ -1646,11 +1935,11 @@ export default function PublicItem() {
               <Scale className="h-4 w-4" /> Verificação de CAR
             </DialogTitle>
             <DialogDescription>
-              {carValue ? `CAR: ${carValue}` : "CAR não informado no item."}
+              {(carDialogValue || carValue) ? `CAR: ${carDialogValue || carValue}` : "CAR não informado no item."}
             </DialogDescription>
           </DialogHeader>
 
-          {!carValue ? (
+          {!(carDialogValue || carValue) ? (
             <p className="text-sm text-muted-foreground">Este item não contém CAR público para consulta.</p>
           ) : (
             <div className="space-y-4">
@@ -1664,6 +1953,44 @@ export default function PublicItem() {
                   ) : carGeojson ? (
                     <PropertyMap geojson={carGeojson} className="h-64 w-full" />
                   ) : null}
+                </div>
+              ) : null}
+
+              {/* CAR Metadata (public, always shown) */}
+              {carMetaLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Carregando dados do CAR...
+                </div>
+              ) : carMetadata ? (
+                <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Dados do Cadastro</p>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground text-xs">Status</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`inline-block h-2 w-2 rounded-full ${
+                          carMetadata.status === "AT" || carMetadata.status === "Ativo" ? "bg-emerald-500" :
+                          carMetadata.status === "PE" || carMetadata.status === "Pendente" ? "bg-yellow-500" :
+                          carMetadata.status === "CA" || carMetadata.status === "Cancelado" ? "bg-red-500" :
+                          carMetadata.status === "SU" || carMetadata.status === "Suspenso" ? "bg-orange-500" :
+                          "bg-gray-400"
+                        }`} />
+                        <span className="font-medium">{carMetadata.status}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Municipio / UF</span>
+                      <p className="font-medium mt-0.5">{carMetadata.municipality} / {carMetadata.state}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Area</span>
+                      <p className="font-medium mt-0.5">{carMetadata.area.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Bioma</span>
+                      <p className="font-medium mt-0.5">{carMetadata.biome}</p>
+                    </div>
+                  </div>
                 </div>
               ) : null}
 
@@ -1700,6 +2027,20 @@ export default function PublicItem() {
                 <p className="text-sm text-muted-foreground">Abra novamente para executar a consulta.</p>
               )}
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showJourneyDialog} onOpenChange={setShowJourneyDialog}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Jornada do Animal</DialogTitle>
+            <DialogDescription>
+              Mapa com propriedades, deslocamentos e eventos geolocalizados. Clique nos marcadores para ver detalhes.
+            </DialogDescription>
+          </DialogHeader>
+          {showJourneyDialog && journeyPoints.length > 0 && (
+            <JourneyMapInline points={journeyPoints} />
           )}
         </DialogContent>
       </Dialog>
