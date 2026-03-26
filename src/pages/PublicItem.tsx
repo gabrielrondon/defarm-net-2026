@@ -525,121 +525,160 @@ const EVENT_ICON_COLORS: Record<string, string> = {
   item_property_unlinked: "#f43f5e",
 };
 
+const EVENT_ICON_EMOJI: Record<string, string> = {
+  item_born: "🐄",
+  item_weighed: "⚖️",
+  item_vaccinated: "💉",
+  item_treated: "💊",
+  item_classified: "🏷️",
+  item_slaughtered: "🔴",
+  item_movement: "🚚",
+  item_property_linked: "📍",
+  item_property_unlinked: "📍",
+};
+
 function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
+  const markersRef = useRef<Map<number, any>>(new Map());
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const timelineRef = useRef<HTMLDivElement>(null);
+
+  // Extract unique CARs from property points to fetch polygons
+  const propertyCars = useMemo(() => {
+    const cars = new Map<string, { lat: number; lon: number }>();
+    for (const pt of points) {
+      if (!pt.isProperty) continue;
+      const carMatch = pt.detail.match(/[A-Z]{2}-\d{5,7}-[A-F0-9]{32}/i);
+      if (carMatch) {
+        cars.set(carMatch[0], { lat: pt.lat, lon: pt.lon });
+      }
+    }
+    return cars;
+  }, [points]);
+
+  // Group unique locations for summary
+  const locationSummary = useMemo(() => {
+    const locs = new Map<string, { name: string; count: number }>();
+    for (const pt of points) {
+      const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`;
+      if (!locs.has(key)) locs.set(key, { name: pt.label, count: 0 });
+      locs.get(key)!.count++;
+    }
+    return Array.from(locs.values());
+  }, [points]);
 
   useEffect(() => {
     if (!mapRef.current || points.length === 0) return;
     let cancelled = false;
 
-    import("leaflet").then((leafletModule) => {
+    import("leaflet").then(async (leafletModule) => {
       if (cancelled || !mapRef.current) return;
-      // Also ensure CSS is loaded
       import("leaflet/dist/leaflet.css");
       const L_ = leafletModule.default;
 
-    if (mapInstance.current) {
-      mapInstance.current.remove();
-      mapInstance.current = null;
-    }
-
-    const map = L_.map(mapRef.current, {
-      zoomControl: true,
-      attributionControl: false,
-    });
-
-    L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      maxZoom: 18,
-    }).addTo(map);
-
-    // Deduplicate property locations for larger markers
-    const propertyPoints = points.filter((p) => p.isProperty);
-    const eventPoints = points.filter((p) => !p.isProperty);
-
-    // Group events by approximate location (within ~0.01 degrees)
-    const locationGroups = new Map<string, JourneyPointDef[]>();
-    for (const pt of eventPoints) {
-      const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`;
-      if (!locationGroups.has(key)) locationGroups.set(key, []);
-      locationGroups.get(key)!.push(pt);
-    }
-
-    // Draw route line between properties (in chronological order)
-    const uniquePropertyCoords: [number, number][] = [];
-    const seenCoords = new Set<string>();
-    for (const pt of propertyPoints) {
-      const key = `${pt.lat},${pt.lon}`;
-      if (!seenCoords.has(key)) {
-        seenCoords.add(key);
-        uniquePropertyCoords.push([pt.lat, pt.lon]);
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
       }
-    }
+      markersRef.current.clear();
 
-    if (uniquePropertyCoords.length >= 2) {
-      L_.polyline(uniquePropertyCoords, {
-        color: "#6366f1",
-        weight: 3,
-        opacity: 0.7,
-        dashArray: "10 6",
+      const map = L_.map(mapRef.current, {
+        zoomControl: true,
+        attributionControl: false,
+      });
+
+      L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 18,
       }).addTo(map);
-    }
 
-    // Property markers (larger, with label)
-    const seenPropertyMarkers = new Set<string>();
-    for (const pt of propertyPoints) {
-      const key = `${pt.lat},${pt.lon}`;
-      if (seenPropertyMarkers.has(key)) continue;
-      seenPropertyMarkers.add(key);
+      // Fetch and draw CAR polygons for properties
+      for (const [car] of propertyCars) {
+        try {
+          const geo = await getCarGeoJSON(car, { skipAuth: true });
+          if (cancelled) return;
+          L_.geoJSON(geo as any, {
+            style: { color: "#22c55e", weight: 2, fillColor: "#22c55e", fillOpacity: 0.15 },
+          }).addTo(map);
+        } catch {
+          // Polygon not available — skip silently
+        }
+      }
 
-      const icon = L_.divIcon({
-        className: "",
-        html: `<div style="background:#3b82f6;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
+      // Draw route line between unique property coords
+      const uniquePropertyCoords: [number, number][] = [];
+      const seenCoords = new Set<string>();
+      for (const pt of points.filter((p) => p.isProperty)) {
+        const key = `${pt.lat},${pt.lon}`;
+        if (!seenCoords.has(key)) {
+          seenCoords.add(key);
+          uniquePropertyCoords.push([pt.lat, pt.lon]);
+        }
+      }
+
+      if (uniquePropertyCoords.length >= 2) {
+        // Animated dashed route
+        L_.polyline(uniquePropertyCoords, {
+          color: "#6366f1",
+          weight: 3,
+          opacity: 0.6,
+          dashArray: "8 6",
+        }).addTo(map);
+        // Subtle glow line underneath
+        L_.polyline(uniquePropertyCoords, {
+          color: "#818cf8",
+          weight: 8,
+          opacity: 0.15,
+        }).addTo(map);
+      }
+
+      // Create markers for each point
+      points.forEach((pt, idx) => {
+        const color = EVENT_ICON_COLORS[pt.eventType] || "#8b5cf6";
+        const isProperty = pt.isProperty;
+        const size = isProperty ? 18 : 11;
+        const border = isProperty ? 3 : 2;
+        const emoji = EVENT_ICON_EMOJI[pt.eventType] || "📌";
+
+        const icon = L_.divIcon({
+          className: "",
+          html: `<div style="
+            background:${color};
+            width:${size}px;height:${size}px;
+            border-radius:50%;
+            border:${border}px solid white;
+            box-shadow:0 2px 6px rgba(0,0,0,0.35);
+            transition: transform 0.2s, box-shadow 0.2s;
+          " data-idx="${idx}"></div>`,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+
+        const popupHtml = `
+          <div style="font-size:13px;max-width:260px;">
+            <div style="font-size:16px;margin-bottom:2px;">${emoji}</div>
+            <strong>${pt.label}</strong>
+            <div style="font-size:11px;color:#888;margin-top:2px;">${pt.date}</div>
+            <div style="font-size:12px;margin-top:4px;">${pt.detail}</div>
+          </div>`;
+
+        const marker = L_.marker([pt.lat, pt.lon], { icon })
+          .addTo(map)
+          .bindPopup(popupHtml, { maxWidth: 280 });
+
+        marker.on("click", () => setSelectedIdx(idx));
+        markersRef.current.set(idx, marker);
       });
 
-      const sameLocation = propertyPoints.filter((p) => `${p.lat},${p.lon}` === key);
-      const popupHtml = sameLocation
-        .map((p) => `<div style="margin-bottom:4px;"><strong>${p.label}</strong><br/><span style="font-size:11px;color:#666;">${p.date} — ${p.detail}</span></div>`)
-        .join("");
+      // Fit bounds
+      const allCoords: [number, number][] = points.map((p) => [p.lat, p.lon]);
+      if (allCoords.length > 0) {
+        map.fitBounds(L_.latLngBounds(allCoords), { padding: [50, 50], maxZoom: 13 });
+      }
 
-      L_.marker([pt.lat, pt.lon], { icon })
-        .addTo(map)
-        .bindPopup(`<div style="font-size:13px;max-width:260px;">${popupHtml}</div>`, { maxWidth: 280 });
-    }
-
-    // Event markers (smaller, colored by type)
-    for (const [, group] of locationGroups) {
-      const pt = group[0];
-      const color = EVENT_ICON_COLORS[pt.eventType] || "#8b5cf6";
-      const icon = L_.divIcon({
-        className: "",
-        html: `<div style="background:${color};width:10px;height:10px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [10, 10],
-        iconAnchor: [5, 5],
-      });
-
-      const popupLines = group
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .map((p) => `<div style="margin-bottom:3px;"><span style="font-size:11px;color:#888;">${p.date}</span><br/><span style="font-size:12px;">${p.detail}</span></div>`)
-        .join("");
-
-      const locationLabel = group[0].label;
-      const popupHtml = `<div style="font-size:13px;max-width:260px;"><strong>${locationLabel}</strong><div style="margin-top:4px;">${popupLines}</div></div>`;
-
-      L_.marker([pt.lat, pt.lon], { icon })
-        .addTo(map)
-        .bindPopup(popupHtml, { maxWidth: 280 });
-    }
-
-    // Fit bounds
-    const allCoords: [number, number][] = points.map((p) => [p.lat, p.lon]);
-    if (allCoords.length > 0) {
-      map.fitBounds(L_.latLngBounds(allCoords), { padding: [50, 50], maxZoom: 13 });
-    }
-
-    mapInstance.current = map;
+      mapInstance.current = map;
+      setMapReady(true);
     });
 
     return () => {
@@ -648,16 +687,97 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
         mapInstance.current.remove();
         mapInstance.current = null;
       }
+      setMapReady(false);
     };
+  }, [points, propertyCars]);
+
+  const focusPoint = (idx: number) => {
+    setSelectedIdx(idx);
+    const marker = markersRef.current.get(idx);
+    if (marker && mapInstance.current) {
+      mapInstance.current.flyTo(marker.getLatLng(), 14, { duration: 0.8 });
+      marker.openPopup();
+    }
+    // Scroll timeline item into view
+    const el = timelineRef.current?.querySelector(`[data-timeline-idx="${idx}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+
+  // Type counts for summary badges
+  const typeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const pt of points) {
+      const t = pt.eventType;
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+    return counts;
   }, [points]);
 
   return (
     <div className="space-y-3">
-      <div
-        ref={mapRef}
-        className="rounded-xl border border-border overflow-hidden"
-        style={{ height: "420px" }}
-      />
+      {/* Summary badges */}
+      <div className="flex flex-wrap gap-2">
+        {locationSummary.map((loc) => (
+          <span key={loc.name} className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 px-2.5 py-1 text-[11px] font-medium">
+            📍 {loc.name}
+            <span className="text-blue-500/70">{loc.count}</span>
+          </span>
+        ))}
+        {Array.from(typeCounts.entries())
+          .filter(([t]) => !t.includes("property"))
+          .map(([t, c]) => (
+            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
+              {EVENT_ICON_EMOJI[t] || "📌"} {c}
+            </span>
+          ))}
+      </div>
+
+      {/* Map + Timeline side by side */}
+      <div className="flex gap-3" style={{ height: "440px" }}>
+        {/* Timeline */}
+        <div
+          ref={timelineRef}
+          className="w-52 shrink-0 overflow-y-auto rounded-xl border border-border bg-muted/20 p-2 space-y-0.5 hidden sm:block"
+        >
+          {points.map((pt, idx) => {
+            const color = EVENT_ICON_COLORS[pt.eventType] || "#8b5cf6";
+            const isActive = selectedIdx === idx;
+            return (
+              <button
+                key={idx}
+                data-timeline-idx={idx}
+                onClick={() => focusPoint(idx)}
+                className={`w-full text-left rounded-lg px-2.5 py-2 transition-all text-xs ${
+                  isActive
+                    ? "bg-primary/10 ring-1 ring-primary/30"
+                    : "hover:bg-muted/60"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ background: color, border: "2px solid white", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
+                  />
+                  <span className="text-muted-foreground tabular-nums">{pt.date}</span>
+                </div>
+                <p className={`mt-0.5 leading-tight truncate ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                  {EVENT_ICON_EMOJI[pt.eventType] || ""} {pt.detail.length > 40 ? pt.detail.slice(0, 40) + "…" : pt.detail}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Map */}
+        <div className="flex-1 min-w-0">
+          <div
+            ref={mapRef}
+            className="rounded-xl border border-border overflow-hidden h-full"
+          />
+        </div>
+      </div>
+
+      {/* Legend */}
       <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm" /> Propriedade</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-cyan-500 border border-white shadow-sm" /> Pesagem</span>
@@ -665,6 +785,7 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-teal-500 border border-white shadow-sm" /> Tratamento</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 border border-white shadow-sm" /> Classificação</span>
         <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 border border-white shadow-sm" /> Movimentação</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-6 h-3 rounded border border-green-500/40" style={{ background: "rgba(34,197,94,0.15)" }} /> Polígono CAR</span>
       </div>
     </div>
   );
@@ -1696,7 +1817,7 @@ export default function PublicItem() {
                 <div>
                   <h2 className="text-sm font-semibold text-foreground">Jornada do Animal</h2>
                   <p className="text-xs text-muted-foreground">
-                    {journeyPoints.filter((p) => p.isProperty).length} local{journeyPoints.filter((p) => p.isProperty).length !== 1 ? "is" : ""} · {journeyPoints.length} eventos geolocalizados
+                    {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} propriedade{new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)).size !== 1 ? "s" : ""} · {journeyPoints.length} eventos geolocalizados
                   </p>
                 </div>
               </div>
@@ -1979,31 +2100,39 @@ export default function PublicItem() {
                 <div className="bg-muted/40 rounded-lg p-3 space-y-2">
                   <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Dados do Cadastro</p>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground text-xs">Status</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`inline-block h-2 w-2 rounded-full ${
-                          carMetadata.status === "AT" || carMetadata.status === "Ativo" ? "bg-emerald-500" :
-                          carMetadata.status === "PE" || carMetadata.status === "Pendente" ? "bg-yellow-500" :
-                          carMetadata.status === "CA" || carMetadata.status === "Cancelado" ? "bg-red-500" :
-                          carMetadata.status === "SU" || carMetadata.status === "Suspenso" ? "bg-orange-500" :
-                          "bg-gray-400"
-                        }`} />
-                        <span className="font-medium">{carMetadata.status}</span>
+                    {carMetadata.status && (
+                      <div>
+                        <span className="text-muted-foreground text-xs">Status</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`inline-block h-2 w-2 rounded-full ${
+                            carMetadata.status === "AT" || carMetadata.status === "Ativo" ? "bg-emerald-500" :
+                            carMetadata.status === "PE" || carMetadata.status === "Pendente" ? "bg-yellow-500" :
+                            carMetadata.status === "CA" || carMetadata.status === "Cancelado" ? "bg-red-500" :
+                            carMetadata.status === "SU" || carMetadata.status === "Suspenso" ? "bg-orange-500" :
+                            "bg-gray-400"
+                          }`} />
+                          <span className="font-medium">{carMetadata.status}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Municipio / UF</span>
-                      <p className="font-medium mt-0.5">{carMetadata.municipality} / {carMetadata.state}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Area</span>
-                      <p className="font-medium mt-0.5">{typeof carMetadata.area === "number" ? `${carMetadata.area.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "—"}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-xs">Bioma</span>
-                      <p className="font-medium mt-0.5">{carMetadata.biome}</p>
-                    </div>
+                    )}
+                    {(carMetadata.municipality || carMetadata.state) && (
+                      <div>
+                        <span className="text-muted-foreground text-xs">Município / UF</span>
+                        <p className="font-medium mt-0.5">{[carMetadata.municipality, carMetadata.state].filter(Boolean).join(" / ")}</p>
+                      </div>
+                    )}
+                    {typeof carMetadata.area === "number" && (
+                      <div>
+                        <span className="text-muted-foreground text-xs">Área</span>
+                        <p className="font-medium mt-0.5">{carMetadata.area.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha</p>
+                      </div>
+                    )}
+                    {carMetadata.biome && (
+                      <div>
+                        <span className="text-muted-foreground text-xs">Bioma</span>
+                        <p className="font-medium mt-0.5">{carMetadata.biome}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : null}
