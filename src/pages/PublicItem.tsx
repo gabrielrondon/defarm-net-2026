@@ -1880,7 +1880,8 @@ export default function PublicItem() {
                                       {isCarField ? (
                                         <button
                                           onClick={() => {
-                                            setCarDialogValue(v as string);
+                                            const carVal = v as string;
+                                            setCarDialogValue(carVal);
                                             setCarGeojson(null);
                                             setCarMetadata(null);
                                             setCarResult(null);
@@ -1889,14 +1890,21 @@ export default function PublicItem() {
                                             setShowCarDialog(true);
                                             setCarGeoLoading(true);
                                             setCarMetaLoading(true);
-                                            getCarGeoJSON(v as string, { skipAuth: true })
+                                            getCarGeoJSON(carVal, { skipAuth: true })
                                               .then((geo) => setCarGeojson(geo))
                                               .catch(() => {})
                                               .finally(() => setCarGeoLoading(false));
-                                            getCarMetadata(v as string, { skipAuth: true })
+                                            getCarMetadata(carVal, { skipAuth: true })
                                               .then((meta) => setCarMetadata(meta))
                                               .catch(() => {})
                                               .finally(() => setCarMetaLoading(false));
+                                            if (isAuthenticated && isOfficialCarFormat(carVal)) {
+                                              setCarLoading(true);
+                                              executeCheck({ input: { type: "CAR", value: carVal }, options: { useCache: true, includeEvidence: false } })
+                                                .then((res) => setCarResult(res))
+                                                .catch(() => setCarError(null))
+                                                .finally(() => setCarLoading(false));
+                                            }
                                           }}
                                           className="text-primary hover:underline break-all font-mono text-left"
                                         >
@@ -2029,9 +2037,7 @@ export default function PublicItem() {
                   <p><span className="text-muted-foreground">Checkers:</span> <span className="font-medium">{carResult.summary.totalCheckers}</span></p>
                   <p><span className="text-muted-foreground">Falhas:</span> <span className="font-medium">{carResult.summary.failed}</span></p>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Abra novamente para executar a consulta.</p>
-              )}
+              ) : null}
             </div>
           )}
         </DialogContent>
