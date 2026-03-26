@@ -1534,6 +1534,47 @@ export default function PublicItem() {
     };
   }, [events]);
 
+  // Upcoming expected events based on age + history
+  const upcomingEvents = useMemo(() => {
+    if (!sanitySummary || !animalAge) return [];
+    const upcoming: { label: string; reason: string; urgency: "normal" | "soon" | "overdue" }[] = [];
+    const m = ((item?.metadata || {}) as Record<string, unknown>);
+    const birthStr = typeof m.birth_date === "string" ? m.birth_date : null;
+    if (!birthStr) return [];
+    const birth = new Date(birthStr);
+    const now = new Date();
+    const ageMonths = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+
+    // Clostridiose reforço anual — check if last one was > 10 months ago
+    const lastClostri = sanitySummary.vaccines.filter((v) => v.name.toLowerCase().includes("clostridi")).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (lastClostri) {
+      const monthsSince = (now.getTime() - new Date(lastClostri.date).getTime()) / (1000 * 60 * 60 * 24 * 30);
+      if (monthsSince > 12) upcoming.push({ label: "Reforço Clostridiose", reason: `Última dose há ${Math.floor(monthsSince)} meses`, urgency: "overdue" });
+      else if (monthsSince > 10) upcoming.push({ label: "Reforço Clostridiose", reason: `Previsto nos próximos ${Math.ceil(12 - monthsSince)} meses`, urgency: "soon" });
+    }
+
+    // Vermifugação — check last treatment with Ivermectina
+    const lastVerm = sanitySummary.treatments.filter((t) => t.name.toLowerCase().includes("ivermect")).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (lastVerm) {
+      const monthsSince = (now.getTime() - new Date(lastVerm.date).getTime()) / (1000 * 60 * 60 * 24 * 30);
+      if (monthsSince > 6) upcoming.push({ label: "Vermifugação", reason: `Última há ${Math.floor(monthsSince)} meses`, urgency: monthsSince > 8 ? "overdue" : "soon" });
+    }
+
+    // Pesagem — if last > 3 months
+    if (sanitySummary.lastWeightDate) {
+      const monthsSince = (now.getTime() - new Date(sanitySummary.lastWeightDate).getTime()) / (1000 * 60 * 60 * 24 * 30);
+      if (monthsSince > 4) upcoming.push({ label: "Pesagem", reason: `Última há ${Math.floor(monthsSince)} meses`, urgency: monthsSince > 6 ? "overdue" : "soon" });
+    }
+
+    // Brucelose — females 3-8 months, dose única
+    if (typeof m.sex === "string" && m.sex === "female" && ageMonths >= 3 && ageMonths <= 8) {
+      const hasBruce = sanitySummary.vaccines.some((v) => v.name.toLowerCase().includes("brucel"));
+      if (!hasBruce) upcoming.push({ label: "Brucelose (B19)", reason: "Fêmea em idade de vacinação (3-8 meses)", urgency: "soon" });
+    }
+
+    return upcoming;
+  }, [sanitySummary, animalAge, item?.metadata]);
+
   if (isResolvingRef || isLoading) {
     return (
       <Shell isAuthenticated={isAuthenticated}>
@@ -1700,6 +1741,29 @@ export default function PublicItem() {
                 <Line type="monotone" dataKey="peso" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 4 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
+          </section>
+        )}
+
+        {isBeta && upcomingEvents.length > 0 && (
+          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Previsões</p>
+            <div className="space-y-2">
+              {upcomingEvents.map((ev, i) => (
+                <div key={i} className={`flex items-start gap-3 rounded-lg p-3 text-sm ${
+                  ev.urgency === "overdue" ? "bg-red-50 border border-red-200/50" :
+                  ev.urgency === "soon" ? "bg-amber-50 border border-amber-200/50" :
+                  "bg-stone-50 border border-stone-200/50"
+                }`}>
+                  <span className={`inline-block w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                    ev.urgency === "overdue" ? "bg-red-500" : ev.urgency === "soon" ? "bg-amber-500" : "bg-stone-400"
+                  }`} />
+                  <div>
+                    <p className={`font-medium ${ev.urgency === "overdue" ? "text-red-800" : ev.urgency === "soon" ? "text-amber-800" : "text-foreground"}`}>{ev.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{ev.reason}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
         )}
 
@@ -2199,6 +2263,57 @@ export default function PublicItem() {
                     : "Eventos podem existir com visibilidade privada (circuit_only/selective)."}
                 </p>
               )}
+            </div>
+          ) : isBeta ? (
+            /* === BETA: Timeline visual with year grouping === */
+            <div className="space-y-6">
+              {(() => {
+                const groups = new Map<string, typeof visibleEvents>();
+                for (const e of visibleEvents) {
+                  const p = (e.payload || {}) as Record<string, unknown>;
+                  const date = typeof p.occurred_at === "string" ? p.occurred_at : e.created_at;
+                  const year = date.slice(0, 4);
+                  if (!groups.has(year)) groups.set(year, []);
+                  groups.get(year)!.push(e);
+                }
+                return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([year, yearEvents]) => (
+                  <div key={year}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-xs font-bold text-foreground bg-stone-100 px-2.5 py-1 rounded-full">{year}</span>
+                      <div className="flex-1 h-px bg-stone-200" />
+                      <span className="text-[10px] text-muted-foreground">{yearEvents.length} evento{yearEvents.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    <div className="relative ml-3">
+                      <div className="absolute left-[7px] top-2 bottom-2 w-px bg-stone-200" />
+                      <div className="space-y-1">
+                        {yearEvents.map((event) => {
+                          const Icon = eventTypeIcons[event.event_type] || Activity;
+                          const color = EVENT_ICON_COLORS[event.event_type] || "#8b5cf6";
+                          const label = eventTypeLabels[event.event_type] || event.event_type;
+                          const summary = eventSummary(event);
+                          const p = (event.payload || {}) as Record<string, unknown>;
+                          const date = typeof p.occurred_at === "string" ? p.occurred_at : formatDateShort(event.created_at);
+
+                          return (
+                            <div key={event.id} className="relative flex gap-3 pl-1 py-2 group">
+                              <div className="relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: color }}>
+                                <Icon className="h-2.5 w-2.5 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-xs font-medium text-foreground">{label}</span>
+                                  <span className="text-[10px] text-muted-foreground tabular-nums">{date}</span>
+                                </div>
+                                {summary && <p className="text-xs text-muted-foreground mt-0.5">{summary}</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           ) : (
             <div className="relative">
