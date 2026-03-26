@@ -2402,7 +2402,7 @@ export default function PublicItem() {
                     </div>
                     <div className="relative ml-3">
                       <div className="absolute left-[7px] top-2 bottom-2 w-px bg-stone-200" />
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         {yearEvents.map((event) => {
                           const Icon = eventTypeIcons[event.event_type] || Activity;
                           const color = EVENT_ICON_COLORS[event.event_type] || "#8b5cf6";
@@ -2410,20 +2410,54 @@ export default function PublicItem() {
                           const summary = eventSummary(event);
                           const p = (event.payload || {}) as Record<string, unknown>;
                           const date = typeof p.occurred_at === "string" ? p.occurred_at : formatDateShort(event.created_at);
+                          const isExp = expandedEvents.has(event.id);
+                          const hasPayload = event.payload && Object.keys(event.payload).length > 0;
 
                           return (
-                            <div key={event.id} className="relative flex gap-3 pl-1 py-2 group">
-                              <div className="relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: color }}>
-                                <Icon className="h-2.5 w-2.5 text-white" />
+                            <button
+                              key={event.id}
+                              onClick={() => hasPayload && toggleExpanded(event.id)}
+                              className={`relative flex gap-3 pl-1 py-2.5 w-full text-left rounded-lg transition-colors ${hasPayload ? "hover:bg-stone-50 cursor-pointer" : ""} ${isExp ? "bg-stone-50" : ""}`}
+                            >
+                              <div className="relative z-10 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: color }}>
+                                <Icon className="h-3 w-3 text-white" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2">
                                   <span className="text-xs font-medium text-foreground">{label}</span>
                                   <span className="text-[10px] text-muted-foreground tabular-nums">{date}</span>
+                                  {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
                                 </div>
                                 {summary && <p className="text-xs text-muted-foreground mt-0.5">{summary}</p>}
+                                {isExp && hasPayload && (
+                                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                    {Object.entries(event.payload!).filter(([k]) => k !== "source").map(([k, v]) => {
+                                      const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
+                                      return (
+                                        <div key={k} className="flex gap-1.5">
+                                          <span className="text-muted-foreground shrink-0">{PAYLOAD_KEY_LABELS[k] || k}:</span>
+                                          {isCarField ? (
+                                            <span
+                                              className="text-primary font-mono truncate"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setCarDialogValue(v as string);
+                                                setCarGeojson(null); setCarMetadata(null); setCarResult(null); setCarError(null); setCarGeoError(null);
+                                                setShowCarDialog(true); setCarGeoLoading(true); setCarMetaLoading(true);
+                                                getCarGeoJSON(v as string, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
+                                                getCarMetadata(v as string, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                                              }}
+                                            >{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
+                                          ) : (
+                                            <span className="text-foreground font-mono truncate">{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
