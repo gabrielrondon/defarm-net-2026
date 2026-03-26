@@ -1492,8 +1492,8 @@ export default function PublicItem() {
 
   return (
     <Shell isAuthenticated={isAuthenticated}>
-      <div className="space-y-6">
-        <div className="rounded-2xl border border-border p-5 sm:p-7">
+      <div className="space-y-5">
+        <div className="rounded-2xl bg-white border border-stone-200/70 shadow-sm p-5 sm:p-7">
           <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
             <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
             {metadata.sex && <><span className="text-muted-foreground/40">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
@@ -1517,7 +1517,7 @@ export default function PublicItem() {
           </div>
         </div>
 
-        <section className="rounded-xl border border-border p-4 sm:p-5">
+        <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Redes de rastreabilidade</h2>
@@ -1544,7 +1544,7 @@ export default function PublicItem() {
 
         {hasJourneyData && (
           <section
-            className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-indigo-50/60 p-5 sm:p-6 cursor-pointer group"
+            className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-white to-white shadow-sm p-5 sm:p-6 cursor-pointer group"
             onClick={() => setShowJourneyDialog(true)}
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -1635,7 +1635,7 @@ export default function PublicItem() {
         )}
 
         {visibleMetadataEntries.length > 0 && (
-          <section className="rounded-xl border border-border p-5">
+          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold text-foreground">
                 {metadataLocale === "en" ? "Public metadata" : "Metadados públicos"}
@@ -1837,7 +1837,7 @@ export default function PublicItem() {
           </section>
         )}
 
-        <section className="rounded-xl border border-border p-5 space-y-3">
+        <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-5 space-y-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
               <Database className="h-4.5 w-4.5 text-primary" />
@@ -2660,12 +2660,12 @@ function Shell({
   isAuthenticated: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-stone-50/80">
+      <header className="border-b border-stone-200/60 bg-white/90 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src={logoIcon} alt="DeFarm" className="h-7 w-7" />
-            <span className="font-bold text-foreground text-sm">DeFarm</span>
+            <span className="font-semibold text-foreground text-sm tracking-tight">DeFarm</span>
           </div>
           <div className="flex items-center gap-3">
             {!isAuthenticated ? (
@@ -2700,15 +2700,16 @@ function Shell({
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">{children}</main>
 
-      <footer className="border-t border-border mt-12">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
+      <footer className="mt-16">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-center gap-2">
+          <img src={logoIcon} alt="" className="h-4 w-4 opacity-30" />
           <a
             href="https://defarm.net"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            className="text-[11px] text-stone-400 hover:text-stone-500 transition-colors"
           >
             defarm.net
           </a>
