@@ -572,6 +572,43 @@ const EVENT_ICON_COLORS: Record<string, string> = {
   item_property_unlinked: "#f43f5e",
 };
 
+function ComplianceBadge({ car }: { car: string | null }) {
+  const [status, setStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!car) return;
+    setLoading(true);
+    getCarMetadata(car, { skipAuth: true })
+      .then((m) => setStatus(m.status || null))
+      .catch(() => setStatus(null))
+      .finally(() => setLoading(false));
+  }, [car]);
+
+  if (loading || !status) return null;
+
+  const isActive = status === "AT" || status === "Ativo";
+  const isCancelled = status === "CA" || status === "Cancelado";
+  const isPending = status === "PE" || status === "Pendente";
+
+  return (
+    <div className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-[11px] font-medium ${
+      isActive ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50" :
+      isCancelled ? "bg-stone-50 text-stone-500 border border-stone-200/50" :
+      isPending ? "bg-amber-50 text-amber-700 border border-amber-200/50" :
+      "bg-stone-50 text-stone-500 border border-stone-200/50"
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${
+        isActive ? "bg-emerald-500" : isCancelled ? "bg-stone-400" : isPending ? "bg-amber-500" : "bg-stone-400"
+      }`} />
+      {isActive ? "CAR ativo — sem restrições" :
+       isCancelled ? "CAR cancelado no SICAR" :
+       isPending ? "CAR com pendências" :
+       `CAR: ${status}`}
+    </div>
+  );
+}
+
 function TourOverlay({
   step, steps, refs, onNext, onPrev, onClose,
 }: {
@@ -1778,6 +1815,8 @@ export default function PublicItem() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {[currentProperty.municipality, currentProperty.state].filter(Boolean).join(" / ")}
                 </p>
+                {/* Compliance badge from CAR metadata (fetched inline) */}
+                <ComplianceBadge car={currentProperty.car} />
                 <button
                   onClick={() => {
                     if (currentProperty.car && isOfficialCarFormat(currentProperty.car)) {
@@ -3114,7 +3153,7 @@ export default function PublicItem() {
       {isBeta && tourStep === null && (
         <button
           onClick={() => setTourStep(0)}
-          className="fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 py-2.5 shadow-lg flex items-center gap-2 text-sm font-medium transition-colors"
+          className="fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 py-2.5 shadow-lg flex items-center gap-2 text-sm font-medium transition-colors no-print"
         >
           <Info className="h-4 w-4" />
           Tour
