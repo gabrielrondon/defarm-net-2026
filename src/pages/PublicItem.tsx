@@ -335,6 +335,52 @@ function getMetadataLabel(canonicalKey: string, locale: MetadataLocale): string 
   return METADATA_LABELS.get(canonicalKey)?.[locale] || formatFallbackMetadataLabel(canonicalKey);
 }
 
+const PAYLOAD_KEY_LABELS: Record<string, string> = {
+  occurred_at: "Data",
+  weight_kg: "Peso (kg)",
+  location: "Local",
+  source: "Origem",
+  vaccine: "Vacina",
+  dose: "Dose",
+  veterinarian: "Veterinário",
+  lote_vacina: "Lote",
+  treatment: "Tratamento",
+  dose_ml: "Dose (ml)",
+  reason: "Motivo",
+  classification: "Classificação",
+  category: "Categoria",
+  frame_score: "Frame",
+  musculosidade: "Musculosidade",
+  pelagem: "Pelagem",
+  acabamento_gordura: "Acabamento",
+  conformacao: "Conformação",
+  escore_corporal: "Escore corporal",
+  aptidao_reprodutiva: "Aptidão reprodutiva",
+  peso_estimado_carcaca_kg: "Carcaça est. (kg)",
+  from_location: "Origem",
+  to_location: "Destino",
+  from_car: "CAR origem",
+  to_car: "CAR destino",
+  from_municipality: "Município origem",
+  to_municipality: "Município destino",
+  from_state: "UF origem",
+  to_state: "UF destino",
+  from_coordinates: "Coord. origem",
+  to_coordinates: "Coord. destino",
+  coordinates: "Coordenadas",
+  movement_reason: "Motivo",
+  gta_number: "GTA",
+  transport: "Transporte",
+  distancia_km: "Distância (km)",
+  transportadora: "Transportadora",
+  placa_veiculo: "Placa",
+  property_dfid: "Propriedade",
+  car: "CAR",
+  municipality: "Município",
+  state: "UF",
+  nota: "Observação",
+};
+
 const CAR_REGEX = /^[A-Z]{2}-\d{5,7}-[A-F0-9]{32}$/i;
 
 function isOfficialCarFormat(value: string): boolean {
@@ -527,15 +573,15 @@ const EVENT_ICON_COLORS: Record<string, string> = {
 };
 
 const EVENT_ICON_EMOJI: Record<string, string> = {
-  item_born: "🐄",
-  item_weighed: "⚖️",
-  item_vaccinated: "💉",
-  item_treated: "💊",
-  item_classified: "🏷️",
-  item_slaughtered: "🔴",
-  item_movement: "🚚",
-  item_property_linked: "📍",
-  item_property_unlinked: "📍",
+  item_born: "N",
+  item_weighed: "P",
+  item_vaccinated: "V",
+  item_treated: "T",
+  item_classified: "C",
+  item_slaughtered: "A",
+  item_movement: "M",
+  item_property_linked: "L",
+  item_property_unlinked: "D",
 };
 
 function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
@@ -747,7 +793,7 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
       <div className="flex flex-wrap gap-2">
         {locationSummary.map((loc) => (
           <span key={loc.name} className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 text-blue-700 px-2.5 py-1 text-[11px] font-medium">
-            📍 {loc.name}
+            {loc.name}
             <span className="text-blue-500/70">{loc.count}</span>
           </span>
         ))}
@@ -1443,9 +1489,12 @@ export default function PublicItem() {
     <Shell isAuthenticated={isAuthenticated}>
       <div className="space-y-6">
         <div className="rounded-2xl border border-border p-5 sm:p-7">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-            {chainLabels[item.value_chain] || item.value_chain} · {item.country} · {item.year}
-          </p>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+            <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
+            {metadata.sex && <><span className="text-muted-foreground/40">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
+            {metadata.birth_date && <><span className="text-muted-foreground/40">·</span><span>Nasc. {String(metadata.birth_date)}</span></>}
+            <span className="text-muted-foreground/40">·</span><span>{item.country}</span>
+          </div>
           <h1 className="text-xs sm:text-base md:text-xl font-semibold text-foreground font-mono tracking-tight break-all mt-2 leading-relaxed">
             {item.dfid}
           </h1>
@@ -1465,7 +1514,7 @@ export default function PublicItem() {
         <section className="rounded-xl border border-border p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Circuitos associados</h2>
+              <h2 className="text-sm font-semibold text-foreground">Redes de rastreabilidade</h2>
               <p className="text-xs text-muted-foreground">
                 {associatedCircuitIds.length} circuito{associatedCircuitIds.length !== 1 ? "s" : ""} detectado{associatedCircuitIds.length !== 1 ? "s" : ""}.
               </p>
@@ -1506,7 +1555,7 @@ export default function PublicItem() {
                     (() => { const locs = new Map<string, string>(); for (const pt of journeyPoints.filter((p) => p.isProperty)) { const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`; if (!locs.has(key)) locs.set(key, pt.label.replace(/^(Saída|Chegada|Vinculado):\s*/, "")); } return locs.values(); })()
                   ).map((name) => (
                     <span key={name} className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 text-indigo-700 px-2 py-0.5 text-[11px] font-medium">
-                      📍 {name}
+                      {name}
                     </span>
                   ))}
                 </div>
@@ -1788,11 +1837,11 @@ export default function PublicItem() {
               <Database className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">Registros Decentralizados</h2>
+              <h2 className="text-base font-semibold text-foreground">Registro verificável</h2>
               <p className="text-xs text-muted-foreground">
                 {metadataLocale === "en"
-                  ? "On-chain identity + verifiable versioned content"
-                  : "Identidade on-chain + conteúdo versionado verificável"}
+                  ? "Blockchain anchoring + versioned content (IPFS)"
+                  : "Ancorado em blockchain + conteúdo versionado (IPFS)"}
               </p>
             </div>
           </div>
@@ -1998,16 +2047,6 @@ export default function PublicItem() {
                                   operacional
                                 </span>
                               )}
-                              <span
-                                className={`text-[10px] px-1.5 py-0.5 rounded ${trust.className}`}
-                                title={
-                                  event.trust_factors
-                                    ? `Modelo ${event.trust_model_version || "v1"} · ${JSON.stringify(event.trust_factors)}`
-                                    : `Modelo ${event.trust_model_version || "v1"}`
-                                }
-                              >
-                                {trust.text}
-                              </span>
                             </div>
                             {summary && <p className="text-sm text-foreground mt-2">{summary}</p>}
                           </div>
@@ -2041,7 +2080,7 @@ export default function PublicItem() {
                                   const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
                                   return (
                                     <div key={k} className="flex gap-2 text-xs">
-                                      <span className="text-muted-foreground min-w-[100px]">{k}:</span>
+                                      <span className="text-muted-foreground min-w-[100px]">{PAYLOAD_KEY_LABELS[k] || k}:</span>
                                       {isCarField ? (
                                         <button
                                           onClick={() => {
@@ -2155,7 +2194,13 @@ export default function PublicItem() {
                             carMetadata.status === "SU" || carMetadata.status === "Suspenso" ? "bg-orange-500" :
                             "bg-gray-400"
                           }`} />
-                          <span className="font-medium">{carMetadata.status}</span>
+                          <span className="font-medium">{
+                          carMetadata.status === "AT" ? "Ativo" :
+                          carMetadata.status === "PE" ? "Pendente" :
+                          carMetadata.status === "CA" ? "Cancelado" :
+                          carMetadata.status === "SU" ? "Suspenso" :
+                          carMetadata.status
+                        }</span>
                         </div>
                       </div>
                     )}
@@ -2232,7 +2277,7 @@ export default function PublicItem() {
       <Dialog open={showCircuitsDialog} onOpenChange={setShowCircuitsDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Circuitos associados</DialogTitle>
+            <DialogTitle>Redes de rastreabilidade</DialogTitle>
             <DialogDescription>
               Se o circuito for privado/seletivo, a página de destino poderá exigir autenticação.
             </DialogDescription>
