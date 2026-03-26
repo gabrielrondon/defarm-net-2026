@@ -1604,6 +1604,7 @@ export default function PublicItem() {
   };
 
   const isBeta = new URLSearchParams(window.location.search).get("beta") === "1";
+  const isEmbed = window.location.pathname.startsWith("/embed/");
 
   const animalAge = useMemo(() => {
     const m = ((item?.metadata || {}) as Record<string, unknown>);
@@ -1777,6 +1778,44 @@ export default function PublicItem() {
   }
 
   const st = statusMap[(item.status || "").toLowerCase()] || statusMap.active;
+
+  if (isEmbed) {
+    return (
+      <div className="p-4 font-sans text-sm" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+              {metadata.breed ? String(metadata.breed) : item.value_chain}
+              {metadata.sex && ` · ${String(metadata.sex) === "male" ? "Macho" : "Fêmea"}`}
+              {animalAge && ` · ${animalAge}`}
+            </p>
+            <p className="text-xs font-bold text-stone-800 font-mono mt-1 break-all">{item.dfid}</p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${st.className}`}>{st.text}</span>
+              {sanitySummary?.lastWeight && (
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">{sanitySummary.lastWeight} kg</span>
+              )}
+              {sanitySummary && (
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{sanitySummary.vaccines.length} vacinas</span>
+              )}
+            </div>
+          </div>
+          <a
+            href={`https://defarm.net/i/${item.dfid}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-[10px] text-stone-400 hover:text-stone-600 border border-stone-200 rounded-lg px-2 py-1"
+          >
+            Ver completo
+          </a>
+        </div>
+        <div className="mt-2 pt-2 border-t border-stone-100 flex items-center gap-1.5">
+          <img src={logoIcon} alt="" className="h-3 w-3 opacity-40" />
+          <span className="text-[9px] text-stone-300">defarm.net</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Shell isAuthenticated={isAuthenticated}>

@@ -221,6 +221,7 @@ const App = () => (
             <Route path="/c/:id" element={<PublicCircuit />} />
             <Route path="/i/:identifierType/:identifierValue" element={<PublicItem />} />
             <Route path="/i/:dfid" element={<PublicItem />} />
+            <Route path="/embed/item/:dfid" element={<PublicItem />} />
             <Route path="/embed/portfolio" element={<EmbedPortfolio />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login/2fa" element={<Login2FA />} />
