@@ -55,6 +55,7 @@ import CircuitDiscovery from "./pages/app/CircuitDiscovery";
 import JoinRequestsAdmin from "./pages/app/JoinRequestsAdmin";
 import PublicCircuit from "./pages/PublicCircuit";
 import PublicItem from "./pages/PublicItem";
+import CompareItems from "./pages/CompareItems";
 import EmbedPortfolio from "./pages/EmbedPortfolio";
 import AdminMetrics from "./pages/app/AdminMetrics";
 import AdminUsers from "./pages/app/AdminUsers";
@@ -222,6 +223,7 @@ const App = () => (
             <Route path="/i/:identifierType/:identifierValue" element={<PublicItem />} />
             <Route path="/i/:dfid" element={<PublicItem />} />
             <Route path="/embed/item/:dfid" element={<PublicItem />} />
+            <Route path="/compare" element={<CompareItems />} />
             <Route path="/embed/portfolio" element={<EmbedPortfolio />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login/2fa" element={<Login2FA />} />

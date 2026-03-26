@@ -1614,6 +1614,7 @@ export default function PublicItem() {
 
   const isBeta = new URLSearchParams(window.location.search).get("beta") === "1";
   const isEmbed = window.location.pathname.startsWith("/embed/");
+  const isSelo = new URLSearchParams(window.location.search).get("selo") === "1";
 
   const animalAge = useMemo(() => {
     const m = ((item?.metadata || {}) as Record<string, unknown>);
@@ -1787,6 +1788,42 @@ export default function PublicItem() {
   }
 
   const st = statusMap[(item.status || "").toLowerCase()] || statusMap.active;
+
+  if (isSelo) {
+    const breed = metadata.breed ? String(metadata.breed) : "";
+    const sex = String(metadata.sex || "") === "male" ? "Macho" : String(metadata.sex || "") === "female" ? "Fêmea" : "";
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="max-w-xs w-full text-center">
+          <img src={logoIcon} alt="DeFarm" className="h-8 w-8 mx-auto mb-4 opacity-60" />
+          <p className="text-[10px] uppercase tracking-widest text-stone-400 font-medium">Origem rastreada</p>
+          <p className="text-lg font-bold text-stone-800 mt-2">{breed}{sex ? ` · ${sex}` : ""}</p>
+          {animalAge && <p className="text-xs text-stone-400 mt-1">{animalAge}</p>}
+          {currentProperty?.name && (
+            <p className="text-sm text-stone-600 mt-3">{currentProperty.name}</p>
+          )}
+          {currentProperty?.municipality && currentProperty?.state && (
+            <p className="text-xs text-stone-400">{currentProperty.municipality} / {currentProperty.state}</p>
+          )}
+          <div className="mt-5 flex justify-center">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`https://defarm.net/i/${item.dfid}`)}`}
+              alt="QR" className="w-24 h-24 rounded-lg"
+            />
+          </div>
+          <p className="text-[9px] font-mono text-stone-300 mt-3 break-all">{item.dfid}</p>
+          {sanitySummary && (
+            <div className="flex justify-center gap-3 mt-4 text-[10px] text-stone-400">
+              {sanitySummary.lastWeight && <span>{sanitySummary.lastWeight} kg</span>}
+              <span>{sanitySummary.vaccines.length} vacinas</span>
+              <span>{weightHistory.length} pesagens</span>
+            </div>
+          )}
+          <p className="text-[9px] text-stone-300 mt-4">defarm.net</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isEmbed) {
     return (
