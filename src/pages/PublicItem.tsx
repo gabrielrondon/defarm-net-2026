@@ -1104,6 +1104,7 @@ export default function PublicItem() {
   const [showCircuitsDialog, setShowCircuitsDialog] = useState(false);
   const [showProofOfLifeDialog, setShowProofOfLifeDialog] = useState(false);
   const [showJourneyDialog, setShowJourneyDialog] = useState(false);
+  const [showEmbedPreview, setShowEmbedPreview] = useState(false);
   const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem("public_item_locale") : null;
     return stored === "en" ? "en" : "pt-BR";
@@ -1873,15 +1874,38 @@ export default function PublicItem() {
   return (
     <Shell isAuthenticated={isAuthenticated}>
       <div className="space-y-5">
-        <div className="rounded-2xl bg-white border border-stone-200/70 shadow-sm p-5 sm:p-7 relative">
-          <button onClick={() => window.print()} className="absolute top-4 right-4 text-muted-foreground/40 hover:text-muted-foreground transition-colors no-print" title="Imprimir">
-            <Printer className="h-4 w-4" />
-          </button>
+        <div className="rounded-2xl bg-white border border-stone-200/70 shadow-sm p-5 sm:p-7">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-2 mb-4 no-print">
+            <div className="flex items-center gap-1 rounded-lg border border-stone-200/60 p-0.5">
+              <button
+                onClick={() => setMetadataLocale("pt-BR")}
+                className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "pt-BR" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
+              >PT-BR</button>
+              <button
+                onClick={() => setMetadataLocale("en")}
+                className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "en" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
+              >EN</button>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => window.print()} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Imprimir">
+                <Printer className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={() => setShowEmbedPreview(true)} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Embed">
+                <ExternalLink className="h-3.5 w-3.5" />
+              </button>
+              <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Selo de origem">
+                <Tag className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
             <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
             {metadata.sex && <><span className="text-muted-foreground/40">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
             {metadata.birth_date && <><span className="text-muted-foreground/40">·</span><span>Nasc. {String(metadata.birth_date)}{animalAge ? ` (${animalAge})` : ""}</span></>}
             <span className="text-muted-foreground/40">·</span><span>{item.country}</span>
+            <span className="text-muted-foreground/40">·</span><span>{chainLabels[item.value_chain] || item.value_chain}</span>
           </div>
           <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground/50 mt-2">Identidade Digital</p>
           <h1 className="text-sm sm:text-base md:text-xl font-bold text-foreground font-mono tracking-tight break-all leading-relaxed">
@@ -1905,6 +1929,16 @@ export default function PublicItem() {
             </button>
           )}
         </div>
+
+        {item.dfid && (
+          <AssetQRCode
+            dfid={item.dfid}
+            canonicalIdLabel={canonicalIdentifier?.label}
+            canonicalIdValue={canonicalIdentifier?.value}
+            identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
+            latestCid={latestContentVersion?.cid || undefined}
+          />
+        )}
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {isBeta && currentProperty?.car && (
@@ -2040,16 +2074,6 @@ export default function PublicItem() {
         </section>
         )}
 
-        {item.dfid && (
-          <AssetQRCode
-            dfid={item.dfid}
-            canonicalIdLabel={canonicalIdentifier?.label}
-            canonicalIdValue={canonicalIdentifier?.value}
-            identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
-            latestCid={latestContentVersion?.cid || undefined}
-          />
-        )}
-
         {hasJourneyData && (
           <section
             ref={isBeta ? setTourRef(4) : undefined}
@@ -2145,29 +2169,10 @@ export default function PublicItem() {
 
         {visibleMetadataEntries.length > 0 && (
           <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3">
               <h2 className="text-sm font-semibold text-foreground">
                 {metadataLocale === "en" ? "Public metadata" : "Metadados públicos"}
               </h2>
-              <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1">
-                <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
-                <Button
-                  size="sm"
-                  variant={metadataLocale === "pt-BR" ? "default" : "ghost"}
-                  className="h-6 px-2 text-[11px]"
-                  onClick={() => setMetadataLocale("pt-BR")}
-                >
-                  PT-BR
-                </Button>
-                <Button
-                  size="sm"
-                  variant={metadataLocale === "en" ? "default" : "ghost"}
-                  className="h-6 px-2 text-[11px]"
-                  onClick={() => setMetadataLocale("en")}
-                >
-                  EN
-                </Button>
-              </div>
             </div>
             <div className="space-y-4">
               {groupedMetadataEntries.map(({ group, entries }) => (
@@ -2863,6 +2868,41 @@ export default function PublicItem() {
               ) : null}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEmbedPreview} onOpenChange={setShowEmbedPreview}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Widget Embed</DialogTitle>
+            <DialogDescription>Cole este código no seu site para exibir a rastreabilidade deste animal.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-stone-200 overflow-hidden">
+              <iframe
+                src={`/embed/item/${item?.dfid || ""}`}
+                className="w-full border-0"
+                style={{ height: "160px" }}
+                title="Embed preview"
+              />
+            </div>
+            <div className="rounded-lg bg-stone-50 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Código HTML</p>
+              <pre className="text-xs font-mono text-foreground break-all whitespace-pre-wrap select-all">{`<iframe src="https://defarm.net/embed/item/${item?.dfid || ""}" width="100%" height="160" frameborder="0" style="border-radius:12px;border:1px solid #e5e5e5;"></iframe>`}</pre>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                navigator.clipboard.writeText(`<iframe src="https://defarm.net/embed/item/${item?.dfid || ""}" width="100%" height="160" frameborder="0" style="border-radius:12px;border:1px solid #e5e5e5;"></iframe>`);
+                toast({ title: "Código copiado" });
+              }}
+            >
+              <Copy className="h-3.5 w-3.5 mr-1.5" />
+              Copiar código
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
