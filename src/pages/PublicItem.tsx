@@ -573,10 +573,10 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
     if (!mapRef.current || points.length === 0) return;
     let cancelled = false;
 
-    import("leaflet").then(async (leafletModule) => {
+    import("leaflet").then((leafletModule) => {
       if (cancelled || !mapRef.current) return;
       import("leaflet/dist/leaflet.css");
-      const L_ = leafletModule.default;
+      const L_ = leafletModule.default || leafletModule;
 
       if (mapInstance.current) {
         mapInstance.current.remove();
@@ -592,19 +592,6 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
       L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
         maxZoom: 18,
       }).addTo(map);
-
-      // Fetch and draw CAR polygons for properties
-      for (const [car] of propertyCars) {
-        try {
-          const geo = await getCarGeoJSON(car, { skipAuth: true });
-          if (cancelled) return;
-          L_.geoJSON(geo as any, {
-            style: { color: "#22c55e", weight: 2, fillColor: "#22c55e", fillOpacity: 0.15 },
-          }).addTo(map);
-        } catch {
-          // Polygon not available — skip silently
-        }
-      }
 
       // Draw route line between unique property coords
       const uniquePropertyCoords: [number, number][] = [];
@@ -706,6 +693,19 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
 
       mapInstance.current = map;
       setMapReady(true);
+
+      // Fetch CAR polygons asynchronously AFTER markers are placed
+      for (const [car] of propertyCars) {
+        getCarGeoJSON(car, { skipAuth: true })
+          .then((geo) => {
+            if (!cancelled && mapInstance.current) {
+              L_.geoJSON(geo as any, {
+                style: { color: "#22c55e", weight: 2, fillColor: "#22c55e", fillOpacity: 0.15 },
+              }).addTo(mapInstance.current);
+            }
+          })
+          .catch(() => {});
+      }
     });
 
     return () => {
