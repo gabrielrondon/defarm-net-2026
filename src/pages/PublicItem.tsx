@@ -2137,34 +2137,33 @@ export default function PublicItem() {
                 </div>
               ) : null}
 
-              {!isAuthenticated ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Para executar verificação de compliance desse CAR, entre na DeFarm.
-                  </p>
-                  <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="inline-block">
-                    <Button size="sm">Entrar na DeFarm</Button>
-                  </Link>
-                </div>
-              ) : carLoading ? (
+              {carLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" /> Consultando compliance...
                 </div>
-              ) : carError ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">{carError}</p>
-                  {carAuthExpired ? (
-                    <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="inline-block">
-                      <Button size="sm">Entrar novamente</Button>
-                    </Link>
-                  ) : null}
-                </div>
               ) : carResult ? (
-                <div className="space-y-2 text-sm">
-                  <p><span className="text-muted-foreground">Veredito:</span> <span className="font-medium">{carResult.verdict}</span></p>
-                  <p><span className="text-muted-foreground">Score:</span> <span className="font-medium">{carResult.score}</span></p>
-                  <p><span className="text-muted-foreground">Checkers:</span> <span className="font-medium">{carResult.summary.totalCheckers}</span></p>
-                  <p><span className="text-muted-foreground">Falhas:</span> <span className="font-medium">{carResult.summary.failed}</span></p>
+                <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Compliance Check</p>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                    <div>
+                      <span className="text-muted-foreground text-xs">Veredito</span>
+                      <p className={`font-medium mt-0.5 ${carResult.verdict === "pass" ? "text-emerald-600" : carResult.verdict === "fail" ? "text-red-600" : "text-amber-600"}`}>{carResult.verdict}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Score</span>
+                      <p className="font-medium mt-0.5">{carResult.score}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Checkers</span>
+                      <p className="font-medium mt-0.5">{carResult.summary.totalCheckers}</p>
+                    </div>
+                    {carResult.summary.failed > 0 && (
+                      <div>
+                        <span className="text-muted-foreground text-xs">Falhas</span>
+                        <p className="font-medium mt-0.5 text-red-600">{carResult.summary.failed}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : null}
             </div>
