@@ -1,6 +1,4 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -529,12 +527,17 @@ const EVENT_ICON_COLORS: Record<string, string> = {
 
 function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
+  const mapInstance = useRef<any>(null);
 
   useEffect(() => {
     if (!mapRef.current || points.length === 0) return;
-    // Dynamic import already at top; L is imported
-    const L_ = L;
+    let cancelled = false;
+
+    import("leaflet").then((leafletModule) => {
+      if (cancelled || !mapRef.current) return;
+      // Also ensure CSS is loaded
+      import("leaflet/dist/leaflet.css");
+      const L_ = leafletModule.default;
 
     if (mapInstance.current) {
       mapInstance.current.remove();
@@ -637,7 +640,10 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
     }
 
     mapInstance.current = map;
+    });
+
     return () => {
+      cancelled = true;
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
@@ -1749,7 +1755,7 @@ export default function PublicItem() {
                   ? "Sign in to DeFarm to view detailed timeline context."
                   : "Entre na DeFarm para visualizar a timeline detalhada."}
               </p>
-              <Link to="/login" className="inline-block mt-4">
+              <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="inline-block mt-4">
                 <Button size="sm">{metadataLocale === "en" ? "Sign in to DeFarm" : "Entrar na DeFarm"}</Button>
               </Link>
             </div>
@@ -1999,7 +2005,7 @@ export default function PublicItem() {
                   <p className="text-sm text-muted-foreground">
                     Para executar verificação de compliance desse CAR, entre na DeFarm.
                   </p>
-                  <Link to="/login" className="inline-block">
+                  <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="inline-block">
                     <Button size="sm">Entrar na DeFarm</Button>
                   </Link>
                 </div>
@@ -2011,7 +2017,7 @@ export default function PublicItem() {
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">{carError}</p>
                   {carAuthExpired ? (
-                    <Link to="/login" className="inline-block">
+                    <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="inline-block">
                       <Button size="sm">Entrar novamente</Button>
                     </Link>
                   ) : null}
@@ -2343,7 +2349,7 @@ function Shell({
           </div>
           <div className="flex items-center gap-3">
             {!isAuthenticated ? (
-              <Link to="/login">
+              <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`}>
                 <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
                   Login na DeFarm
                 </Button>

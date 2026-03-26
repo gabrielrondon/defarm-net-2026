@@ -76,6 +76,11 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
   useEffect(() => {
     if (isAuthLoading || !isAuthenticated) return;
+    const redirectTo = searchParams.get("redirect");
+    if (redirectTo && redirectTo.startsWith("/")) {
+      navigate(redirectTo, { replace: true });
+      return;
+    }
     const destination =
       user?.workspace_type === "partner"
         ? "/app/parceiro"
@@ -91,7 +96,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
         ? "/app/governo/docs"
         : "/app";
     navigate(destination, { replace: true });
-  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate]);
+  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
