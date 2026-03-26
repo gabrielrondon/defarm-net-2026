@@ -27,6 +27,7 @@ import {
   FileText,
   Truck,
   MapPinned,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -2532,11 +2533,26 @@ function Shell({
                 </Button>
               </Link>
             ) : (
-              <Link to="/app">
-                <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
-                  Abrir app
+              <div className="flex items-center gap-1.5">
+                <Link to="/app">
+                  <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
+                    Abrir app
+                  </Button>
+                </Link>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    localStorage.removeItem("defarm_token");
+                    localStorage.removeItem("defarm_refresh_token");
+                    window.location.reload();
+                  }}
+                  title="Sair"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
                 </Button>
-              </Link>
+              </div>
             )}
           </div>
         </div>
