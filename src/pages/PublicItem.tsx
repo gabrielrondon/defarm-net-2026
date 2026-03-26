@@ -572,6 +572,100 @@ const EVENT_ICON_COLORS: Record<string, string> = {
   item_property_unlinked: "#f43f5e",
 };
 
+function TourOverlay({
+  step, steps, refs, onNext, onPrev, onClose,
+}: {
+  step: number | null;
+  steps: { title: string; description: string }[];
+  refs: React.MutableRefObject<(HTMLElement | null)[]>;
+  onNext: () => void;
+  onPrev: () => void;
+  onClose: () => void;
+}) {
+  const [pos, setPos] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    if (step === null) return;
+    const update = () => {
+      const el = refs.current[step];
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setPos({ x: rect.left, y: rect.top, w: rect.width, h: rect.height });
+    };
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [step, refs]);
+
+  if (step === null || step >= steps.length || !pos) return null;
+
+  const pad = 8;
+  const tooltipTop = pos.y + pos.h + pad + 12;
+  const tooltipFlip = tooltipTop + 180 > window.innerHeight;
+  const tooltipY = tooltipFlip ? Math.max(8, pos.y - 180 - 12) : tooltipTop;
+  const tooltipX = Math.max(12, Math.min(pos.x, window.innerWidth - 340));
+
+  return (
+    <div className="fixed inset-0 z-50" onClick={onClose}>
+      <svg className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 50 }}>
+        <defs>
+          <mask id="tour-mask">
+            <rect width="100%" height="100%" fill="white" />
+            <rect
+              x={pos.x - pad} y={pos.y - pad}
+              width={pos.w + pad * 2} height={pos.h + pad * 2}
+              rx={12} fill="black"
+            />
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="rgba(0,0,0,0.55)" mask="url(#tour-mask)" />
+      </svg>
+      <div
+        className="fixed rounded-xl ring-2 ring-indigo-400 pointer-events-none transition-all duration-300"
+        style={{ left: pos.x - pad, top: pos.y - pad, width: pos.w + pad * 2, height: pos.h + pad * 2, zIndex: 51 }}
+      />
+      <div
+        className="fixed bg-white rounded-xl shadow-2xl border border-stone-200 p-4 max-w-xs sm:max-w-sm transition-all duration-300"
+        style={{ left: tooltipX, top: tooltipY, zIndex: 52 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          {steps.map((_, i) => (
+            <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? "bg-indigo-500" : "bg-stone-200"}`} />
+          ))}
+        </div>
+        <p className="text-sm font-semibold text-foreground">{steps[step].title}</p>
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{steps[step].description}</p>
+        <div className="flex items-center justify-between mt-4">
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="text-xs text-muted-foreground hover:text-foreground">
+            Fechar
+          </button>
+          <div className="flex gap-2">
+            {step > 0 && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onPrev(); }}>
+                Anterior
+              </Button>
+            )}
+            {step < steps.length - 1 ? (
+              <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onNext(); }}>
+                Próximo
+              </Button>
+            ) : (
+              <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onClose(); }}>
+                Concluir
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PropertyMapMini({ car }: { car: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -2973,75 +3067,14 @@ export default function PublicItem() {
         </DialogContent>
       </Dialog>
       {/* Beta tour overlay */}
-      {isBeta && tourStep !== null && tourStep < tourSteps.length && (() => {
-        const el = tourRefs.current[tourStep];
-        if (!el) return null;
-        const rect = el.getBoundingClientRect();
-        const scrollY = window.scrollY;
-        const pad = 8;
-        return (
-          <div className="fixed inset-0 z-50" onClick={() => setTourStep(null)}>
-            {/* Dark overlay with cutout */}
-            <svg className="absolute inset-0 w-full h-full">
-              <defs>
-                <mask id="tour-mask">
-                  <rect width="100%" height="100%" fill="white" />
-                  <rect
-                    x={rect.left - pad} y={rect.top - pad}
-                    width={rect.width + pad * 2} height={rect.height + pad * 2}
-                    rx={12} fill="black"
-                  />
-                </mask>
-              </defs>
-              <rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#tour-mask)" />
-            </svg>
-            {/* Highlighted border */}
-            <div
-              className="absolute rounded-xl ring-2 ring-indigo-400 ring-offset-2 pointer-events-none"
-              style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }}
-            />
-            {/* Tooltip */}
-            <div
-              className="absolute bg-white rounded-xl shadow-xl border border-stone-200 p-4 max-w-sm z-50"
-              style={{
-                left: Math.min(rect.left, window.innerWidth - 360),
-                top: rect.bottom + 16,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-[11px] uppercase tracking-wider text-indigo-600 font-medium mb-1">
-                {tourStep + 1} de {tourSteps.length}
-              </p>
-              <p className="text-sm font-semibold text-foreground">{tourSteps[tourStep].title}</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{tourSteps[tourStep].description}</p>
-              <div className="flex items-center justify-between mt-4">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setTourStep(null); }}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Fechar
-                </button>
-                <div className="flex gap-2">
-                  {tourStep > 0 && (
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setTourStep(tourStep - 1); }}>
-                      Anterior
-                    </Button>
-                  )}
-                  {tourStep < tourSteps.length - 1 ? (
-                    <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setTourStep(tourStep + 1); }}>
-                      Próximo
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setTourStep(null); }}>
-                      Concluir
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      <TourOverlay
+        step={tourStep}
+        steps={tourSteps}
+        refs={tourRefs}
+        onNext={() => setTourStep((s) => s !== null && s < tourSteps.length - 1 ? s + 1 : null)}
+        onPrev={() => setTourStep((s) => s !== null && s > 0 ? s - 1 : s)}
+        onClose={() => setTourStep(null)}
+      />
 
       {/* Tour start button — floating, beta only */}
       {isBeta && tourStep === null && (
