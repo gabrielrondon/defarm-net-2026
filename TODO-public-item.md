@@ -1,6 +1,6 @@
 # PublicItem — Melhorias de Rastreabilidade
 
-Status: Em andamento
+Status: **Completo** (15/15)
 Beta flag: `?beta=1` na URL ativa funcionalidades experimentais
 
 ## Alto impacto, rápido
@@ -14,14 +14,14 @@ Beta flag: `?beta=1` na URL ativa funcionalidades experimentais
 
 - [x] **Compliance ambiental** — badge "CAR ativo" / "CAR cancelado" / "CAR pendente" inline
 - [x] **Próximos eventos esperados** — inferidos da idade e histórico (reforço vacina, pesagem)
-- [x] **Modo impressão / PDF limpo** — @media print com ficha institucional
-- [x] **Widget embed** — `/embed/item/DFID-...` versão compacta pra iframe em sites de parceiros
+- [x] **Modo impressão / PDF limpo** — @media print + botão de impressora no header
+- [x] **Widget embed** — `/embed/item/DFID-...` versão compacta com QR pra iframe
 
 ## Longo prazo
 
-- [ ] **Comparador** — selecionar 2-3 animais e comparar lado a lado
-- [x] **Timeline visual** — vertical com ícones coloridos, agrupamento por ano, expandível
-- [ ] **Selo de origem pra consumidor** — versão ultra-simplificada pra QR em embalagem
+- [x] **Comparador** — `/compare?ids=DFID1,DFID2,DFID3` com tabela + gráfico de peso sobreposto
+- [x] **Timeline visual** — vertical com ícones coloridos, agrupamento por ano, expandível com detalhes
+- [x] **Selo de origem pra consumidor** — `?selo=1` versão ultra-minimal pra QR em embalagem
 
 ## Extras implementados
 
@@ -31,11 +31,13 @@ Beta flag: `?beta=1` na URL ativa funcionalidades experimentais
 - [x] **Event detector expandido** — auto-detecta vacinas, tratamentos, classificação, abate
 - [x] **Design polish** — warm surfaces, shadows, humanized labels, responsive
 
-## Notas técnicas
+## URLs
 
-- Beta flag: `?beta=1` query param, sem login necessário
-- Embed flag: detectado por URL path `/embed/`
-- Quando aprovado, remove o guard e vira default
-- Não depende de feature flags, edge config, nem banco
-- Print: Ctrl+P / Cmd+P na página gera ficha limpa
-- Embed: `<iframe src="https://defarm.net/embed/item/DFID-..." height="120" />`
+| Modo | URL |
+|------|-----|
+| Normal | `defarm.net/i/DFID-...` |
+| Beta | `defarm.net/i/DFID-...?beta=1` |
+| Selo | `defarm.net/i/DFID-...?selo=1` |
+| Embed | `defarm.net/embed/item/DFID-...` |
+| Comparador | `defarm.net/compare?ids=DFID1,DFID2` |
+| Print | Cmd+P ou botão de impressora |
