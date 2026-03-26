@@ -1575,6 +1575,28 @@ export default function PublicItem() {
     return upcoming;
   }, [sanitySummary, animalAge, item?.metadata]);
 
+  // === BETA TOUR ===
+  const [tourStep, setTourStep] = useState<number | null>(null);
+  const tourRefs = useRef<(HTMLElement | null)[]>([]);
+  const setTourRef = (idx: number) => (el: HTMLElement | null) => { tourRefs.current[idx] = el; };
+
+  const tourSteps = useMemo(() => {
+    const steps: { title: string; description: string }[] = [];
+    if (currentProperty?.car) steps.push({ title: "Propriedade atual", description: "Visualize a fazenda onde o animal se encontra, com mapa satellite e polígono do CAR extraído do SICAR." });
+    if (sanitySummary) steps.push({ title: "Resumo sanitário", description: "Panorama completo de vacinações, tratamentos, pesagens e Ganho Médio Diário (GMD) — tudo calculado automaticamente dos eventos registrados." });
+    if (weightHistory.length >= 2) steps.push({ title: "Evolução de peso", description: "Curva de crescimento do animal ao longo do tempo. Cada ponto é uma pesagem real registrada no sistema." });
+    if (upcomingEvents.length > 0) steps.push({ title: "Previsões", description: "O sistema analisa o histórico e infere quais procedimentos estão próximos do vencimento ou atrasados — reforço vacinal, vermifugação, pesagem periódica." });
+    steps.push({ title: "Jornada do Animal", description: "Mapa interativo com todas as propriedades por onde o animal passou, rotas de transporte e eventos geolocalizados com timeline sincronizada." });
+    steps.push({ title: "Timeline", description: "Histórico completo agrupado por ano. Cada evento tem ícone, tipo, data e resumo — pesagens, vacinas, movimentações, tudo em ordem cronológica." });
+    return steps;
+  }, [currentProperty, sanitySummary, weightHistory, upcomingEvents]);
+
+  useEffect(() => {
+    if (tourStep === null) return;
+    const el = tourRefs.current[tourStep];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [tourStep]);
+
   if (isResolvingRef || isLoading) {
     return (
       <Shell isAuthenticated={isAuthenticated}>
@@ -1654,7 +1676,7 @@ export default function PublicItem() {
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {isBeta && currentProperty?.car && (
-          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Propriedade atual</p>
@@ -1688,7 +1710,7 @@ export default function PublicItem() {
         )}
 
         {isBeta && sanitySummary && (
-          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+          <section ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Sanidade</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
@@ -1725,7 +1747,7 @@ export default function PublicItem() {
         )}
 
         {isBeta && weightHistory.length >= 2 && (
-          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+          <section ref={setTourRef(2)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Evolução de peso</p>
               {sanitySummary?.lastWeight && (
@@ -1745,7 +1767,7 @@ export default function PublicItem() {
         )}
 
         {isBeta && upcomingEvents.length > 0 && (
-          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+          <section ref={setTourRef(3)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Previsões</p>
             <div className="space-y-2">
               {upcomingEvents.map((ev, i) => (
@@ -1794,6 +1816,7 @@ export default function PublicItem() {
 
         {hasJourneyData && (
           <section
+            ref={isBeta ? setTourRef(4) : undefined}
             className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-white to-white shadow-sm p-5 sm:p-6 cursor-pointer group"
             onClick={() => setShowJourneyDialog(true)}
           >
@@ -2266,7 +2289,7 @@ export default function PublicItem() {
             </div>
           ) : isBeta ? (
             /* === BETA: Timeline visual with year grouping === */
-            <div className="space-y-6">
+            <div ref={setTourRef(5)} className="space-y-6">
               {(() => {
                 const groups = new Map<string, typeof visibleEvents>();
                 for (const e of visibleEvents) {
@@ -2949,6 +2972,87 @@ export default function PublicItem() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Beta tour overlay */}
+      {isBeta && tourStep !== null && tourStep < tourSteps.length && (() => {
+        const el = tourRefs.current[tourStep];
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        const scrollY = window.scrollY;
+        const pad = 8;
+        return (
+          <div className="fixed inset-0 z-50" onClick={() => setTourStep(null)}>
+            {/* Dark overlay with cutout */}
+            <svg className="absolute inset-0 w-full h-full">
+              <defs>
+                <mask id="tour-mask">
+                  <rect width="100%" height="100%" fill="white" />
+                  <rect
+                    x={rect.left - pad} y={rect.top - pad}
+                    width={rect.width + pad * 2} height={rect.height + pad * 2}
+                    rx={12} fill="black"
+                  />
+                </mask>
+              </defs>
+              <rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#tour-mask)" />
+            </svg>
+            {/* Highlighted border */}
+            <div
+              className="absolute rounded-xl ring-2 ring-indigo-400 ring-offset-2 pointer-events-none"
+              style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }}
+            />
+            {/* Tooltip */}
+            <div
+              className="absolute bg-white rounded-xl shadow-xl border border-stone-200 p-4 max-w-sm z-50"
+              style={{
+                left: Math.min(rect.left, window.innerWidth - 360),
+                top: rect.bottom + 16,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-[11px] uppercase tracking-wider text-indigo-600 font-medium mb-1">
+                {tourStep + 1} de {tourSteps.length}
+              </p>
+              <p className="text-sm font-semibold text-foreground">{tourSteps[tourStep].title}</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{tourSteps[tourStep].description}</p>
+              <div className="flex items-center justify-between mt-4">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setTourStep(null); }}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Fechar
+                </button>
+                <div className="flex gap-2">
+                  {tourStep > 0 && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setTourStep(tourStep - 1); }}>
+                      Anterior
+                    </Button>
+                  )}
+                  {tourStep < tourSteps.length - 1 ? (
+                    <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setTourStep(tourStep + 1); }}>
+                      Próximo
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); setTourStep(null); }}>
+                      Concluir
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Tour start button — floating, beta only */}
+      {isBeta && tourStep === null && (
+        <button
+          onClick={() => setTourStep(0)}
+          className="fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 py-2.5 shadow-lg flex items-center gap-2 text-sm font-medium transition-colors"
+        >
+          <Info className="h-4 w-4" />
+          Tour
+        </button>
+      )}
     </Shell>
   );
 }
