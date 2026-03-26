@@ -1472,6 +1472,68 @@ export default function PublicItem() {
     });
   };
 
+  const isBeta = new URLSearchParams(window.location.search).get("beta") === "1";
+
+  const animalAge = useMemo(() => {
+    const m = ((item?.metadata || {}) as Record<string, unknown>);
+    const bd = typeof m.birth_date === "string" ? m.birth_date : null;
+    if (!bd) return null;
+    const birth = new Date(bd);
+    if (isNaN(birth.getTime())) return null;
+    const now = new Date();
+    let years = now.getFullYear() - birth.getFullYear();
+    let months = now.getMonth() - birth.getMonth();
+    if (months < 0) { years--; months += 12; }
+    if (now.getDate() < birth.getDate()) months--;
+    if (months < 0) { years--; months += 12; }
+    if (years > 0 && months > 0) return `${years} ano${years > 1 ? "s" : ""} e ${months} mes${months > 1 ? "es" : ""}`;
+    if (years > 0) return `${years} ano${years > 1 ? "s" : ""}`;
+    return `${months} mes${months > 1 ? "es" : ""}`;
+  }, [item?.metadata]);
+
+  const sanitySummary = useMemo(() => {
+    if (!events.length) return null;
+    const vaccines: { name: string; date: string }[] = [];
+    const treatments: { name: string; date: string }[] = [];
+    let lastWeight: number | null = null;
+    let lastWeightDate: string | null = null;
+    let firstWeight: number | null = null;
+    let firstWeightDate: string | null = null;
+    for (const e of events) {
+      const p = (e.payload || {}) as Record<string, unknown>;
+      if (e.event_type === "item_vaccinated" && typeof p.vaccine === "string")
+        vaccines.push({ name: p.vaccine, date: typeof p.occurred_at === "string" ? p.occurred_at : "" });
+      if (e.event_type === "item_treated" && typeof p.treatment === "string")
+        treatments.push({ name: p.treatment, date: typeof p.occurred_at === "string" ? p.occurred_at : "" });
+      if (e.event_type === "item_weighed" && typeof p.weight_kg === "number") {
+        const d = typeof p.occurred_at === "string" ? p.occurred_at : "";
+        if (!firstWeight || (d && d < (firstWeightDate || "9"))) { firstWeight = p.weight_kg; firstWeightDate = d; }
+        if (!lastWeight || (d && d > (lastWeightDate || ""))) { lastWeight = p.weight_kg; lastWeightDate = d; }
+      }
+    }
+    let gmd: number | null = null;
+    if (firstWeight && lastWeight && firstWeightDate && lastWeightDate && firstWeightDate !== lastWeightDate) {
+      const days = (new Date(lastWeightDate).getTime() - new Date(firstWeightDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (days > 0) gmd = (lastWeight - firstWeight) / days;
+    }
+    return { vaccines, treatments, lastWeight, lastWeightDate, firstWeight, gmd };
+  }, [events]);
+
+  const currentProperty = useMemo(() => {
+    const linked = events
+      .filter((e) => e.event_type === "item_property_linked")
+      .map((e) => ({ payload: (e.payload || {}) as Record<string, unknown>, created: e.created_at }))
+      .sort((a, b) => b.created.localeCompare(a.created));
+    if (!linked.length) return null;
+    const p = linked[0].payload;
+    return {
+      name: typeof p.property_dfid === "string" ? p.property_dfid : null,
+      car: typeof p.car === "string" ? p.car : null,
+      municipality: typeof p.municipality === "string" ? p.municipality : null,
+      state: typeof p.state === "string" ? p.state : null,
+    };
+  }, [events]);
+
   if (isResolvingRef || isLoading) {
     return (
       <Shell isAuthenticated={isAuthenticated}>
@@ -1521,81 +1583,6 @@ export default function PublicItem() {
   }
 
   const st = statusMap[(item.status || "").toLowerCase()] || statusMap.active;
-  const isBeta = new URLSearchParams(window.location.search).get("beta") === "1";
-
-  // Computed age from birth_date
-  const animalAge = useMemo(() => {
-    const bd = typeof metadata.birth_date === "string" ? metadata.birth_date : null;
-    if (!bd) return null;
-    const birth = new Date(bd);
-    if (isNaN(birth.getTime())) return null;
-    const now = new Date();
-    let years = now.getFullYear() - birth.getFullYear();
-    let months = now.getMonth() - birth.getMonth();
-    if (months < 0) { years--; months += 12; }
-    if (now.getDate() < birth.getDate()) months--;
-    if (months < 0) { years--; months += 12; }
-    if (years > 0 && months > 0) return `${years} ano${years > 1 ? "s" : ""} e ${months} mes${months > 1 ? "es" : ""}`;
-    if (years > 0) return `${years} ano${years > 1 ? "s" : ""}`;
-    return `${months} mes${months > 1 ? "es" : ""}`;
-  }, [metadata.birth_date]);
-
-  // Sanity summary from events
-  const sanitySummary = useMemo(() => {
-    if (!events.length) return null;
-    const vaccines: { name: string; date: string }[] = [];
-    const treatments: { name: string; date: string }[] = [];
-    let lastWeight: number | null = null;
-    let lastWeightDate: string | null = null;
-    let firstWeight: number | null = null;
-    let firstWeightDate: string | null = null;
-
-    for (const e of events) {
-      const p = (e.payload || {}) as Record<string, unknown>;
-      if (e.event_type === "item_vaccinated" && typeof p.vaccine === "string") {
-        vaccines.push({ name: p.vaccine, date: typeof p.occurred_at === "string" ? p.occurred_at : "" });
-      }
-      if (e.event_type === "item_treated" && typeof p.treatment === "string") {
-        treatments.push({ name: p.treatment, date: typeof p.occurred_at === "string" ? p.occurred_at : "" });
-      }
-      if (e.event_type === "item_weighed" && typeof p.weight_kg === "number") {
-        const d = typeof p.occurred_at === "string" ? p.occurred_at : "";
-        if (!firstWeight || (d && d < (firstWeightDate || "9"))) {
-          firstWeight = p.weight_kg;
-          firstWeightDate = d;
-        }
-        if (!lastWeight || (d && d > (lastWeightDate || ""))) {
-          lastWeight = p.weight_kg;
-          lastWeightDate = d;
-        }
-      }
-    }
-
-    // GMD (Ganho Médio Diário)
-    let gmd: number | null = null;
-    if (firstWeight && lastWeight && firstWeightDate && lastWeightDate && firstWeightDate !== lastWeightDate) {
-      const days = (new Date(lastWeightDate).getTime() - new Date(firstWeightDate).getTime()) / (1000 * 60 * 60 * 24);
-      if (days > 0) gmd = (lastWeight - firstWeight) / days;
-    }
-
-    return { vaccines, treatments, lastWeight, lastWeightDate, firstWeight, gmd };
-  }, [events]);
-
-  // Current property (latest property_linked)
-  const currentProperty = useMemo(() => {
-    const linked = events
-      .filter((e) => e.event_type === "item_property_linked")
-      .map((e) => ({ payload: (e.payload || {}) as Record<string, unknown>, created: e.created_at }))
-      .sort((a, b) => b.created.localeCompare(a.created));
-    if (!linked.length) return null;
-    const p = linked[0].payload;
-    return {
-      name: typeof p.property_dfid === "string" ? p.property_dfid : null,
-      car: typeof p.car === "string" ? p.car : null,
-      municipality: typeof p.municipality === "string" ? p.municipality : null,
-      state: typeof p.state === "string" ? p.state : null,
-    };
-  }, [events]);
 
   return (
     <Shell isAuthenticated={isAuthenticated}>
