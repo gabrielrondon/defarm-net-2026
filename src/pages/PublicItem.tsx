@@ -572,6 +572,38 @@ const EVENT_ICON_COLORS: Record<string, string> = {
   item_property_unlinked: "#f43f5e",
 };
 
+function PropertyMapMini({ car }: { car: string }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<any>(null);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    let cancelled = false;
+
+    Promise.all([
+      import("leaflet").then((m) => m.default || m),
+      import("leaflet/dist/leaflet.css"),
+      getCarGeoJSON(car, { skipAuth: true }),
+    ]).then(([L_, , geo]) => {
+      if (cancelled || !mapRef.current) return;
+      if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; }
+
+      const map = L_.map(mapRef.current, {
+        zoomControl: false, attributionControl: false,
+        dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false,
+      });
+      L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18 }).addTo(map);
+      const layer = L_.geoJSON(geo as any, { style: { color: "#22c55e", weight: 2, fillColor: "#22c55e", fillOpacity: 0.2 } }).addTo(map);
+      map.fitBounds(layer.getBounds(), { padding: [10, 10] });
+      mapInstance.current = map;
+    }).catch(() => {});
+
+    return () => { cancelled = true; if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; } };
+  }, [car]);
+
+  return <div ref={mapRef} className="w-full h-full" />;
+}
+
 const EVENT_ICON_EMOJI: Record<string, string> = {
   item_born: "N",
   item_weighed: "P",
@@ -1489,6 +1521,81 @@ export default function PublicItem() {
   }
 
   const st = statusMap[(item.status || "").toLowerCase()] || statusMap.active;
+  const isBeta = new URLSearchParams(window.location.search).get("beta") === "1";
+
+  // Computed age from birth_date
+  const animalAge = useMemo(() => {
+    const bd = typeof metadata.birth_date === "string" ? metadata.birth_date : null;
+    if (!bd) return null;
+    const birth = new Date(bd);
+    if (isNaN(birth.getTime())) return null;
+    const now = new Date();
+    let years = now.getFullYear() - birth.getFullYear();
+    let months = now.getMonth() - birth.getMonth();
+    if (months < 0) { years--; months += 12; }
+    if (now.getDate() < birth.getDate()) months--;
+    if (months < 0) { years--; months += 12; }
+    if (years > 0 && months > 0) return `${years} ano${years > 1 ? "s" : ""} e ${months} mes${months > 1 ? "es" : ""}`;
+    if (years > 0) return `${years} ano${years > 1 ? "s" : ""}`;
+    return `${months} mes${months > 1 ? "es" : ""}`;
+  }, [metadata.birth_date]);
+
+  // Sanity summary from events
+  const sanitySummary = useMemo(() => {
+    if (!events.length) return null;
+    const vaccines: { name: string; date: string }[] = [];
+    const treatments: { name: string; date: string }[] = [];
+    let lastWeight: number | null = null;
+    let lastWeightDate: string | null = null;
+    let firstWeight: number | null = null;
+    let firstWeightDate: string | null = null;
+
+    for (const e of events) {
+      const p = (e.payload || {}) as Record<string, unknown>;
+      if (e.event_type === "item_vaccinated" && typeof p.vaccine === "string") {
+        vaccines.push({ name: p.vaccine, date: typeof p.occurred_at === "string" ? p.occurred_at : "" });
+      }
+      if (e.event_type === "item_treated" && typeof p.treatment === "string") {
+        treatments.push({ name: p.treatment, date: typeof p.occurred_at === "string" ? p.occurred_at : "" });
+      }
+      if (e.event_type === "item_weighed" && typeof p.weight_kg === "number") {
+        const d = typeof p.occurred_at === "string" ? p.occurred_at : "";
+        if (!firstWeight || (d && d < (firstWeightDate || "9"))) {
+          firstWeight = p.weight_kg;
+          firstWeightDate = d;
+        }
+        if (!lastWeight || (d && d > (lastWeightDate || ""))) {
+          lastWeight = p.weight_kg;
+          lastWeightDate = d;
+        }
+      }
+    }
+
+    // GMD (Ganho Médio Diário)
+    let gmd: number | null = null;
+    if (firstWeight && lastWeight && firstWeightDate && lastWeightDate && firstWeightDate !== lastWeightDate) {
+      const days = (new Date(lastWeightDate).getTime() - new Date(firstWeightDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (days > 0) gmd = (lastWeight - firstWeight) / days;
+    }
+
+    return { vaccines, treatments, lastWeight, lastWeightDate, firstWeight, gmd };
+  }, [events]);
+
+  // Current property (latest property_linked)
+  const currentProperty = useMemo(() => {
+    const linked = events
+      .filter((e) => e.event_type === "item_property_linked")
+      .map((e) => ({ payload: (e.payload || {}) as Record<string, unknown>, created: e.created_at }))
+      .sort((a, b) => b.created.localeCompare(a.created));
+    if (!linked.length) return null;
+    const p = linked[0].payload;
+    return {
+      name: typeof p.property_dfid === "string" ? p.property_dfid : null,
+      car: typeof p.car === "string" ? p.car : null,
+      municipality: typeof p.municipality === "string" ? p.municipality : null,
+      state: typeof p.state === "string" ? p.state : null,
+    };
+  }, [events]);
 
   return (
     <Shell isAuthenticated={isAuthenticated}>
@@ -1497,7 +1604,7 @@ export default function PublicItem() {
           <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
             <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
             {metadata.sex && <><span className="text-muted-foreground/40">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
-            {metadata.birth_date && <><span className="text-muted-foreground/40">·</span><span>Nasc. {String(metadata.birth_date)}</span></>}
+            {metadata.birth_date && <><span className="text-muted-foreground/40">·</span><span>Nasc. {String(metadata.birth_date)}{animalAge ? ` (${animalAge})` : ""}</span></>}
             <span className="text-muted-foreground/40">·</span><span>{item.country}</span>
           </div>
           <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground/50 mt-2">Identidade Digital</p>
@@ -1516,6 +1623,98 @@ export default function PublicItem() {
             </span>
           </div>
         </div>
+
+        {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
+        {isBeta && currentProperty?.car && (
+          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Propriedade atual</p>
+                <p className="text-sm font-semibold text-foreground">{currentProperty.name || "—"}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {[currentProperty.municipality, currentProperty.state].filter(Boolean).join(" / ")}
+                </p>
+                <button
+                  onClick={() => {
+                    if (currentProperty.car && isOfficialCarFormat(currentProperty.car)) {
+                      setCarDialogValue(currentProperty.car);
+                      setCarGeojson(null); setCarMetadata(null); setCarResult(null);
+                      setCarError(null); setCarGeoError(null); setShowCarDialog(true);
+                      setCarGeoLoading(true); setCarMetaLoading(true);
+                      getCarGeoJSON(currentProperty.car, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
+                      getCarMetadata(currentProperty.car, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                    }
+                  }}
+                  className="text-xs text-primary hover:underline mt-1 font-mono"
+                >
+                  {currentProperty.car}
+                </button>
+              </div>
+              <div className="w-full sm:w-48 h-32 rounded-lg border border-border overflow-hidden shrink-0">
+                {currentProperty.car && (
+                  <PropertyMapMini car={currentProperty.car} />
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isBeta && sanitySummary && (
+          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Sanidade</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
+                <p className="text-2xl font-bold text-emerald-700">{sanitySummary.vaccines.length}</p>
+                <p className="text-[11px] text-emerald-600 mt-0.5">Vacinações</p>
+              </div>
+              <div className="rounded-lg bg-teal-50 border border-teal-200/50 p-3 text-center">
+                <p className="text-2xl font-bold text-teal-700">{sanitySummary.treatments.length}</p>
+                <p className="text-[11px] text-teal-600 mt-0.5">Tratamentos</p>
+              </div>
+              <div className="rounded-lg bg-cyan-50 border border-cyan-200/50 p-3 text-center">
+                <p className="text-2xl font-bold text-cyan-700">{weightHistory.length}</p>
+                <p className="text-[11px] text-cyan-600 mt-0.5">Pesagens</p>
+              </div>
+              {sanitySummary.gmd !== null && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200/50 p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-700">{sanitySummary.gmd.toFixed(2)}</p>
+                  <p className="text-[11px] text-amber-600 mt-0.5">GMD (kg/dia)</p>
+                </div>
+              )}
+            </div>
+            {sanitySummary.vaccines.length > 0 && (
+              <div className="mt-3 space-y-1">
+                {sanitySummary.vaccines.map((v, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="text-foreground">{v.name}</span>
+                    <span className="text-muted-foreground">{v.date}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {isBeta && weightHistory.length >= 2 && (
+          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Evolução de peso</p>
+              {sanitySummary?.lastWeight && (
+                <span className="text-sm font-semibold text-foreground">{sanitySummary.lastWeight} kg</span>
+              )}
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={weightHistory.map((wp) => ({ name: wp.label, peso: wp.weight }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                <RechartsTooltip contentStyle={{ fontSize: 12 }} formatter={(v: number) => [`${v} kg`, "Peso"]} />
+                <Line type="monotone" dataKey="peso" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </section>
+        )}
 
         <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
