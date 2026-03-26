@@ -1441,45 +1441,23 @@ export default function PublicItem() {
   return (
     <Shell isAuthenticated={isAuthenticated}>
       <div className="space-y-6">
-        <div className="rounded-2xl bg-gradient-to-br from-primary/8 via-background to-primary/4 border border-primary/10 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Package className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-sm sm:text-lg md:text-2xl font-bold text-foreground font-mono tracking-tight break-all">
-                {item.dfid}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${st.className}`}>{st.text}</span>
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <Globe className="h-3 w-3" />
-                  {item.country}
-                </span>
-                <span className="text-xs text-muted-foreground">{chainLabels[item.value_chain] || item.value_chain}</span>
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <CalendarDays className="h-3 w-3" />
-                  {item.year}
-                </span>
-              </div>
-              <div className="mt-3 space-y-1">
-                {canonicalIdentifier && (
-                  <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Tag className="h-3.5 w-3.5" />
-                    {canonicalIdentifier.label}:{" "}
-                    <span className="font-mono text-foreground/90 break-all">{canonicalIdentifier.value}</span>
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {metadataLocale === "en" ? "Last update" : "Última atualização"}:{" "}
-                  {formatDateShort(item.updated_at || item.created_at)}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium self-start">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Verificado
-            </div>
+        <div className="rounded-2xl border border-border p-5 sm:p-7">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+            {chainLabels[item.value_chain] || item.value_chain} · {item.country} · {item.year}
+          </p>
+          <h1 className="text-xs sm:text-base md:text-xl font-semibold text-foreground font-mono tracking-tight break-all mt-2 leading-relaxed">
+            {item.dfid}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3 mt-4">
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${st.className}`}>{st.text}</span>
+            {canonicalIdentifier && (
+              <span className="text-xs text-muted-foreground font-mono">
+                {canonicalIdentifier.label}: {canonicalIdentifier.value}
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {formatDateShort(item.updated_at || item.created_at)}
+            </span>
           </div>
         </div>
 
@@ -2560,24 +2538,21 @@ function Shell({
                 </Button>
               </Link>
             )}
-            <span className="text-[11px] text-muted-foreground hidden sm:inline">Rastreabilidade verificada</span>
           </div>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</main>
 
-      <footer className="border-t border-border mt-8">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">Dados verificados pela plataforma DeFarm</p>
+      <footer className="border-t border-border mt-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
           <a
             href="https://defarm.net"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
           >
             defarm.net
-            <ExternalLink className="h-3 w-3" />
           </a>
         </div>
       </footer>
