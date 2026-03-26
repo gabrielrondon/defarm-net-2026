@@ -1990,7 +1990,7 @@ export default function PublicItem() {
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Area</span>
-                      <p className="font-medium mt-0.5">{carMetadata.area.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha</p>
+                      <p className="font-medium mt-0.5">{typeof carMetadata.area === "number" ? `${carMetadata.area.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "—"}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Bioma</span>
