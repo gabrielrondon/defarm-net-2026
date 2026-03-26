@@ -652,16 +652,16 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
       }
 
       if (uniquePropertyCoords.length >= 2) {
-        // Glow line underneath
+        const lineWeight = window.innerWidth < 640 ? 6 : 4;
+        const glowWeight = window.innerWidth < 640 ? 16 : 12;
         L_.polyline(uniquePropertyCoords, {
           color: "#818cf8",
-          weight: 12,
+          weight: glowWeight,
           opacity: 0.2,
         }).addTo(map);
-        // Main dashed route
         L_.polyline(uniquePropertyCoords, {
           color: "#6366f1",
-          weight: 4,
+          weight: lineWeight,
           opacity: 0.8,
           dashArray: "12 8",
         }).addTo(map);
@@ -694,11 +694,14 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
         L_.marker([pt.lat, pt.lon], { icon: labelIcon, interactive: false }).addTo(map);
       }
 
+      // Detect mobile for larger markers
+      const isMobile = window.innerWidth < 640;
+
       // Create markers for each point
       points.forEach((pt, idx) => {
         const color = EVENT_ICON_COLORS[pt.eventType] || "#8b5cf6";
         const isProperty = pt.isProperty;
-        const size = isProperty ? 24 : 14;
+        const size = isProperty ? (isMobile ? 28 : 24) : (isMobile ? 18 : 14);
         const border = isProperty ? 3 : 2;
         const emoji = EVENT_ICON_EMOJI[pt.eventType] || "📌";
 
@@ -924,6 +927,8 @@ export default function PublicItem() {
   const [showWeightDialog, setShowWeightDialog] = useState(false);
   const [showIdentityDialog, setShowIdentityDialog] = useState(false);
   const [showCidDialog, setShowCidDialog] = useState(false);
+  const [cidViewContent, setCidViewContent] = useState<{ cid: string; data: Record<string, unknown> } | null>(null);
+  const [cidViewLoading, setCidViewLoading] = useState(false);
   const [showCircuitsDialog, setShowCircuitsDialog] = useState(false);
   const [showProofOfLifeDialog, setShowProofOfLifeDialog] = useState(false);
   const [showJourneyDialog, setShowJourneyDialog] = useState(false);
@@ -1495,7 +1500,8 @@ export default function PublicItem() {
             {metadata.birth_date && <><span className="text-muted-foreground/40">·</span><span>Nasc. {String(metadata.birth_date)}</span></>}
             <span className="text-muted-foreground/40">·</span><span>{item.country}</span>
           </div>
-          <h1 className="text-xs sm:text-base md:text-xl font-semibold text-foreground font-mono tracking-tight break-all mt-2 leading-relaxed">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground/50 mt-2">Identidade Digital</p>
+          <h1 className="text-sm sm:text-base md:text-xl font-bold text-foreground font-mono tracking-tight break-all leading-relaxed">
             {item.dfid}
           </h1>
           <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -2511,16 +2517,39 @@ export default function PublicItem() {
 
           <div className="space-y-3 text-sm">
             {latestContentVersion ? (
-              <div className="rounded border p-3">
+              <div className="rounded border p-3 space-y-2">
                 <p className="text-xs text-muted-foreground">Último CID (v{latestContentVersion.version})</p>
-                <a
-                  href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-primary hover:underline break-all mt-1 inline-flex"
-                >
-                  {latestContentVersion.cid}
-                </a>
+                <p className="font-mono text-xs text-foreground break-all">{latestContentVersion.cid}</p>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Ver registro original <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={async () => {
+                      const url = latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`;
+                      setCidViewLoading(true);
+                      try {
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        setCidViewContent({ cid: latestContentVersion.cid, data });
+                      } catch {
+                        setCidViewContent(null);
+                      } finally {
+                        setCidViewLoading(false);
+                      }
+                    }}
+                  >
+                    {cidViewLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Visualizar"}
+                  </Button>
+                </div>
               </div>
             ) : (
               <p className="text-muted-foreground">Nenhum CID disponível.</p>
@@ -2548,6 +2577,74 @@ export default function PublicItem() {
                 </div>
               )}
             </div>
+
+            {cidViewContent && (
+              <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Conteúdo do registro</p>
+                  <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => setCidViewContent(null)}>Fechar</Button>
+                </div>
+                {cidViewContent.data.schema_version && (
+                  <p className="text-xs text-muted-foreground">Schema v{String(cidViewContent.data.schema_version)}</p>
+                )}
+
+                {cidViewContent.data.identity && typeof cidViewContent.data.identity === "object" && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Identidade</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      {Object.entries(cidViewContent.data.identity as Record<string, unknown>).filter(([, v]) => v != null && !Array.isArray(v)).map(([k, v]) => (
+                        <div key={k} className="flex gap-1.5"><span className="text-muted-foreground">{PAYLOAD_KEY_LABELS[k] || k}:</span><span className="font-mono">{String(v)}</span></div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {cidViewContent.data.sanity && typeof cidViewContent.data.sanity === "object" && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Resumo sanitário</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 text-xs">
+                      {Object.entries(cidViewContent.data.sanity as Record<string, unknown>).filter(([, v]) => v != null).map(([k, v]) => (
+                        <div key={k} className="flex gap-1.5"><span className="text-muted-foreground">{k.replace(/_/g, " ")}:</span><span className="font-mono">{String(v)}</span></div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {cidViewContent.data.events && typeof cidViewContent.data.events === "object" && (cidViewContent.data.events as Record<string, unknown>).hash && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Hash dos eventos</p>
+                    <p className="font-mono text-[11px] text-muted-foreground break-all">{String((cidViewContent.data.events as Record<string, unknown>).hash)}</p>
+                    <p className="text-[10px] text-muted-foreground">BLAKE3 — concatenação cronológica</p>
+                  </div>
+                )}
+
+                {cidViewContent.data.provenance && typeof cidViewContent.data.provenance === "object" && (cidViewContent.data.provenance as Record<string, unknown>).previous_cid && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Versão anterior</p>
+                    <p className="font-mono text-[11px] text-muted-foreground break-all">{String((cidViewContent.data.provenance as Record<string, unknown>).previous_cid)}</p>
+                  </div>
+                )}
+
+                {/* Fallback: legacy format (v2) — show business section */}
+                {cidViewContent.data.business && !cidViewContent.data.identity && typeof cidViewContent.data.business === "object" && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-foreground">Dados do animal</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      {Object.entries((cidViewContent.data.business as Record<string, unknown>)).filter(([k, v]) => v != null && k !== "metadata" && typeof v !== "object").map(([k, v]) => (
+                        <div key={k} className="flex gap-1.5"><span className="text-muted-foreground">{PAYLOAD_KEY_LABELS[k] || k}:</span><span className="font-mono">{String(v)}</span></div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <details className="text-xs">
+                  <summary className="text-muted-foreground cursor-pointer hover:text-foreground">Ver JSON completo</summary>
+                  <pre className="mt-2 rounded bg-muted p-3 overflow-x-auto text-[11px] whitespace-pre-wrap break-words max-h-60 overflow-y-auto">
+                    {JSON.stringify(cidViewContent.data, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
