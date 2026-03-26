@@ -28,6 +28,7 @@ import {
   Truck,
   MapPinned,
   LogOut,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -483,7 +484,15 @@ function eventSummary(event: PublicItemEvent): string | null {
   if (event.event_type === "item_born" && typeof p.occurred_at === "string") {
     return `Nascimento em ${p.occurred_at}`;
   }
-  if (typeof p.source === "string") return `Origem: ${p.source}`;
+  if (event.event_type === "item_vaccinated" && typeof p.vaccine === "string") {
+    return p.vaccine;
+  }
+  if (event.event_type === "item_treated" && typeof p.treatment === "string") {
+    return p.treatment;
+  }
+  if (event.event_type === "item_classified" && typeof p.classification === "string") {
+    return p.classification;
+  }
   return null;
 }
 
@@ -1809,6 +1818,13 @@ export default function PublicItem() {
             Ver completo
           </a>
         </div>
+        <div className="mt-3 flex items-center gap-3">
+          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent("https://defarm.net/i/" + item.dfid)}`} alt="QR" className="w-14 h-14 rounded" />
+          <div className="text-[10px] text-stone-400">
+            <p>Escaneie para rastreabilidade completa</p>
+            <p className="font-mono mt-0.5">{item.dfid}</p>
+          </div>
+        </div>
         <div className="mt-2 pt-2 border-t border-stone-100 flex items-center gap-1.5">
           <img src={logoIcon} alt="" className="h-3 w-3 opacity-40" />
           <span className="text-[9px] text-stone-300">defarm.net</span>
@@ -1820,7 +1836,10 @@ export default function PublicItem() {
   return (
     <Shell isAuthenticated={isAuthenticated}>
       <div className="space-y-5">
-        <div className="rounded-2xl bg-white border border-stone-200/70 shadow-sm p-5 sm:p-7">
+        <div className="rounded-2xl bg-white border border-stone-200/70 shadow-sm p-5 sm:p-7 relative">
+          <button onClick={() => window.print()} className="absolute top-4 right-4 text-muted-foreground/40 hover:text-muted-foreground transition-colors no-print" title="Imprimir">
+            <Printer className="h-4 w-4" />
+          </button>
           <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
             <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
             {metadata.sex && <><span className="text-muted-foreground/40">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
@@ -1842,6 +1861,12 @@ export default function PublicItem() {
               {formatDateShort(item.updated_at || item.created_at)}
             </span>
           </div>
+          {associatedCircuitIds.length > 0 && (
+            <button onClick={() => setShowCircuitsDialog(true)} className="text-[11px] text-muted-foreground hover:text-primary mt-2 inline-flex items-center gap-1">
+              <Network className="h-3 w-3" />
+              {associatedCircuitIds.length} rede{associatedCircuitIds.length !== 1 ? "s" : ""} de rastreabilidade
+            </button>
+          )}
         </div>
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
@@ -1961,6 +1986,7 @@ export default function PublicItem() {
           </section>
         )}
 
+        {!isBeta && (
         <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -1975,6 +2001,7 @@ export default function PublicItem() {
             </Button>
           </div>
         </section>
+        )}
 
         {item.dfid && (
           <AssetQRCode
@@ -2511,6 +2538,7 @@ export default function PublicItem() {
                                   <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
                                     {Object.entries(event.payload!).filter(([k]) => k !== "source").map(([k, v]) => {
                                       const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
+                                      const isCoordField = k.includes("coordinates") && typeof v === "object" && v !== null && "lat" in (v as Record<string, unknown>) && "lon" in (v as Record<string, unknown>);
                                       return (
                                         <div key={k} className="flex gap-1.5">
                                           <span className="text-muted-foreground shrink-0">{PAYLOAD_KEY_LABELS[k] || k}:</span>
@@ -2526,6 +2554,8 @@ export default function PublicItem() {
                                                 getCarMetadata(v as string, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
                                               }}
                                             >{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
+                                          ) : isCoordField ? (
+                                            <a href={`https://www.google.com/maps?q=${(v as Record<string, unknown>).lat},${(v as Record<string, unknown>).lon}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono truncate" onClick={(e) => e.stopPropagation()}>{`${(v as Record<string, unknown>).lat}, ${(v as Record<string, unknown>).lon}`}</a>
                                           ) : (
                                             <span className="text-foreground font-mono truncate">{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
                                           )}
@@ -2614,6 +2644,7 @@ export default function PublicItem() {
                                 {Object.entries(event.payload!).map(([k, v]) => {
                                   const strVal = typeof v === "object" ? JSON.stringify(v) : String(v ?? "-");
                                   const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
+                                  const isCoordField = k.includes("coordinates") && typeof v === "object" && v !== null && "lat" in (v as Record<string, unknown>) && "lon" in (v as Record<string, unknown>);
                                   return (
                                     <div key={k} className="flex gap-2 text-xs">
                                       <span className="text-muted-foreground min-w-[100px]">{PAYLOAD_KEY_LABELS[k] || k}:</span>
@@ -2650,6 +2681,8 @@ export default function PublicItem() {
                                         >
                                           {strVal}
                                         </button>
+                                      ) : isCoordField ? (
+                                        <a href={`https://www.google.com/maps?q=${(v as Record<string, unknown>).lat},${(v as Record<string, unknown>).lon}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono truncate">{`${(v as Record<string, unknown>).lat}, ${(v as Record<string, unknown>).lon}`}</a>
                                       ) : (
                                         <span className="text-foreground break-all font-mono">{strVal}</span>
                                       )}
