@@ -1877,63 +1877,78 @@ export default function PublicItem() {
   return (
     <Shell isAuthenticated={isAuthenticated}>
       <div className="space-y-5">
-        <div className="rounded-2xl bg-white border border-stone-200/70 shadow-sm p-5 sm:p-7">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between gap-2 mb-4 no-print">
-            <div className="flex items-center gap-1 rounded-lg border border-stone-200/60 p-0.5">
-              <button
-                onClick={() => setMetadataLocale("pt-BR")}
-                className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "pt-BR" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-              >PT-BR</button>
-              <button
-                onClick={() => setMetadataLocale("en")}
-                className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "en" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
-              >EN</button>
+        {/* === HERO HEADER === */}
+        <div className="rounded-2xl bg-gradient-to-b from-emerald-50/60 via-white to-white border border-emerald-100/50 shadow-sm overflow-hidden">
+          {/* Top accent bar */}
+          <div className="h-1 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500" />
+          <div className="p-5 sm:p-7">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-2 mb-5 no-print">
+              <div className="flex items-center gap-1 rounded-lg border border-stone-200/60 bg-white/80 p-0.5">
+                <button
+                  onClick={() => setMetadataLocale("pt-BR")}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "pt-BR" ? "bg-emerald-600 text-white" : "text-muted-foreground hover:text-foreground"}`}
+                >PT-BR</button>
+                <button
+                  onClick={() => setMetadataLocale("en")}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "en" ? "bg-emerald-600 text-white" : "text-muted-foreground hover:text-foreground"}`}
+                >EN</button>
+              </div>
+              <div className="flex items-center gap-0.5">
+                <button onClick={() => window.print()} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Imprimir">
+                  <Printer className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={() => setShowEmbedPreview(true)} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Embed">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+                <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Selo de origem">
+                  <Tag className="h-3.5 w-3.5" />
+                </a>
+                <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Comparar">
+                  <Scale className="h-3.5 w-3.5" />
+                </a>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => window.print()} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Imprimir">
-                <Printer className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={() => setShowEmbedPreview(true)} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Embed">
-                <ExternalLink className="h-3.5 w-3.5" />
-              </button>
-              <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Selo de origem">
-                <Tag className="h-3.5 w-3.5" />
-              </a>
-              <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Comparar">
-                <Scale className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-stone-500 font-semibold">
-            <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
-            {metadata.sex && <><span className="text-muted-foreground/40">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
-            {metadata.birth_date && <><span className="text-muted-foreground/40">·</span><span>Nasc. {String(metadata.birth_date)}{animalAge ? ` (${animalAge})` : ""}</span></>}
-            <span className="text-muted-foreground/40">·</span><span>{item.country}</span>
-            <span className="text-muted-foreground/40">·</span><span>{chainLabels[item.value_chain] || item.value_chain}</span>
+            {/* Animal identity */}
+            <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-widest text-emerald-700/60 font-medium">
+              <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
+              {metadata.sex && <><span className="text-emerald-300">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
+              {metadata.birth_date && <><span className="text-emerald-300">·</span><span>Nasc. {String(metadata.birth_date)}{animalAge ? ` (${animalAge})` : ""}</span></>}
+              <span className="text-emerald-300">·</span><span>{item.country}</span>
+            </div>
+
+            <h1 className="text-base sm:text-lg md:text-2xl font-bold text-stone-900 font-mono tracking-tight break-all mt-3 leading-snug">
+              {item.dfid}
+            </h1>
+
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${st.className}`}>{st.text}</span>
+              {sanitySummary?.lastWeight && (
+                <span className="text-lg font-bold text-stone-800">{sanitySummary.lastWeight} <span className="text-sm font-normal text-stone-400">kg</span></span>
+              )}
+              {canonicalIdentifier && (
+                <span className="text-xs text-stone-400 font-mono">
+                  {canonicalIdentifier.label}: {canonicalIdentifier.value}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 mt-3 text-xs text-stone-400">
+              <span>{formatDateShort(item.updated_at || item.created_at)}</span>
+              <span>·</span>
+              <span>{chainLabels[item.value_chain] || item.value_chain}</span>
+              {associatedCircuitIds.length > 0 && (
+                <>
+                  <span>·</span>
+                  <button onClick={() => setShowCircuitsDialog(true)} className="hover:text-emerald-600 inline-flex items-center gap-1 transition-colors">
+                    <Network className="h-3 w-3" />
+                    {associatedCircuitIds.length} rede{associatedCircuitIds.length !== 1 ? "s" : ""}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-          <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground/50 mt-2">Identidade Digital</p>
-          <h1 className="text-sm sm:text-base md:text-xl font-bold text-foreground font-mono tracking-tight break-all leading-relaxed">
-            {item.dfid}
-          </h1>
-          <div className="flex flex-wrap items-center gap-3 mt-4">
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${st.className}`}>{st.text}</span>
-            {canonicalIdentifier && (
-              <span className="text-xs text-muted-foreground font-mono">
-                {canonicalIdentifier.label}: {canonicalIdentifier.value}
-              </span>
-            )}
-            <span className="text-xs text-muted-foreground">
-              {formatDateShort(item.updated_at || item.created_at)}
-            </span>
-          </div>
-          {associatedCircuitIds.length > 0 && (
-            <button onClick={() => setShowCircuitsDialog(true)} className="text-[11px] text-muted-foreground hover:text-primary mt-2 inline-flex items-center gap-1">
-              <Network className="h-3 w-3" />
-              {associatedCircuitIds.length} rede{associatedCircuitIds.length !== 1 ? "s" : ""} de rastreabilidade
-            </button>
-          )}
         </div>
 
         {item.dfid && (
@@ -1988,29 +2003,29 @@ export default function PublicItem() {
         {hasJourneyData && (
           <section
             ref={isBeta ? setTourRef(4) : undefined}
-            className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-white to-white shadow-sm p-5 sm:p-6 cursor-pointer group"
+            className="rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/50 via-white to-white shadow-sm p-5 sm:p-6 cursor-pointer group"
             onClick={() => setShowJourneyDialog(true)}
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-500/20 transition-colors">
-                <MapPinned className="h-7 w-7 text-indigo-600" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-500/15 transition-colors">
+                <MapPinned className="h-7 w-7 text-emerald-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-indigo-950">{metadataLocale === "en" ? "Animal Journey" : "Jornada do Animal"}</h2>
-                <p className="text-sm text-indigo-700/70 mt-1">
+                <h2 className="text-base sm:text-lg font-semibold text-stone-900">{metadataLocale === "en" ? "Animal Journey" : "Jornada do Animal"}</h2>
+                <p className="text-sm text-stone-500 mt-1">
                   {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} {metadataLocale === "en" ? "properties" : "propriedades"} · {journeyPoints.length} {metadataLocale === "en" ? "geolocated events" : "eventos geolocalizados"} · {metadataLocale === "en" ? "interactive map with timeline" : "mapa interativo com timeline"}
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {Array.from(
                     (() => { const locs = new Map<string, string>(); for (const pt of journeyPoints.filter((p) => p.isProperty)) { const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`; if (!locs.has(key)) locs.set(key, pt.label.replace(/^(Saída|Chegada|Vinculado):\s*/, "")); } return locs.values(); })()
                   ).map((name) => (
-                    <span key={name} className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 text-indigo-700 px-2 py-0.5 text-[11px] font-medium">
+                    <span key={name} className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-700 px-2 py-0.5 text-[11px] font-medium">
                       {name}
                     </span>
                   ))}
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 self-start sm:self-center">
+              <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 self-start sm:self-center">
                 <MapPinned className="h-4 w-4 mr-1.5" />
                 {metadataLocale === "en" ? "View map" : "Ver mapa"}
               </Button>
