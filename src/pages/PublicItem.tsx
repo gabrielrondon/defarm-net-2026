@@ -570,6 +570,28 @@ type JourneyPointDef = {
   isProperty: boolean;
 };
 
+// === CAR data cache (10 min TTL, in-memory) ===
+const CAR_CACHE_TTL = 10 * 60 * 1000;
+const carCache = new Map<string, { data: any; ts: number }>();
+
+async function cachedGetCarMetadata(car: string) {
+  const key = `meta:${car}`;
+  const cached = carCache.get(key);
+  if (cached && Date.now() - cached.ts < CAR_CACHE_TTL) return cached.data;
+  const data = await cachedGetCarMetadata(car);
+  carCache.set(key, { data, ts: Date.now() });
+  return data;
+}
+
+async function cachedGetCarGeoJSON(car: string) {
+  const key = `geo:${car}`;
+  const cached = carCache.get(key);
+  if (cached && Date.now() - cached.ts < CAR_CACHE_TTL) return cached.data;
+  const data = await cachedGetCarGeoJSON(car);
+  carCache.set(key, { data, ts: Date.now() });
+  return data;
+}
+
 const EVENT_ICON_COLORS: Record<string, string> = {
   item_born: "#10b981",
   item_weighed: "#06b6d4",
@@ -589,7 +611,7 @@ function ComplianceBadge({ car }: { car: string | null }) {
   useEffect(() => {
     if (!car) return;
     setLoading(true);
-    getCarMetadata(car, { skipAuth: true })
+    cachedGetCarMetadata(car)
       .then((m) => setStatus(m.status || null))
       .catch(() => setStatus(null))
       .finally(() => setLoading(false));
@@ -724,7 +746,7 @@ function PropertyMapMini({ car }: { car: string }) {
     Promise.all([
       import("leaflet").then((m) => m.default || m),
       import("leaflet/dist/leaflet.css"),
-      getCarGeoJSON(car, { skipAuth: true }),
+      cachedGetCarGeoJSON(car),
     ]).then(([L_, , geo]) => {
       if (cancelled || !mapRef.current) return;
       if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; }
@@ -919,7 +941,7 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
 
       // Fetch CAR polygons asynchronously AFTER markers are placed
       for (const [car] of propertyCars) {
-        getCarGeoJSON(car, { skipAuth: true })
+        cachedGetCarGeoJSON(car)
           .then((geo) => {
             if (!cancelled && mapInstance.current) {
               L_.geoJSON(geo as any, {
@@ -1555,7 +1577,7 @@ export default function PublicItem() {
     // Fetch GeoJSON (public, no auth needed)
     setCarGeoLoading(true);
     setCarGeoError(null);
-    getCarGeoJSON(carValue, { skipAuth: true })
+    cachedGetCarGeoJSON(carValue)
       .then((geo) => setCarGeojson(geo))
       .catch(() => {
         setCarGeoError(null);
@@ -1564,7 +1586,7 @@ export default function PublicItem() {
 
     // Fetch metadata (public, no auth needed)
     setCarMetaLoading(true);
-    getCarMetadata(carValue, { skipAuth: true })
+    cachedGetCarMetadata(carValue)
       .then((meta) => setCarMetadata(meta))
       .catch((err) => {
         console.warn("[CAR Metadata] Failed to fetch:", err);
@@ -1990,8 +2012,8 @@ export default function PublicItem() {
                     setCarGeojson(null); setCarMetadata(null); setCarResult(null);
                     setCarError(null); setCarGeoError(null); setShowCarDialog(true);
                     setCarGeoLoading(true); setCarMetaLoading(true);
-                    getCarGeoJSON(currentProperty.car, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
-                    getCarMetadata(currentProperty.car, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                    cachedGetCarGeoJSON(currentProperty.car).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
+                    cachedGetCarMetadata(currentProperty.car).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
                   }
                 }}
                 className="text-xs text-primary hover:underline mt-1 font-mono"
@@ -2658,8 +2680,8 @@ export default function PublicItem() {
                                                     setCarDialogValue(v as string);
                                                     setCarGeojson(null); setCarMetadata(null); setCarResult(null); setCarError(null); setCarGeoError(null);
                                                     setShowCarDialog(true); setCarGeoLoading(true); setCarMetaLoading(true);
-                                                    getCarGeoJSON(v as string, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
-                                                    getCarMetadata(v as string, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                                                    cachedGetCarGeoJSON(v as string).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
+                                                    cachedGetCarMetadata(v as string).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
                                                   }}
                                                 >{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
                                               ) : isCoordField ? (
