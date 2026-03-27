@@ -578,7 +578,7 @@ async function cachedGetCarMetadata(car: string) {
   const key = `meta:${car}`;
   const cached = carCache.get(key);
   if (cached && Date.now() - cached.ts < CAR_CACHE_TTL) return cached.data;
-  const data = await cachedGetCarMetadata(car);
+  const data = await getCarMetadata(car, { skipAuth: true });
   carCache.set(key, { data, ts: Date.now() });
   return data;
 }
@@ -587,7 +587,7 @@ async function cachedGetCarGeoJSON(car: string) {
   const key = `geo:${car}`;
   const cached = carCache.get(key);
   if (cached && Date.now() - cached.ts < CAR_CACHE_TTL) return cached.data;
-  const data = await cachedGetCarGeoJSON(car);
+  const data = await getCarGeoJSON(car, { skipAuth: true });
   carCache.set(key, { data, ts: Date.now() });
   return data;
 }
@@ -1987,14 +1987,14 @@ export default function PublicItem() {
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {currentProperty?.car && (
-          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
-            {/* Map background */}
+          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate min-h-[120px]">
+            {/* Map watermark background */}
             {currentProperty.car && (
-              <div className="absolute inset-0 opacity-[0.08]">
+              <div className="absolute inset-0 opacity-[0.12] pointer-events-none" style={{ minHeight: "120px" }}>
                 <PropertyMapMini car={currentProperty.car} />
               </div>
             )}
-            <div className="relative z-10">
+            <div className="relative z-[1]">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-4 rounded-full bg-emerald-400" />
                 <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
