@@ -2244,7 +2244,7 @@ export default function PublicItem() {
             <div className="space-y-6">
               {groupedMetadataEntries.map(g => ({
                     ...g,
-                    entries: g.entries.filter(e => !["weight_kg", "data_pesagem", "breed", "sex", "birth_date", "category", "fazenda", "stock_location"].includes(e.canonicalKey))
+                    entries: g.entries.filter(e => !["weight_kg", "data_pesagem", "breed", "sex", "birth_date", "category", "fazenda", "stock_location", "car", "country", "year", "value_chain"].includes(e.canonicalKey))
                   })).filter(g => g.entries.length > 0).map(({ group, entries }) => (
                 <div key={group} className="space-y-2.5">
                   <div className="inline-flex items-center gap-1.5 border-b border-stone-200/60 pb-1.5 mb-1">
