@@ -1731,6 +1731,8 @@ export default function PublicItem() {
     if (upcomingEvents.length > 0) steps.push({ title: "Previsões", description: "O sistema analisa o histórico e infere quais procedimentos estão próximos do vencimento ou atrasados — reforço vacinal, vermifugação, pesagem periódica." });
     steps.push({ title: "Jornada do Animal", description: "Mapa interativo com todas as propriedades por onde o animal passou, rotas de transporte e eventos geolocalizados com timeline sincronizada." });
     steps.push({ title: "Timeline", description: "Histórico completo agrupado por ano. Cada evento tem ícone, tipo, data e resumo — pesagens, vacinas, movimentações, tudo em ordem cronológica." });
+    steps.push({ title: "Certificado QR", description: "QR code escaneável com hash blockchain e CID do IPFS. Pode ser baixado como PDF ou PNG." });
+    steps.push({ title: "Registro verificável", description: "Identidade ancorada na blockchain Stellar e conteúdo versionado no IPFS (Pinata). Cada versão tem um CID único e imutável." });
     return steps;
   }, [currentProperty, sanitySummary, weightHistory, upcomingEvents]);
 
@@ -1808,7 +1810,7 @@ export default function PublicItem() {
           )}
           <div className="mt-5 flex justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`https://defarm.net/i/${item.dfid}`)}`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&color=22c55e&data=${encodeURIComponent(`https://defarm.net/i/${item.dfid}`)}`}
               alt="QR" className="w-24 h-24 rounded-lg"
             />
           </div>
@@ -1857,7 +1859,7 @@ export default function PublicItem() {
           </a>
         </div>
         <div className="mt-3 flex items-center gap-3">
-          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent("https://defarm.net/i/" + item.dfid)}`} alt="QR" className="w-14 h-14 rounded" />
+          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&color=22c55e&data=${encodeURIComponent("https://defarm.net/i/" + item.dfid)}`} alt="QR" className="w-14 h-14 rounded" />
           <div className="text-[10px] text-stone-400">
             <p>Escaneie para rastreabilidade completa</p>
             <p className="font-mono mt-0.5">{item.dfid}</p>
@@ -1897,6 +1899,9 @@ export default function PublicItem() {
               <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Selo de origem">
                 <Tag className="h-3.5 w-3.5" />
               </a>
+              <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-stone-100 transition-colors" title="Comparar">
+                <Scale className="h-3.5 w-3.5" />
+              </a>
             </div>
           </div>
 
@@ -1931,21 +1936,23 @@ export default function PublicItem() {
         </div>
 
         {item.dfid && (
-          <AssetQRCode
-            dfid={item.dfid}
-            canonicalIdLabel={canonicalIdentifier?.label}
-            canonicalIdValue={canonicalIdentifier?.value}
-            identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
-            latestCid={latestContentVersion?.cid || undefined}
-          />
+          <div ref={setTourRef(6)} className="relative z-0">
+            <AssetQRCode
+              dfid={item.dfid}
+              canonicalIdLabel={canonicalIdentifier?.label}
+              canonicalIdValue={canonicalIdentifier?.value}
+              identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
+              latestCid={latestContentVersion?.cid || undefined}
+            />
+          </div>
         )}
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {isBeta && currentProperty?.car && (
-          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5 overflow-hidden">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Propriedade atual</p>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
                 <p className="text-sm font-semibold text-foreground">{currentProperty.name || "—"}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {[currentProperty.municipality, currentProperty.state].filter(Boolean).join(" / ")}
@@ -1977,26 +1984,59 @@ export default function PublicItem() {
           </section>
         )}
 
+        {hasJourneyData && (
+          <section
+            ref={isBeta ? setTourRef(4) : undefined}
+            className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-white to-white shadow-sm p-5 sm:p-6 cursor-pointer group"
+            onClick={() => setShowJourneyDialog(true)}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-500/20 transition-colors">
+                <MapPinned className="h-7 w-7 text-indigo-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-indigo-950">{metadataLocale === "en" ? "Animal Journey" : "Jornada do Animal"}</h2>
+                <p className="text-sm text-indigo-700/70 mt-1">
+                  {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} {metadataLocale === "en" ? "properties" : "propriedades"} · {journeyPoints.length} {metadataLocale === "en" ? "geolocated events" : "eventos geolocalizados"} · {metadataLocale === "en" ? "interactive map with timeline" : "mapa interativo com timeline"}
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {Array.from(
+                    (() => { const locs = new Map<string, string>(); for (const pt of journeyPoints.filter((p) => p.isProperty)) { const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`; if (!locs.has(key)) locs.set(key, pt.label.replace(/^(Saída|Chegada|Vinculado):\s*/, "")); } return locs.values(); })()
+                  ).map((name) => (
+                    <span key={name} className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 text-indigo-700 px-2 py-0.5 text-[11px] font-medium">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 self-start sm:self-center">
+                <MapPinned className="h-4 w-4 mr-1.5" />
+                {metadataLocale === "en" ? "View map" : "Ver mapa"}
+              </Button>
+            </div>
+          </section>
+        )}
+
         {isBeta && sanitySummary && (
           <section ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Sanidade</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">{metadataLocale === "en" ? "Health" : "Sanidade"}</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
                 <p className="text-2xl font-bold text-emerald-700">{sanitySummary.vaccines.length}</p>
-                <p className="text-[11px] text-emerald-600 mt-0.5">Vacinações</p>
+                <p className="text-[11px] text-emerald-600 mt-0.5">{metadataLocale === "en" ? "Vaccinations" : "Vacinações"}</p>
               </div>
               <div className="rounded-lg bg-teal-50 border border-teal-200/50 p-3 text-center">
                 <p className="text-2xl font-bold text-teal-700">{sanitySummary.treatments.length}</p>
-                <p className="text-[11px] text-teal-600 mt-0.5">Tratamentos</p>
+                <p className="text-[11px] text-teal-600 mt-0.5">{metadataLocale === "en" ? "Treatments" : "Tratamentos"}</p>
               </div>
               <div className="rounded-lg bg-cyan-50 border border-cyan-200/50 p-3 text-center">
                 <p className="text-2xl font-bold text-cyan-700">{weightHistory.length}</p>
-                <p className="text-[11px] text-cyan-600 mt-0.5">Pesagens</p>
+                <p className="text-[11px] text-cyan-600 mt-0.5">{metadataLocale === "en" ? "Weighings" : "Pesagens"}</p>
               </div>
               {sanitySummary.gmd !== null && (
                 <div className="rounded-lg bg-amber-50 border border-amber-200/50 p-3 text-center">
                   <p className="text-2xl font-bold text-amber-700">{sanitySummary.gmd.toFixed(2)}</p>
-                  <p className="text-[11px] text-amber-600 mt-0.5">GMD (kg/dia)</p>
+                  <p className="text-[11px] text-amber-600 mt-0.5">{metadataLocale === "en" ? "ADG (kg/day)" : "GMD (kg/dia)"}</p>
                 </div>
               )}
             </div>
@@ -2017,7 +2057,7 @@ export default function PublicItem() {
         {isBeta && weightHistory.length >= 2 && (
           <section ref={setTourRef(2)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Evolução de peso</p>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</p>
               {sanitySummary?.lastWeight && (
                 <span className="text-sm font-semibold text-foreground">{sanitySummary.lastWeight} kg</span>
               )}
@@ -2036,7 +2076,7 @@ export default function PublicItem() {
 
         {isBeta && upcomingEvents.length > 0 && (
           <section ref={setTourRef(3)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">Previsões</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">{metadataLocale === "en" ? "Upcoming" : "Previsões"}</p>
             <div className="space-y-2">
               {upcomingEvents.map((ev, i) => (
                 <div key={i} className={`flex items-start gap-3 rounded-lg p-3 text-sm ${
@@ -2072,39 +2112,6 @@ export default function PublicItem() {
             </Button>
           </div>
         </section>
-        )}
-
-        {hasJourneyData && (
-          <section
-            ref={isBeta ? setTourRef(4) : undefined}
-            className="rounded-2xl border border-indigo-200/60 bg-gradient-to-br from-indigo-50/80 via-white to-white shadow-sm p-5 sm:p-6 cursor-pointer group"
-            onClick={() => setShowJourneyDialog(true)}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-500/20 transition-colors">
-                <MapPinned className="h-7 w-7 text-indigo-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-indigo-950">Jornada do Animal</h2>
-                <p className="text-sm text-indigo-700/70 mt-1">
-                  {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} propriedade{new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)).size !== 1 ? "s" : ""} · {journeyPoints.length} eventos geolocalizados · mapa interativo com timeline
-                </p>
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {Array.from(
-                    (() => { const locs = new Map<string, string>(); for (const pt of journeyPoints.filter((p) => p.isProperty)) { const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`; if (!locs.has(key)) locs.set(key, pt.label.replace(/^(Saída|Chegada|Vinculado):\s*/, "")); } return locs.values(); })()
-                  ).map((name) => (
-                    <span key={name} className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 text-indigo-700 px-2 py-0.5 text-[11px] font-medium">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <Button size="sm" variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 self-start sm:self-center">
-                <MapPinned className="h-4 w-4 mr-1.5" />
-                Ver mapa
-              </Button>
-            </div>
-          </section>
         )}
 
         {latestProofOfLife && (
@@ -2351,7 +2358,7 @@ export default function PublicItem() {
           </section>
         )}
 
-        <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-5 space-y-3">
+        <section ref={setTourRef(7)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-5 space-y-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
               <Database className="h-4.5 w-4.5 text-primary" />
@@ -2909,7 +2916,7 @@ export default function PublicItem() {
       <Dialog open={showJourneyDialog} onOpenChange={setShowJourneyDialog}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Jornada do Animal</DialogTitle>
+            <DialogTitle>{metadataLocale === "en" ? "Animal Journey" : "Jornada do Animal"}</DialogTitle>
             <DialogDescription>
               Mapa com propriedades, deslocamentos e eventos geolocalizados. Clique nos marcadores para ver detalhes.
             </DialogDescription>
@@ -2989,7 +2996,7 @@ export default function PublicItem() {
       <Dialog open={showWeightDialog} onOpenChange={setShowWeightDialog}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Evolução de peso</DialogTitle>
+            <DialogTitle>{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</DialogTitle>
             <DialogDescription>Histórico de pesagens públicas registradas para este item.</DialogDescription>
           </DialogHeader>
 
