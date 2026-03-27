@@ -2213,13 +2213,13 @@ export default function PublicItem() {
         )}
 
         {visibleMetadataEntries.length > 0 && (
-          <section className="border-t border-stone-200/40 pt-5">
-            <div className="mb-3">
-              <h2 className="text-sm font-semibold text-foreground">
+          <section className="border-t border-stone-200/40 pt-8">
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-stone-700">
                 {metadataLocale === "en" ? "Public metadata" : "Metadados públicos"}
               </h2>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {(isBeta
                 ? groupedMetadataEntries.map(g => ({
                     ...g,
@@ -2228,7 +2228,7 @@ export default function PublicItem() {
                 : groupedMetadataEntries
               ).map(({ group, entries }) => (
                 <div key={group} className="space-y-2.5">
-                  <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/40 px-2.5 py-1">
+                  <div className="inline-flex items-center gap-1.5 border-b border-stone-200/60 pb-1.5 mb-1">
                     {group === "identification" ? (
                       <Tag className="h-3.5 w-3.5 text-primary" />
                     ) : group === "movement" ? (
@@ -2255,7 +2255,7 @@ export default function PublicItem() {
                         const sisbovDfidUrl = resolvedDfid ? `/i/${encodeURIComponent(resolvedDfid)}` : `/i/sisbov/${encodeURIComponent(sisbov)}`;
                         const refUrl = `${window.location.origin}${sisbovDfidUrl}`;
                         return (
-                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">SISBOV</p>
                             <a
                               href={sisbovDfidUrl}
@@ -2280,7 +2280,7 @@ export default function PublicItem() {
                       if (normalized === "car" && (typeof value === "string" || typeof value === "number")) {
                         const car = String(value);
                         return (
-                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">CAR</p>
                             <button
                               onClick={() => void openCarVerification()}
@@ -2308,7 +2308,7 @@ export default function PublicItem() {
                         const ieValue = String(value).trim();
                         const ieMasked = shortMiddle(ieValue, 4, 3);
                         return (
-                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
                             <p className="text-sm font-medium text-foreground break-all">{ieMasked}</p>
                             <div className="flex items-center gap-2">
@@ -2340,7 +2340,7 @@ export default function PublicItem() {
                       if (normalized === "weight_kg" && (typeof value === "number" || typeof value === "string")) {
                         const weight = Number(value);
                         return (
-                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3 space-y-2">
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
                             <button
                               onClick={() => setShowWeightDialog(true)}
@@ -2363,7 +2363,7 @@ export default function PublicItem() {
                       }
 
                       return (
-                        <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-muted/40 rounded-lg p-3">
+                        <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5">
                           <div className="flex items-center gap-1.5">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
                             <Tooltip>
@@ -2603,7 +2603,7 @@ export default function PublicItem() {
                       <span className="text-[10px] text-muted-foreground">{yearEvents.length} evento{yearEvents.length !== 1 ? "s" : ""}</span>
                     </div>
                     <div className="relative ml-3">
-                      <div className="absolute left-[7px] top-2 bottom-2 w-px bg-stone-200" />
+                      <div className="absolute left-[9px] top-3 bottom-3 w-[1px] bg-stone-150" style={{ backgroundColor: "#e8e5e0" }} />
                       <div className="space-y-0.5">
                         {(() => {
                           // Group consecutive same-type events
@@ -2916,7 +2916,7 @@ export default function PublicItem() {
                   <Loader2 className="h-4 w-4 animate-spin" /> Carregando dados do CAR...
                 </div>
               ) : carMetadata ? (
-                <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                <div className="bg-stone-50/80 rounded-lg p-3.5 space-y-2">
                   <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-2">Dados do Cadastro</p>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                     {carMetadata.status && (
@@ -3423,15 +3423,17 @@ export default function PublicItem() {
         onClose={() => setTourStep(null)}
       />
 
-      {/* Tour start button — floating, beta only */}
+      {/* Tour start — inline at bottom of page, not floating */}
       {isBeta && tourStep === null && (
-        <button
-          onClick={() => setTourStep(0)}
-          className="fixed bottom-6 right-6 z-40 bg-stone-800/80 hover:bg-stone-800 text-white rounded-full px-3 py-2 shadow-lg flex items-center gap-2 text-xs font-medium transition-colors no-print"
-        >
-          <Info className="h-4 w-4" />
-          Tour
-        </button>
+        <div className="flex justify-center py-4 no-print">
+          <button
+            onClick={() => setTourStep(0)}
+            className="inline-flex items-center gap-1.5 text-[11px] text-stone-400 hover:text-stone-600 transition-colors"
+          >
+            <Info className="h-3.5 w-3.5" />
+            Conhecer funcionalidades
+          </button>
+        </div>
       )}
     </Shell>
   );
