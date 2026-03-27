@@ -2296,26 +2296,48 @@ export default function PublicItem() {
                         );
                       }
 
-                      if (normalized === "car" && (typeof value === "string" || typeof value === "number")) {
-                        const car = String(value);
+                      if (normalized === "car") {
+                        // Collect all CARs: from metadata + from property events
+                        const allCars = new Map<string, string>();
+                        const metaCar = typeof value === "string" ? value.trim() : typeof value === "number" ? String(value) : null;
+                        if (metaCar) allCars.set(metaCar, metadataLocale === "en" ? "Registration origin" : "Registro de origem");
+                        for (const ev of events) {
+                          if (ev.event_type === "item_property_linked") {
+                            const p = (ev.payload || {}) as Record<string, unknown>;
+                            const evCar = typeof p.car === "string" ? p.car.trim() : null;
+                            const evName = typeof p.property_dfid === "string" ? p.property_dfid : null;
+                            if (evCar && !allCars.has(evCar)) allCars.set(evCar, evName || "");
+                            else if (evCar && evName) allCars.set(evCar, evName);
+                          }
+                        }
                         return (
-                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-2">
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">CAR</p>
-                            <button
-                              onClick={() => void openCarVerification()}
-                              className="text-sm font-medium text-primary break-all hover:underline text-left"
-                            >
-                              {car}
-                            </button>
-                            <p className="text-[11px] text-muted-foreground">
-                              {carHasOfficialFormat
-                                ? (metadataLocale === "en"
-                                    ? "Click to verify compliance and property polygon."
-                                    : "Clique para verificar compliance e polígono desse CAR.")
-                                : (metadataLocale === "en"
-                                    ? "CAR outside official format; geospatial check may be unavailable."
-                                    : "CAR fora do padrão oficial; a consulta geoespacial pode não estar disponível.")}
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-3 sm:col-span-2">
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
+                              {metadataLocale === "en" ? "Associated properties (CAR)" : "Propriedades associadas (CAR)"}
                             </p>
+                            {Array.from(allCars.entries()).map(([carNum, propName]) => (
+                              <div key={carNum} className="flex items-start gap-2">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                                <div className="min-w-0">
+                                  {propName && <p className="text-xs font-medium text-foreground">{propName}</p>}
+                                  <button
+                                    onClick={() => {
+                                      if (isOfficialCarFormat(carNum)) {
+                                        setCarDialogValue(carNum);
+                                        setCarGeojson(null); setCarMetadata(null); setCarResult(null);
+                                        setCarError(null); setCarGeoError(null); setShowCarDialog(true);
+                                        setCarGeoLoading(true); setCarMetaLoading(true);
+                                        cachedGetCarGeoJSON(carNum).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
+                                        cachedGetCarMetadata(carNum).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                                      }
+                                    }}
+                                    className="text-xs text-primary break-all hover:underline text-left font-mono"
+                                  >
+                                    {carNum}
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         );
                       }
