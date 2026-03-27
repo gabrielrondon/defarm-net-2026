@@ -574,7 +574,7 @@ const EVENT_ICON_COLORS: Record<string, string> = {
   item_born: "#10b981",
   item_weighed: "#06b6d4",
   item_vaccinated: "#22c55e",
-  item_treated: "#14b8a6",
+  item_treated: "#c2410c",
   item_classified: "#f59e0b",
   item_slaughtered: "#ef4444",
   item_movement: "#6366f1",
@@ -1965,37 +1965,39 @@ export default function PublicItem() {
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {isBeta && currentProperty?.car && (
-          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5 overflow-hidden relative z-0 isolate">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-2">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
-                <p className="text-sm font-semibold text-foreground">{currentProperty.name || "—"}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {[currentProperty.municipality, currentProperty.state].filter(Boolean).join(" / ")}
-                </p>
-                {/* Compliance badge from CAR metadata (fetched inline) */}
-                <ComplianceBadge car={currentProperty.car} />
-                <button
-                  onClick={() => {
-                    if (currentProperty.car && isOfficialCarFormat(currentProperty.car)) {
-                      setCarDialogValue(currentProperty.car);
-                      setCarGeojson(null); setCarMetadata(null); setCarResult(null);
-                      setCarError(null); setCarGeoError(null); setShowCarDialog(true);
-                      setCarGeoLoading(true); setCarMetaLoading(true);
-                      getCarGeoJSON(currentProperty.car, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
-                      getCarMetadata(currentProperty.car, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
-                    }
-                  }}
-                  className="text-xs text-primary hover:underline mt-1 font-mono"
-                >
-                  {currentProperty.car}
-                </button>
+          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
+            {/* Map background */}
+            {currentProperty.car && (
+              <div className="absolute inset-0 opacity-[0.08]">
+                <PropertyMapMini car={currentProperty.car} />
               </div>
-              <div className="w-full sm:w-44 h-28 rounded-lg border border-border overflow-hidden shrink-0 relative z-0">
-                {currentProperty.car && (
-                  <PropertyMapMini car={currentProperty.car} />
-                )}
+            )}
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
               </div>
+              <p className="text-sm font-semibold text-foreground">{currentProperty.name || "—"}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {[currentProperty.municipality, currentProperty.state].filter(Boolean).join(" / ")}
+              </p>
+              {/* Compliance badge from CAR metadata (fetched inline) */}
+              <ComplianceBadge car={currentProperty.car} />
+              <button
+                onClick={() => {
+                  if (currentProperty.car && isOfficialCarFormat(currentProperty.car)) {
+                    setCarDialogValue(currentProperty.car);
+                    setCarGeojson(null); setCarMetadata(null); setCarResult(null);
+                    setCarError(null); setCarGeoError(null); setShowCarDialog(true);
+                    setCarGeoLoading(true); setCarMetaLoading(true);
+                    getCarGeoJSON(currentProperty.car, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
+                    getCarMetadata(currentProperty.car, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                  }
+                }}
+                className="text-xs text-primary hover:underline mt-1 font-mono"
+              >
+                {currentProperty.car}
+              </button>
             </div>
           </section>
         )}
@@ -2036,8 +2038,11 @@ export default function PublicItem() {
         {isBeta && (sanitySummary || weightHistory.length >= 2) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {sanitySummary && (
-              <div ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-                <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-3">{metadataLocale === "en" ? "Health" : "Sanidade"}</p>
+              <div ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Health" : "Sanidade"}</p>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
                     <p className="text-2xl font-bold text-emerald-700">{sanitySummary.vaccines.length}</p>
@@ -2073,9 +2078,12 @@ export default function PublicItem() {
             )}
 
             {weightHistory.length >= 2 && (
-              <div ref={setTourRef(2)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+              <div ref={setTourRef(2)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                    <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</p>
+                  </div>
                   {sanitySummary?.lastWeight && (
                     <span className="text-sm font-semibold text-foreground">{sanitySummary.lastWeight} kg</span>
                   )}
@@ -2103,7 +2111,10 @@ export default function PublicItem() {
 
         {isBeta && upcomingEvents.length > 0 && (
           <section ref={setTourRef(3)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-            <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-3">{metadataLocale === "en" ? "Upcoming" : "Previsões"}</p>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1 h-4 rounded-full bg-emerald-400" />
+              <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Upcoming" : "Previsões"}</p>
+            </div>
             <div className="space-y-2">
               {upcomingEvents.map((ev, i) => (
                 <div key={i} className={`flex items-start gap-3 rounded-lg p-3 text-sm ${
@@ -2486,7 +2497,7 @@ export default function PublicItem() {
           )}
         </section>
 
-        <section>
+        <section className="mt-4 pt-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -3416,7 +3427,7 @@ export default function PublicItem() {
       {isBeta && tourStep === null && (
         <button
           onClick={() => setTourStep(0)}
-          className="fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 py-2.5 shadow-lg flex items-center gap-2 text-sm font-medium transition-colors no-print"
+          className="fixed bottom-6 right-6 z-40 bg-stone-800/80 hover:bg-stone-800 text-white rounded-full px-3 py-2 shadow-lg flex items-center gap-2 text-xs font-medium transition-colors no-print"
         >
           <Info className="h-4 w-4" />
           Tour
