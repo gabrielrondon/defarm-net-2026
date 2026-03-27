@@ -1950,7 +1950,7 @@ export default function PublicItem() {
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {isBeta && currentProperty?.car && (
-          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5 overflow-hidden">
+          <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5 overflow-hidden relative z-0 isolate">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-2">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
@@ -1976,7 +1976,7 @@ export default function PublicItem() {
                   {currentProperty.car}
                 </button>
               </div>
-              <div className="w-full sm:w-48 h-32 rounded-lg border border-border overflow-hidden shrink-0">
+              <div className="w-full sm:w-44 h-28 rounded-lg border border-border overflow-hidden shrink-0 relative z-0">
                 {currentProperty.car && (
                   <PropertyMapMini car={currentProperty.car} />
                 )}
