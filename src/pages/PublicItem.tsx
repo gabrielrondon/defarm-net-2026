@@ -65,6 +65,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import {
+  Area,
   Line,
   LineChart,
   CartesianGrid,
@@ -1905,7 +1906,7 @@ export default function PublicItem() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+          <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-stone-500 font-semibold">
             <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
             {metadata.sex && <><span className="text-muted-foreground/40">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
             {metadata.birth_date && <><span className="text-muted-foreground/40">·</span><span>Nasc. {String(metadata.birth_date)}{animalAge ? ` (${animalAge})` : ""}</span></>}
@@ -1952,7 +1953,7 @@ export default function PublicItem() {
           <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5 overflow-hidden">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-2">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
                 <p className="text-sm font-semibold text-foreground">{currentProperty.name || "—"}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {[currentProperty.municipality, currentProperty.state].filter(Boolean).join(" / ")}
@@ -2017,66 +2018,77 @@ export default function PublicItem() {
           </section>
         )}
 
-        {isBeta && sanitySummary && (
-          <section ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">{metadataLocale === "en" ? "Health" : "Sanidade"}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
-                <p className="text-2xl font-bold text-emerald-700">{sanitySummary.vaccines.length}</p>
-                <p className="text-[11px] text-emerald-600 mt-0.5">{metadataLocale === "en" ? "Vaccinations" : "Vacinações"}</p>
-              </div>
-              <div className="rounded-lg bg-teal-50 border border-teal-200/50 p-3 text-center">
-                <p className="text-2xl font-bold text-teal-700">{sanitySummary.treatments.length}</p>
-                <p className="text-[11px] text-teal-600 mt-0.5">{metadataLocale === "en" ? "Treatments" : "Tratamentos"}</p>
-              </div>
-              <div className="rounded-lg bg-cyan-50 border border-cyan-200/50 p-3 text-center">
-                <p className="text-2xl font-bold text-cyan-700">{weightHistory.length}</p>
-                <p className="text-[11px] text-cyan-600 mt-0.5">{metadataLocale === "en" ? "Weighings" : "Pesagens"}</p>
-              </div>
-              {sanitySummary.gmd !== null && (
-                <div className="rounded-lg bg-amber-50 border border-amber-200/50 p-3 text-center">
-                  <p className="text-2xl font-bold text-amber-700">{sanitySummary.gmd.toFixed(2)}</p>
-                  <p className="text-[11px] text-amber-600 mt-0.5">{metadataLocale === "en" ? "ADG (kg/day)" : "GMD (kg/dia)"}</p>
-                </div>
-              )}
-            </div>
-            {sanitySummary.vaccines.length > 0 && (
-              <div className="mt-3 space-y-1">
-                {sanitySummary.vaccines.map((v, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="text-foreground">{v.name}</span>
-                    <span className="text-muted-foreground">{v.date}</span>
+        {isBeta && (sanitySummary || weightHistory.length >= 2) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {sanitySummary && (
+              <div ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+                <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-3">{metadataLocale === "en" ? "Health" : "Sanidade"}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
+                    <p className="text-2xl font-bold text-emerald-700">{sanitySummary.vaccines.length}</p>
+                    <p className="text-[11px] text-emerald-600 mt-0.5">{metadataLocale === "en" ? "Vaccinations" : "Vacinações"}</p>
                   </div>
-                ))}
+                  <div className="rounded-lg bg-teal-50 border border-teal-200/50 p-3 text-center">
+                    <p className="text-2xl font-bold text-teal-700">{sanitySummary.treatments.length}</p>
+                    <p className="text-[11px] text-teal-600 mt-0.5">{metadataLocale === "en" ? "Treatments" : "Tratamentos"}</p>
+                  </div>
+                  <div className="rounded-lg bg-cyan-50 border border-cyan-200/50 p-3 text-center">
+                    <p className="text-2xl font-bold text-cyan-700">{weightHistory.length}</p>
+                    <p className="text-[11px] text-cyan-600 mt-0.5">{metadataLocale === "en" ? "Weighings" : "Pesagens"}</p>
+                  </div>
+                  {sanitySummary.gmd !== null && (
+                    <div className="rounded-lg bg-amber-50 border border-amber-200/50 p-3 text-center">
+                      <p className="text-2xl font-bold text-amber-700">{sanitySummary.gmd.toFixed(2)}</p>
+                      <p className="text-[11px] text-amber-600 mt-0.5">{metadataLocale === "en" ? "ADG (kg/day)" : "GMD (kg/dia)"}</p>
+                    </div>
+                  )}
+                </div>
+                {sanitySummary.vaccines.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {sanitySummary.vaccines.map((v, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="text-foreground">{v.name}</span>
+                        <span className="text-muted-foreground">{v.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </section>
-        )}
 
-        {isBeta && weightHistory.length >= 2 && (
-          <section ref={setTourRef(2)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</p>
-              {sanitySummary?.lastWeight && (
-                <span className="text-sm font-semibold text-foreground">{sanitySummary.lastWeight} kg</span>
-              )}
-            </div>
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={weightHistory.map((wp) => ({ name: wp.label, peso: wp.weight }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-                <RechartsTooltip contentStyle={{ fontSize: 12 }} formatter={(v: number) => [`${v} kg`, "Peso"]} />
-                <Line type="monotone" dataKey="peso" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </section>
+            {weightHistory.length >= 2 && (
+              <div ref={setTourRef(2)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</p>
+                  {sanitySummary?.lastWeight && (
+                    <span className="text-sm font-semibold text-foreground">{sanitySummary.lastWeight} kg</span>
+                  )}
+                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={weightHistory.map((wp) => ({ name: wp.label, peso: wp.weight }))}>
+                    <defs>
+                      <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                    <RechartsTooltip contentStyle={{ fontSize: 12 }} formatter={(v: number) => [`${v} kg`, "Peso"]} />
+                    <Area type="monotone" dataKey="peso" stroke="none" fill="url(#weightGradient)" />
+                    <Line type="monotone" dataKey="peso" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 5, stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
         )}
 
         {isBeta && upcomingEvents.length > 0 && (
           <section ref={setTourRef(3)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-3">{metadataLocale === "en" ? "Upcoming" : "Previsões"}</p>
+            <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-3">{metadataLocale === "en" ? "Upcoming" : "Previsões"}</p>
             <div className="space-y-2">
               {upcomingEvents.map((ev, i) => (
                 <div key={i} className={`flex items-start gap-3 rounded-lg p-3 text-sm ${
@@ -2175,14 +2187,20 @@ export default function PublicItem() {
         )}
 
         {visibleMetadataEntries.length > 0 && (
-          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-5">
+          <section className="border-t border-stone-200/40 pt-5">
             <div className="mb-3">
               <h2 className="text-sm font-semibold text-foreground">
                 {metadataLocale === "en" ? "Public metadata" : "Metadados públicos"}
               </h2>
             </div>
             <div className="space-y-4">
-              {groupedMetadataEntries.map(({ group, entries }) => (
+              {(isBeta
+                ? groupedMetadataEntries.map(g => ({
+                    ...g,
+                    entries: g.entries.filter(e => !["weight_kg", "data_pesagem", "breed", "sex", "birth_date", "category", "fazenda", "stock_location"].includes(e.canonicalKey))
+                  })).filter(g => g.entries.length > 0)
+                : groupedMetadataEntries
+              ).map(({ group, entries }) => (
                 <div key={group} className="space-y-2.5">
                   <div className="inline-flex items-center gap-1.5 rounded-md bg-muted/40 px-2.5 py-1">
                     {group === "identification" ? (
@@ -2358,93 +2376,97 @@ export default function PublicItem() {
           </section>
         )}
 
-        <section ref={setTourRef(7)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-5 space-y-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Database className="h-4.5 w-4.5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-foreground">Registro verificável</h2>
-              <p className="text-xs text-muted-foreground">
-                {metadataLocale === "en"
-                  ? "Blockchain anchoring + versioned content (IPFS)"
-                  : "Ancorado em blockchain + conteúdo versionado (IPFS)"}
-              </p>
-            </div>
-          </div>
-
+        <section ref={setTourRef(7)} className="border-t border-stone-200/40 pt-5">
           {isLoadingProofs ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-3">
               <Loader2 className="h-4 w-4 animate-spin" />
               Carregando provas...
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Identidade</p>
-                {proofs?.identity_anchor?.transaction_hash ? (
-                  <>
-                    <a
-                      href={`https://stellar.expert/explorer/public/tx/${proofs.identity_anchor.transaction_hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
-                    >
-                      {shortHash(proofs.identity_anchor.transaction_hash)}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={() => void copyText(proofs.identity_anchor!.transaction_hash, "Hash de identidade")}
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Copiar hash
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowIdentityDialog(true)}>
-                        Ver detalhes
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Identidade ainda não disponível.</p>
-                )}
+            <div className="border-t border-stone-200/40 pt-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {metadataLocale === "en" ? "Verified on blockchain" : "Verificado em blockchain"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Stellar mainnet · IPFS (Pinata)</p>
+                </div>
               </div>
+              <details className="mt-3">
+                <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                  {metadataLocale === "en" ? "View technical details" : "Ver detalhes técnicos"}
+                </summary>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Identidade</p>
+                    {proofs?.identity_anchor?.transaction_hash ? (
+                      <>
+                        <a
+                          href={`https://stellar.expert/explorer/public/tx/${proofs.identity_anchor.transaction_hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
+                        >
+                          {shortHash(proofs.identity_anchor.transaction_hash)}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => void copyText(proofs.identity_anchor!.transaction_hash, "Hash de identidade")}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copiar hash
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowIdentityDialog(true)}>
+                            Ver detalhes
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Identidade ainda não disponível.</p>
+                    )}
+                  </div>
 
-              <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">CID (última versão)</p>
-                {latestContentVersion ? (
-                  <>
-                    <a
-                      href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
-                    >
-                      {shortHash(latestContentVersion.cid)}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={() => void copyText(latestContentVersion.cid, "CID")}
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Copiar CID
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCidDialog(true)}>
-                        Ver versões
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Nenhuma versão de conteúdo disponível.</p>
-                )}
-              </div>
+                  <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">CID (última versão)</p>
+                    {latestContentVersion ? (
+                      <>
+                        <a
+                          href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
+                        >
+                          {shortHash(latestContentVersion.cid)}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => void copyText(latestContentVersion.cid, "CID")}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copiar CID
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCidDialog(true)}>
+                            Ver versões
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Nenhuma versão de conteúdo disponível.</p>
+                    )}
+                  </div>
+                </div>
+              </details>
             </div>
           )}
         </section>
@@ -2557,66 +2579,136 @@ export default function PublicItem() {
                     <div className="relative ml-3">
                       <div className="absolute left-[7px] top-2 bottom-2 w-px bg-stone-200" />
                       <div className="space-y-0.5">
-                        {yearEvents.map((event) => {
-                          const Icon = eventTypeIcons[event.event_type] || Activity;
-                          const color = EVENT_ICON_COLORS[event.event_type] || "#8b5cf6";
-                          const label = eventTypeLabels[event.event_type] || event.event_type;
-                          const summary = eventSummary(event);
-                          const p = (event.payload || {}) as Record<string, unknown>;
-                          const date = typeof p.occurred_at === "string" ? p.occurred_at : formatDateShort(event.created_at);
-                          const isExp = expandedEvents.has(event.id);
-                          const hasPayload = event.payload && Object.keys(event.payload).length > 0;
+                        {(() => {
+                          // Group consecutive same-type events
+                          const grouped: { events: typeof yearEvents; type: string }[] = [];
+                          for (const evt of yearEvents) {
+                            const last = grouped[grouped.length - 1];
+                            if (last && last.type === evt.event_type) {
+                              last.events.push(evt);
+                            } else {
+                              grouped.push({ events: [evt], type: evt.event_type });
+                            }
+                          }
+                          return grouped.map((group, gi) => {
+                            if (group.events.length === 1) {
+                              // Single event — existing render
+                              const event = group.events[0];
+                              const Icon = eventTypeIcons[event.event_type] || Activity;
+                              const color = EVENT_ICON_COLORS[event.event_type] || "#8b5cf6";
+                              const label = eventTypeLabels[event.event_type] || event.event_type;
+                              const summary = eventSummary(event);
+                              const p = (event.payload || {}) as Record<string, unknown>;
+                              const date = typeof p.occurred_at === "string" ? p.occurred_at : formatDateShort(event.created_at);
+                              const isExp = expandedEvents.has(event.id);
+                              const hasPayload = event.payload && Object.keys(event.payload).length > 0;
 
-                          return (
-                            <button
-                              key={event.id}
-                              onClick={() => hasPayload && toggleExpanded(event.id)}
-                              className={`relative flex gap-3 pl-1 py-2.5 w-full text-left rounded-lg transition-colors ${hasPayload ? "hover:bg-stone-50 cursor-pointer" : ""} ${isExp ? "bg-stone-50" : ""}`}
-                            >
-                              <div className="relative z-10 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: color }}>
-                                <Icon className="h-3 w-3 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-xs font-medium text-foreground">{label}</span>
-                                  <span className="text-[10px] text-muted-foreground tabular-nums">{date}</span>
-                                  {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
-                                </div>
-                                {summary && <p className="text-xs text-muted-foreground mt-0.5">{summary}</p>}
-                                {isExp && hasPayload && (
-                                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                    {Object.entries(event.payload!).filter(([k]) => k !== "source").map(([k, v]) => {
-                                      const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
-                                      const isCoordField = k.includes("coordinates") && typeof v === "object" && v !== null && "lat" in (v as Record<string, unknown>) && "lon" in (v as Record<string, unknown>);
-                                      return (
-                                        <div key={k} className="flex gap-1.5">
-                                          <span className="text-muted-foreground shrink-0">{PAYLOAD_KEY_LABELS[k] || k}:</span>
-                                          {isCarField ? (
-                                            <span
-                                              className="text-primary font-mono truncate"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setCarDialogValue(v as string);
-                                                setCarGeojson(null); setCarMetadata(null); setCarResult(null); setCarError(null); setCarGeoError(null);
-                                                setShowCarDialog(true); setCarGeoLoading(true); setCarMetaLoading(true);
-                                                getCarGeoJSON(v as string, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
-                                                getCarMetadata(v as string, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
-                                              }}
-                                            >{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
-                                          ) : isCoordField ? (
-                                            <a href={`https://www.google.com/maps?q=${(v as Record<string, unknown>).lat},${(v as Record<string, unknown>).lon}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono truncate" onClick={(e) => e.stopPropagation()}>{`${(v as Record<string, unknown>).lat}, ${(v as Record<string, unknown>).lon}`}</a>
-                                          ) : (
-                                            <span className="text-foreground font-mono truncate">{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
+                              return (
+                                <button
+                                  key={event.id}
+                                  onClick={() => hasPayload && toggleExpanded(event.id)}
+                                  className={`relative flex gap-3 pl-1 py-2.5 w-full text-left rounded-lg transition-colors ${hasPayload ? "hover:bg-stone-50 cursor-pointer" : ""} ${isExp ? "bg-stone-50" : ""}`}
+                                >
+                                  <div className="relative z-10 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: color }}>
+                                    <Icon className="h-3 w-3 text-white" />
                                   </div>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-baseline gap-2">
+                                      <span className="text-xs font-medium text-foreground">{label}</span>
+                                      <span className="text-[10px] text-muted-foreground tabular-nums">{date}</span>
+                                      {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
+                                    </div>
+                                    {summary && <p className="text-xs text-muted-foreground mt-0.5">{summary}</p>}
+                                    {isExp && hasPayload && (
+                                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                        {Object.entries(event.payload!).filter(([k]) => k !== "source").map(([k, v]) => {
+                                          const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
+                                          const isCoordField = k.includes("coordinates") && typeof v === "object" && v !== null && "lat" in (v as Record<string, unknown>) && "lon" in (v as Record<string, unknown>);
+                                          return (
+                                            <div key={k} className="flex gap-1.5">
+                                              <span className="text-muted-foreground shrink-0">{PAYLOAD_KEY_LABELS[k] || k}:</span>
+                                              {isCarField ? (
+                                                <span
+                                                  className="text-primary font-mono truncate"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setCarDialogValue(v as string);
+                                                    setCarGeojson(null); setCarMetadata(null); setCarResult(null); setCarError(null); setCarGeoError(null);
+                                                    setShowCarDialog(true); setCarGeoLoading(true); setCarMetaLoading(true);
+                                                    getCarGeoJSON(v as string, { skipAuth: true }).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
+                                                    getCarMetadata(v as string, { skipAuth: true }).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                                                  }}
+                                                >{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
+                                              ) : isCoordField ? (
+                                                <a href={`https://www.google.com/maps?q=${(v as Record<string, unknown>).lat},${(v as Record<string, unknown>).lon}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono truncate" onClick={(e) => e.stopPropagation()}>{`${(v as Record<string, unknown>).lat}, ${(v as Record<string, unknown>).lon}`}</a>
+                                              ) : (
+                                                <span className="text-foreground font-mono truncate">{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            } else {
+                              // Grouped consecutive same-type events
+                              const label = eventTypeLabels[group.type] || group.type;
+                              const Icon = eventTypeIcons[group.type] || Activity;
+                              const color = EVENT_ICON_COLORS[group.type] || "#8b5cf6";
+                              const groupKey = `group-${gi}-${year}`;
+                              const isGroupExp = expandedEvents.has(groupKey);
+                              const firstP = (group.events[0].payload || {}) as Record<string, unknown>;
+                              const lastP = (group.events[group.events.length - 1].payload || {}) as Record<string, unknown>;
+                              const firstDate = typeof firstP.occurred_at === "string" ? firstP.occurred_at.slice(0, 7) : formatDateShort(group.events[0].created_at).slice(0, 7);
+                              const lastDate = typeof lastP.occurred_at === "string" ? lastP.occurred_at.slice(0, 7) : formatDateShort(group.events[group.events.length - 1].created_at).slice(0, 7);
+                              const dateRange = firstDate === lastDate ? firstDate : `${firstDate} — ${lastDate}`;
+
+                              return (
+                                <div key={groupKey}>
+                                  <button
+                                    onClick={() => toggleExpanded(groupKey)}
+                                    className={`relative flex gap-3 pl-1 py-2.5 w-full text-left rounded-lg transition-colors hover:bg-stone-50 cursor-pointer ${isGroupExp ? "bg-stone-50" : ""}`}
+                                  >
+                                    <div className="relative z-10 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: color }}>
+                                      <Icon className="h-3 w-3 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-baseline gap-2">
+                                        <span className="text-xs font-medium text-foreground">{group.events.length} {label}</span>
+                                        <span className="text-[10px] text-muted-foreground tabular-nums">{dateRange}</span>
+                                        <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isGroupExp ? "rotate-180" : ""}`} />
+                                      </div>
+                                    </div>
+                                  </button>
+                                  {isGroupExp && (
+                                    <div className="ml-8 border-l border-stone-200 pl-3 space-y-1 mb-1">
+                                      {group.events.map((event) => {
+                                        const evtSummary = eventSummary(event);
+                                        const ep = (event.payload || {}) as Record<string, unknown>;
+                                        const evtDate = typeof ep.occurred_at === "string" ? ep.occurred_at.slice(0, 10) : formatDateShort(event.created_at);
+                                        return (
+                                          <button
+                                            key={event.id}
+                                            onClick={() => event.payload && Object.keys(event.payload).length > 0 && toggleExpanded(event.id)}
+                                            className={`relative flex gap-2 py-1.5 w-full text-left rounded transition-colors text-xs ${event.payload && Object.keys(event.payload).length > 0 ? "hover:bg-stone-50 cursor-pointer" : ""} ${expandedEvents.has(event.id) ? "bg-stone-50" : ""}`}
+                                          >
+                                            <span className="text-foreground">{evtSummary || label}</span>
+                                            <span className="text-muted-foreground tabular-nums">· {evtDate}</span>
+                                            {event.payload && Object.keys(event.payload).length > 0 && (
+                                              <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${expandedEvents.has(event.id) ? "rotate-180" : ""}`} />
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }
+                          });
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -2799,7 +2891,7 @@ export default function PublicItem() {
                 </div>
               ) : carMetadata ? (
                 <div className="bg-muted/40 rounded-lg p-3 space-y-2">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Dados do Cadastro</p>
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-2">Dados do Cadastro</p>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                     {carMetadata.status && (
                       <div>
@@ -2850,7 +2942,7 @@ export default function PublicItem() {
                 </div>
               ) : carResult ? (
                 <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Compliance Check</p>
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-2">Compliance Check</p>
                   <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                     <div>
                       <span className="text-muted-foreground text-xs">Veredito</span>
@@ -2894,7 +2986,7 @@ export default function PublicItem() {
               />
             </div>
             <div className="rounded-lg bg-stone-50 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Código HTML</p>
+              <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold mb-2">Código HTML</p>
               <pre className="text-xs font-mono text-foreground break-all whitespace-pre-wrap select-all">{`<iframe src="https://defarm.net/embed/item/${item?.dfid || ""}" width="100%" height="160" frameborder="0" style="border-radius:12px;border:1px solid #e5e5e5;"></iframe>`}</pre>
             </div>
             <Button
@@ -3228,7 +3320,7 @@ export default function PublicItem() {
             {cidViewContent && (
               <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Conteúdo do registro</p>
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">Conteúdo do registro</p>
                   <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => setCidViewContent(null)}>Fechar</Button>
                 </div>
                 {cidViewContent.data.schema_version && (
