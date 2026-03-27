@@ -1964,7 +1964,7 @@ export default function PublicItem() {
         )}
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
-        {isBeta && currentProperty?.car && (
+        {currentProperty?.car && (
           <section ref={setTourRef(0)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
             {/* Map background */}
             {currentProperty.car && (
@@ -2004,7 +2004,7 @@ export default function PublicItem() {
 
         {hasJourneyData && (
           <section
-            ref={isBeta ? setTourRef(4) : undefined}
+            ref={setTourRef(4)}
             className="rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/50 via-white to-white shadow-sm p-5 sm:p-6 cursor-pointer group"
             onClick={() => setShowJourneyDialog(true)}
           >
@@ -2035,7 +2035,7 @@ export default function PublicItem() {
           </section>
         )}
 
-        {isBeta && (sanitySummary || weightHistory.length >= 2) && (
+        {(sanitySummary || weightHistory.length >= 2) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {sanitySummary && (
               <div ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5">
@@ -2109,7 +2109,7 @@ export default function PublicItem() {
           </div>
         )}
 
-        {isBeta && upcomingEvents.length > 0 && (
+        {upcomingEvents.length > 0 && (
           <section ref={setTourRef(3)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-1 h-4 rounded-full bg-emerald-400" />
@@ -2135,7 +2135,7 @@ export default function PublicItem() {
           </section>
         )}
 
-        {!isBeta && (
+        {false && (
         <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -2220,13 +2220,10 @@ export default function PublicItem() {
               </h2>
             </div>
             <div className="space-y-6">
-              {(isBeta
-                ? groupedMetadataEntries.map(g => ({
+              {groupedMetadataEntries.map(g => ({
                     ...g,
                     entries: g.entries.filter(e => !["weight_kg", "data_pesagem", "breed", "sex", "birth_date", "category", "fazenda", "stock_location"].includes(e.canonicalKey))
-                  })).filter(g => g.entries.length > 0)
-                : groupedMetadataEntries
-              ).map(({ group, entries }) => (
+                  })).filter(g => g.entries.length > 0).map(({ group, entries }) => (
                 <div key={group} className="space-y-2.5">
                   <div className="inline-flex items-center gap-1.5 border-b border-stone-200/60 pb-1.5 mb-1">
                     {group === "identification" ? (
@@ -2583,8 +2580,8 @@ export default function PublicItem() {
                 </p>
               )}
             </div>
-          ) : isBeta ? (
-            /* === BETA: Timeline visual with year grouping === */
+          ) : (
+            /* === Timeline visual with year grouping === */
             <div ref={setTourRef(5)} className="space-y-6">
               {(() => {
                 const groups = new Map<string, typeof visibleEvents>();
@@ -2740,131 +2737,6 @@ export default function PublicItem() {
                   </div>
                 ));
               })()}
-            </div>
-          ) : (
-            <div className="relative">
-              <div className="absolute left-[19px] top-3 bottom-3 w-px bg-border" />
-
-              <div className="space-y-0">
-                {visibleEvents.map((event) => {
-                  const Icon = eventTypeIcons[event.event_type] || Activity;
-                  const colors = eventTypeColors[event.event_type] || "bg-muted text-muted-foreground";
-                  const label = eventTypeLabels[event.event_type] || event.event_type;
-                  const summary = eventSummary(event);
-                  const isOperational = !REAL_LIFE_EVENT_TYPES.has(event.event_type);
-                  const isExpanded = expandedEvents.has(event.id);
-                  const hasPayload = event.payload && Object.keys(event.payload).length > 0;
-                  const trust = trustBadge(event.trust_level, event.trust_score);
-
-                  return (
-                    <div key={event.id} className="relative pl-12 pb-1 pt-1">
-                      <div
-                        className={`absolute left-[7px] top-3 w-6 h-6 rounded-full flex items-center justify-center ring-2 ring-background ${colors}`}
-                      >
-                        <Icon className="h-3 w-3" />
-                      </div>
-
-                      <div
-                        className={`rounded-xl border p-4 transition-colors ${
-                          isOperational
-                            ? "border-border/60 bg-muted/20"
-                            : "border-border bg-background hover:bg-muted/20"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${colors}`}>{label}</span>
-                              {isOperational && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                                  operacional
-                                </span>
-                              )}
-                            </div>
-                            {summary && <p className="text-sm text-foreground mt-2">{summary}</p>}
-                          </div>
-                          <span className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
-                            {formatDateShort(event.created_at)}
-                          </span>
-                        </div>
-
-                        {hasPayload && (
-                          <div className="mt-2">
-                            <button
-                              onClick={() => toggleExpanded(event.id)}
-                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              {isExpanded ? (
-                                <>
-                                  <ChevronUp className="h-3 w-3" />
-                                  Ocultar detalhes
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="h-3 w-3" />
-                                  Ver detalhes
-                                </>
-                              )}
-                            </button>
-                            {isExpanded && (
-                              <div className="mt-2 rounded-lg bg-muted/50 p-3 space-y-1">
-                                {Object.entries(event.payload!).map(([k, v]) => {
-                                  const strVal = typeof v === "object" ? JSON.stringify(v) : String(v ?? "-");
-                                  const isCarField = (k === "car" || k === "from_car" || k === "to_car") && typeof v === "string" && isOfficialCarFormat(v);
-                                  const isCoordField = k.includes("coordinates") && typeof v === "object" && v !== null && "lat" in (v as Record<string, unknown>) && "lon" in (v as Record<string, unknown>);
-                                  return (
-                                    <div key={k} className="flex gap-2 text-xs">
-                                      <span className="text-muted-foreground min-w-[100px]">{PAYLOAD_KEY_LABELS[k] || k}:</span>
-                                      {isCarField ? (
-                                        <button
-                                          onClick={() => {
-                                            const carVal = v as string;
-                                            setCarDialogValue(carVal);
-                                            setCarGeojson(null);
-                                            setCarMetadata(null);
-                                            setCarResult(null);
-                                            setCarError(null);
-                                            setCarGeoError(null);
-                                            setShowCarDialog(true);
-                                            setCarGeoLoading(true);
-                                            setCarMetaLoading(true);
-                                            getCarGeoJSON(carVal, { skipAuth: true })
-                                              .then((geo) => setCarGeojson(geo))
-                                              .catch(() => {})
-                                              .finally(() => setCarGeoLoading(false));
-                                            getCarMetadata(carVal, { skipAuth: true })
-                                              .then((meta) => setCarMetadata(meta))
-                                              .catch(() => {})
-                                              .finally(() => setCarMetaLoading(false));
-                                            if (isAuthenticated && isOfficialCarFormat(carVal)) {
-                                              setCarLoading(true);
-                                              executeCheck({ input: { type: "CAR", value: carVal }, options: { useCache: true, includeEvidence: false } })
-                                                .then((res) => setCarResult(res))
-                                                .catch(() => setCarError(null))
-                                                .finally(() => setCarLoading(false));
-                                            }
-                                          }}
-                                          className="text-primary hover:underline break-all font-mono text-left"
-                                        >
-                                          {strVal}
-                                        </button>
-                                      ) : isCoordField ? (
-                                        <a href={`https://www.google.com/maps?q=${(v as Record<string, unknown>).lat},${(v as Record<string, unknown>).lon}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-mono truncate">{`${(v as Record<string, unknown>).lat}, ${(v as Record<string, unknown>).lon}`}</a>
-                                      ) : (
-                                        <span className="text-foreground break-all font-mono">{strVal}</span>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           )}
         </section>
