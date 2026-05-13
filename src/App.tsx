@@ -217,7 +217,9 @@ const App = () => (
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
             <Route path="/privacidade" element={<Privacidade />} />
+            <Route path="/privacy" element={<Privacidade />} />
             <Route path="/termos" element={<Termos />} />
+            <Route path="/terms" element={<Termos />} />
             <Route path="/logo-pack" element={<LogoPack />} />
             <Route path="/c/:id" element={<PublicCircuit />} />
             <Route path="/i/:identifierType/:identifierValue" element={<PublicItem />} />
