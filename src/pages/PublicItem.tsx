@@ -2628,15 +2628,19 @@ export default function PublicItem() {
             /* === Timeline visual with year grouping === */
             <div ref={setTourRef(5)} className="space-y-6">
               {(() => {
-                const groups = new Map<string, typeof visibleEvents>();
-                for (const e of visibleEvents) {
+                const eventDateStr = (e: typeof visibleEvents[number]) => {
                   const p = (e.payload || {}) as Record<string, unknown>;
-                  const date = typeof p.occurred_at === "string" ? p.occurred_at : e.created_at;
-                  const year = date.slice(0, 4);
+                  return typeof p.occurred_at === "string" ? p.occurred_at : e.created_at;
+                };
+                // Mais recente primeiro: ordena eventos por data desc e agrupa por ano (ano mais novo no topo)
+                const sortedEvents = [...visibleEvents].sort((a, b) => eventDateStr(b).localeCompare(eventDateStr(a)));
+                const groups = new Map<string, typeof visibleEvents>();
+                for (const e of sortedEvents) {
+                  const year = eventDateStr(e).slice(0, 4);
                   if (!groups.has(year)) groups.set(year, []);
                   groups.get(year)!.push(e);
                 }
-                return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([year, yearEvents]) => (
+                return Array.from(groups.entries()).sort(([a], [b]) => b.localeCompare(a)).map(([year, yearEvents]) => (
                   <div key={year}>
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-xs font-bold text-foreground bg-stone-100 px-2.5 py-1 rounded-full">{year}</span>
@@ -2726,10 +2730,15 @@ export default function PublicItem() {
                               const color = EVENT_ICON_COLORS[group.type] || "#8b5cf6";
                               const groupKey = `group-${gi}-${year}`;
                               const isGroupExp = expandedEvents.has(groupKey);
-                              const firstP = (group.events[0].payload || {}) as Record<string, unknown>;
-                              const lastP = (group.events[group.events.length - 1].payload || {}) as Record<string, unknown>;
-                              const firstDate = typeof firstP.occurred_at === "string" ? firstP.occurred_at.slice(0, 7) : formatDateShort(group.events[0].created_at).slice(0, 7);
-                              const lastDate = typeof lastP.occurred_at === "string" ? lastP.occurred_at.slice(0, 7) : formatDateShort(group.events[group.events.length - 1].created_at).slice(0, 7);
+                              // Range sempre antigo -> recente (independe da ordem de exibição dos eventos)
+                              const groupMonths = group.events
+                                .map((ev) => {
+                                  const ep = (ev.payload || {}) as Record<string, unknown>;
+                                  return typeof ep.occurred_at === "string" ? ep.occurred_at.slice(0, 7) : formatDateShort(ev.created_at).slice(0, 7);
+                                })
+                                .sort((a, b) => a.localeCompare(b));
+                              const firstDate = groupMonths[0];
+                              const lastDate = groupMonths[groupMonths.length - 1];
                               const dateRange = firstDate === lastDate ? firstDate : `${firstDate} — ${lastDate}`;
 
                               return (
