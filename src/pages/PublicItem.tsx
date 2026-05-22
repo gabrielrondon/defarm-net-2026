@@ -1958,7 +1958,7 @@ export default function PublicItem() {
               </div>
               <div className="flex items-center gap-0.5">
                 <button
-                  onClick={() => void shareOrCopyLink(`https://defarm.net/i/${item.dfid}`, `DeFarm — ${item.dfid}`)}
+                  onClick={() => void shareOrCopyLink(`https://defarm.net/i/${item.dfid}`, `DeFarm: ${item.dfid}`)}
                   className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
                   title={metadataLocale === "en" ? "Share" : "Compartilhar"}
                 >

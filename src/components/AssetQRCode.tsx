@@ -265,7 +265,7 @@ export function AssetQRCode({
     let shared = false;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Certificado DeFarm", text: `Rastreabilidade DeFarm — ${dfid}`, url: publicUrl });
+        await navigator.share({ title: "Certificado DeFarm", text: `Rastreabilidade DeFarm: ${dfid}`, url: publicUrl });
         shared = true;
       } catch (err) {
         // User cancelled the native sheet — the link is still copied below.
