@@ -987,7 +987,7 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
   }, [points]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 min-w-0">
       {/* Summary badges */}
       <div className="flex flex-wrap gap-2">
         {locationSummary.map((loc) => (

@@ -283,7 +283,7 @@ export function AssetQRCode({
 
       {fullscreen && createPortal(
         <div
-          className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
+          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
           onClick={() => setFullscreen(false)}
         >
           <div
