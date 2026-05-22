@@ -3,14 +3,29 @@ import { checkRequest } from "./client";
 // Direct API base for public endpoints (bypasses gateway auth)
 const CHECK_API_DIRECT = "https://defarm-check-api-production.up.railway.app";
 
+// Timeout for public CAR lookups. Without it, a slow/down backend leaves the
+// request pending until the browser default (minutes), freezing the UI spinner.
+const PUBLIC_FETCH_TIMEOUT_MS = 12_000;
+
 async function publicFetch<T>(endpoint: string): Promise<T> {
   const url = `${CHECK_API_DIRECT}${endpoint}`;
   console.log(`[DeFarm Check Direct] GET ${url}`);
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), PUBLIC_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return await response.json();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(`Tempo limite (${PUBLIC_FETCH_TIMEOUT_MS / 1000}s) ao consultar o serviço de CAR.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
-  return response.json();
 }
 
 export interface CarMetadata {
@@ -38,6 +53,11 @@ export interface CarGeoJSON {
 }
 
 export async function getCarMetadata(carNumber: string, { skipAuth = false } = {}): Promise<CarMetadata> {
+  if (skipAuth) {
+    // Use direct Check API URL (with timeout) to mirror getCarGeoJSON and avoid
+    // gateway CORS/routing issues on public pages.
+    return publicFetch<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`);
+  }
   return checkRequest<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`, {}, { skipAuth });
 }
 

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Loader2,
+  AlertTriangle,
   Package,
   ShieldCheck,
   ExternalLink,
@@ -1117,6 +1118,7 @@ export default function PublicItem() {
   const [carGeoError, setCarGeoError] = useState<string | null>(null);
   const [carMetadata, setCarMetadata] = useState<CarMetadata | null>(null);
   const [carMetaLoading, setCarMetaLoading] = useState(false);
+  const [carMetaError, setCarMetaError] = useState<string | null>(null);
   const [carDialogValue, setCarDialogValue] = useState<string | null>(null);
 
   const [showWeightDialog, setShowWeightDialog] = useState(false);
@@ -1560,6 +1562,31 @@ export default function PublicItem() {
     }
   };
 
+  // Public CAR lookup (map polygon + metadata). Centralizes loading/error state
+  // so the dialog never gets stuck on a spinner with errors silently swallowed.
+  const runPublicCarLookup = (car: string) => {
+    setCarGeojson(null);
+    setCarMetadata(null);
+    setCarGeoError(null);
+    setCarMetaError(null);
+    setCarGeoLoading(true);
+    setCarMetaLoading(true);
+    cachedGetCarGeoJSON(car)
+      .then((g) => setCarGeojson(g))
+      .catch((err) => {
+        console.warn("[CAR GeoJSON] Failed to fetch:", err);
+        setCarGeoError("Não foi possível carregar o mapa do CAR. O serviço pode estar temporariamente indisponível.");
+      })
+      .finally(() => setCarGeoLoading(false));
+    cachedGetCarMetadata(car)
+      .then((m) => setCarMetadata(m))
+      .catch((err) => {
+        console.warn("[CAR Metadata] Failed to fetch:", err);
+        setCarMetaError("Não foi possível carregar os dados do CAR. O serviço pode estar temporariamente indisponível.");
+      })
+      .finally(() => setCarMetaLoading(false));
+  };
+
   const openCarVerification = async () => {
     if (!carValue) return;
     setCarDialogValue(carValue);
@@ -1574,24 +1601,8 @@ export default function PublicItem() {
       return;
     }
 
-    // Fetch GeoJSON (public, no auth needed)
-    setCarGeoLoading(true);
-    setCarGeoError(null);
-    cachedGetCarGeoJSON(carValue)
-      .then((geo) => setCarGeojson(geo))
-      .catch(() => {
-        setCarGeoError(null);
-      })
-      .finally(() => setCarGeoLoading(false));
-
-    // Fetch metadata (public, no auth needed)
-    setCarMetaLoading(true);
-    cachedGetCarMetadata(carValue)
-      .then((meta) => setCarMetadata(meta))
-      .catch((err) => {
-        console.warn("[CAR Metadata] Failed to fetch:", err);
-      })
-      .finally(() => setCarMetaLoading(false));
+    // Fetch GeoJSON + metadata (public, no auth needed)
+    runPublicCarLookup(carValue);
 
     if (!isAuthenticated) {
       return;
@@ -2009,11 +2020,9 @@ export default function PublicItem() {
                 onClick={() => {
                   if (currentProperty.car && isOfficialCarFormat(currentProperty.car)) {
                     setCarDialogValue(currentProperty.car);
-                    setCarGeojson(null); setCarMetadata(null); setCarResult(null);
-                    setCarError(null); setCarGeoError(null); setShowCarDialog(true);
-                    setCarGeoLoading(true); setCarMetaLoading(true);
-                    cachedGetCarGeoJSON(currentProperty.car).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
-                    cachedGetCarMetadata(currentProperty.car).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                    setCarResult(null); setCarError(null);
+                    setShowCarDialog(true);
+                    runPublicCarLookup(currentProperty.car);
                   }
                 }}
                 className="text-xs text-primary hover:underline mt-1 font-mono"
@@ -2324,11 +2333,9 @@ export default function PublicItem() {
                                     onClick={() => {
                                       if (isOfficialCarFormat(carNum)) {
                                         setCarDialogValue(carNum);
-                                        setCarGeojson(null); setCarMetadata(null); setCarResult(null);
-                                        setCarError(null); setCarGeoError(null); setShowCarDialog(true);
-                                        setCarGeoLoading(true); setCarMetaLoading(true);
-                                        cachedGetCarGeoJSON(carNum).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
-                                        cachedGetCarMetadata(carNum).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                                        setCarResult(null); setCarError(null);
+                                        setShowCarDialog(true);
+                                        runPublicCarLookup(carNum);
                                       }
                                     }}
                                     className="text-xs text-primary break-all hover:underline text-left font-mono"
@@ -2704,10 +2711,9 @@ export default function PublicItem() {
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     setCarDialogValue(v as string);
-                                                    setCarGeojson(null); setCarMetadata(null); setCarResult(null); setCarError(null); setCarGeoError(null);
-                                                    setShowCarDialog(true); setCarGeoLoading(true); setCarMetaLoading(true);
-                                                    cachedGetCarGeoJSON(v as string).then((g) => setCarGeojson(g)).catch(() => {}).finally(() => setCarGeoLoading(false));
-                                                    cachedGetCarMetadata(v as string).then((m) => setCarMetadata(m)).catch(() => {}).finally(() => setCarMetaLoading(false));
+                                                    setCarResult(null); setCarError(null);
+                                                    setShowCarDialog(true);
+                                                    runPublicCarLookup(v as string);
                                                   }}
                                                 >{typeof v === "object" ? JSON.stringify(v) : String(v ?? "-")}</span>
                                               ) : isCoordField ? (
@@ -2802,6 +2808,7 @@ export default function PublicItem() {
           if (!open) {
             setCarError(null);
             setCarGeoError(null);
+            setCarMetaError(null);
             setCarLoading(false);
             setCarGeoLoading(false);
             setCarMetaLoading(false);
@@ -2822,7 +2829,7 @@ export default function PublicItem() {
             <p className="text-sm text-muted-foreground">Este item não contém CAR público para consulta.</p>
           ) : (
             <div className="space-y-4">
-              {carGeoLoading || carGeojson ? (
+              {carGeoLoading || carGeojson || carGeoError ? (
                 <div className="rounded-lg border border-border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground mb-2">Polígono da propriedade</p>
                   {carGeoLoading ? (
@@ -2831,6 +2838,10 @@ export default function PublicItem() {
                     </div>
                   ) : carGeojson ? (
                     <PropertyMap geojson={carGeojson} className="h-64 w-full" />
+                  ) : carGeoError ? (
+                    <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200/60 rounded-md px-3 py-4">
+                      <AlertTriangle className="h-4 w-4 shrink-0" /> {carGeoError}
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -2884,6 +2895,10 @@ export default function PublicItem() {
                       </div>
                     )}
                   </div>
+                </div>
+              ) : carMetaError ? (
+                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200/60 rounded-md px-3 py-3">
+                  <AlertTriangle className="h-4 w-4 shrink-0" /> {carMetaError}
                 </div>
               ) : null}
 

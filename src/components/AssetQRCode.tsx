@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Download, Share2, ExternalLink, Copy, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -280,9 +281,9 @@ export function AssetQRCode({
         </div>
       </div>
 
-      {fullscreen && (
+      {fullscreen && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
+          className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
           onClick={() => setFullscreen(false)}
         >
           <div
@@ -397,7 +398,8 @@ export function AssetQRCode({
               Verificado pela plataforma DeFarm
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
