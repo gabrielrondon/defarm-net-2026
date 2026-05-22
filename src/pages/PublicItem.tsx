@@ -30,6 +30,7 @@ import {
   MapPinned,
   LogOut,
   Printer,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1562,6 +1563,28 @@ export default function PublicItem() {
     }
   };
 
+  // Share a URL via the native share sheet (WhatsApp, e-mail, etc.) with a
+  // clipboard-copy fallback when navigator.share is unavailable.
+  const shareOrCopyLink = async (url: string, title: string) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Link copiado" });
+      }
+    } catch (err) {
+      // User dismissed the native share sheet — not an error.
+      if (err instanceof Error && err.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast({ title: "Link copiado" });
+      } catch {
+        toast({ title: "Falha ao compartilhar", variant: "destructive" });
+      }
+    }
+  };
+
   // Public CAR lookup (map polygon + metadata). Centralizes loading/error state
   // so the dialog never gets stuck on a spinner with errors silently swallowed.
   const runPublicCarLookup = (car: string) => {
@@ -1928,6 +1951,13 @@ export default function PublicItem() {
                 >EN</button>
               </div>
               <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => void shareOrCopyLink(`https://defarm.net/i/${item.dfid}`, `DeFarm — ${item.dfid}`)}
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+                  title={metadataLocale === "en" ? "Share" : "Compartilhar"}
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                </button>
                 <button onClick={() => window.print()} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Imprimir">
                   <Printer className="h-3.5 w-3.5" />
                 </button>

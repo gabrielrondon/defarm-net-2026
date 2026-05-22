@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Download, Share2, ExternalLink, Copy, ChevronDown } from "lucide-react";
+import { X, Download, Share2, ExternalLink, Copy, ChevronDown, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -254,6 +255,31 @@ export function AssetQRCode({
     }
   };
 
+  const onShareLink = async () => {
+    const shareData: ShareData = {
+      title: "Certificado DeFarm",
+      text: `Rastreabilidade DeFarm — ${dfid}`,
+      url: publicUrl,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(publicUrl);
+        toast({ title: "Link copiado", description: "Compartilhamento nativo indisponível neste dispositivo." });
+      }
+    } catch (err) {
+      // User dismissed the native share sheet — not an error.
+      if (err instanceof Error && err.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(publicUrl);
+        toast({ title: "Link copiado" });
+      } catch {
+        toast({ title: "Falha ao compartilhar link", variant: "destructive" });
+      }
+    }
+  };
+
   return (
     <>
       <div
@@ -385,7 +411,11 @@ export function AssetQRCode({
                         <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={() => void onShareLink()}>
+                        <Link2 className="h-4 w-4 mr-2" /> Link (WhatsApp, copiar…)
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => void onSharePng()}>PNG (QR + dados)</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => void onSharePdf()}>PDF (QR + dados + links)</DropdownMenuItem>
                     </DropdownMenuContent>
