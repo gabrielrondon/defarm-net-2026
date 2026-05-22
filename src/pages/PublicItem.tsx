@@ -1563,25 +1563,31 @@ export default function PublicItem() {
     }
   };
 
-  // Share a URL via the native share sheet (WhatsApp, e-mail, etc.) with a
-  // clipboard-copy fallback when navigator.share is unavailable.
+  // Copy the link to the clipboard AND open the native share sheet (WhatsApp,
+  // e-mail, etc.) where available. Copy is fired before share() so we don't
+  // consume the user activation share() requires; this guarantees a copy on
+  // every device (incl. desktop browsers whose share sheet lacks "copy link").
   const shareOrCopyLink = async (url: string, title: string) => {
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, text: title, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        toast({ title: "Link copiado" });
-      }
-    } catch (err) {
-      // User dismissed the native share sheet — not an error.
-      if (err instanceof Error && err.name === "AbortError") return;
+    const copyPromise = navigator.clipboard
+      ? navigator.clipboard.writeText(url).then(() => true, () => false)
+      : Promise.resolve(false);
+    let shared = false;
+    if (navigator.share) {
       try {
-        await navigator.clipboard.writeText(url);
-        toast({ title: "Link copiado" });
-      } catch {
-        toast({ title: "Falha ao compartilhar", variant: "destructive" });
+        await navigator.share({ title, text: title, url });
+        shared = true;
+      } catch (err) {
+        // User cancelled the native sheet — the link is still copied below.
+        if (!(err instanceof Error && err.name === "AbortError")) {
+          // other share failures fall through to the copy feedback
+        }
       }
+    }
+    const copied = await copyPromise;
+    if (copied) {
+      toast({ title: shared ? "Compartilhado · link copiado" : "Link copiado" });
+    } else if (!shared) {
+      toast({ title: "Falha ao compartilhar", variant: "destructive" });
     }
   };
 

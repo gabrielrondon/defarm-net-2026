@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Download, Share2, ExternalLink, Copy, ChevronDown, Link2 } from "lucide-react";
+import { X, Download, Share2, ExternalLink, Copy, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -255,28 +255,30 @@ export function AssetQRCode({
     }
   };
 
+  // Copy the link AND open the native share sheet where available. Copy is
+  // fired before share() to preserve the user activation share() needs, so the
+  // link is always copied even when the share sheet has no "copy link" option.
   const onShareLink = async () => {
-    const shareData: ShareData = {
-      title: "Certificado DeFarm",
-      text: `Rastreabilidade DeFarm — ${dfid}`,
-      url: publicUrl,
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(publicUrl);
-        toast({ title: "Link copiado", description: "Compartilhamento nativo indisponível neste dispositivo." });
-      }
-    } catch (err) {
-      // User dismissed the native share sheet — not an error.
-      if (err instanceof Error && err.name === "AbortError") return;
+    const copyPromise = navigator.clipboard
+      ? navigator.clipboard.writeText(publicUrl).then(() => true, () => false)
+      : Promise.resolve(false);
+    let shared = false;
+    if (navigator.share) {
       try {
-        await navigator.clipboard.writeText(publicUrl);
-        toast({ title: "Link copiado" });
-      } catch {
-        toast({ title: "Falha ao compartilhar link", variant: "destructive" });
+        await navigator.share({ title: "Certificado DeFarm", text: `Rastreabilidade DeFarm — ${dfid}`, url: publicUrl });
+        shared = true;
+      } catch (err) {
+        // User cancelled the native sheet — the link is still copied below.
+        if (!(err instanceof Error && err.name === "AbortError")) {
+          // other share failures fall through to the copy feedback
+        }
       }
+    }
+    const copied = await copyPromise;
+    if (copied) {
+      toast({ title: shared ? "Compartilhado · link copiado" : "Link copiado" });
+    } else if (!shared) {
+      toast({ title: "Falha ao compartilhar link", variant: "destructive" });
     }
   };
 
@@ -412,8 +414,11 @@ export function AssetQRCode({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={() => void handleCopy(publicUrl, "Link")}>
+                        <Copy className="h-4 w-4 mr-2" /> Copiar link
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => void onShareLink()}>
-                        <Link2 className="h-4 w-4 mr-2" /> Link (WhatsApp, copiar…)
+                        <Share2 className="h-4 w-4 mr-2" /> Compartilhar… (WhatsApp, etc.)
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => void onSharePng()}>PNG (QR + dados)</DropdownMenuItem>
