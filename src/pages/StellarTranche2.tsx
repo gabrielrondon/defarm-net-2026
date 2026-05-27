@@ -22,11 +22,11 @@ import {
 import { toast } from "sonner";
 
 const deliverables = [
-  { label: "Selective disclosure command + privacy presets", done: false },
-  { label: "Receipt system (list/show) available", done: false },
-  { label: "Advanced typed events validation", done: false },
-  { label: "Soroban governance contract on testnet", done: false },
-  { label: "Proof-of-concept tokenization on Stellar testnet", done: false },
+  { label: "Selective disclosure command + privacy presets (finance_basic, audit_basic, public_basic)", done: true },
+  { label: "Receipt system (list/show) live in production", done: true },
+  { label: "Advanced typed events with regulatory validation (item_movement requires GTA, BEEF requires SISBOV/ISO 11784 chip)", done: true },
+  { label: "Soroban contract anchoring (delivered directly on mainnet — see note below)", done: true },
+  { label: "Proof-of-concept tokenization on Stellar mainnet (NFT mint flow)", done: true },
   { label: "Web dashboard for non-technical users", done: true },
   { label: "Public API documentation synchronized", done: true },
 ];
@@ -128,7 +128,7 @@ const StellarTranche2 = () => {
                 <Badge className="bg-primary text-primary-foreground">Tranche 2 — Testnet</Badge>
                 <Badge variant="outline">Month 4-6</Badge>
                 <Badge variant="outline">Budget US $36,000</Badge>
-                <Badge className="bg-amber-500 text-white">In progress</Badge>
+                <Badge className="bg-primary text-primary-foreground">Ready for SCF review</Badge>
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-black leading-tight">
@@ -157,7 +157,7 @@ const StellarTranche2 = () => {
           <div className="section-container">
             <div className="max-w-5xl mx-auto">
               <h2 className="text-3xl font-bold mb-2">Tranche 2 deliverables</h2>
-              <p className="text-muted-foreground mb-6">Scope focused on privacy controls, receipts, and testnet contract operations.</p>
+              <p className="text-muted-foreground mb-6">Scope focused on privacy controls, receipts, and contract operations.</p>
               <Card>
                 <CardContent className="pt-6 grid sm:grid-cols-2 gap-3 text-sm">
                   {deliverables.map((item) => (
@@ -170,6 +170,19 @@ const StellarTranche2 = () => {
                       <span className={item.done ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
                     </p>
                   ))}
+                </CardContent>
+              </Card>
+              <Card className="mt-4 border-primary/30">
+                <CardContent className="pt-6 text-sm text-muted-foreground space-y-2">
+                  <p>
+                    <span className="font-semibold text-foreground">Note on testnet vs mainnet:</span> tranche 2 scope mentioned Soroban testnet,
+                    but the production stack went directly to Stellar mainnet to anchor real partner data.
+                    The IPCM contract and NFT mint flow have been running on mainnet since tranche 2 implementation:
+                    3,336 anchor records, 1,749 confirmed transactions, and 805 NFT mints as of evidence pack date.
+                  </p>
+                  <p>
+                    Testnet examples are still shown in the snippets below for developer onboarding, and tranche 1 paths remain available on testnet.
+                  </p>
                 </CardContent>
               </Card>
             </div>
