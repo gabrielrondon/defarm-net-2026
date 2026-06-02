@@ -64,6 +64,7 @@ import AdminValueChains from "./pages/app/AdminValueChains";
 import AdminJobs from "./pages/app/AdminJobs";
 import AdminSearchAnalytics from "./pages/app/AdminSearchAnalytics";
 import AdminPartnerPayloads from "./pages/app/AdminPartnerPayloads";
+import AdminPartnerEntitlements from "./pages/app/AdminPartnerEntitlements";
 import AdminContactLeads from "./pages/app/AdminContactLeads";
 import PartnerPortal from "./pages/app/PartnerPortal";
 import WebhooksPage from "./pages/app/Webhooks";
@@ -559,7 +560,15 @@ const App = () => (
                 </RequireAdmin>
               }
             />
-            
+            <Route
+              path="/app/admin/entitlements"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminPartnerEntitlements /></AppLayout>
+                </RequireAdmin>
+              }
+            />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -8,6 +8,7 @@ import {
   PartnerRouting,
   PartnerIntake,
 } from "@/components/partner";
+import { PartnerUsageCard } from "@/components/partner/PartnerUsageCard";
 import { BarChart3, PackageOpen, Route, Database, BookOpen, FlaskConical, ExternalLink, Languages } from "lucide-react";
 import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
 
@@ -88,6 +89,8 @@ export default function PartnerPortal() {
           </div>
         </div>
       </Card>
+
+      <PartnerUsageCard locale={locale} />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as (typeof tabs)[number]["value"])} className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto flex-nowrap h-auto p-0.5 bg-transparent border-b border-border rounded-none mb-8 gap-1">

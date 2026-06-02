@@ -41,6 +41,7 @@ import {
   ExternalLink,
   Building2,
   Mail,
+  Coins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -101,6 +102,7 @@ const adminNavItems: NavItem[] = [
   { icon: Layers, label: "Cadeias de Valor", href: "/app/admin/cadeias-valor" },
   { icon: Mail, label: "Leads de Contato", href: "/app/admin/leads-contato" },
   { icon: Database, label: "Payloads Parceiros", href: "/app/admin/payloads-parceiros" },
+  { icon: Coins, label: "Entitlements", href: "/app/admin/entitlements" },
   { icon: ListTodo, label: "Fila de Jobs", href: "/app/admin/jobs" },
 ];
 
