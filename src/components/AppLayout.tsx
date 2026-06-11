@@ -114,7 +114,7 @@ const capabilityPresentation: Record<string, { label: string; icon: typeof BookO
   "read.dashboard": { label: "Painel", icon: BarChart3 },
   "read.score": { label: "Score de crédito", icon: Coins },
   "read.verify": { label: "Verificar DFID", icon: Shield },
-  "read.settings": { label: "Configurações", icon: Settings },
+  "read.settings": { label: "Configurações", icon: Settings, route: "/app/configuracoes" },
 };
 
 const adminNavItems: NavItem[] = [
