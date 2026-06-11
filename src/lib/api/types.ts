@@ -1092,6 +1092,18 @@ export interface PublicItemEvent {
   trust_level?: "low" | "medium" | "high" | string | null;
   trust_factors?: Record<string, unknown> | null;
   trust_model_version?: string | null;
+  // Provenance: which workspace issued this event (resolve to a name/type via
+  // getPublicWorkspace). source_type mirrors the issuer's workspace_type.
+  event_owner_workspace_id?: string | null;
+  source_type?: string | null;
+}
+
+/// Minimal public workspace fields for provenance resolution (the moat).
+export interface PublicWorkspace {
+  id: string;
+  name: string;
+  slug: string;
+  workspace_type: string;
 }
 
 export interface SearchRequest {
