@@ -59,7 +59,8 @@ import {
 import logoIcon from "@/assets/logo-icon.png";
 import cowproLogo from "@/assets/partners/cowpro.png";
 import { AssetQRCode } from "@/components/AssetQRCode";
-import type { PublicItemEvent } from "@/lib/api/types";
+import { getPublicWorkspace } from "@/lib/api/workspaces";
+import type { PublicItemEvent, PublicWorkspace } from "@/lib/api/types";
 import type { CheckResponse } from "@/lib/check-api/types";
 import { executeCheck } from "@/lib/check-api";
 import { getCarGeoJSON, getCarMetadata, type CarGeoJSON, type CarMetadata } from "@/lib/check-api/car";
@@ -497,6 +498,26 @@ function eventSummary(event: PublicItemEvent): string | null {
     return p.classification;
   }
   return null;
+}
+
+// Human label for a workspace_type (provenance display — the moat).
+function workspaceTypeLabel(type?: string | null): string {
+  switch ((type || "").toLowerCase()) {
+    case "tracker":
+      return "Certificadora SISBOV";
+    case "certifier":
+      return "Certificadora";
+    case "processor":
+      return "Frigorífico";
+    case "government":
+      return "Órgão sanitário";
+    case "producer":
+      return "Produtor";
+    case "partner":
+      return "Parceiro";
+    default:
+      return "Emissor";
+  }
 }
 
 function trustBadge(level?: string | null, score?: number | null): { text: string; className: string } {
@@ -1192,6 +1213,36 @@ export default function PublicItem() {
     queryFn: () => getPublicItemEvents(resolvedDfid!, { limit: 50 }),
     enabled: !!resolvedDfid,
     retry: 1,
+  });
+
+  // Provenance (the moat): resolve each public event's issuer workspace to a
+  // name/type, so the timeline shows WHO issued it, not just a trust score.
+  const issuerIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          events
+            .map((e) => e.event_owner_workspace_id)
+            .filter((id): id is string => !!id)
+        )
+      ),
+    [events]
+  );
+
+  const { data: issuerMap = {} } = useQuery({
+    queryKey: ["public-event-issuers", issuerIds],
+    enabled: issuerIds.length > 0,
+    staleTime: 300_000,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        issuerIds.map(async (id) => [id, await getPublicWorkspace(id)] as const)
+      );
+      const map: Record<string, PublicWorkspace> = {};
+      for (const [id, ws] of entries) {
+        if (ws) map[id] = ws;
+      }
+      return map;
+    },
   });
 
   const { data: proofs, isLoading: isLoadingProofs } = useQuery({
@@ -2814,6 +2865,12 @@ export default function PublicItem() {
                                           >
                                             <span className="text-foreground">{evtSummary || label}</span>
                                             <span className="text-muted-foreground tabular-nums">· {evtDate}</span>
+                                            {event.event_owner_workspace_id && issuerMap[event.event_owner_workspace_id] && (
+                                              <span className="text-muted-foreground">
+                                                · por {issuerMap[event.event_owner_workspace_id].name}
+                                                <span className="text-muted-foreground/70"> ({workspaceTypeLabel(issuerMap[event.event_owner_workspace_id].workspace_type)})</span>
+                                              </span>
+                                            )}
                                             {event.payload && Object.keys(event.payload).length > 0 && (
                                               <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${expandedEvents.has(event.id) ? "rotate-180" : ""}`} />
                                             )}
