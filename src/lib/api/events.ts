@@ -10,6 +10,24 @@ import type {
   EventFilters,
 } from "./types";
 
+export interface CreateEventInput {
+  event_type: string;
+  source_type: string;
+  item_id?: string;
+  circuit_id?: string;
+  payload: Record<string, unknown>;
+  visibility?: string;
+}
+
+/** Emit an event (the Studios — engines POST /events). Requires CreateEvents
+ *  permission in a circuit that contains the item, within the caller's workspace. */
+export async function createEvent(input: CreateEventInput): Promise<Event> {
+  return registryRequest<Event>("/events", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function getEvents(params?: EventFilters): Promise<Event[]> {
   const response = await registryRequest<ListEventsResponse>(
     `/events${buildQueryString(params as Record<string, any>)}`

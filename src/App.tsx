@@ -39,6 +39,7 @@ import NovoCircuito from "./pages/app/NovoCircuito";
 import EditarCircuito from "./pages/app/EditarCircuito";
 import ItensList from "./pages/app/ItensList";
 import AcaoStub from "./pages/app/AcaoStub";
+import CertificateStudio from "./pages/app/CertificateStudio";
 import ItemDetail from "./pages/app/ItemDetail";
 import NovoItem from "./pages/app/NovoItem";
 import EventosList from "./pages/app/EventosList";
@@ -251,6 +252,7 @@ const App = () => (
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><WorkspaceHome /></AppLayout>} />
             <Route path="/app/acoes/:key" element={<AppLayout><AcaoStub /></AppLayout>} />
+            <Route path="/app/studios/certificate" element={<AppLayout><CertificateStudio /></AppLayout>} />
             <Route
               path="/app/caderneta"
               element={
