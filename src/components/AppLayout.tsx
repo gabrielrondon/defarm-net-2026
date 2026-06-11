@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logoIcon from "@/assets/logo-icon.png";
 import { useQuery } from "@tanstack/react-query";
+import { getMyCapabilities } from "@/lib/api/capabilities";
 import { getMyJoinRequests, requestEmailVerification } from "@/lib/defarm-api";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -92,6 +93,28 @@ const navByWorkspace: Record<WorkspaceType, string[]> = {
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
   government: ["/app/governo/docs", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
+};
+
+// Presentation for the role-based action menu (engines #119, decision D12). The
+// backend (/me/capabilities) is the source of truth for WHICH sections a role
+// has; the frontend owns label/icon/route here. Sections without an explicit
+// route point to the Studio stub (#111).
+const capabilityPresentation: Record<string, { label: string; icon: typeof BookOpen; route?: string }> = {
+  "emit.identity": { label: "Emitir brincos", icon: Fingerprint },
+  "emit.termination": { label: "Registrar baixa", icon: Activity },
+  "emit.attestation": { label: "Emitir atestado", icon: ClipboardCheck },
+  "emit.seal": { label: "Conceder selo", icon: Shield },
+  "emit.slaughter": { label: "Registrar abate", icon: Activity },
+  "emit.movement": { label: "Registrar movimentação", icon: Compass },
+  "emit.husbandry": { label: "Registrar manejo", icon: Activity },
+  "emit.transfer": { label: "Transferir posse", icon: GitBranch },
+  "read.my_items": { label: "Meus itens", icon: Package, route: "/app/itens" },
+  "read.my_attestations": { label: "Meus certificados", icon: ClipboardCheck },
+  "read.prospect": { label: "Prospectar fornecedores", icon: Search },
+  "read.dashboard": { label: "Painel", icon: BarChart3 },
+  "read.score": { label: "Score de crédito", icon: Coins },
+  "read.verify": { label: "Verificar DFID", icon: Shield },
+  "read.settings": { label: "Configurações", icon: Settings, route: "/app/configuracoes" },
 };
 
 const adminNavItems: NavItem[] = [
@@ -152,6 +175,20 @@ export function AppLayout({ children }: AppLayoutProps) {
     enabled: isAuthenticated,
     staleTime: 60_000,
   });
+
+  // Persona action menu (engines #119, D12): backend-driven, role-aware.
+  const { data: capabilities } = useQuery({
+    queryKey: ["my-capabilities"],
+    queryFn: getMyCapabilities,
+    enabled: isAuthenticated,
+    staleTime: 300_000,
+  });
+  const actionSections = (capabilities?.sections ?? [])
+    .map((s) => ({ key: s.key, ...capabilityPresentation[s.key] }))
+    .filter(
+      (s): s is { key: string; label: string; icon: typeof BookOpen; route?: string } =>
+        Boolean(s.label)
+    );
 
   const handleResendVerification = async () => {
     try {
@@ -306,6 +343,37 @@ export function AppLayout({ children }: AppLayoutProps) {
               </Link>
             );
           })}
+
+          {/* Ações da persona — backend-driven (capabilities, #119) */}
+          {!user?.is_admin && actionSections.length > 0 && (
+            <>
+              <div className="pt-4 pb-1 px-3">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Ações
+                </span>
+              </div>
+              {actionSections.map((item) => {
+                const href = item.route ?? `/app/acoes/${item.key}`;
+                const isActive = location.pathname === href;
+                return (
+                  <Link
+                    key={item.key}
+                    to={href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
 
           {/* Admin section - only visible to admin users */}
           {user?.is_admin && (
