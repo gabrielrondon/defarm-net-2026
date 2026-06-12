@@ -14,6 +14,7 @@ import Onboarding from "./pages/Onboarding";
 import Solucoes from "./pages/Solucoes";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
+import ParaPersona from "./pages/ParaPersona";
 import Privacidade from "./pages/Privacidade";
 import Termos from "./pages/Termos";
 import LogoPack from "./pages/LogoPack";
@@ -223,6 +224,7 @@ const App = () => (
             <Route path="/solucoes" element={<Solucoes />} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
+            <Route path="/para/:persona" element={<ParaPersona />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/privacy" element={<Privacidade />} />
             <Route path="/termos" element={<Termos />} />
