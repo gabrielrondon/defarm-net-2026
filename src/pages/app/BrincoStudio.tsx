@@ -31,6 +31,10 @@ interface BrincoResult {
   error?: string;
 }
 
+// SISBOV ear-tag numbers are 15 digits. Reject anything else client-side so the
+// "identity emission" never tokenizes garbage as a brinco.
+const SISBOV_RE = /^\d{15}$/;
+
 // Brinco Token Studio (#111): a rastreador SISBOV emits ear-tags in batch — each
 // SISBOV number becomes a tokenized item (a DFID), and we render a QR for
 // printing/applying. This is identity emission (POST /items), not an event
@@ -54,11 +58,19 @@ export default function BrincoStudio() {
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean);
+  const invalidCount = numbers.filter((n) => !SISBOV_RE.test(n)).length;
 
   const mutation = useMutation({
     mutationFn: async () => {
       const out: BrincoResult[] = [];
       for (const sisbov of numbers) {
+        if (!SISBOV_RE.test(sisbov)) {
+          out.push({
+            sisbov,
+            error: "Formato inválido — SISBOV deve ter 15 dígitos",
+          });
+          continue;
+        }
         try {
           const resp = await createItem({
             value_chain: valueChain.trim().toUpperCase(),
@@ -178,7 +190,11 @@ export default function BrincoStudio() {
               onChange={(e) => setSisbovText(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              {numbers.length} número(s) na fila.
+              {numbers.length} número(s) na fila
+              {invalidCount > 0
+                ? ` · ${invalidCount} com formato inválido (15 dígitos)`
+                : ""}
+              .
             </p>
           </div>
 
