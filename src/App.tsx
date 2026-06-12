@@ -41,6 +41,7 @@ import ItensList from "./pages/app/ItensList";
 import AcaoStub from "./pages/app/AcaoStub";
 import CertificateStudio from "./pages/app/CertificateStudio";
 import SeloStudio from "./pages/app/SeloStudio";
+import BrincoStudio from "./pages/app/BrincoStudio";
 import ItemDetail from "./pages/app/ItemDetail";
 import NovoItem from "./pages/app/NovoItem";
 import EventosList from "./pages/app/EventosList";
@@ -255,6 +256,7 @@ const App = () => (
             <Route path="/app/acoes/:key" element={<AppLayout><AcaoStub /></AppLayout>} />
             <Route path="/app/studios/certificate" element={<AppLayout><CertificateStudio /></AppLayout>} />
             <Route path="/app/studios/selo" element={<AppLayout><SeloStudio /></AppLayout>} />
+            <Route path="/app/studios/brinco" element={<AppLayout><BrincoStudio /></AppLayout>} />
             <Route
               path="/app/caderneta"
               element={
