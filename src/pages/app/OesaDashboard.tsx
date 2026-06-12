@@ -8,6 +8,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { getOesaDashboard, type OesaAlert } from "@/lib/api/oesa";
+import { ApiError } from "@/lib/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // OESA Dashboard — fase 3 do épico OESA Dashboard (#111). Renderiza os agregados
@@ -97,9 +98,11 @@ export default function OesaDashboard() {
       ) : error ? (
         <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200/60 rounded-md px-3 py-4">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          {error instanceof Error
+          {error instanceof ApiError && error.status === 403
+            ? "Acesso restrito — este painel é exclusivo de OESAs (órgãos sanitários)."
+            : error instanceof Error
             ? error.message
-            : "Não foi possível carregar o painel (acesso restrito a OESA)."}
+            : "Não foi possível carregar o painel."}
         </div>
       ) : data ? (
         <>
