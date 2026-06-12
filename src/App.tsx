@@ -43,6 +43,7 @@ import CertificateStudio from "./pages/app/CertificateStudio";
 import SeloStudio from "./pages/app/SeloStudio";
 import BrincoStudio from "./pages/app/BrincoStudio";
 import OesaStudio from "./pages/app/OesaStudio";
+import OesaDashboard from "./pages/app/OesaDashboard";
 import ItemDetail from "./pages/app/ItemDetail";
 import NovoItem from "./pages/app/NovoItem";
 import EventosList from "./pages/app/EventosList";
@@ -259,6 +260,7 @@ const App = () => (
             <Route path="/app/studios/selo" element={<AppLayout><SeloStudio /></AppLayout>} />
             <Route path="/app/studios/brinco" element={<AppLayout><BrincoStudio /></AppLayout>} />
             <Route path="/app/studios/oesa" element={<AppLayout><OesaStudio /></AppLayout>} />
+            <Route path="/app/oesa/dashboard" element={<AppLayout><OesaDashboard /></AppLayout>} />
             <Route
               path="/app/caderneta"
               element={
