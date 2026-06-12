@@ -1,5 +1,13 @@
 import { useParams, Link, Navigate } from "react-router-dom";
-import { Tag, BadgeCheck, Award, Truck, Check, ArrowRight } from "lucide-react";
+import {
+  Tag,
+  BadgeCheck,
+  Award,
+  Truck,
+  Sprout,
+  Check,
+  ArrowRight,
+} from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,7 +20,8 @@ type PersonaKey =
   | "rastreadores"
   | "certificadoras"
   | "frigorificos"
-  | "oesas";
+  | "oesas"
+  | "produtores";
 
 interface PersonaContent {
   icon: typeof Tag;
@@ -21,6 +30,8 @@ interface PersonaContent {
   subtitle: string;
   bullets: string[];
   cta: string;
+  /** Destino do CTA. Default: /contato?perfil=<persona>. Produtor self-registra. */
+  ctaTo?: string;
 }
 
 const PERSONAS: Record<PersonaKey, PersonaContent> = {
@@ -76,6 +87,20 @@ const PERSONAS: Record<PersonaKey, PersonaContent> = {
     ],
     cta: "Quero o painel da minha OESA",
   },
+  produtores: {
+    icon: Sprout,
+    eyebrow: "Para produtores",
+    headline: "Seu rebanho, com identidade que vale prêmio.",
+    subtitle:
+      "Cada animal ganha um identificador permanente (DFID). Rastreador, certificadora, frigorífico e OESA constroem prova em cima dele — e a prova é o que abre o mercado premium (EUDR, China, selos).",
+    bullets: [
+      "Veja seus animais com a identidade tokenizada e o histórico que os compradores confiam.",
+      "Cada selo, atestado e movimentação se acumula no DFID do seu animal — a sua carta de acesso ao prêmio.",
+      "Comece grátis: registre o seu rebanho e veja a prova crescer.",
+    ],
+    cta: "Quero tokenizar meu rebanho",
+    ctaTo: "/cadastro",
+  },
 };
 
 export default function ParaPersona() {
@@ -119,7 +144,7 @@ export default function ParaPersona() {
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button asChild size="lg">
-                  <Link to={`/contato?perfil=${persona}`}>
+                  <Link to={content.ctaTo ?? `/contato?perfil=${persona}`}>
                     {content.cta} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
