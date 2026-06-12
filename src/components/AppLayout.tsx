@@ -103,7 +103,7 @@ const capabilityPresentation: Record<string, { label: string; icon: typeof BookO
   "emit.identity": { label: "Emitir brincos", icon: Fingerprint },
   "emit.termination": { label: "Registrar baixa", icon: Activity },
   "emit.attestation": { label: "Emitir atestado", icon: ClipboardCheck, route: "/app/studios/certificate" },
-  "emit.seal": { label: "Conceder selo", icon: Shield },
+  "emit.seal": { label: "Conceder selo", icon: Shield, route: "/app/studios/selo" },
   "emit.slaughter": { label: "Registrar abate", icon: Activity },
   "emit.movement": { label: "Registrar movimentação", icon: Compass },
   "emit.husbandry": { label: "Registrar manejo", icon: Activity },
