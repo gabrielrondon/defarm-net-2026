@@ -100,7 +100,7 @@ const navByWorkspace: Record<WorkspaceType, string[]> = {
 // has; the frontend owns label/icon/route here. Sections without an explicit
 // route point to the Studio stub (#111).
 const capabilityPresentation: Record<string, { label: string; icon: typeof BookOpen; route?: string }> = {
-  "emit.identity": { label: "Emitir brincos", icon: Fingerprint },
+  "emit.identity": { label: "Emitir brincos", icon: Fingerprint, route: "/app/studios/brinco" },
   "emit.termination": { label: "Registrar baixa", icon: Activity },
   "emit.attestation": { label: "Emitir atestado", icon: ClipboardCheck, route: "/app/studios/certificate" },
   "emit.seal": { label: "Conceder selo", icon: Shield, route: "/app/studios/selo" },
