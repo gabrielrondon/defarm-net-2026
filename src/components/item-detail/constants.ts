@@ -151,6 +151,13 @@ export const REAL_LIFE_EVENT_TYPES = new Set([
   "property_registered",
   "property_audited",
   "property_area_updated",
+  // Persona surface event types (engines #118) — these are real-life proof events,
+  // not technical/operational ones, so they render on the public verifier with
+  // provenance (closes the moat loop). See defarm-net-2026#6.
+  "attestation_issued",
+  "seal_granted",
+  "item_transferred",
+  "item_terminated",
 ]);
 
 export const formatTime = (timestamp?: string | null): string => {
