@@ -247,10 +247,10 @@ const App = () => (
             <Route path="/esqueci-senha" element={<EsqueciSenha />} />
             <Route path="/reset-senha" element={<ResetSenha />} />
             <Route path="/verificar-email" element={<VerificarEmail />} />
-            <Route path="/_demo/acessos" element={<DemoAcessos />} />
-            <Route path="/_demo/acessos/:actorType" element={<DemoAcessos />} />
-            <Route path="/_demo/narrativa" element={<DemoNarrativa />} />
-            <Route path="/_demo/narrativa/:actorType" element={<DemoNarrativa />} />
+            <Route path="/_demo/acessos" element={<RequireAdmin><DemoAcessos /></RequireAdmin>} />
+            <Route path="/_demo/acessos/:actorType" element={<RequireAdmin><DemoAcessos /></RequireAdmin>} />
+            <Route path="/_demo/narrativa" element={<RequireAdmin><DemoNarrativa /></RequireAdmin>} />
+            <Route path="/_demo/narrativa/:actorType" element={<RequireAdmin><DemoNarrativa /></RequireAdmin>} />
             <Route path="/stellar" element={<StellarOverview />} />
             <Route path="/stellar/tranche1" element={<StellarTranche1 />} />
             <Route path="/stellar/tranche2" element={<StellarTranche2 />} />
