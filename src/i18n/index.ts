@@ -18,7 +18,11 @@ i18n
       escapeValue: false,
     },
     detection: {
-      order: ["localStorage", "navigator"],
+      // #18: público-alvo é o Brasil. Sem preferência salva -> PT-BR (fallbackLng),
+      // não o idioma do navegador (que deixava as páginas públicas em inglês pra
+      // quem tem o navegador em en-US). O toggle PT/EN grava em localStorage e
+      // persiste a escolha do visitante internacional.
+      order: ["localStorage"],
       caches: ["localStorage"],
     },
   });
