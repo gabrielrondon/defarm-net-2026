@@ -8,9 +8,9 @@ export function Footer() {
 
   const footerLinks = {
     produto: [
-      { name: t("footer.traceability"), href: "/solucoes" },
-      { name: t("footer.compliance"), href: "/solucoes" },
-      { name: t("footer.tokenization"), href: "/solucoes" },
+      { name: t("footer.traceability"), href: "/" },
+      { name: t("footer.compliance"), href: "/eudr" },
+      { name: t("footer.tokenization"), href: "/cadastro" },
     ],
     empresa: [
       { name: t("footer.aboutUs"), href: "/sobre" },
