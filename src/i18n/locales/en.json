@@ -6,6 +6,51 @@
     "getStarted": "My Passbook",
     "back": "Back"
   },
+  "home": {
+    "hero": {
+      "eyebrow": "The proof surface for agriculture",
+      "headline": "Where agriculture proves its",
+      "highlight": "origin",
+      "description": "Every agricultural item gets a permanent identity (DFID). Every link in the chain — producer, tracker, certifier, industry, agency — signs an event on top of it. Any buyer verifies: public and on-chain.",
+      "note": "Starting with the beef cattle chain.",
+      "ctaPrimary": "Enter through your door",
+      "ctaSecondary": "Verify a DFID"
+    },
+    "personas": {
+      "eyebrow": "A door per persona",
+      "headline": "Enter through your door",
+      "description": "Each link in the chain enters directly and emits its proof. Pick your profile.",
+      "produtor": { "name": "Producer", "desc": "Tokenize your herd and watch the proof grow." },
+      "rastreador": { "name": "SISBOV tracker", "desc": "Issue SISBOV ear tags as on-chain identity." },
+      "certificadora": { "name": "Certifier", "desc": "From signed PDF to verifiable attestation." },
+      "frigorifico": { "name": "Processor", "desc": "Create your premium seal with public proof." },
+      "oesa": { "name": "Sanitary agency", "desc": "The GTA you issue, with public proof." },
+      "parceiro": { "name": "Partner / Bank", "desc": "Read score and proof to decide credit and purchase." }
+    },
+    "primitivas": {
+      "eyebrow": "How it works",
+      "headline": "Three primitives, one surface",
+      "description": "The whole chain runs on the same event backend.",
+      "identidade": { "name": "Identity", "desc": "Each agricultural asset gets a DFID — a permanent identifier, anchored on-chain." },
+      "evento": { "name": "Signed event", "desc": "Each link records an event (attestation, seal, movement) signed with its identity." },
+      "verificacao": { "name": "Public verification", "desc": "Any buyer, bank or auditor checks the proof in the verifier — no login." }
+    },
+    "verificador": {
+      "eyebrow": "The moat",
+      "headline": "The proof is public and verifiable",
+      "description": "Paste a DFID and see the identity, the history signed by each link, and the on-chain anchor. It's what the importer scans in the QR.",
+      "placeholder": "Paste a DFID (e.g. DFID-BEEF-BR-2026-...)",
+      "button": "Verify",
+      "hint": "No signup. Public verification."
+    },
+    "produtos": {
+      "eyebrow": "Products on top of proof",
+      "headline": "Proof becomes product",
+      "description": "Those who need assurance read the proof via API.",
+      "score": { "name": "Credit score", "desc": "For the bank: a score over the asset's public data — herd, attestations, seals, movement and network trust.", "cta": "Talk to us" },
+      "eudr": { "name": "EUDR due diligence", "desc": "For the auditor and importer: a self-contained statement with origin (CAR + polygon), deforestation-free compliance and immutability.", "cta": "Talk to us" }
+    }
+  },
   "platform": {
     "rastreio": {
       "label": "#1 Traceability Platform",

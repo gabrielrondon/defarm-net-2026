@@ -6,6 +6,51 @@
     "getStarted": "Minha Caderneta",
     "back": "Voltar"
   },
+  "home": {
+    "hero": {
+      "eyebrow": "A superfície de prova do agro",
+      "headline": "Onde o agro prova a sua",
+      "highlight": "origem",
+      "description": "Cada item agrícola ganha uma identidade permanente (DFID). Cada elo da cadeia — produtor, rastreador, certificadora, indústria, órgão — assina um evento em cima dela. Qualquer comprador verifica: público e on-chain.",
+      "note": "Começando pela cadeia da carne bovina.",
+      "ctaPrimary": "Entre pela sua porta",
+      "ctaSecondary": "Verificar um DFID"
+    },
+    "personas": {
+      "eyebrow": "Uma porta por persona",
+      "headline": "Entre pela sua porta",
+      "description": "Cada elo da cadeia entra direto e emite a sua prova. Escolha o seu perfil.",
+      "produtor": { "name": "Produtor", "desc": "Tokenize o seu rebanho e veja a prova crescer." },
+      "rastreador": { "name": "Rastreadora SISBOV", "desc": "Emita brincos SISBOV como identidade on-chain." },
+      "certificadora": { "name": "Certificadora", "desc": "Do PDF assinado ao atestado verificável." },
+      "frigorifico": { "name": "Frigorífico", "desc": "Crie o seu selo de bonificação com prova pública." },
+      "oesa": { "name": "OESA", "desc": "A GTA que você emite, com prova pública." },
+      "parceiro": { "name": "Parceiro / Banco", "desc": "Leia score e prova pra decidir crédito e compra." }
+    },
+    "primitivas": {
+      "eyebrow": "Como funciona",
+      "headline": "Três primitivas, uma superfície",
+      "description": "Toda a cadeia roda sobre o mesmo backend de eventos.",
+      "identidade": { "name": "Identidade", "desc": "Cada ativo agrícola ganha um DFID — identificador permanente, ancorado on-chain." },
+      "evento": { "name": "Evento assinado", "desc": "Cada elo registra um evento (atestado, selo, movimentação) assinado com a sua identidade." },
+      "verificacao": { "name": "Verificação pública", "desc": "Qualquer comprador, banco ou auditor confere a prova no verificador — sem login." }
+    },
+    "verificador": {
+      "eyebrow": "O moat",
+      "headline": "A prova é pública e verificável",
+      "description": "Cole um DFID e veja a identidade, o histórico assinado por cada elo e a âncora on-chain. É o que o importador escaneia no QR.",
+      "placeholder": "Cole um DFID (ex: DFID-BEEF-BR-2026-...)",
+      "button": "Verificar",
+      "hint": "Sem cadastro. Verificação pública."
+    },
+    "produtos": {
+      "eyebrow": "Produtos sobre a prova",
+      "headline": "A prova vira produto",
+      "description": "Quem precisa de garantia lê a prova por API.",
+      "score": { "name": "Score de crédito", "desc": "Para o banco: um score sobre o dado público do ativo — rebanho, atestados, selos, movimentação e confiança da rede.", "cta": "Falar com a gente" },
+      "eudr": { "name": "Due diligence EUDR", "desc": "Para o auditor e o importador: declaração autocontida com origem (CAR + polígono), conformidade livre-desmate e imutabilidade.", "cta": "Falar com a gente" }
+    }
+  },
   "platform": {
     "rastreio": {
       "label": "Plataforma #1 em Rastreabilidade",
