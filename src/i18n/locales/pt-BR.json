@@ -9,47 +9,126 @@
   "home": {
     "hero": {
       "eyebrow": "A superfície de prova do agro",
-      "headline": "Onde o agro prova a sua",
-      "highlight": "origem",
-      "description": "Cada item agrícola ganha uma identidade permanente (DFID). Cada elo da cadeia — produtor, rastreador, certificadora, indústria, órgão — assina um evento em cima dela. Qualquer comprador verifica: público e on-chain.",
-      "note": "Começando pela cadeia da carne bovina.",
+      "h_a": "Cada item do agro, uma ",
+      "h_em": "identidade",
+      "h_b": ". Cada elo, uma ",
+      "h_em2": "prova",
+      "h_c": ".",
+      "desc": "Cada item agrícola ganha um identificador permanente (DFID). Produtor, rastreador, certificadora, indústria e órgão assinam eventos em cima dele — e qualquer comprador verifica, público e on-chain.",
       "ctaPrimary": "Entre pela sua porta",
-      "ctaSecondary": "Verificar um DFID"
+      "ctaSecondary": "Verificar um DFID",
+      "note": "Começando pela cadeia da carne bovina — SISBOV · GTA · frigorífico · EUDR."
+    },
+    "specimen": {
+      "label": "Espécime de prova",
+      "network": "Rede",
+      "cattle": "Bovinos",
+      "active": "Ativo",
+      "verified": "Verificado on-chain",
+      "anchor": "stellar · confirmado"
     },
     "personas": {
-      "eyebrow": "Uma porta por persona",
-      "headline": "Entre pela sua porta",
-      "description": "Cada elo da cadeia entra direto e emite a sua prova. Escolha o seu perfil.",
+      "eyebrow": "Entre pela sua porta",
+      "headline": "Cada elo da cadeia entra direto",
+      "desc": "Cada um emite a sua prova em cima do mesmo item. Escolha o seu perfil.",
       "produtor": { "name": "Produtor", "desc": "Tokenize o seu rebanho e veja a prova crescer." },
-      "rastreador": { "name": "Rastreadora SISBOV", "desc": "Emita brincos SISBOV como identidade on-chain." },
+      "rastreador": { "name": "Rastreadora SISBOV", "desc": "Emita brincos como identidade on-chain." },
       "certificadora": { "name": "Certificadora", "desc": "Do PDF assinado ao atestado verificável." },
       "frigorifico": { "name": "Frigorífico", "desc": "Crie o seu selo de bonificação com prova pública." },
       "oesa": { "name": "OESA", "desc": "A GTA que você emite, com prova pública." },
-      "parceiro": { "name": "Parceiro / Banco", "desc": "Leia score e prova pra decidir crédito e compra." }
+      "parceiro": { "name": "Parceiro / Banco", "desc": "Leia o score e decida crédito e compra." }
     },
-    "primitivas": {
+    "prim": {
       "eyebrow": "Como funciona",
       "headline": "Três primitivas, uma superfície",
-      "description": "Toda a cadeia roda sobre o mesmo backend de eventos.",
-      "identidade": { "name": "Identidade", "desc": "Cada ativo agrícola ganha um DFID — identificador permanente, ancorado on-chain." },
-      "evento": { "name": "Evento assinado", "desc": "Cada elo registra um evento (atestado, selo, movimentação) assinado com a sua identidade." },
-      "verificacao": { "name": "Verificação pública", "desc": "Qualquer comprador, banco ou auditor confere a prova no verificador — sem login." }
+      "desc": "Toda a cadeia roda sobre o mesmo backend de eventos. Sem ilha de dados, sem PDF que ninguém confere.",
+      "tag": "primitiva",
+      "1t": "Identidade",
+      "1d": "Cada item ganha um DFID — identificador permanente, único e ancorado on-chain.",
+      "2t": "Evento assinado",
+      "2d": "Cada elo assina um evento — atestado, selo, movimentação — com a sua própria identidade.",
+      "3t": "Verificação pública",
+      "3d": "Qualquer comprador, banco ou auditor confere a prova no verificador — sem login."
     },
-    "verificador": {
-      "eyebrow": "A prova pública",
+    "verif": {
+      "eyebrow": "O verificador",
       "headline": "A prova é pública e verificável",
-      "description": "Cole um DFID e veja a identidade, o histórico assinado por cada elo e a âncora on-chain. É o que o importador escaneia no QR.",
-      "placeholder": "Cole um DFID (ex: DFID-BEEF-BR-2026-...)",
-      "button": "Verificar",
-      "hint": "Sem cadastro. Verificação pública."
+      "desc": "Cole um DFID e veja a identidade, o histórico assinado por cada elo e a âncora on-chain. É o que o importador escaneia no QR.",
+      "placeholder": "Cole um DFID (ex: DFID-BEEF-BR-2026-…)",
+      "cta": "Verificar",
+      "note": "Sem cadastro. Verificação pública."
     },
-    "produtos": {
-      "eyebrow": "Produtos sobre a prova",
-      "headline": "A prova vira produto",
-      "description": "Quem precisa de garantia lê a prova por API.",
-      "score": { "name": "Score de crédito", "desc": "Para o banco: um score sobre o dado público do ativo — rebanho, atestados, selos, movimentação e confiança da rede.", "cta": "Falar com a gente" },
-      "eudr": { "name": "Due diligence EUDR", "desc": "Para o auditor e o importador: declaração autocontida com origem (CAR + polígono), conformidade livre-desmate e imutabilidade.", "cta": "Falar com a gente" }
+    "prod": {
+      "eyebrow": "A prova vira produto",
+      "headline": "Quem precisa confiar, lê a prova",
+      "desc": "Banco, auditor e importador consomem a mesma camada — por uma tela legível ou por API.",
+      "score_t": "Score de crédito",
+      "score_d": "Para o banco: um score 0–100 sobre o dado público do ativo — rebanho, atestados, selos, movimentações e confiança da rede.",
+      "score_cta": "Ver a tela",
+      "eudr_t": "Due diligence EUDR",
+      "eudr_d": "Para o auditor e o importador: declaração autocontida de origem — CAR, polígono, conformidade livre-desmate e imutabilidade.",
+      "eudr_cta": "Ver a tela"
+    },
+    "cta": {
+      "headline": "Dê identidade à sua cadeia produtiva",
+      "desc": "Entre, traga os seus dados e a rede vira a superfície de prova obrigatória do dado agrícola brasileiro.",
+      "primary": "Entre pela sua porta",
+      "secondary": "Falar com a gente"
     }
+  },
+  "score": {
+    "eyebrow": "Produto · banco / parceiro",
+    "title": "Score de crédito do ativo",
+    "sub": "Consulte o score público de um ativo ou produtor. Modelo sobre dados verificáveis na rede.",
+    "tab_dfid": "DFID", "tab_cpf": "CPF", "tab_ccir": "CCIR",
+    "placeholder_dfid": "DFID-BEEF-BR-2026-001106-b0e4d7",
+    "placeholder_cpf": "000.000.000-00",
+    "placeholder_ccir": "000.000.000.000-0",
+    "consult": "Consultar score",
+    "empty_t": "Consulte um ativo",
+    "empty_d": "Informe um DFID, CPF ou CCIR para ver o score de crédito e os fatores que o compõem.",
+    "loading": "Lendo a rede…",
+    "error_t": "Não encontramos esse identificador",
+    "error_d": "Confira o DFID, CPF ou CCIR e tente novamente.",
+    "of": "de 100",
+    "band": "Banda",
+    "band_a_label": "Risco baixo",
+    "band_b_label": "Risco moderado",
+    "band_c_label": "Risco alto",
+    "band_none_label": "Sem dados",
+    "factors_t": "Como o score é composto",
+    "f_items": "Itens no rebanho",
+    "f_attestations": "Atestados",
+    "f_seals": "Selos",
+    "f_movements": "Movimentações",
+    "f_trust": "Confiança média da rede",
+    "note": "Score sobre dados públicos. Modelo v1.",
+    "query": "Consulta",
+    "try": "Exemplos:"
+  },
+  "eudr": {
+    "eyebrow": "Produto · auditor / importador",
+    "title": "Declaração de origem EUDR",
+    "sub": "Documento autocontido de due diligence. Origem georreferenciada, conformidade livre-desmate e imutabilidade.",
+    "ready": "EUDR ready",
+    "notready": "Origem incompleta",
+    "load": "Carregar",
+    "id_t": "Identidade", "id_chain": "Cadeia", "id_country": "País", "id_year": "Ano", "id_status": "Status", "id_active": "Ativo",
+    "origin_t": "Origem", "origin_car": "CAR", "origin_source": "Fonte do polígono", "origin_area": "Área", "origin_compliance": "Conformidade livre-desmate",
+    "compliance_ok": "Conforme", "compliance_score": "Confiança",
+    "map_hint": "Polígono SICAR · WGS84",
+    "imut_t": "Imutabilidade", "imut_cid": "CID (IPFS)", "imut_tx": "Âncora (tx)", "imut_chain": "Rede",
+    "anchor_confirmed": "Verificado on-chain",
+    "anchor_confirmed_d": "Âncora confirmada na Stellar. Documento imutável.",
+    "anchor_pending": "Registrado no IPFS · ancoragem pendente",
+    "anchor_pending_d": "Conteúdo fixado no IPFS. Âncora on-chain ainda não confirmada.",
+    "anchor_failed": "Registrado no IPFS · ancoragem falhou",
+    "anchor_failed_d": "Conteúdo fixado no IPFS. A âncora on-chain falhou — não alegamos confirmação.",
+    "honesty": "Regra de honestidade: só afirmamos “verificado on-chain” quando a âncora está confirmada.",
+    "demo_state": "Estado da âncora (demo)",
+    "generated": "Gerado em",
+    "export": "Exportar PDF",
+    "embed": "Embutível no verificador público /i/:dfid"
   },
   "platform": {
     "rastreio": {

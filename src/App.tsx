@@ -46,6 +46,8 @@ import BrincoStudio from "./pages/app/BrincoStudio";
 import OesaStudio from "./pages/app/OesaStudio";
 import OesaDashboard from "./pages/app/OesaDashboard";
 import VerifyDfid from "./pages/app/VerifyDfid";
+import ScoreScreen from "./pages/app/ScoreScreen";
+import EudrScreen from "./pages/app/EudrScreen";
 import ItemDetail from "./pages/app/ItemDetail";
 import NovoItem from "./pages/app/NovoItem";
 import EventosList from "./pages/app/EventosList";
@@ -226,6 +228,8 @@ const App = () => (
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
             <Route path="/para/:persona" element={<ParaPersona />} />
+            <Route path="/score" element={<ScoreScreen />} />
+            <Route path="/eudr" element={<EudrScreen />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/privacy" element={<Privacidade />} />
             <Route path="/termos" element={<Termos />} />
