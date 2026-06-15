@@ -113,7 +113,7 @@ const capabilityPresentation: Record<string, { label: string; icon: typeof BookO
   "read.prospect": { label: "Prospectar fornecedores", icon: Search },
   "read.dashboard": { label: "Painel", icon: BarChart3, route: "/app/oesa/dashboard" },
   "read.score": { label: "Score de crédito", icon: Coins },
-  "read.verify": { label: "Verificar DFID", icon: Shield },
+  "read.verify": { label: "Verificar DFID", icon: Shield, route: "/app/verificar" },
   "read.settings": { label: "Configurações", icon: Settings, route: "/app/configuracoes" },
 };
 
