@@ -16,7 +16,6 @@ export function Header() {
   const ctaHref = isAuthenticated ? "/app/caderneta" : "/login";
 
   const navItems = [
-    { name: t("nav.solutions"), href: "/solucoes" },
     { name: t("nav.about"), href: "/sobre" },
     { name: t("nav.contact"), href: "/contato" },
   ];

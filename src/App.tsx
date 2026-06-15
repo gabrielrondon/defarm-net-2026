@@ -7,11 +7,11 @@ import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 // Public pages
 import Index from "./pages/Index";
 import Onboarding from "./pages/Onboarding";
-import Solucoes from "./pages/Solucoes";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
 import ParaPersona from "./pages/ParaPersona";
@@ -220,11 +220,13 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<TokenAwareIndex />} />
             <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/solucoes" element={<Solucoes />} />
+            {/* /solucoes removida (#44): redireciona pra home (evita 404 de links antigos) */}
+            <Route path="/solucoes" element={<Navigate to="/" replace />} />
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
             <Route path="/para/:persona" element={<ParaPersona />} />
