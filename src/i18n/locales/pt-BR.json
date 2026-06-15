@@ -9,12 +9,23 @@
   "home": {
     "hero": {
       "eyebrow": "A superfície de prova do agro",
-      "headline": "Onde o agro prova a sua",
-      "highlight": "origem",
-      "description": "Cada item agrícola ganha uma identidade permanente (DFID). Cada elo da cadeia — produtor, rastreador, certificadora, indústria, órgão — assina um evento em cima dela. Qualquer comprador verifica: público e on-chain.",
-      "note": "Começando pela cadeia da carne bovina.",
+      "h_a": "Cada item do agro, uma ",
+      "h_em": "identidade",
+      "h_b": ". Cada elo, uma ",
+      "h_em2": "prova",
+      "h_c": ".",
+      "desc": "Cada item agrícola ganha um identificador permanente (DFID). Produtor, rastreador, certificadora, indústria e órgão assinam eventos em cima dele — e qualquer comprador verifica, público e on-chain.",
       "ctaPrimary": "Entre pela sua porta",
-      "ctaSecondary": "Verificar um DFID"
+      "ctaSecondary": "Verificar um DFID",
+      "note": "Começando pela cadeia da carne bovina — SISBOV · GTA · frigorífico · EUDR."
+    },
+    "specimen": {
+      "label": "Espécime de prova",
+      "network": "Rede",
+      "cattle": "Bovinos",
+      "active": "Ativo",
+      "verified": "Verificado on-chain",
+      "anchor": "stellar · confirmado"
     },
     "personas": {
       "eyebrow": "Uma porta por persona",
@@ -27,13 +38,17 @@
       "oesa": { "name": "OESA", "desc": "A GTA que você emite, com prova pública." },
       "parceiro": { "name": "Parceiro / Banco", "desc": "Leia score e prova pra decidir crédito e compra." }
     },
-    "primitivas": {
+    "prim": {
       "eyebrow": "Como funciona",
       "headline": "Três primitivas, uma superfície",
-      "description": "Toda a cadeia roda sobre o mesmo backend de eventos.",
-      "identidade": { "name": "Identidade", "desc": "Cada ativo agrícola ganha um DFID — identificador permanente, ancorado on-chain." },
-      "evento": { "name": "Evento assinado", "desc": "Cada elo registra um evento (atestado, selo, movimentação) assinado com a sua identidade." },
-      "verificacao": { "name": "Verificação pública", "desc": "Qualquer comprador, banco ou auditor confere a prova no verificador — sem login." }
+      "desc": "Toda a cadeia roda sobre o mesmo backend de eventos. Sem ilha de dados, sem PDF que ninguém confere.",
+      "tag": "primitiva",
+      "1t": "Identidade",
+      "1d": "Cada item ganha um DFID — identificador permanente, único e ancorado on-chain.",
+      "2t": "Evento assinado",
+      "2d": "Cada elo assina um evento — atestado, selo, movimentação — com a sua própria identidade.",
+      "3t": "Verificação pública",
+      "3d": "Qualquer comprador, banco ou auditor confere a prova no verificador — sem login."
     },
     "verificador": {
       "eyebrow": "A prova pública",

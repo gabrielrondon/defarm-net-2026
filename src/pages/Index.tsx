@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SurfaceHero } from "@/components/home/SurfaceHero";
 import { PersonasSection } from "@/components/home/PersonasSection";
-import { PrimitivasSection } from "@/components/home/PrimitivasSection";
+import { PrimitivesSection } from "@/components/home/PrimitivesSection";
 import { VerificadorSection } from "@/components/home/VerificadorSection";
 import { ProdutosSection } from "@/components/home/ProdutosSection";
 import { PlatformSwitcher } from "@/components/PlatformSwitcher";
@@ -19,7 +19,7 @@ const Index = () => {
       <main>
         <SurfaceHero />
         <PersonasSection />
-        <PrimitivasSection />
+        <PrimitivesSection />
         <VerificadorSection />
         <ProdutosSection />
         <PlatformSwitcher />
