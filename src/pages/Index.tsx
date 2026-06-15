@@ -1,30 +1,28 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SurfaceHero } from "@/components/home/SurfaceHero";
-import { PersonasSection } from "@/components/home/PersonasSection";
 import { PrimitivesSection } from "@/components/home/PrimitivesSection";
-import { VerificadorSection } from "@/components/home/VerificadorSection";
-import { ProdutosSection } from "@/components/home/ProdutosSection";
-import { PlatformSwitcher } from "@/components/PlatformSwitcher";
+import { PersonasSection } from "@/components/home/PersonasSection";
+import { VerifierBand } from "@/components/home/VerifierBand";
+import { ProductSection } from "@/components/home/ProductSection";
 import { PartnersSection } from "@/components/PartnersSection";
-import { CTASection } from "@/components/CTASection";
+import { FinalCta } from "@/components/home/FinalCta";
 
-// Home da superfície (#40): tese do agro no topo (hero + personas + primitivas
-// + verificador + produtos), e o PlatformSwitcher existente preservado como
-// seção mais abaixo (plataformas: rastreio / financeiro / devs).
+// Home da superfície (redesign "Ledger", #40). Ordem do Claude Design:
+// hero → primitivas → personas → verificador (faixa dark) → produtos → CTA.
+// PartnersSection ("trusted by", logos) mantida antes do CTA (decisão do Gabriel).
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main>
         <SurfaceHero />
-        <PersonasSection />
         <PrimitivesSection />
-        <VerificadorSection />
-        <ProdutosSection />
-        <PlatformSwitcher />
+        <PersonasSection />
+        <VerifierBand />
+        <ProductSection />
         <PartnersSection />
-        <CTASection />
+        <FinalCta />
       </main>
       <Footer />
     </div>

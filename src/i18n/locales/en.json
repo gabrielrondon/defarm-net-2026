@@ -28,15 +28,15 @@
       "anchor": "stellar · confirmed"
     },
     "personas": {
-      "eyebrow": "A door per persona",
-      "headline": "Enter through your door",
-      "description": "Each link in the chain enters directly and emits its proof. Pick your profile.",
+      "eyebrow": "Enter through your door",
+      "headline": "Every link enters directly",
+      "desc": "Each one issues its proof on top of the same item. Pick your profile.",
       "produtor": { "name": "Producer", "desc": "Tokenize your herd and watch the proof grow." },
-      "rastreador": { "name": "SISBOV tracker", "desc": "Issue SISBOV ear tags as on-chain identity." },
+      "rastreador": { "name": "SISBOV tracker", "desc": "Issue ear tags as on-chain identity." },
       "certificadora": { "name": "Certifier", "desc": "From signed PDF to verifiable attestation." },
       "frigorifico": { "name": "Processor", "desc": "Create your premium seal with public proof." },
-      "oesa": { "name": "Sanitary agency", "desc": "The GTA you issue, with public proof." },
-      "parceiro": { "name": "Partner / Bank", "desc": "Read score and proof to decide credit and purchase." }
+      "oesa": { "name": "Authority (OESA)", "desc": "The GTA you issue, with public proof." },
+      "parceiro": { "name": "Partner / Bank", "desc": "Read the score, decide credit and purchase." }
     },
     "prim": {
       "eyebrow": "How it works",
@@ -50,21 +50,85 @@
       "3t": "Public verification",
       "3d": "Any buyer, bank or auditor checks the proof in the verifier — no login."
     },
-    "verificador": {
-      "eyebrow": "Public proof",
-      "headline": "The proof is public and verifiable",
-      "description": "Paste a DFID and see the identity, the history signed by each link, and the on-chain anchor. It's what the importer scans in the QR.",
-      "placeholder": "Paste a DFID (e.g. DFID-BEEF-BR-2026-...)",
-      "button": "Verify",
-      "hint": "No signup. Public verification."
+    "verif": {
+      "eyebrow": "The verifier",
+      "headline": "Proof is public and verifiable",
+      "desc": "Paste a DFID and see the identity, the history signed by each link and the on-chain anchor. It's what the importer scans in the QR.",
+      "placeholder": "Paste a DFID (e.g. DFID-BEEF-BR-2026-…)",
+      "cta": "Verify",
+      "note": "No sign-up. Public verification."
     },
-    "produtos": {
-      "eyebrow": "Products on top of proof",
-      "headline": "Proof becomes product",
-      "description": "Those who need assurance read the proof via API.",
-      "score": { "name": "Credit score", "desc": "For the bank: a score over the asset's public data — herd, attestations, seals, movement and network trust.", "cta": "Talk to us" },
-      "eudr": { "name": "EUDR due diligence", "desc": "For the auditor and importer: a self-contained statement with origin (CAR + polygon), deforestation-free compliance and immutability.", "cta": "Talk to us" }
+    "prod": {
+      "eyebrow": "Proof becomes product",
+      "headline": "Whoever needs to trust, reads the proof",
+      "desc": "Bank, auditor and importer consume the same layer — via a legible screen or via API.",
+      "score_t": "Credit score",
+      "score_d": "For the bank: a 0–100 score over the asset's public data — herd, attestations, seals, movements and network trust.",
+      "score_cta": "View screen",
+      "eudr_t": "EUDR due diligence",
+      "eudr_d": "For the auditor and importer: a self-contained origin statement — CAR, polygon, deforestation-free compliance and immutability.",
+      "eudr_cta": "View screen"
+    },
+    "cta": {
+      "headline": "Give your supply chain an identity",
+      "desc": "Enter, bring your data, and the network becomes the mandatory proof surface for Brazilian agricultural data.",
+      "primary": "Enter through your door",
+      "secondary": "Talk to us"
     }
+  },
+  "score": {
+    "eyebrow": "Product · bank / partner",
+    "title": "Asset credit score",
+    "sub": "Look up the public score of an asset or producer. Model over network-verifiable data.",
+    "tab_dfid": "DFID", "tab_cpf": "CPF", "tab_ccir": "CCIR",
+    "placeholder_dfid": "DFID-BEEF-BR-2026-001106-b0e4d7",
+    "placeholder_cpf": "000.000.000-00",
+    "placeholder_ccir": "000.000.000.000-0",
+    "consult": "Look up score",
+    "empty_t": "Look up an asset",
+    "empty_d": "Enter a DFID, CPF or CCIR to see the credit score and the factors behind it.",
+    "loading": "Reading the network…",
+    "error_t": "We couldn't find that identifier",
+    "error_d": "Check the DFID, CPF or CCIR and try again.",
+    "of": "of 100",
+    "band": "Band",
+    "band_a_label": "Low risk",
+    "band_b_label": "Moderate risk",
+    "band_c_label": "High risk",
+    "band_none_label": "No data",
+    "factors_t": "How the score is built",
+    "f_items": "Items in herd",
+    "f_attestations": "Attestations",
+    "f_seals": "Seals",
+    "f_movements": "Movements",
+    "f_trust": "Avg. network trust",
+    "note": "Score over public data. Model v1.",
+    "query": "Query",
+    "try": "Examples:"
+  },
+  "eudr": {
+    "eyebrow": "Product · auditor / importer",
+    "title": "EUDR origin statement",
+    "sub": "Self-contained due-diligence document. Georeferenced origin, deforestation-free compliance and immutability.",
+    "ready": "EUDR ready",
+    "notready": "Incomplete origin",
+    "load": "Load",
+    "id_t": "Identity", "id_chain": "Chain", "id_country": "Country", "id_year": "Year", "id_status": "Status", "id_active": "Active",
+    "origin_t": "Origin", "origin_car": "CAR", "origin_source": "Polygon source", "origin_area": "Area", "origin_compliance": "Deforestation-free compliance",
+    "compliance_ok": "Compliant", "compliance_score": "Confidence",
+    "map_hint": "SICAR polygon · WGS84",
+    "imut_t": "Immutability", "imut_cid": "CID (IPFS)", "imut_tx": "Anchor (tx)", "imut_chain": "Network",
+    "anchor_confirmed": "Verified on-chain",
+    "anchor_confirmed_d": "Anchor confirmed on Stellar. Immutable document.",
+    "anchor_pending": "Pinned on IPFS · anchoring pending",
+    "anchor_pending_d": "Content pinned on IPFS. On-chain anchor not yet confirmed.",
+    "anchor_failed": "Pinned on IPFS · anchoring failed",
+    "anchor_failed_d": "Content pinned on IPFS. The on-chain anchor failed — we claim no confirmation.",
+    "honesty": "Honesty rule: we only claim “verified on-chain” when the anchor is confirmed.",
+    "demo_state": "Anchor state (demo)",
+    "generated": "Generated at",
+    "export": "Export PDF",
+    "embed": "Embeddable in public verifier /i/:dfid"
   },
   "platform": {
     "rastreio": {
