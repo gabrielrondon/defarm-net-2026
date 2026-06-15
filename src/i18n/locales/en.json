@@ -36,7 +36,7 @@
       "verificacao": { "name": "Public verification", "desc": "Any buyer, bank or auditor checks the proof in the verifier — no login." }
     },
     "verificador": {
-      "eyebrow": "The moat",
+      "eyebrow": "Public proof",
       "headline": "The proof is public and verifiable",
       "description": "Paste a DFID and see the identity, the history signed by each link, and the on-chain anchor. It's what the importer scans in the QR.",
       "placeholder": "Paste a DFID (e.g. DFID-BEEF-BR-2026-...)",
