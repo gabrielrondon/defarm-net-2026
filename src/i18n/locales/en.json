@@ -8,13 +8,24 @@
   },
   "home": {
     "hero": {
-      "eyebrow": "The proof surface for agriculture",
-      "headline": "Where agriculture proves its",
-      "highlight": "origin",
-      "description": "Every agricultural item gets a permanent identity (DFID). Every link in the chain — producer, tracker, certifier, industry, agency — signs an event on top of it. Any buyer verifies: public and on-chain.",
-      "note": "Starting with the beef cattle chain.",
+      "eyebrow": "The proof layer for agriculture",
+      "h_a": "Every farm item, an ",
+      "h_em": "identity",
+      "h_b": ". Every link, a ",
+      "h_em2": "proof",
+      "h_c": ".",
+      "desc": "Every agricultural item gets a permanent identifier (DFID). Producer, tracker, certifier, industry and authority sign events on top of it — and any buyer verifies, public and on-chain.",
       "ctaPrimary": "Enter through your door",
-      "ctaSecondary": "Verify a DFID"
+      "ctaSecondary": "Verify a DFID",
+      "note": "Starting with the beef chain — SISBOV · GTA · processor · EUDR."
+    },
+    "specimen": {
+      "label": "Proof specimen",
+      "network": "Network",
+      "cattle": "Cattle",
+      "active": "Active",
+      "verified": "Verified on-chain",
+      "anchor": "stellar · confirmed"
     },
     "personas": {
       "eyebrow": "A door per persona",
@@ -27,13 +38,17 @@
       "oesa": { "name": "Sanitary agency", "desc": "The GTA you issue, with public proof." },
       "parceiro": { "name": "Partner / Bank", "desc": "Read score and proof to decide credit and purchase." }
     },
-    "primitivas": {
+    "prim": {
       "eyebrow": "How it works",
       "headline": "Three primitives, one surface",
-      "description": "The whole chain runs on the same event backend.",
-      "identidade": { "name": "Identity", "desc": "Each agricultural asset gets a DFID — a permanent identifier, anchored on-chain." },
-      "evento": { "name": "Signed event", "desc": "Each link records an event (attestation, seal, movement) signed with its identity." },
-      "verificacao": { "name": "Public verification", "desc": "Any buyer, bank or auditor checks the proof in the verifier — no login." }
+      "desc": "The whole chain runs on the same event backend. No data islands, no PDF nobody checks.",
+      "tag": "primitive",
+      "1t": "Identity",
+      "1d": "Each item gets a DFID — a permanent, unique identifier anchored on-chain.",
+      "2t": "Signed event",
+      "2d": "Each link signs an event — attestation, seal, movement — with its own identity.",
+      "3t": "Public verification",
+      "3d": "Any buyer, bank or auditor checks the proof in the verifier — no login."
     },
     "verificador": {
       "eyebrow": "Public proof",

@@ -63,6 +63,13 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"DM Sans"', 'Inter', 'sans-serif'],
+        // IBM Plex Mono: assinatura "razão/ledger" — todo identificador (DFID,
+        // SISBOV, CAR, CID, hash, coordenada) renderiza em mono.
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
       keyframes: {
         "accordion-down": {
           from: {
