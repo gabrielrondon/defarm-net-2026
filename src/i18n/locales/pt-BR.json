@@ -36,7 +36,7 @@
       "verificacao": { "name": "Verificação pública", "desc": "Qualquer comprador, banco ou auditor confere a prova no verificador — sem login." }
     },
     "verificador": {
-      "eyebrow": "O moat",
+      "eyebrow": "A prova pública",
       "headline": "A prova é pública e verificável",
       "description": "Cole um DFID e veja a identidade, o histórico assinado por cada elo e a âncora on-chain. É o que o importador escaneia no QR.",
       "placeholder": "Cole um DFID (ex: DFID-BEEF-BR-2026-...)",

@@ -2545,15 +2545,48 @@ export default function PublicItem() {
             </div>
           ) : (
             <div className="border-t border-stone-200/40 pt-5">
+              {/* Honest proof state: só afirma "verificado em blockchain" quando a
+                  âncora on-chain está confirmada. Caso contrário, mostra a prova
+                  real (IPFS) sem alegar confirmação on-chain que não aconteceu. */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
-                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    proofs?.identity_anchor?.status === "confirmed"
+                      ? "bg-emerald-50"
+                      : "bg-amber-50"
+                  }`}
+                >
+                  <ShieldCheck
+                    className={`h-5 w-5 ${
+                      proofs?.identity_anchor?.status === "confirmed"
+                        ? "text-emerald-600"
+                        : "text-amber-600"
+                    }`}
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    {metadataLocale === "en" ? "Verified on blockchain" : "Verificado em blockchain"}
+                    {proofs?.identity_anchor?.status === "confirmed"
+                      ? metadataLocale === "en"
+                        ? "Verified on blockchain"
+                        : "Verificado em blockchain"
+                      : latestContentVersion
+                        ? metadataLocale === "en"
+                          ? "Registered on IPFS"
+                          : "Registrado no IPFS"
+                        : metadataLocale === "en"
+                          ? "Proof pending"
+                          : "Prova pendente"}
                   </p>
-                  <p className="text-xs text-muted-foreground">Stellar mainnet · IPFS (Pinata)</p>
+                  <p className="text-xs text-muted-foreground">
+                    {proofs?.identity_anchor?.status === "confirmed"
+                      ? "Stellar mainnet · IPFS (Pinata)"
+                      : proofs?.identity_anchor
+                        ? metadataLocale === "en"
+                          ? "IPFS (Pinata) · Stellar anchoring pending"
+                          : "IPFS (Pinata) · ancoragem Stellar pendente"
+                        : "IPFS (Pinata)"}
+                  </p>
                 </div>
               </div>
               <details className="mt-3">
@@ -2574,6 +2607,21 @@ export default function PublicItem() {
                           {shortHash(proofs.identity_anchor.transaction_hash)}
                           <ExternalLink className="h-3 w-3" />
                         </a>
+                        <p
+                          className={`text-[11px] font-medium ${
+                            proofs.identity_anchor.status === "confirmed"
+                              ? "text-emerald-600"
+                              : "text-amber-600"
+                          }`}
+                        >
+                          {proofs.identity_anchor.status === "confirmed"
+                            ? metadataLocale === "en"
+                              ? "Confirmed on-chain"
+                              : "Confirmado on-chain"
+                            : metadataLocale === "en"
+                              ? `On-chain status: ${proofs.identity_anchor.status}`
+                              : `Status on-chain: ${proofs.identity_anchor.status}`}
+                        </p>
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
