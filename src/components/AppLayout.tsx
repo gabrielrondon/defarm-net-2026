@@ -112,7 +112,7 @@ const capabilityPresentation: Record<string, { label: string; icon: typeof BookO
   "read.my_attestations": { label: "Meus certificados", icon: ClipboardCheck },
   "read.prospect": { label: "Prospectar fornecedores", icon: Search },
   "read.dashboard": { label: "Painel", icon: BarChart3, route: "/app/oesa/dashboard" },
-  "read.score": { label: "Score de crédito", icon: Coins },
+  "read.score": { label: "Score de crédito", icon: Coins, route: "/score" },
   "read.verify": { label: "Verificar DFID", icon: Shield, route: "/app/verificar" },
   "read.settings": { label: "Configurações", icon: Settings, route: "/app/configuracoes" },
 };

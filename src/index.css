@@ -19,6 +19,8 @@
 
     --primary: 145 65% 47%;
     --primary-foreground: 0 0% 100%;
+    /* verde escuro p/ texto (legível sobre fundo claro) — redesign Ledger */
+    --primary-deep: 145 72% 33%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 10%;
@@ -60,6 +62,8 @@
 
     --primary: 145 65% 47%;
     --primary-foreground: 0 0% 100%;
+    /* no dark, o "deep" clareia p/ contraste */
+    --primary-deep: 145 55% 62%;
 
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 98%;
