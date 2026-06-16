@@ -146,9 +146,9 @@
     "s2_t": "Encadeado", "s2_d": "O evento entra no histórico permanente do DFID, ligado a tudo que veio antes.",
     "s3_t": "Imutável", "s3_d": "O registro é selado. Ninguém — nem a DeFarm — reescreve o que já foi assinado.",
     "s4_t": "Público", "s4_d": "Qualquer comprador, banco ou auditor confere a prova. Sem login, sem pedir permissão.",
-    "m1_v": "412", "m1_l": "DFIDs emitidos",
-    "m2_v": "3.847", "m2_l": "Eventos assinados",
-    "metrics_note": "Números do piloto · jun 2026"
+    "m1_v": "8.405", "m1_l": "DFIDs emitidos",
+    "m2_v": "50.076", "m2_l": "Eventos assinados",
+    "metrics_note": "Registros na rede"
   },
   "spec": {
     "label": "Espécime de prova",

@@ -146,9 +146,9 @@
     "s2_t": "Chained", "s2_d": "The event joins the DFID's permanent history, tied to everything before it.",
     "s3_t": "Immutable", "s3_d": "The record is sealed. Nobody — not even DeFarm — rewrites what's been signed.",
     "s4_t": "Public", "s4_d": "Any buyer, bank or auditor checks the proof. No login, no permission needed.",
-    "m1_v": "412", "m1_l": "DFIDs issued",
-    "m2_v": "3,847", "m2_l": "Signed events",
-    "metrics_note": "Pilot figures · Jun 2026"
+    "m1_v": "8,405", "m1_l": "DFIDs issued",
+    "m2_v": "50,076", "m2_l": "Signed events",
+    "metrics_note": "Network records"
   },
   "spec": {
     "label": "Proof specimen",
