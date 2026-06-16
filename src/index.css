@@ -19,8 +19,8 @@
 
     --primary: 145 65% 47%;
     --primary-foreground: 0 0% 100%;
-    /* verde escuro p/ texto (legível sobre fundo claro) — redesign Ledger */
-    --primary-deep: 145 72% 33%;
+    /* verde escuro p/ texto (legível sobre fundo claro) — redesign Ledger v2 */
+    --primary-deep: 150 55% 26%;
 
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 10%;
@@ -203,4 +203,15 @@
   .bg-stone-50\/80 { background: white !important; }
   .bg-white { background: white !important; border-color: #d4d4d4 !important; }
   * { transition: none !important; animation: none !important; }
+}
+
+/* Card "Espécime de prova" — rotação elegante a cada ~4.2s (ProofSpecimen v2).
+   .spec-rotate NÃO usa fill-mode de propósito: descansa visível (opacity 1) entre
+   as trocas; só anima no instante do swap. */
+@keyframes specIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+@keyframes specProg { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.spec-prog { transform-origin: left; transform: scaleX(0); }
+@media (prefers-reduced-motion: no-preference) {
+  .spec-rotate { animation: specIn .5s cubic-bezier(.2,.7,.2,1); }
+  .spec-prog   { animation: specProg linear both; }
 }
