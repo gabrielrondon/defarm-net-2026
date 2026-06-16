@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { getNetworkStats } from "@/lib/api/products";
 
 // Lote D — /sobre (institucional) no estilo "Ledger".
 // Reconta a tese: superfície de prova → 3 primitivas → janelas regulatórias.
@@ -27,11 +29,19 @@ const GRID_MOTIF: React.CSSProperties = {
 };
 
 export default function Sobre() {
-  const { t } = useTranslation();
-  const stats = [
-    ["2025", "about.stat1_l"],
-    ["20.000+", "about.stat2_l"],
-    ["143", "about.stat3_l"],
+  const { t, i18n } = useTranslation();
+  // Mesmas métricas VIVAS da home (TrustModel): GET /api/stats. Só 2 (DFIDs +
+  // Eventos). Fallback nas chaves trust.m1_v/m2_v enquanto carrega/se falhar.
+  const { data: netStats } = useQuery({
+    queryKey: ["network-stats"],
+    queryFn: getNetworkStats,
+    staleTime: 300_000,
+    retry: 1,
+  });
+  const fmt = (n: number) => new Intl.NumberFormat(i18n.language || "pt-BR").format(n);
+  const stats: [string, string][] = [
+    [netStats ? fmt(netStats.dfids) : t("trust.m1_v"), "trust.m1_l"],
+    [netStats ? fmt(netStats.events) : t("trust.m2_v"), "trust.m2_l"],
   ];
   const prims = [
     ["01", "home.prim.1t", "home.prim.1d"],
@@ -85,19 +95,20 @@ export default function Sobre() {
           </div>
         </section>
 
-        {/* stats */}
+        {/* stats — métricas vivas da rede (mesmas da home) */}
         <section className="pb-4">
           <div className="section-container">
-            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {stats.map(([v, l]) => (
-                <div key={l} className="bg-card p-7">
-                  <div className="font-display text-[40px] font-bold leading-none tracking-tight sm:text-[48px]">{v}</div>
-                  <div className="mt-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    {t(l)}
-                  </div>
+                <div key={l} className="rounded-2xl border border-border bg-card p-7">
+                  <div className="metric-value text-[44px] leading-none text-primary">{v}</div>
+                  <div className="mt-2 text-[13px] text-muted-foreground">{t(l)}</div>
                 </div>
               ))}
             </div>
+            <p className="mt-3 font-mono text-[10.5px] uppercase tracking-[0.12em] text-muted-foreground">
+              {t("trust.metrics_note")}
+            </p>
           </div>
         </section>
 
