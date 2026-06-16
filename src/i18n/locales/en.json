@@ -148,6 +148,18 @@
     "export": "Export PDF",
     "embed": "Embeddable in public verifier /i/:dfid"
   },
+  "pgate": {
+    "title": "Welcome to DeFarm",
+    "desc": "We're rolling out dashboard access gradually. To join the queue, enter your property's CAR — our team will validate and reach out.",
+    "car_label": "Property CAR",
+    "car_ph": "e.g. MS-5002704-XXXXXXXX…",
+    "submit": "Request access",
+    "logout": "Sign out",
+    "car_required": "Enter the property CAR.",
+    "err": "Couldn't submit. Please try again.",
+    "ok_title": "Request received",
+    "ok_desc": "We received your property's CAR. Our team will validate and get in touch. Thank you!"
+  },
   "integ": { "label": "Plugged into the systems agriculture already uses" },
   "trust": {
     "eyebrow": "Trust model",
