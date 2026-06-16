@@ -99,13 +99,19 @@ const navByWorkspace: Record<WorkspaceType, string[]> = {
 // backend (/me/capabilities) is the source of truth for WHICH sections a role
 // has; the frontend owns label/icon/route here. Sections without an explicit
 // route point to the Studio stub (#111).
-const capabilityPresentation: Record<string, { label: string; icon: typeof BookOpen; route?: string }> = {
+// `route` ausente = ação ainda sem tela própria → NÃO exibimos (não oferecemos
+// stub "em construção", #21). `personas` restringe um studio persona-específico
+// (ex: emit.movement abre o OESA Studio, que só faz sentido pra government — #19).
+const capabilityPresentation: Record<
+  string,
+  { label: string; icon: typeof BookOpen; route?: string; personas?: string[] }
+> = {
   "emit.identity": { label: "Emitir brincos", icon: Fingerprint, route: "/app/studios/brinco" },
   "emit.termination": { label: "Registrar baixa", icon: Activity },
   "emit.attestation": { label: "Emitir atestado", icon: ClipboardCheck, route: "/app/studios/certificate" },
   "emit.seal": { label: "Conceder selo", icon: Shield, route: "/app/studios/selo" },
   "emit.slaughter": { label: "Registrar abate", icon: Activity },
-  "emit.movement": { label: "Registrar movimentação", icon: Compass, route: "/app/studios/oesa" },
+  "emit.movement": { label: "Registrar movimentação", icon: Compass, route: "/app/studios/oesa", personas: ["government"] },
   "emit.husbandry": { label: "Registrar manejo", icon: Activity },
   "emit.transfer": { label: "Transferir posse", icon: GitBranch },
   "read.my_items": { label: "Meus itens", icon: Package, route: "/app/itens" },
@@ -186,8 +192,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const actionSections = (capabilities?.sections ?? [])
     .map((s) => ({ key: s.key, ...capabilityPresentation[s.key] }))
     .filter(
-      (s): s is { key: string; label: string; icon: typeof BookOpen; route?: string } =>
-        Boolean(s.label)
+      (
+        s
+      ): s is { key: string; label: string; icon: typeof BookOpen; route: string; personas?: string[] } =>
+        // só exibe ações já com tela (route) e adequadas à persona atual.
+        Boolean(s.label) &&
+        Boolean(s.route) &&
+        (!s.personas || s.personas.includes(workspaceType))
     );
 
   const handleResendVerification = async () => {
@@ -353,7 +364,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </span>
               </div>
               {actionSections.map((item) => {
-                const href = item.route ?? `/app/acoes/${item.key}`;
+                const href = item.route;
                 const isActive = location.pathname === href;
                 return (
                   <Link
