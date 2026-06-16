@@ -32,7 +32,6 @@ export default function Sobre() {
     ["2025", "about.stat1_l"],
     ["20.000+", "about.stat2_l"],
     ["143", "about.stat3_l"],
-    ["15", "about.stat4_l"],
   ];
   const prims = [
     ["01", "home.prim.1t", "home.prim.1d"],
@@ -89,7 +88,7 @@ export default function Sobre() {
         {/* stats */}
         <section className="pb-4">
           <div className="section-container">
-            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3">
               {stats.map(([v, l]) => (
                 <div key={l} className="bg-card p-7">
                   <div className="font-display text-[40px] font-bold leading-none tracking-tight sm:text-[48px]">{v}</div>
