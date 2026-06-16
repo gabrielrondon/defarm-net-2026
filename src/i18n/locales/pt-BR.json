@@ -14,10 +14,17 @@
       "h_b": ". Cada elo, uma ",
       "h_em2": "prova",
       "h_c": ".",
-      "desc": "Cada item agrícola ganha um identificador permanente (DFID). Produtor, rastreador, certificadora, indústria e órgão assinam eventos em cima dele — e qualquer comprador verifica, público e on-chain.",
+      "desc": "Cada item agrícola ganha um identificador permanente (DFID). Produtor, rastreador, certificadora, indústria e órgão assinam eventos em cima dele — e qualquer comprador verifica, numa prova pública e imutável.",
       "ctaPrimary": "Entre pela sua porta",
       "ctaSecondary": "Verificar um DFID",
-      "note": "Começando pela cadeia da carne bovina — SISBOV · GTA · frigorífico · EUDR."
+      "note": "Começando pela cadeia da carne bovina — SISBOV · GTA · frigorífico · EUDR.",
+      "chains_label": "Uma superfície, várias cadeias",
+      "chain_beef": "Bovinos",
+      "chain_soy": "Soja",
+      "chain_coffee": "Café",
+      "chain_cotton": "Algodão",
+      "chains_live": "ativa",
+      "chains_more": "+8 cadeias"
     },
     "specimen": {
       "label": "Espécime de prova",
@@ -44,7 +51,7 @@
       "desc": "Toda a cadeia roda sobre o mesmo backend de eventos. Sem ilha de dados, sem PDF que ninguém confere.",
       "tag": "primitiva",
       "1t": "Identidade",
-      "1d": "Cada item ganha um DFID — identificador permanente, único e ancorado on-chain.",
+      "1d": "Cada item ganha um DFID — identificador permanente, único e gravado como registro imutável.",
       "2t": "Evento assinado",
       "2d": "Cada elo assina um evento — atestado, selo, movimentação — com a sua própria identidade.",
       "3t": "Verificação pública",
@@ -53,7 +60,7 @@
     "verif": {
       "eyebrow": "O verificador",
       "headline": "A prova é pública e verificável",
-      "desc": "Cole um DFID e veja a identidade, o histórico assinado por cada elo e a âncora on-chain. É o que o importador escaneia no QR.",
+      "desc": "Cole um DFID e veja a identidade, o histórico assinado por cada elo e o registro imutável. É o que o importador escaneia no QR.",
       "placeholder": "Cole um DFID (ex: DFID-BEEF-BR-2026-…)",
       "cta": "Verificar",
       "note": "Sem cadastro. Verificação pública."
@@ -129,6 +136,33 @@
     "generated": "Gerado em",
     "export": "Exportar PDF",
     "embed": "Embutível no verificador público /i/:dfid"
+  },
+  "integ": { "label": "Integrado aos sistemas que o agro já usa" },
+  "trust": {
+    "eyebrow": "Modelo de confiança",
+    "headline": "Como a prova se sustenta",
+    "desc": "Sem autoridade central dizendo o que é verdade. A confiança vem da assinatura de cada elo e de um registro que ninguém reescreve depois.",
+    "s1_t": "Assinado", "s1_d": "Cada elo assina o evento com a sua própria identidade — produtor, rastreador, certificadora, órgão.",
+    "s2_t": "Encadeado", "s2_d": "O evento entra no histórico permanente do DFID, ligado a tudo que veio antes.",
+    "s3_t": "Imutável", "s3_d": "O registro é selado. Ninguém — nem a DeFarm — reescreve o que já foi assinado.",
+    "s4_t": "Público", "s4_d": "Qualquer comprador, banco ou auditor confere a prova. Sem login, sem pedir permissão.",
+    "m1_v": "412", "m1_l": "DFIDs emitidos",
+    "m2_v": "3.847", "m2_l": "Eventos assinados",
+    "metrics_note": "Números do piloto · jun 2026"
+  },
+  "spec": {
+    "label": "Espécime de prova",
+    "country": "BR",
+    "status": "Ativo",
+    "issued": "Emitido",
+    "scan": "Escaneie para rastrear",
+    "eudr": "EUDR ready",
+    "signers": "assinaturas",
+    "signers_hint": "Elos que já assinaram eventos neste item",
+    "c_beef": "Bovinos",
+    "c_cocoa": "Cacau",
+    "c_coffee": "Café",
+    "c_soy": "Soja"
   },
   "pg": { "back": "Voltar" },
   "signup": {
