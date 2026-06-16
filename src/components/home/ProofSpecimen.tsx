@@ -31,14 +31,17 @@ function maskId(s: string) {
   return s.length <= 9 ? s : `${s.slice(0, 4)} •••• ${s.slice(-4)}`;
 }
 
-// QR-like glyph whose pattern varies by seed (sober, modern).
-function QRGlyph({ size = 76, seed = 0 }: { size?: number; seed?: number }) {
-  const n = 7, c = size / (n + 1);
-  const rnd = (x: number) => ((Math.imul((x ^ 0x9e3779b9) + (seed + 1) * 2654435761, 2246822519) >>> 0) % 1000) / 1000;
+// Glifo DECORATIVO (não é um QR escaneável) — padrão generativo único por
+// espécime. Sem os cantos de "finder" pra não se passar por código real.
+// Quando houver DFIDs reais (T3), trocar por um QR de verdade -> /i/:dfid.
+function ProofGlyph({ size = 76, seed = 0 }: { size?: number; seed?: number }) {
+  const n = 8, c = size / (n + 1);
+  const rnd = (x: number, y: number) =>
+    ((Math.imul(((x + 1) * 73856093) ^ ((y + 1) * 19349663) ^ ((seed + 1) * 83492791), 2654435761) >>> 0) % 1000) / 1000;
+  const dens = 0.34 + ((seed * 37) % 26) / 100; // densidade varia por espécime
   const cells: [number, number][] = [];
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-    const finder = (x < 2 && y < 2) || (x > n - 3 && y < 2) || (x < 2 && y > n - 3);
-    if (finder || rnd(y * 7 + x) > 0.5) cells.push([x, y]);
+    if (rnd(x, y) < dens) cells.push([x, y]);
   }
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
@@ -93,9 +96,8 @@ export function ProofSpecimen() {
         <div className="mb-4 font-mono text-[12px] text-muted-foreground">{s.idLabel}: {maskId(s.idValue)}</div>
 
         <div className="mb-4 flex items-center gap-4 rounded-xl bg-muted p-3">
-          <QRGlyph size={76} seed={i + 1} />
+          <ProofGlyph size={76} seed={i + 1} />
           <div className="min-w-0">
-            <div className="mb-1 text-[12px] font-semibold">{t("spec.scan")}</div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground">
               <span>{t("spec.issued")}</span><span className="text-foreground">{s.issued}</span>
               <span>area_ha</span><span className="text-foreground">{s.area}</span>
