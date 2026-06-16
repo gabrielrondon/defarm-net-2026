@@ -451,15 +451,6 @@
       }
     }
   },
-  "contact": {
-    "title": "Entre em",
-    "titleHighlight": "Contato",
-    "subtitle": "Estamos prontos para ajudar você a transformar sua cadeia produtiva",
-    "infoTitle": "Informações de Contato",
-    "infoDescription": "Entre em contato conosco através dos canais abaixo que retornaremos em até 24 horas.",
-    "emailLabel": "Email",
-    "addressLabel": "Endereço"
-  },
   "login": {
     "welcome": "Bem-vindo de volta",
     "subtitle": "Entre para acessar sua plataforma de rastreabilidade",
