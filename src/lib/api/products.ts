@@ -1,4 +1,14 @@
-import { registryRequest, buildQueryString } from "./client";
+import { registryRequest, registryPublicRequest, buildQueryString } from "./client";
+
+// Contadores públicos da rede (home / TrustModel) — GET /api/stats (sem auth, cacheado no backend).
+export interface NetworkStats {
+  dfids: number;
+  events: number;
+  anchors_confirmed: number;
+}
+export function getNetworkStats(): Promise<NetworkStats> {
+  return registryPublicRequest<NetworkStats>("/stats");
+}
 
 // Produtos-API do #112 (consumidos pelas telas Score e EUDR). Ambos exigem JWT
 // (registryRequest adiciona o Bearer); o gateway normaliza /v1 -> /api.

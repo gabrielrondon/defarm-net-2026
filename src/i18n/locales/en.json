@@ -14,10 +14,17 @@
       "h_b": ". Every link, a ",
       "h_em2": "proof",
       "h_c": ".",
-      "desc": "Every agricultural item gets a permanent identifier (DFID). Producer, tracker, certifier, industry and authority sign events on top of it — and any buyer verifies, public and on-chain.",
+      "desc": "Every agricultural item gets a permanent identifier (DFID). Producer, tracker, certifier, industry and authority sign events on top of it — and any buyer verifies, in a public, immutable proof.",
       "ctaPrimary": "Enter through your door",
       "ctaSecondary": "Verify a DFID",
-      "note": "Starting with the beef chain — SISBOV · GTA · processor · EUDR."
+      "note": "Starting with the beef chain — SISBOV · GTA · processor · EUDR.",
+      "chains_label": "One surface, many chains",
+      "chain_beef": "Beef",
+      "chain_soy": "Soy",
+      "chain_coffee": "Coffee",
+      "chain_cotton": "Cotton",
+      "chains_live": "live",
+      "chains_more": "+8 chains"
     },
     "specimen": {
       "label": "Proof specimen",
@@ -44,7 +51,7 @@
       "desc": "The whole chain runs on the same event backend. No data islands, no PDF nobody checks.",
       "tag": "primitive",
       "1t": "Identity",
-      "1d": "Each item gets a DFID — a permanent, unique identifier anchored on-chain.",
+      "1d": "Each item gets a DFID — a permanent, unique identifier written as an immutable record.",
       "2t": "Signed event",
       "2d": "Each link signs an event — attestation, seal, movement — with its own identity.",
       "3t": "Public verification",
@@ -53,7 +60,7 @@
     "verif": {
       "eyebrow": "The verifier",
       "headline": "Proof is public and verifiable",
-      "desc": "Paste a DFID and see the identity, the history signed by each link and the on-chain anchor. It's what the importer scans in the QR.",
+      "desc": "Paste a DFID and see the identity, the history signed by each link and the immutable record. It's what the importer scans in the QR.",
       "placeholder": "Paste a DFID (e.g. DFID-BEEF-BR-2026-…)",
       "cta": "Verify",
       "note": "No sign-up. Public verification."
@@ -129,6 +136,33 @@
     "generated": "Generated at",
     "export": "Export PDF",
     "embed": "Embeddable in public verifier /i/:dfid"
+  },
+  "integ": { "label": "Plugged into the systems agriculture already uses" },
+  "trust": {
+    "eyebrow": "Trust model",
+    "headline": "How the proof holds up",
+    "desc": "No central authority deciding what's true. Trust comes from each link's signature and a record nobody rewrites afterward.",
+    "s1_t": "Signed", "s1_d": "Each link signs the event with its own identity — producer, tracker, certifier, authority.",
+    "s2_t": "Chained", "s2_d": "The event joins the DFID's permanent history, tied to everything before it.",
+    "s3_t": "Immutable", "s3_d": "The record is sealed. Nobody — not even DeFarm — rewrites what's been signed.",
+    "s4_t": "Public", "s4_d": "Any buyer, bank or auditor checks the proof. No login, no permission needed.",
+    "m1_v": "8,405", "m1_l": "DFIDs issued",
+    "m2_v": "50,076", "m2_l": "Signed events",
+    "metrics_note": "Network records"
+  },
+  "spec": {
+    "label": "Proof specimen",
+    "country": "BR",
+    "status": "Active",
+    "issued": "Issued",
+    "scan": "Scan to trace",
+    "eudr": "EUDR ready",
+    "signers": "signatures",
+    "signers_hint": "Links that have already signed events on this item",
+    "c_beef": "Beef",
+    "c_cocoa": "Cocoa",
+    "c_coffee": "Coffee",
+    "c_soy": "Soy"
   },
   "pg": { "back": "Back" },
   "signup": {

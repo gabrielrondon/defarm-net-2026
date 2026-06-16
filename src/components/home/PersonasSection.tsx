@@ -21,7 +21,7 @@ export function PersonasSection() {
       <div className="section-container">
         <div className="mb-12 max-w-2xl">
           <div className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-            <span className="text-primary">§ 02</span>
+            <span className="text-primary">§ 03</span>
             <span className="h-px w-6 bg-border" />
             {t("home.personas.eyebrow")}
           </div>
