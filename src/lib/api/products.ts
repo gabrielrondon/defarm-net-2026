@@ -1,4 +1,14 @@
-import { registryRequest, buildQueryString } from "./client";
+import { registryRequest, registryPublicRequest, buildQueryString } from "./client";
+
+// Contadores públicos da rede (home / TrustModel) — GET /api/stats (sem auth, cacheado no backend).
+export interface NetworkStats {
+  dfids: number;
+  events: number;
+  anchors_confirmed: number;
+}
+export function getNetworkStats(): Promise<NetworkStats> {
+  return registryPublicRequest<NetworkStats>("/stats");
+}
 
 // Produtos-API do #112 (consumidos pelas telas Score e EUDR). Ambos exigem JWT
 // (registryRequest adiciona o Bearer); o gateway normaliza /v1 -> /api.
@@ -47,10 +57,39 @@ export interface EudrIdentity {
   year: number;
   status: string;
 }
+// Trilho de due diligence real (DeFarm Check API) — uma linha por fonte verificada.
+export interface EudrCheck {
+  source: string;
+  category: string | null;
+  status: string; // PASS | FAIL | WARNING | ERROR | NOT_APPLICABLE | UNKNOWN
+  severity: string | null;
+  message: string | null;
+  data_source: string | null;
+  url: string | null;
+  last_update: string | null;
+}
+export interface EudrDueDiligence {
+  identifier_type: string; // CAR | CNPJ | CPF
+  identifier: string;
+  verdict: string | null; // COMPLIANT | NON_COMPLIANT | PARTIAL | UNKNOWN
+  score: number | null;
+  checks: EudrCheck[];
+  queried_at: string;
+  error: string | null;
+}
+export interface EudrOperator {
+  identifier_type: string; // cnpj | cpf
+  identifier: string;
+  role: string; // operator | owner
+}
 export interface EudrStatement {
   dfid: string;
   identity: EudrIdentity;
   origin: EudrOrigin[];
+  operator: EudrOperator | null;
+  due_diligence: EudrDueDiligence[];
+  due_diligence_available: boolean;
+  due_diligence_note: string;
   immutability: EudrImmutability;
   eudr_ready: boolean;
   generated_at: string;

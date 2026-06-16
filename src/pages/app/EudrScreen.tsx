@@ -1,29 +1,90 @@
-import { useEffect, useState } from "react";
-import { FileText, Search } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { FileText, Search, Lock, ArrowRight, ShieldCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
-import { getEudrStatement, type EudrStatement } from "@/lib/api/products";
+import type { EudrStatement } from "@/lib/api/products";
 
-// Tela Due diligence EUDR (Entrega C). Consome GET /api/eudr/statement?dfid=
-// (registryRequest, JWT). REGRA DE HONESTIDADE: o estado da âncora vem de
-// immutability.anchor_status — AnchorStatus só diz "verificado on-chain" se
-// confirmed. Pública: cai no fixture-demo se não autenticado / erro.
+// Tela "Declaração de Due Diligence (EUDR)" — VITRINE GATED. Por decisão de
+// produto (e §6.4 do paper EUDR), defarm.net/eudr é demonstração: mostra o
+// trilho de evidências como exemplo e, em QUALQUER ação, abre um popup que
+// redireciona pro contato. A geração real (assinada + ancorada) roda na DeFarm
+// Check (API / check.defarm.net). Honestidade: o trilho exibido é demonstração,
+// rotulado como tal; o estado da âncora respeita anchor_status.
 const DEMO_DFID = "DFID-BEEF-BR-2026-001119-b8a57a";
 const DEMO: EudrStatement = {
   dfid: DEMO_DFID,
   identity: { value_chain: "BEEF", country: "BR", year: 2026, status: "active" },
-  origin: [{ car: "MS-5002704-DEMOEUDR8F3A2C1B9E7D", compliance: { status: "ok", score: 95 }, polygon: null, polygon_source: "sicar", area_ha: 1247.5 }],
-  immutability: { latest_cid: "Qmc2Tf9aZ8r4Lh1WkPqN3oVbXyJ7sD6eU5tH0mGc", anchor_tx: "abc7f1e9d4c2b8a6f0e3d1c9b7a5f2e8d6c4b2a0", anchor_status: "confirmed", chain: "stellar" },
+  origin: [
+    {
+      car: "MS-5002704-DEMOEUDR8F3A2C1B9E7D",
+      compliance: { status: "ok", score: 96 },
+      polygon: null,
+      polygon_source: "sicar",
+      area_ha: 1247.5,
+    },
+  ],
+  operator: { identifier_type: "cnpj", identifier: "00.000.000/0001-00", role: "operator" },
+  due_diligence: [
+    {
+      identifier_type: "CAR",
+      identifier: "MS-5002704-DEMOEUDR8F3A2C1B9E7D",
+      verdict: "COMPLIANT",
+      score: 96,
+      queried_at: "2026-06-15T14:02:00Z",
+      error: null,
+      checks: [
+        { source: "SICAR", category: "Cadastro Ambiental", status: "PASS", severity: "LOW", message: "Polígono georreferenciado válido", data_source: "SICAR", url: null, last_update: "2026-05" },
+        { source: "PRODES / DETER", category: "Desmatamento", status: "PASS", severity: "LOW", message: "Sem alerta de desmate pós 31/12/2020", data_source: "INPE", url: null, last_update: "2026-05" },
+        { source: "IBAMA Embargos", category: "Embargo ambiental", status: "PASS", severity: "LOW", message: "Sem ocorrência de embargo", data_source: "IBAMA", url: null, last_update: "2026-06" },
+        { source: "FUNAI + ICMBio", category: "Sobreposição TI / UC", status: "PASS", severity: "LOW", message: "Sem sobreposição com terra indígena ou unidade de conservação", data_source: "FUNAI/ICMBio", url: null, last_update: "2026-04" },
+      ],
+    },
+    {
+      identifier_type: "CNPJ",
+      identifier: "00.000.000/0001-00",
+      verdict: "COMPLIANT",
+      score: 100,
+      queried_at: "2026-06-15T14:02:00Z",
+      error: null,
+      checks: [
+        { source: "Lista Suja MTE", category: "Trabalho análogo a escravo", status: "PASS", severity: "LOW", message: "Operador sem ocorrência na Lista Suja", data_source: "MTE", url: null, last_update: "2026-04" },
+      ],
+    },
+  ],
+  due_diligence_available: true,
+  due_diligence_note: "",
+  immutability: {
+    latest_cid: "Qmc2Tf9aZ8r4Lh1WkPqN3oVbXyJ7sD6eU5tH0mGc",
+    anchor_tx: "abc7f1e9d4c2b8a6f0e3d1c9b7a5f2e8d6c4b2a0",
+    anchor_status: "confirmed",
+    chain: "stellar",
+  },
   eudr_ready: true,
   generated_at: "2026-06-15T14:02:00Z",
   note: "",
 };
+
+function statusTone(s: string): { color: string; bg: string } {
+  const u = (s || "").toUpperCase();
+  if (["PASS", "COMPLIANT", "OK"].includes(u)) return { color: "hsl(var(--primary-deep))", bg: "hsl(var(--primary) / 0.12)" };
+  if (["FAIL", "NON_COMPLIANT"].includes(u)) return { color: "hsl(var(--destructive))", bg: "hsl(var(--destructive) / 0.1)" };
+  if (["WARNING", "PARTIAL"].includes(u)) return { color: "hsl(38 92% 38%)", bg: "hsl(38 92% 50% / 0.13)" };
+  return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.7)" };
+}
 
 function KV({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
   return (
@@ -36,33 +97,16 @@ function KV({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
 
 export default function EudrScreen() {
   const { t } = useTranslation();
-  const [params, setParams] = useSearchParams();
-  const initial = params.get("dfid") || DEMO_DFID;
-  const [input, setInput] = useState(initial);
-  const [stmt, setStmt] = useState<EudrStatement>(DEMO);
-  const [loading, setLoading] = useState(false);
-
-  async function load(dfid: string) {
-    const v = dfid.trim();
-    if (!v) return;
-    setLoading(true);
-    try {
-      const r = await getEudrStatement(v);
-      setStmt(r);
-    } catch {
-      // sem token / erro: mostra o demo (showcase) marcando o dfid pedido.
-      setStmt({ ...DEMO, dfid: v });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(initial); /* eslint-disable-next-line */ }, []);
+  const navigate = useNavigate();
+  const [gateOpen, setGateOpen] = useState(false);
+  // Tela é sempre demonstração; qualquer ação abre o gate.
+  const stmt = DEMO;
+  const openGate = () => setGateOpen(true);
 
   const o = stmt.origin[0];
   const anchor = anchorStateOf(stmt.immutability.anchor_status);
   const complianceOk = o?.compliance?.status === "ok";
-  const ring = (o?.polygon?.coordinates?.[0] as [number, number][] | undefined);
+  const ring = o?.polygon?.coordinates?.[0] as [number, number][] | undefined;
   const generatedAt = (stmt.generated_at || "").replace("T", " ").slice(0, 16) + "Z";
 
   return (
@@ -73,28 +117,37 @@ export default function EudrScreen() {
           <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-primary">
-                <span className="h-px w-6 bg-primary/50" />{t("eudr.eyebrow")}
+                <span className="h-px w-6 bg-primary/50" />
+                {t("eudr.eyebrow")}
               </div>
               <h1 className="mt-3 text-[32px] font-bold tracking-tight sm:text-[40px]">{t("eudr.title")}</h1>
               <p className="mt-2 max-w-2xl text-[16px] text-muted-foreground" style={{ textWrap: "pretty" }}>{t("eudr.sub")}</p>
             </div>
             <div className="flex flex-col items-end gap-3">
-              {stmt.eudr_ready ? (
-                <span className="inline-flex items-center rounded-full px-3.5 py-2 text-[13px] font-semibold" style={{ background: "hsl(var(--primary) / 0.12)", color: "hsl(var(--primary-deep))" }}>{t("eudr.ready")}</span>
-              ) : (
-                <Badge variant="secondary">{t("eudr.notready")}</Badge>
-              )}
-              <Button variant="outline" size="sm" onClick={() => window.print()}><FileText className="mr-1.5 h-[15px] w-[15px]" />{t("eudr.export")}</Button>
+              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em]" style={{ background: "hsl(var(--muted) / 0.7)", color: "hsl(var(--muted-foreground))" }}>
+                {t("eudr.demo_tag")}
+              </span>
+              <Button variant="outline" size="sm" onClick={openGate}>
+                <FileText className="mr-1.5 h-[15px] w-[15px]" />
+                {t("eudr.export")}
+              </Button>
             </div>
           </header>
 
-          {/* DFID lookup */}
+          {/* DFID lookup — gated */}
           <div className="mb-5 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
-              <Input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (setParams({ dfid: input.trim() }), load(input))} placeholder="DFID-BEEF-BR-2026-…" className="h-11 pl-11 font-mono text-[13px]" />
+              <Input
+                readOnly
+                onFocus={openGate}
+                onClick={openGate}
+                value=""
+                placeholder="DFID-BEEF-BR-2026-…"
+                className="h-11 cursor-pointer pl-11 font-mono text-[13px]"
+              />
             </div>
-            <Button onClick={() => { setParams({ dfid: input.trim() }); load(input); }} disabled={loading}>{loading ? t("score.loading") : t("eudr.load")}</Button>
+            <Button onClick={openGate}>{t("eudr.load")}</Button>
           </div>
 
           {/* DFID strip */}
@@ -106,6 +159,60 @@ export default function EudrScreen() {
               <Badge variant="outline">{stmt.identity.year}</Badge>
             </div>
           </div>
+
+          {/* Trilho de due diligence — o coração da DDS */}
+          <section className="mb-5 rounded-2xl border border-border bg-card p-6">
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="flex items-center gap-2 text-[18px] font-semibold">
+                <ShieldCheck className="h-[18px] w-[18px] text-primary" />
+                {t("eudr.dd_t")}
+              </h3>
+              <span className="font-mono text-[11px] text-muted-foreground">{t("eudr.dd_sources")}</span>
+            </div>
+            <p className="mb-4 max-w-2xl text-[13px] text-muted-foreground">{t("eudr.dd_desc")}</p>
+
+            <div className="space-y-5">
+              {stmt.due_diligence.map((dd) => (
+                <div key={dd.identifier_type + dd.identifier}>
+                  <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{dd.identifier_type}</span>
+                    <span className="break-all font-mono text-[12.5px] font-medium">{dd.identifier}</span>
+                    {dd.verdict && (
+                      <span className="ml-auto inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold" style={statusTone(dd.verdict)}>
+                        {dd.verdict}{dd.score != null ? ` · ${dd.score}` : ""}
+                      </span>
+                    )}
+                  </div>
+                  <div className="overflow-hidden rounded-xl border border-border">
+                    <div className="grid grid-cols-1 divide-y divide-border bg-border" style={{ gap: 1 }}>
+                      {dd.checks.map((c, i) => {
+                        const tone = statusTone(c.status);
+                        return (
+                          <div key={i} className="flex flex-wrap items-center gap-x-4 gap-y-1.5 bg-card px-4 py-3">
+                            <div className="min-w-[140px] flex-1">
+                              <div className="text-[14px] font-medium">{c.source}</div>
+                              {c.category && <div className="text-[12px] text-muted-foreground">{c.category}</div>}
+                            </div>
+                            {c.message && <div className="flex-[2] text-[12.5px] text-muted-foreground">{c.message}</div>}
+                            <div className="flex items-center gap-3">
+                              {(c.data_source || c.last_update) && (
+                                <span className="font-mono text-[10.5px] text-muted-foreground">
+                                  {c.data_source}{c.last_update ? ` · ${c.last_update}` : ""}
+                                </span>
+                              )}
+                              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold" style={tone}>
+                                {c.status}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
             {/* Origin + map */}
@@ -156,18 +263,57 @@ export default function EudrScreen() {
             </div>
           </div>
 
+          {/* CTA gated — gerar a DDS real */}
+          <div className="mt-6 overflow-hidden rounded-2xl border border-primary/30" style={{ background: "hsl(var(--primary) / 0.06)" }}>
+            <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <div>
+                  <div className="text-[16px] font-semibold">{t("eudr.gate_card_t")}</div>
+                  <p className="mt-1 max-w-xl text-[13.5px] text-muted-foreground">{t("eudr.gate_card_desc")}</p>
+                </div>
+              </div>
+              <Button size="lg" className="shrink-0" onClick={openGate}>
+                {t("eudr.gate_card_cta")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
           <div className="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div className="flex-1 rounded-xl p-3.5" style={{ background: "hsl(var(--muted) / 0.6)" }}>
               <p className="text-[12.5px] leading-snug text-muted-foreground">{t("eudr.honesty")}</p>
             </div>
             <div className="shrink-0 font-mono text-[11px] text-muted-foreground sm:text-right">
               <div>{t("eudr.generated")}: {generatedAt}</div>
-              <div className="mt-0.5">{t("eudr.embed")}</div>
+              <div className="mt-0.5">{t("eudr.demo_tag")}</div>
             </div>
           </div>
         </div>
       </main>
       <Footer />
+
+      {/* Popup de gate → contato */}
+      <Dialog open={gateOpen} onOpenChange={setGateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              {t("eudr.gate_title")}
+            </DialogTitle>
+            <DialogDescription className="pt-1 text-[14px] leading-relaxed">
+              {t("eudr.gate_desc")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2 gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setGateOpen(false)}>{t("eudr.gate_close")}</Button>
+            <Button onClick={() => navigate("/contato")}>
+              {t("eudr.gate_cta")}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

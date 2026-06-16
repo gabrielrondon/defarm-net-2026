@@ -9,7 +9,6 @@ export function Footer() {
   const footerLinks = {
     produto: [
       { name: t("footer.traceability"), href: "/" },
-      { name: t("footer.compliance"), href: "/eudr" },
       { name: t("footer.tokenization"), href: "/cadastro" },
     ],
     empresa: [
