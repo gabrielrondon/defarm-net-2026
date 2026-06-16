@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AnchorStatus } from "@/components/proof";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 // /cadastro (signup self-serve do produtor) — visual Ledger v2 (chunk 2).
 // VISUAL do design; LÓGICA real preservada: useAuth().register(...) -> /app,
@@ -113,13 +114,8 @@ export default function Cadastro() {
           }}
         />
         <div className="relative max-w-sm">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="grid h-7 w-7 place-items-center rounded-[7px] bg-primary">
-              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-                <path d="M12 3 21 12 12 21 3 12Z" fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <span className="font-display text-[19px] font-bold tracking-tight">DeFarm</span>
+          <Link to="/" className="flex items-center">
+            <img src={logo} alt="DeFarm" className="h-8" />
           </Link>
           <h2 className="mt-8 text-[32px] font-bold leading-[1.05] tracking-tight" style={{ textWrap: "balance" }}>
             {t("signup.panel_title")}
