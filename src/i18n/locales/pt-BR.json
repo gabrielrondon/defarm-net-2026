@@ -451,27 +451,6 @@
       }
     }
   },
-  "about": {
-    "title": "Sobre a",
-    "titleHighlight": "DeFarm",
-    "subtitle": "Transformando a agropecuária brasileira com tecnologia e transparência",
-    "story1": "A DeFarm nasceu da necessidade de trazer mais transparência e confiança para a cadeia produtiva agrícola brasileira. Fundada em 2025 por especialistas em tecnologia blockchain e agronegócio, nossa missão é conectar cada elo da cadeia com dados verificáveis e imutáveis.",
-    "story2": "Acreditamos que a rastreabilidade não é apenas uma exigência regulatória, mas uma oportunidade de valorizar a produção brasileira no mercado global. Com a DeFarm, produtores podem comprovar a qualidade e origem de seus produtos, frigoríficos garantem compliance total, e consumidores têm acesso à história completa do que consomem.",
-    "stats": {
-      "0": { "number": "2025", "label": "Ano de fundação" },
-      "1": { "number": "20.000+", "label": "Animais rastreados" },
-      "2": { "number": "143", "label": "Produtores parceiros" },
-      "3": { "number": "15", "label": "Estados atendidos" }
-    },
-    "valuesTitle": "Nossos",
-    "valuesHighlight": "Valores",
-    "values": {
-      "0": { "title": "Missão", "description": "Revolucionar a rastreabilidade agrícola brasileira, garantindo transparência e confiança em toda a cadeia produtiva." },
-      "1": { "title": "Propósito", "description": "Conectar produtores, indústria e consumidores através de tecnologia acessível e dados confiáveis." },
-      "2": { "title": "Integridade", "description": "Dados imutáveis e verificáveis. Nossa plataforma blockchain garante que cada informação seja verdadeira." },
-      "3": { "title": "Colaboração", "description": "Trabalhamos lado a lado com todos os participantes da cadeia para criar soluções que funcionam na prática." }
-    }
-  },
   "contact": {
     "title": "Entre em",
     "titleHighlight": "Contato",
