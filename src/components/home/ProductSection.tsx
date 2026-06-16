@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { BandChip } from "@/components/proof";
 
 // "A prova vira produto" — teasers do Score e do EUDR.
@@ -26,8 +25,8 @@ export function ProductSection() {
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
-          {/* Score */}
+        <div className="mx-auto max-w-xl">
+          {/* Score (EUDR fica fora da landing — acessível direto em /eudr) */}
           <div className="flex flex-col rounded-2xl border border-border bg-card p-8">
             <div className="mb-6 flex min-h-[2rem] items-center justify-end gap-2">
               <BandChip band="B" />
@@ -41,24 +40,6 @@ export function ProductSection() {
               <Button asChild variant="outline">
                 <Link to="/score">
                   {t("home.prod.score_cta")} <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-
-          {/* EUDR */}
-          <div className="flex flex-col rounded-2xl border border-border bg-card p-8">
-            <div className="mb-6 flex min-h-[2rem] items-center justify-end">
-              <Badge className="border-transparent bg-primary/10 text-primary">{t("eudr.ready")}</Badge>
-            </div>
-            <h3 className="mb-2 text-[22px] font-bold tracking-tight">{t("home.prod.eudr_t")}</h3>
-            <p className="mb-7 text-[15px] leading-relaxed text-muted-foreground" style={{ textWrap: "pretty" }}>
-              {t("home.prod.eudr_d")}
-            </p>
-            <div className="mt-auto">
-              <Button asChild variant="outline">
-                <Link to="/eudr">
-                  {t("home.prod.eudr_cta")} <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
