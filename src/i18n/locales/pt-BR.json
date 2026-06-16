@@ -148,6 +148,18 @@
     "export": "Exportar PDF",
     "embed": "Embutível no verificador público /i/:dfid"
   },
+  "pgate": {
+    "title": "Bem-vindo à DeFarm",
+    "desc": "Estamos liberando o acesso ao painel aos poucos. Para entrar na fila, informe o CAR da sua propriedade — nossa equipe valida e entra em contato.",
+    "car_label": "CAR da propriedade",
+    "car_ph": "Ex.: MS-5002704-XXXXXXXX…",
+    "submit": "Solicitar acesso",
+    "logout": "Sair",
+    "car_required": "Informe o CAR da propriedade.",
+    "err": "Não foi possível enviar. Tente novamente.",
+    "ok_title": "Solicitação recebida",
+    "ok_desc": "Recebemos o CAR da sua propriedade. Nossa equipe vai validar e entrar em contato. Obrigado!"
+  },
   "integ": { "label": "Integrado aos sistemas que o agro já usa" },
   "trust": {
     "eyebrow": "Modelo de confiança",

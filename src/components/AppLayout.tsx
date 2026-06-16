@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logoIcon from "@/assets/logo-icon.png";
 import { useQuery } from "@tanstack/react-query";
+import { ProducerGate } from "@/components/ProducerGate";
 import { getMyCapabilities } from "@/lib/api/capabilities";
 import { getMyJoinRequests, requestEmailVerification } from "@/lib/defarm-api";
 import { useToast } from "@/hooks/use-toast";
@@ -278,6 +279,20 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  // Gate do produtor (decisão Gabriel): produtor ainda não acessa o dashboard.
+  // Recebe um popup bloqueante que só captura o CAR (claim + e-mail) — protege a
+  // UX da concorrência e captura o lead. Admin e demais papéis seguem normais.
+  // Para liberar o dashboard depois, basta remover este early-return.
+  if (!user?.is_admin && workspaceType === "producer") {
+    return (
+      <ProducerGate
+        userName={user?.full_name || user?.username || ""}
+        userEmail={user?.email || ""}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   return (
