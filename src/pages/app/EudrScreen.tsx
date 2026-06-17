@@ -90,6 +90,15 @@ function statusTone(s: string): { color: string; bg: string } {
   return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.7)" };
 }
 
+// Defesa no front: o backend já mascara o CNPJ/CPF do operador, mas se algum dia
+// vier cru, mascara aqui também (não vaza identificador sensível). Idempotente.
+function ddIdDisplay(type: string, id: string): string {
+  const sensitive = type === "CNPJ" || type === "CPF";
+  if (!sensitive || id.includes("•")) return id;
+  const t = id.trim();
+  return t.length <= 5 ? t : `•••• ${t.slice(-5)}`;
+}
+
 function KV({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2.5">
@@ -131,13 +140,15 @@ export default function EudrScreen() {
   const originCar = stmt.origin[0]?.car;
   useEffect(() => {
     setMapGeo(null);
-    if (!originCar) return;
+    // Só busca o mapa real de uma DDS REAL (emitida/consultada). No demo/estado
+    // vazio o CAR é fake/inexistente → evita 404 e chamada inútil à Check a cada load.
+    if (!originCar || (view !== "emitted" && view !== "consulted")) return;
     let cancelled = false;
     getCarGeoJSON(originCar, { skipAuth: true })
       .then((g) => { if (!cancelled) setMapGeo(g); })
-      .catch(() => { /* CAR sintético/sem geometria → placeholder */ });
+      .catch(() => { /* CAR sem geometria → placeholder */ });
     return () => { cancelled = true; };
-  }, [originCar]);
+  }, [originCar, view]);
 
   const openGate = (reason: "demo" | "credits" = "demo") => {
     setGateReason(reason);
@@ -353,7 +364,7 @@ export default function EudrScreen() {
                 <div key={dd.identifier_type + dd.identifier}>
                   <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{dd.identifier_type}</span>
-                    <span className="break-all font-mono text-[12.5px] font-medium">{dd.identifier}</span>
+                    <span className="break-all font-mono text-[12.5px] font-medium">{ddIdDisplay(dd.identifier_type, dd.identifier)}</span>
                     {dd.verdict && (
                       <span className="ml-auto inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold" style={statusTone(dd.verdict)}>
                         {dd.verdict}{dd.score != null ? ` · ${dd.score}` : ""}
