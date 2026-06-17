@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { FileText, Search, Lock, ArrowRight, ShieldCheck } from "lucide-react";
+import { FileText, Search, Lock, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
-import type { EudrStatement } from "@/lib/api/products";
+import { emitEudr, type EudrStatement } from "@/lib/api/products";
 
 // Tela "Declaração de Due Diligence (EUDR)" — VITRINE GATED. Por decisão de
 // produto (e §6.4 do paper EUDR), defarm.net/eudr é demonstração: mostra o
@@ -98,10 +99,40 @@ function KV({ k, v, mono }: { k: string; v: React.ReactNode; mono?: boolean }) {
 export default function EudrScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
-  // Tela é sempre demonstração; qualquer ação abre o gate.
-  const stmt = DEMO;
-  const openGate = () => setGateOpen(true);
+  const [gateReason, setGateReason] = useState<"demo" | "credits">("demo");
+  // Anônimo: demonstração (DEMO) + qualquer ação abre o gate de contato.
+  // Logado: emite a DDS real (POST /eudr/emit, consome créditos); ao emitir, o
+  // statement real substitui o DEMO. Sem saldo → gate "precisa de créditos".
+  const [stmt, setStmt] = useState<EudrStatement>(DEMO);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [emitInfo, setEmitInfo] = useState<{ charged: number; balance: number | null } | null>(null);
+
+  const openGate = (reason: "demo" | "credits" = "demo") => {
+    setGateReason(reason);
+    setGateOpen(true);
+  };
+  const emit = async () => {
+    const v = input.trim();
+    if (!v) return;
+    setLoading(true);
+    try {
+      const r = await emitEudr(v);
+      if (r.emitted && r.statement) {
+        setStmt(r.statement);
+        setEmitInfo({ charged: r.charged_credits, balance: r.balance_remaining });
+      } else {
+        openGate("credits");
+      }
+    } catch {
+      openGate("credits");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const isDemo = !emitInfo;
 
   const o = stmt.origin[0];
   const anchor = anchorStateOf(stmt.immutability.anchor_status);
@@ -124,31 +155,56 @@ export default function EudrScreen() {
               <p className="mt-2 max-w-2xl text-[16px] text-muted-foreground" style={{ textWrap: "pretty" }}>{t("eudr.sub")}</p>
             </div>
             <div className="flex flex-col items-end gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em]" style={{ background: "hsl(var(--muted) / 0.7)", color: "hsl(var(--muted-foreground))" }}>
-                {t("eudr.demo_tag")}
-              </span>
-              <Button variant="outline" size="sm" onClick={openGate}>
+              {isDemo && (
+                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em]" style={{ background: "hsl(var(--muted) / 0.7)", color: "hsl(var(--muted-foreground))" }}>
+                  {t("eudr.demo_tag")}
+                </span>
+              )}
+              <Button variant="outline" size="sm" onClick={() => openGate("demo")}>
                 <FileText className="mr-1.5 h-[15px] w-[15px]" />
                 {t("eudr.export")}
               </Button>
             </div>
           </header>
 
-          {/* DFID lookup — gated */}
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row">
+          {/* DFID lookup — logado emite (consome crédito); anônimo cai no gate */}
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
-              <Input
-                readOnly
-                onFocus={openGate}
-                onClick={openGate}
-                value=""
-                placeholder="DFID-BEEF-BR-2026-…"
-                className="h-11 cursor-pointer pl-11 font-mono text-[13px]"
-              />
+              {isAuthenticated ? (
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !loading && emit()}
+                  placeholder="DFID-BEEF-BR-2026-…"
+                  className="h-11 pl-11 font-mono text-[13px]"
+                />
+              ) : (
+                <Input
+                  readOnly
+                  onFocus={() => openGate("demo")}
+                  onClick={() => openGate("demo")}
+                  value=""
+                  placeholder="DFID-BEEF-BR-2026-…"
+                  className="h-11 cursor-pointer pl-11 font-mono text-[13px]"
+                />
+              )}
             </div>
-            <Button onClick={openGate}>{t("eudr.load")}</Button>
+            {isAuthenticated ? (
+              <Button onClick={emit} disabled={loading || !input.trim()}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("eudr.emit_cta")}
+              </Button>
+            ) : (
+              <Button onClick={() => openGate("demo")}>{t("eudr.load")}</Button>
+            )}
           </div>
+          {emitInfo && (
+            <div className="mb-5 rounded-xl border border-primary/30 px-4 py-3 text-[13px]" style={{ background: "hsl(var(--primary) / 0.07)" }}>
+              {t("eudr.emit_ok", { credits: emitInfo.charged })}
+              {emitInfo.balance != null ? ` · ${t("eudr.emit_balance", { balance: emitInfo.balance })}` : ""}
+            </div>
+          )}
 
           {/* DFID strip */}
           <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-border bg-card p-5">
@@ -273,7 +329,7 @@ export default function EudrScreen() {
                   <p className="mt-1 max-w-xl text-[13.5px] text-muted-foreground">{t("eudr.gate_card_desc")}</p>
                 </div>
               </div>
-              <Button size="lg" className="shrink-0" onClick={openGate}>
+              <Button size="lg" className="shrink-0" onClick={() => openGate("demo")}>
                 {t("eudr.gate_card_cta")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -286,7 +342,7 @@ export default function EudrScreen() {
             </div>
             <div className="shrink-0 font-mono text-[11px] text-muted-foreground sm:text-right">
               <div>{t("eudr.generated")}: {generatedAt}</div>
-              <div className="mt-0.5">{t("eudr.demo_tag")}</div>
+              {isDemo && <div className="mt-0.5">{t("eudr.demo_tag")}</div>}
             </div>
           </div>
         </div>
@@ -299,10 +355,10 @@ export default function EudrScreen() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              {t("eudr.gate_title")}
+              {gateReason === "credits" ? t("eudr.credits_title") : t("eudr.gate_title")}
             </DialogTitle>
             <DialogDescription className="pt-1 text-[14px] leading-relaxed">
-              {t("eudr.gate_desc")}
+              {gateReason === "credits" ? t("eudr.credits_desc") : t("eudr.gate_desc")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-2 gap-2 sm:gap-2">
