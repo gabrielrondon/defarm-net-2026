@@ -140,6 +140,8 @@
     "empty_t": "Emita uma Declaração de Due Diligence",
     "empty_d": "Informe o DFID de um ativo acima e clique em 'Emitir DDS'. As checagens (PRODES/DETER, SICAR, IBAMA, FUNAI, ICMBio, Lista Suja) rodam na hora e consomem créditos.",
     "export_soon": "Exportação em PDF em breve.",
+    "balance_label": "Saldo",
+    "cost_hint": "cada emissão custa 50 créditos",
     "credits_title": "Você precisa de créditos",
     "credits_desc": "Sua conta não tem créditos suficientes para emitir esta Declaração. Fale com a gente para provisionar créditos no seu workspace.",
     "ready": "EUDR ready",

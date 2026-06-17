@@ -140,6 +140,8 @@
     "empty_t": "Emit a Due Diligence Statement",
     "empty_d": "Enter an asset's DFID above and click 'Emit DDS'. The checks (PRODES/DETER, SICAR, IBAMA, FUNAI, ICMBio, slave-labor list) run on the spot and consume credits.",
     "export_soon": "PDF export coming soon.",
+    "balance_label": "Balance",
+    "cost_hint": "each emission costs 50 credits",
     "credits_title": "You need credits",
     "credits_desc": "Your account doesn't have enough credits to emit this Statement. Talk to us to provision credits for your workspace.",
     "ready": "EUDR ready",
