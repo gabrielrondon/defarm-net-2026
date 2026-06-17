@@ -302,6 +302,15 @@ function shortMiddle(value: string, head = 4, tail = 4): string {
   return `${value.slice(0, head)}...${value.slice(-tail)}`;
 }
 
+// Máscara pública (#44): oculta início+meio, mostra só os dígitos finais. Usada
+// em identificadores sensíveis (CHIP/SISBOV) quando o visitante NÃO está logado.
+const SENSITIVE_PUBLIC_IDS = new Set(["sisbov", "chip", "rfid", "brinco"]);
+function maskTail(value: string, visible = 4): string {
+  const v = (value ?? "").trim();
+  if (v.length <= visible) return v;
+  return `•••• ${v.slice(-visible)}`;
+}
+
 function normalizeKey(key: string): string {
   return key.trim().toLowerCase();
 }
@@ -2376,13 +2385,15 @@ export default function PublicItem() {
                               href={sisbovDfidUrl}
                               className="text-sm font-medium text-primary break-all hover:underline"
                             >
-                              {sisbov}
+                              {isAuthenticated ? sisbov : maskTail(sisbov)}
                             </a>
                             <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, metadataLocale === "en" ? "SISBOV number" : "SISBOV")}>
-                                <Copy className="h-3 w-3 mr-1" />
-                                {metadataLocale === "en" ? "Copy number" : "Copiar número"}
-                              </Button>
+                              {isAuthenticated && (
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, metadataLocale === "en" ? "SISBOV number" : "SISBOV")}>
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  {metadataLocale === "en" ? "Copy number" : "Copiar número"}
+                                </Button>
+                              )}
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(refUrl, metadataLocale === "en" ? "SISBOV link" : "Link SISBOV")}>
                                 <Link2 className="h-3 w-3 mr-1" />
                                 {metadataLocale === "en" ? "Copy link" : "Copiar link"}
@@ -2525,7 +2536,11 @@ export default function PublicItem() {
                               {compactJson(value)}
                             </pre>
                           ) : (
-                            <p className="text-sm font-medium text-foreground mt-0.5 break-words">{String(value ?? "-")}</p>
+                            <p className="text-sm font-medium text-foreground mt-0.5 break-words">
+                              {!isAuthenticated && SENSITIVE_PUBLIC_IDS.has(normalized)
+                                ? maskTail(String(value ?? ""))
+                                : String(value ?? "-")}
+                            </p>
                           )}
                         </div>
                       );

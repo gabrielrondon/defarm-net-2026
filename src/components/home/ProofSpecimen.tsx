@@ -32,6 +32,12 @@ function maskId(s: string) {
   return s.length <= 9 ? s : `${s.slice(0, 4)} •••• ${s.slice(-4)}`;
 }
 
+// Nome da fazenda mascarado na vitrine pública (#44): mostra só o início.
+function maskFarm(name: string) {
+  const n = (name ?? "").trim();
+  return n.length <= 3 ? n : `${n.slice(0, 3)}•••`;
+}
+
 export function ProofSpecimen() {
   const { t } = useTranslation();
   const [i, setI] = useState(0);
@@ -97,7 +103,7 @@ export function ProofSpecimen() {
           </span>
         </div>
         <div className="mb-1 break-all font-mono text-[15px] font-medium tracking-tight sm:text-[17px]">{s.dfid}</div>
-        <div className="mb-4 font-mono text-[12px] text-muted-foreground">{s.farm} · CAR {maskId(s.car)}</div>
+        <div className="mb-4 font-mono text-[12px] text-muted-foreground">{maskFarm(s.farm)} · CAR {maskId(s.car)}</div>
 
         <Link
           to={verifyPath}
