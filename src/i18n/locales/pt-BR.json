@@ -132,7 +132,7 @@
     "emit_ok": "DDS emitida · −{{credits}} créditos",
     "emit_balance": "saldo: {{balance}}",
     "emit_error": "Falha ao emitir a DDS. Tente novamente em instantes.",
-    "emit_incomplete": "emitida com dados incompletos — origem/operador não resolvidos na fonte.",
+    "emit_incomplete": "emitida com dados incompletos — origem e/ou operador não resolvidos na fonte.",
     "consult_ok": "Consultando DDS emitida em {{at}} (sem custo).",
     "consult_error": "Não consegui abrir essa emissão.",
     "my_dds": "Minhas DDS emitidas",

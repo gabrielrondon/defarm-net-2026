@@ -132,7 +132,7 @@
     "emit_ok": "DDS emitted · −{{credits}} credits",
     "emit_balance": "balance: {{balance}}",
     "emit_error": "Failed to emit the DDS. Please try again shortly.",
-    "emit_incomplete": "emitted with incomplete data — origin/operator not resolved at source.",
+    "emit_incomplete": "emitted with incomplete data — origin and/or operator not resolved at source.",
     "consult_ok": "Viewing DDS emitted on {{at}} (no charge).",
     "consult_error": "Couldn't open this emission.",
     "my_dds": "My emitted DDS",
