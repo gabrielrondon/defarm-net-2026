@@ -99,3 +99,19 @@ export interface EudrStatement {
 export function getEudrStatement(dfid: string): Promise<EudrStatement> {
   return registryRequest<EudrStatement>(`/eudr/statement${buildQueryString({ dfid })}`);
 }
+
+// Emitir DDS EUDR (produto pago, T2 fase 1): POST /eudr/emit consome créditos do
+// workspace e persiste a emissão datada. emitted=false quando sem saldo / não
+// provisionado / inativo → frontend mostra o funil de créditos.
+export interface EudrEmitResponse {
+  emitted: boolean;
+  reason: string | null; // insufficient_credits | not_provisioned | inactive
+  charged_credits: number;
+  balance_remaining: number | null;
+  emission_id: string | null;
+  emitted_at: string | null;
+  statement: EudrStatement | null;
+}
+export function emitEudr(dfid: string): Promise<EudrEmitResponse> {
+  return registryRequest<EudrEmitResponse>(`/eudr/emit${buildQueryString({ dfid })}`, { method: "POST" });
+}
