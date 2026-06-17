@@ -175,6 +175,7 @@
   },
   "spec": {
     "live": "Na rede",
+    "phrase": "Um rebanho em {{local}}, registrado e verificável.",
     "verify": "Escaneie pra verificar",
     "label": "Espécime de prova",
     "country": "BR",
