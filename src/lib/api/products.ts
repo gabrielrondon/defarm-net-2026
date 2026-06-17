@@ -133,3 +133,15 @@ export function listEudrEmissions(): Promise<EudrEmissionSummary[]> {
 export function getEudrEmission(id: string): Promise<EudrEmissionDetail> {
   return registryRequest<EudrEmissionDetail>(`/eudr/emissions/${encodeURIComponent(id)}`);
 }
+
+// Saldo de créditos do workspace logado (GET /partner/usage) — pro chip de saldo.
+export interface PartnerUsage {
+  balance_remaining: number;
+  tokenizations_total: number;
+  tokenizations_today: number;
+  tokenizations_month: number;
+  holds_pending: number;
+}
+export function getPartnerUsage(): Promise<PartnerUsage> {
+  return registryRequest<PartnerUsage>("/partner/usage");
+}

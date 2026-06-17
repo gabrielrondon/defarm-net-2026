@@ -18,7 +18,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
-import { emitEudr, listEudrEmissions, getEudrEmission, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
+import { PropertyMap } from "@/components/onboarding/PropertyMap";
+import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
+import { emitEudr, listEudrEmissions, getEudrEmission, getPartnerUsage, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
 
 // Tela "Declaração de Due Diligence (EUDR)" — VITRINE GATED. Por decisão de
 // produto (e §6.4 do paper EUDR), defarm.net/eudr é demonstração: mostra o
@@ -114,12 +116,28 @@ export default function EudrScreen() {
   const [emitInfo, setEmitInfo] = useState<{ charged: number; balance: number | null } | null>(null);
   const [consultAt, setConsultAt] = useState<string | null>(null);
   const [emissions, setEmissions] = useState<EudrEmissionSummary[]>([]);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [mapGeo, setMapGeo] = useState<CarGeoJSON | null>(null);
 
   const loadEmissions = () => {
     if (!isAuthenticated) return;
     listEudrEmissions().then(setEmissions).catch(() => {});
+    getPartnerUsage().then((u) => setBalance(u.balance_remaining)).catch(() => {});
   };
   useEffect(loadEmissions, [isAuthenticated]);
+
+  // Mapa REAL do polígono (satélite + CAR via /car/:car/geojson), como em /i/:dfid.
+  // Busca pro CAR de origem do statement; se não resolver, cai no placeholder.
+  const originCar = stmt.origin[0]?.car;
+  useEffect(() => {
+    setMapGeo(null);
+    if (!originCar) return;
+    let cancelled = false;
+    getCarGeoJSON(originCar, { skipAuth: true })
+      .then((g) => { if (!cancelled) setMapGeo(g); })
+      .catch(() => { /* CAR sintético/sem geometria → placeholder */ });
+    return () => { cancelled = true; };
+  }, [originCar]);
 
   const openGate = (reason: "demo" | "credits" = "demo") => {
     setGateReason(reason);
@@ -207,6 +225,16 @@ export default function EudrScreen() {
               )}
             </div>
           </header>
+
+          {/* Saldo de créditos (logado) */}
+          {isAuthenticated && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-[12.5px]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 font-mono text-muted-foreground">
+                {t("eudr.balance_label")}: <span className="font-semibold text-foreground">{balance != null ? balance : "…"}</span>
+              </span>
+              <span className="text-muted-foreground">{t("eudr.cost_hint")}</span>
+            </div>
+          )}
 
           {/* DFID lookup — logado emite (consome crédito); anônimo cai no gate */}
           <div className="mb-3 flex flex-col gap-3 sm:flex-row">
@@ -374,7 +402,11 @@ export default function EudrScreen() {
                   </span>
                 )}
               </div>
-              <PolygonMap ok={complianceOk} height={220} ring={ring} />
+              {mapGeo ? (
+                <PropertyMap geojson={mapGeo} className="h-[220px] w-full overflow-hidden rounded-xl" />
+              ) : (
+                <PolygonMap ok={complianceOk} height={220} ring={ring} />
+              )}
               <div className="mt-3 flex items-center gap-2 text-muted-foreground">
                 <span className="font-mono text-[11px]">{t("eudr.map_hint")}</span>
                 {o?.area_ha != null && <span className="ml-auto font-mono text-[11px]">{o.area_ha} ha</span>}
@@ -388,18 +420,8 @@ export default function EudrScreen() {
               )}
             </div>
 
-            {/* Identity + immutability */}
+            {/* Imutabilidade — 1 card compacto (cadeia/país/ano já estão no topo) */}
             <div className="space-y-5">
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <h3 className="mb-2 text-[18px] font-semibold">{t("eudr.id_t")}</h3>
-                <div>
-                  <KV k={t("eudr.id_chain")} v={stmt.identity.value_chain} />
-                  <KV k={t("eudr.id_country")} v={stmt.identity.country} />
-                  <KV k={t("eudr.id_year")} v={stmt.identity.year} mono />
-                  <KV k={t("eudr.id_status")} v={<span className="inline-flex items-center gap-1.5" style={{ color: "hsl(var(--primary-deep))" }}><span className="h-1.5 w-1.5 rounded-full bg-primary" />{t("eudr.id_active")}</span>} />
-                </div>
-              </div>
-
               <div className="rounded-2xl border border-border bg-card p-6">
                 <h3 className="mb-4 text-[18px] font-semibold">{t("eudr.imut_t")}</h3>
                 <div className="mb-4"><AnchorStatus status={anchor} /></div>
