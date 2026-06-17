@@ -310,6 +310,13 @@ function maskTail(value: string, visible = 4): string {
   if (v.length <= visible) return v;
   return `•••• ${v.slice(-visible)}`;
 }
+// Mascara um identificador sensível (CHIP/SISBOV/...) pra visitante anônimo,
+// mantendo completo quando logado. Usado onde o identificador canônico é
+// re-renderizado fora da seção de metadados (hero, card do QR).
+function maskPublicValue(label: string, value: string, authed: boolean): string {
+  if (authed) return value;
+  return SENSITIVE_PUBLIC_IDS.has((label ?? "").toLowerCase()) ? maskTail(value) : value;
+}
 
 function normalizeKey(key: string): string {
   return key.trim().toLowerCase();
@@ -2058,7 +2065,7 @@ export default function PublicItem() {
               )}
               {canonicalIdentifier && (
                 <span className="text-xs text-stone-400 font-mono">
-                  {canonicalIdentifier.label}: {canonicalIdentifier.value}
+                  {canonicalIdentifier.label}: {maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated)}
                 </span>
               )}
             </div>
@@ -2085,7 +2092,7 @@ export default function PublicItem() {
             <AssetQRCode
               dfid={item.dfid}
               canonicalIdLabel={canonicalIdentifier?.label}
-              canonicalIdValue={canonicalIdentifier?.value}
+              canonicalIdValue={canonicalIdentifier ? maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated) : undefined}
               identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
               latestCid={latestContentVersion?.cid || undefined}
             />
