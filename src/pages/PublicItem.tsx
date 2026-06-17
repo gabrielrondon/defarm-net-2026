@@ -302,6 +302,22 @@ function shortMiddle(value: string, head = 4, tail = 4): string {
   return `${value.slice(0, head)}...${value.slice(-tail)}`;
 }
 
+// Máscara pública (#44): oculta início+meio, mostra só os dígitos finais. Usada
+// em identificadores sensíveis (CHIP/SISBOV) quando o visitante NÃO está logado.
+const SENSITIVE_PUBLIC_IDS = new Set(["sisbov", "chip", "rfid", "brinco"]);
+function maskTail(value: string, visible = 4): string {
+  const v = (value ?? "").trim();
+  if (v.length <= visible) return v;
+  return `•••• ${v.slice(-visible)}`;
+}
+// Mascara um identificador sensível (CHIP/SISBOV/...) pra visitante anônimo,
+// mantendo completo quando logado. Usado onde o identificador canônico é
+// re-renderizado fora da seção de metadados (hero, card do QR).
+function maskPublicValue(label: string, value: string, authed: boolean): string {
+  if (authed) return value;
+  return SENSITIVE_PUBLIC_IDS.has((label ?? "").toLowerCase()) ? maskTail(value) : value;
+}
+
 function normalizeKey(key: string): string {
   return key.trim().toLowerCase();
 }
@@ -2049,7 +2065,7 @@ export default function PublicItem() {
               )}
               {canonicalIdentifier && (
                 <span className="text-xs text-stone-400 font-mono">
-                  {canonicalIdentifier.label}: {canonicalIdentifier.value}
+                  {canonicalIdentifier.label}: {maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated)}
                 </span>
               )}
             </div>
@@ -2076,7 +2092,7 @@ export default function PublicItem() {
             <AssetQRCode
               dfid={item.dfid}
               canonicalIdLabel={canonicalIdentifier?.label}
-              canonicalIdValue={canonicalIdentifier?.value}
+              canonicalIdValue={canonicalIdentifier ? maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated) : undefined}
               identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
               latestCid={latestContentVersion?.cid || undefined}
             />
@@ -2376,13 +2392,15 @@ export default function PublicItem() {
                               href={sisbovDfidUrl}
                               className="text-sm font-medium text-primary break-all hover:underline"
                             >
-                              {sisbov}
+                              {isAuthenticated ? sisbov : maskTail(sisbov)}
                             </a>
                             <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, metadataLocale === "en" ? "SISBOV number" : "SISBOV")}>
-                                <Copy className="h-3 w-3 mr-1" />
-                                {metadataLocale === "en" ? "Copy number" : "Copiar número"}
-                              </Button>
+                              {isAuthenticated && (
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, metadataLocale === "en" ? "SISBOV number" : "SISBOV")}>
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  {metadataLocale === "en" ? "Copy number" : "Copiar número"}
+                                </Button>
+                              )}
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(refUrl, metadataLocale === "en" ? "SISBOV link" : "Link SISBOV")}>
                                 <Link2 className="h-3 w-3 mr-1" />
                                 {metadataLocale === "en" ? "Copy link" : "Copiar link"}
@@ -2525,7 +2543,11 @@ export default function PublicItem() {
                               {compactJson(value)}
                             </pre>
                           ) : (
-                            <p className="text-sm font-medium text-foreground mt-0.5 break-words">{String(value ?? "-")}</p>
+                            <p className="text-sm font-medium text-foreground mt-0.5 break-words">
+                              {!isAuthenticated && SENSITIVE_PUBLIC_IDS.has(normalized)
+                                ? maskTail(String(value ?? ""))
+                                : String(value ?? "-")}
+                            </p>
                           )}
                         </div>
                       );
