@@ -96,7 +96,7 @@ export function ProofSpecimen() {
           <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-foreground/70">{muniDisplay}</span>
         </div>
         <p className="mb-3 text-[19px] font-semibold leading-snug tracking-tight sm:text-[22px]" style={{ textWrap: "balance" }}>
-          {t("spec.phrase", { local: `${muniDisplay}-${ufDisplay}` })}
+          {t("spec.phrase", { local: `${muniDisplay} (${ufDisplay})` })}
         </p>
         <div className="mb-1 font-mono text-[11px] text-muted-foreground">{maskFarm(s.farm)} · CAR {maskId(s.car)}</div>
         <div className="mb-4 break-all font-mono text-[11px] text-muted-foreground/70">{s.dfid}</div>

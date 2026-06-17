@@ -180,7 +180,7 @@
   },
   "spec": {
     "live": "On the network",
-    "phrase": "A herd in {{local}}, registered and verifiable.",
+    "phrase": "A bovine registered and verifiable in {{local}}.",
     "verify": "Scan to verify",
     "label": "Proof specimen",
     "country": "BR",
