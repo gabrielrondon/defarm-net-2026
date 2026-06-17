@@ -176,6 +176,17 @@
     "ok_title": "Solicitação recebida",
     "ok_desc": "Recebemos o CAR da sua propriedade. Nossa equipe vai validar e entrar em contato. Obrigado!"
   },
+  "eudrv": {
+    "sub": "Verificação pública de uma Declaração já emitida. Confira o trilho de evidências, o veredito e a âncora on-chain — sem login.",
+    "loading": "Carregando a declaração…",
+    "notfound_t": "Nenhuma DDS emitida para este DFID",
+    "notfound_d": "Não encontramos uma Declaração de Due Diligence emitida para este identificador. Confira o DFID.",
+    "ready": "Conforme EUDR",
+    "partial": "Atenção — ver trilho",
+    "dd_desc": "Cada linha é uma fonte verificada pela DeFarm Check no momento da emissão. O operador (CNPJ/CPF) é mascarado por privacidade.",
+    "no_trail": "Esta emissão saiu sem trilho de due diligence (origem/operador não resolvidos na fonte).",
+    "note": "Verificação pública, sem login. A declaração mostra o trilho daquela data, ancorado on-chain (não adulterável). O CNPJ/CPF do operador fica protegido — só o resultado da Lista Suja é exibido."
+  },
   "integ": { "label": "Integrado aos sistemas que o agro já usa" },
   "trust": {
     "eyebrow": "Modelo de confiança",

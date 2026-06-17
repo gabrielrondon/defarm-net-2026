@@ -176,6 +176,17 @@
     "ok_title": "Request received",
     "ok_desc": "We received your property's CAR. Our team will validate and get in touch. Thank you!"
   },
+  "eudrv": {
+    "sub": "Public verification of an already-emitted Statement. Check the evidence trail, the verdict and the on-chain anchor — no login.",
+    "loading": "Loading the statement…",
+    "notfound_t": "No DDS emitted for this DFID",
+    "notfound_d": "We couldn't find a Due Diligence Statement emitted for this identifier. Check the DFID.",
+    "ready": "EUDR compliant",
+    "partial": "Attention — see trail",
+    "dd_desc": "Each row is a source verified by DeFarm Check at emission time. The operator (CNPJ/CPF) is masked for privacy.",
+    "no_trail": "This emission was issued without a due diligence trail (origin/operator not resolved at source).",
+    "note": "Public verification, no login. The statement shows the trail as of that date, anchored on-chain (tamper-proof). The operator's CNPJ/CPF stays protected — only the slave-labor list result is shown."
+  },
   "integ": { "label": "Plugged into the systems agriculture already uses" },
   "trust": {
     "eyebrow": "Trust model",
