@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import { AnchorStatus } from "@/components/proof";
+import { getCarPublicMeta, type CarPublicMeta } from "@/lib/check-api/car";
 
 // Espécime de prova — card "vivo": rotaciona DFIDs REAIS a cada ~4.2s com fade.
 // São itens reais da rede (cadeia DEFARM), ancorados on-chain e verificáveis em
@@ -45,6 +46,29 @@ export function ProofSpecimen() {
   const verifyPath = `/i/${s.dfid}`;
   const verifyUrl = `https://defarm.net${verifyPath}`;
 
+  // #42: área/UF/município REAIS da fonte (SICAR via /car/:car/geojson), por CAR,
+  // com cache. Fallback nos valores curados enquanto carrega / se a Check falhar.
+  // (DFID e fazenda seguem curados: propertyName não existe no SICAR.)
+  const [meta, setMeta] = useState<Record<string, CarPublicMeta>>({});
+  // CARs já tentados (sucesso OU falha) — evita refetch a cada reaparição do
+  // specimen e double-fetch em voo. Se a Check estiver fora, tenta 1x por CAR e
+  // fica no curado (sem spam de requests falhas).
+  const attempted = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const car = s.car;
+    if (attempted.current.has(car)) return;
+    attempted.current.add(car);
+    let cancelled = false;
+    getCarPublicMeta(car)
+      .then((m) => { if (!cancelled) setMeta((prev) => ({ ...prev, [car]: m })); })
+      .catch(() => { /* mantém os valores curados; CAR fica marcado como tentado */ });
+    return () => { cancelled = true; };
+  }, [s.car]);
+  const live = meta[s.car];
+  const ufDisplay = live?.state ?? s.uf;
+  const muniDisplay = live?.municipality ?? s.municipality;
+  const areaDisplay = live?.areaHa != null ? String(live.areaHa) : s.area;
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)]">
       {/* cycle progress line — restarts each swap */}
@@ -66,8 +90,8 @@ export function ProofSpecimen() {
 
       <div key={i} className="spec-rotate">
         <div className="mb-2 flex items-center gap-2">
-          <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground/70">{s.uf}</span>
-          <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-foreground/70">{s.municipality}</span>
+          <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground/70">{ufDisplay}</span>
+          <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-foreground/70">{muniDisplay}</span>
           <span className="ml-auto inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-primary">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />{t("spec.status")}
           </span>
@@ -87,7 +111,7 @@ export function ProofSpecimen() {
             <div className="mb-1.5 text-[12px] font-semibold text-foreground">{t("spec.verify")}</div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground">
               <span>{t("spec.issued")}</span><span className="text-foreground">{s.issued}</span>
-              <span>area_ha</span><span className="text-foreground">{s.area}</span>
+              <span>area_ha</span><span className="text-foreground">{areaDisplay}</span>
             </div>
           </div>
         </Link>

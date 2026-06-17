@@ -78,6 +78,37 @@ export async function getCarGeoJSON(carNumber: string, { skipAuth = false } = {}
   };
 }
 
+// Metadados públicos do CAR (inclui areaHa) lidos do bloco `properties` do
+// /car/:car/geojson — endpoint público, sem auth, com timeout. Usado pra exibir
+// área/UF/município reais da fonte (SICAR) sem depender de valores hardcoded.
+export interface CarPublicMeta {
+  carNumber: string;
+  status: string | null;
+  propertyName: string | null;
+  ownerName: string | null;
+  state: string | null;
+  municipality: string | null;
+  source: string | null;
+  areaHa: number | null;
+}
+
+export async function getCarPublicMeta(carNumber: string): Promise<CarPublicMeta> {
+  const res = await publicFetch<{ properties?: Partial<CarPublicMeta> }>(
+    `/car/${encodeURIComponent(carNumber)}/geojson`,
+  );
+  const p = res.properties ?? {};
+  return {
+    carNumber: p.carNumber ?? carNumber,
+    status: p.status ?? null,
+    propertyName: p.propertyName ?? null,
+    ownerName: p.ownerName ?? null,
+    state: p.state ?? null,
+    municipality: p.municipality ?? null,
+    source: p.source ?? null,
+    areaHa: typeof p.areaHa === "number" ? p.areaHa : null,
+  };
+}
+
 export async function batchQueryCars(carNumbers: string[]): Promise<CarMetadata[]> {
   return checkRequest<CarMetadata[]>("/car/batch", {
     method: "POST",
