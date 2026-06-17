@@ -164,8 +164,10 @@ export default function EudrScreen() {
       setLoading(false);
     }
   };
-  const isDemo = view === "demo";
-  const incomplete = !isDemo && !stmt.eudr_ready; // #51: emitida mas sem origem/operador resolvidos
+  const hasReal = view === "emitted" || view === "consulted";
+  const loggedEmpty = isAuthenticated && !hasReal; // logado, nada emitido/consultado → estado vazio
+  const showDemo = !isAuthenticated; // anônimo = vitrine demo (fixture + selo + gate de contato)
+  const incomplete = hasReal && !stmt.eudr_ready; // #51: emitida mas sem origem/operador resolvidos
 
   const o = stmt.origin[0];
   const anchor = anchorStateOf(stmt.immutability.anchor_status);
@@ -188,15 +190,21 @@ export default function EudrScreen() {
               <p className="mt-2 max-w-2xl text-[16px] text-muted-foreground" style={{ textWrap: "pretty" }}>{t("eudr.sub")}</p>
             </div>
             <div className="flex flex-col items-end gap-3">
-              {isDemo && (
+              {showDemo && (
                 <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em]" style={{ background: "hsl(var(--muted) / 0.7)", color: "hsl(var(--muted-foreground))" }}>
                   {t("eudr.demo_tag")}
                 </span>
               )}
-              <Button variant="outline" size="sm" onClick={() => openGate("demo")}>
-                <FileText className="mr-1.5 h-[15px] w-[15px]" />
-                {t("eudr.export")}
-              </Button>
+              {(showDemo || hasReal) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => (showDemo ? openGate("demo") : toast({ title: t("eudr.export_soon") }))}
+                >
+                  <FileText className="mr-1.5 h-[15px] w-[15px]" />
+                  {t("eudr.export")}
+                </Button>
+              )}
             </div>
           </header>
 
@@ -232,7 +240,7 @@ export default function EudrScreen() {
               <Button onClick={() => openGate("demo")}>{t("eudr.load")}</Button>
             )}
           </div>
-          {!isDemo && (
+          {hasReal && (
             <div
               className={"mb-5 rounded-xl border px-4 py-3 text-[13px] " + (incomplete ? "border-amber-300" : "border-primary/30")}
               style={{ background: incomplete ? "hsl(38 92% 50% / 0.08)" : "hsl(var(--primary) / 0.07)" }}
@@ -283,6 +291,14 @@ export default function EudrScreen() {
             </div>
           )}
 
+          {loggedEmpty ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+              <ShieldCheck className="mx-auto mb-3 h-8 w-8 text-primary/60" />
+              <p className="text-[15px] font-semibold">{t("eudr.empty_t")}</p>
+              <p className="mx-auto mt-1 max-w-md text-[13.5px] text-muted-foreground">{t("eudr.empty_d")}</p>
+            </div>
+          ) : (
+          <>
           {/* DFID strip */}
           <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-border bg-card p-5">
             <div className="break-all font-mono text-[15px] font-medium tracking-tight sm:text-[17px]">{stmt.dfid}</div>
@@ -396,22 +412,24 @@ export default function EudrScreen() {
             </div>
           </div>
 
-          {/* CTA gated — gerar a DDS real */}
-          <div className="mt-6 overflow-hidden rounded-2xl border border-primary/30" style={{ background: "hsl(var(--primary) / 0.06)" }}>
-            <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                <div>
-                  <div className="text-[16px] font-semibold">{t("eudr.gate_card_t")}</div>
-                  <p className="mt-1 max-w-xl text-[13.5px] text-muted-foreground">{t("eudr.gate_card_desc")}</p>
+          {/* CTA gated — só na vitrine anônima (gerar a DDS completa = contato) */}
+          {showDemo && (
+            <div className="mt-6 overflow-hidden rounded-2xl border border-primary/30" style={{ background: "hsl(var(--primary) / 0.06)" }}>
+              <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <Lock className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <div>
+                    <div className="text-[16px] font-semibold">{t("eudr.gate_card_t")}</div>
+                    <p className="mt-1 max-w-xl text-[13.5px] text-muted-foreground">{t("eudr.gate_card_desc")}</p>
+                  </div>
                 </div>
+                <Button size="lg" className="shrink-0" onClick={() => openGate("demo")}>
+                  {t("eudr.gate_card_cta")}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
-              <Button size="lg" className="shrink-0" onClick={() => openGate("demo")}>
-                {t("eudr.gate_card_cta")}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
             </div>
-          </div>
+          )}
 
           <div className="mt-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div className="flex-1 rounded-xl p-3.5" style={{ background: "hsl(var(--muted) / 0.6)" }}>
@@ -419,9 +437,11 @@ export default function EudrScreen() {
             </div>
             <div className="shrink-0 font-mono text-[11px] text-muted-foreground sm:text-right">
               <div>{t("eudr.generated")}: {generatedAt}</div>
-              {isDemo && <div className="mt-0.5">{t("eudr.demo_tag")}</div>}
+              {showDemo && <div className="mt-0.5">{t("eudr.demo_tag")}</div>}
             </div>
           </div>
+          </>
+          )}
         </div>
       </main>
       <Footer />
