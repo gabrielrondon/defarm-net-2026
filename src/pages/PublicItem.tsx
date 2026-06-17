@@ -64,6 +64,7 @@ import type { PublicItemEvent, PublicWorkspace } from "@/lib/api/types";
 import type { CheckResponse } from "@/lib/check-api/types";
 import { executeCheck } from "@/lib/check-api";
 import { getCarGeoJSON, getCarMetadata, type CarGeoJSON, type CarMetadata } from "@/lib/check-api/car";
+import { verifyEudrPublic } from "@/lib/api/products";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
@@ -1356,6 +1357,19 @@ export default function PublicItem() {
 
   const metadata = useMemo(() => ((item?.metadata || {}) as Record<string, unknown>), [item?.metadata]);
 
+  // #16: cross-link da Declaração EUDR — se o DFID tem DDS emitida, mostra um
+  // card pra /eudr/v/:dfid (verificação pública). Sem auth (endpoint público).
+  const [eudrDds, setEudrDds] = useState<{ ready: boolean } | null>(null);
+  useEffect(() => {
+    setEudrDds(null);
+    if (!resolvedDfid) return;
+    let cancelled = false;
+    verifyEudrPublic(resolvedDfid)
+      .then((r) => { if (!cancelled && r.found) setEudrDds({ ready: r.eudr_ready }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [resolvedDfid]);
+
   const weightMeta = useMemo(() => {
     const weightRaw = readAliasValue(metadata, WEIGHT_KEYS);
     const dateRaw = readAliasValue(metadata, WEIGHT_DATE_KEYS);
@@ -2342,6 +2356,36 @@ export default function PublicItem() {
                   Ver localizações
                 </Button>
               </div>
+            </div>
+          </section>
+        )}
+
+        {eudrDds && resolvedDfid && (
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                <div>
+                  <div className="text-sm font-semibold text-stone-900">
+                    {metadataLocale === "en" ? "EUDR Due Diligence Statement" : "Declaração de Due Diligence (EUDR)"}
+                  </div>
+                  <p className="mt-0.5 text-xs text-stone-600">
+                    {metadataLocale === "en"
+                      ? (eudrDds.ready
+                          ? "This asset has an emitted, anchored EUDR statement — verify it publicly."
+                          : "This asset has an emitted EUDR statement (with open points) — verify it publicly.")
+                      : (eudrDds.ready
+                          ? "Este ativo tem uma Declaração EUDR emitida e ancorada — confira publicamente."
+                          : "Este ativo tem uma Declaração EUDR emitida (com pontos em aberto) — confira publicamente.")}
+                  </p>
+                </div>
+              </div>
+              <Link
+                to={`/eudr/v/${encodeURIComponent(resolvedDfid)}`}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
+              >
+                {metadataLocale === "en" ? "View statement" : "Ver Declaração"} →
+              </Link>
             </div>
           </section>
         )}
