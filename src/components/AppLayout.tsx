@@ -3,14 +3,6 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   BookOpen,
   GitBranch,
   Package,
@@ -147,7 +139,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [demoSwitchLoading, setDemoSwitchLoading] = useState(false);
-  const [showProducerHint, setShowProducerHint] = useState(false);
   const workspaceType = user?.workspace_type || "producer";
   const workspaceMenu = navByWorkspace[workspaceType as WorkspaceType] ?? navByWorkspace.producer;
   const visibleNavItems = user?.is_admin
@@ -162,19 +153,10 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [isLoading, isAuthenticated, navigate]);
 
-  useEffect(() => {
-    if (!isAuthenticated || isLoading || !user) return;
-    if (user.is_admin) return;
-    if (workspaceType !== "producer") return;
-    setShowProducerHint(true);
-  }, [isAuthenticated, isLoading, user, workspaceType]);
-
   const handleLogout = async () => {
     await logout();
     navigate("/");
   };
-
-  const dismissProducerHint = () => setShowProducerHint(false);
 
   const { data: myApprovedJoinRequests = [] } = useQuery({
     queryKey: ["myJoinRequestsApproved"],
@@ -493,42 +475,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          <Dialog open={showProducerHint} onOpenChange={setShowProducerHint}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Bem-vindo à DeFarm</DialogTitle>
-                <DialogDescription>
-                  Seus dados aparecem aqui conforme integrações de parceiros e validações forem acontecendo.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>
-                  Se você ainda não vê itens, circuitos ou eventos, normalmente significa que o seu cadastro ainda
-                  não foi vinculado a dados enviados por integrações ativas.
-                </p>
-                <p>
-                  Quando houver vínculo confirmado (por propriedade/identificador), o portfólio passa a aparecer
-                  automaticamente.
-                </p>
-                <p>
-                  Você pode enviar agora uma solicitação de vínculo de propriedade (claim). Ela entra na fila de
-                  validação do admin.
-                </p>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowProducerHint(false);
-                    navigate("/app/claims");
-                  }}
-                >
-                  Solicitar vínculo de propriedade
-                </Button>
-                <Button onClick={dismissProducerHint}>Entendi</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
           {!user?.email_verified && (
             <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-center justify-between gap-3">
               <span>Seu email ainda não foi verificado. Verifique para aumentar a segurança da conta.</span>

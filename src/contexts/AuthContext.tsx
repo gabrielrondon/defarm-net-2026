@@ -214,6 +214,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: RegisterRequest) => {
     const response: AuthResponse = await apiRegister(data);
     await completeLogin(response, data.full_name || data.email, data.email);
+    // Garante workspace_type canônico (do /auth/me) logo após o cadastro, pra o
+    // gate do produtor disparar já na 1ª tela (não depender de refresh manual).
+    try {
+      await refreshUser();
+    } catch {
+      /* mantém o estado do completeLogin se /me falhar */
+    }
   };
 
   const logout = async () => {
