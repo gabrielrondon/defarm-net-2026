@@ -65,6 +65,7 @@ import CircuitDiscovery from "./pages/app/CircuitDiscovery";
 import JoinRequestsAdmin from "./pages/app/JoinRequestsAdmin";
 import PublicCircuit from "./pages/PublicCircuit";
 import PublicItem from "./pages/PublicItem";
+import PublicEudrVerify from "./pages/PublicEudrVerify";
 import CompareItems from "./pages/CompareItems";
 import EmbedPortfolio from "./pages/EmbedPortfolio";
 import AdminMetrics from "./pages/app/AdminMetrics";
@@ -232,6 +233,7 @@ const App = () => (
             <Route path="/para/:persona" element={<ParaPersona />} />
             <Route path="/score" element={<ScoreScreen />} />
             <Route path="/eudr" element={<EudrScreen />} />
+            <Route path="/eudr/v/:dfid" element={<PublicEudrVerify />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/privacy" element={<Privacidade />} />
             <Route path="/termos" element={<Termos />} />

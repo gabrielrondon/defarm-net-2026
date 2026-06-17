@@ -145,3 +145,15 @@ export interface PartnerUsage {
 export function getPartnerUsage(): Promise<PartnerUsage> {
   return registryRequest<PartnerUsage>("/partner/usage");
 }
+
+// Verificação PÚBLICA da DDS (sem login): terceiro confere a última emissão por DFID.
+export interface EudrPublicVerify {
+  dfid: string;
+  found: boolean;
+  emitted_at: string | null;
+  eudr_ready: boolean;
+  statement: EudrStatement | null; // snapshot datado (operador já mascarado)
+}
+export function verifyEudrPublic(dfid: string): Promise<EudrPublicVerify> {
+  return registryPublicRequest<EudrPublicVerify>(`/eudr/verify/${encodeURIComponent(dfid)}`);
+}
