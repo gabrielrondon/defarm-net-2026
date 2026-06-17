@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
@@ -50,15 +50,20 @@ export function ProofSpecimen() {
   // com cache. Fallback nos valores curados enquanto carrega / se a Check falhar.
   // (DFID e fazenda seguem curados: propertyName não existe no SICAR.)
   const [meta, setMeta] = useState<Record<string, CarPublicMeta>>({});
+  // CARs já tentados (sucesso OU falha) — evita refetch a cada reaparição do
+  // specimen e double-fetch em voo. Se a Check estiver fora, tenta 1x por CAR e
+  // fica no curado (sem spam de requests falhas).
+  const attempted = useRef<Set<string>>(new Set());
   useEffect(() => {
     const car = s.car;
-    if (meta[car]) return;
+    if (attempted.current.has(car)) return;
+    attempted.current.add(car);
     let cancelled = false;
     getCarPublicMeta(car)
       .then((m) => { if (!cancelled) setMeta((prev) => ({ ...prev, [car]: m })); })
-      .catch(() => { /* mantém os valores curados */ });
+      .catch(() => { /* mantém os valores curados; CAR fica marcado como tentado */ });
     return () => { cancelled = true; };
-  }, [s.car, meta]);
+  }, [s.car]);
   const live = meta[s.car];
   const ufDisplay = live?.state ?? s.uf;
   const muniDisplay = live?.municipality ?? s.municipality;
