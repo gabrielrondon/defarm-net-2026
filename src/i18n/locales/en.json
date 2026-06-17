@@ -185,7 +185,11 @@
     "partial": "Attention — see trail",
     "dd_desc": "Each row is a source verified by DeFarm Check at emission time. The operator (CNPJ/CPF) is masked for privacy.",
     "no_trail": "This emission was issued without a due diligence trail (origin/operator not resolved at source).",
-    "note": "Public verification, no login. The statement shows the trail as of that date, anchored on-chain (tamper-proof). The operator's CNPJ/CPF stays protected — only the slave-labor list result is shown."
+    "note": "Public verification, no login. The statement shows the trail as of that date, anchored on-chain (tamper-proof). The operator's CNPJ/CPF stays protected — only the slave-labor list result is shown.",
+    "share_t": "Public verification",
+    "share_d": "Scan the QR or share the link — any buyer verifies this DDS by DFID, no login.",
+    "copy_link": "Copy link",
+    "link_copied": "Link copied"
   },
   "integ": { "label": "Plugged into the systems agriculture already uses" },
   "trust": {

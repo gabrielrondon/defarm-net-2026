@@ -21,6 +21,7 @@ import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { emitEudr, listEudrEmissions, getEudrEmission, getPartnerUsage, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
+import { EudrVerifyShare } from "@/components/EudrVerifyShare";
 
 // Tela "Declaração de Due Diligence (EUDR)" — VITRINE GATED. Por decisão de
 // produto (e §6.4 do paper EUDR), defarm.net/eudr é demonstração: mostra o
@@ -296,6 +297,13 @@ export default function EudrScreen() {
                   <AlertTriangle className="h-3.5 w-3.5" /> {t("eudr.emit_incomplete")}
                 </span>
               )}
+            </div>
+          )}
+
+          {/* QR + link de partilha da verificação pública (DDS real) */}
+          {hasReal && (
+            <div className="mb-5">
+              <EudrVerifyShare dfid={stmt.dfid} />
             </div>
           )}
 

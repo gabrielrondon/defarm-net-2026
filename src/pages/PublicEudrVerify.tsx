@@ -8,6 +8,7 @@ import { AnchorStatus, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { verifyEudrPublic, type EudrStatement } from "@/lib/api/products";
+import { EudrVerifyShare } from "@/components/EudrVerifyShare";
 
 // Verificação PÚBLICA da DDS (EUDR) — o importador/auditor confere uma Declaração
 // já emitida por DFID, SEM login e SEM ser quem emitiu. Mostra o snapshot datado
@@ -98,6 +99,11 @@ export default function PublicEudrVerify() {
                 <div className="mt-3 border-t border-dashed border-border pt-3">
                   <AnchorStatus status={anchor} compact />
                 </div>
+              </div>
+
+              {/* QR + link de partilha (paridade com /i/:dfid) */}
+              <div className="mt-5">
+                <EudrVerifyShare dfid={stmt.dfid} />
               </div>
 
               {/* Trilho de due diligence (operador já mascarado) */}
