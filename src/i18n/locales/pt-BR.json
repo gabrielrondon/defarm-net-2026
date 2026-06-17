@@ -185,7 +185,11 @@
     "partial": "Atenção — ver trilho",
     "dd_desc": "Cada linha é uma fonte verificada pela DeFarm Check no momento da emissão. O operador (CNPJ/CPF) é mascarado por privacidade.",
     "no_trail": "Esta emissão saiu sem trilho de due diligence (origem/operador não resolvidos na fonte).",
-    "note": "Verificação pública, sem login. A declaração mostra o trilho daquela data, ancorado on-chain (não adulterável). O CNPJ/CPF do operador fica protegido — só o resultado da Lista Suja é exibido."
+    "note": "Verificação pública, sem login. A declaração mostra o trilho daquela data, ancorado on-chain (não adulterável). O CNPJ/CPF do operador fica protegido — só o resultado da Lista Suja é exibido.",
+    "share_t": "Verificação pública",
+    "share_d": "Escaneie o QR ou compartilhe o link — qualquer comprador confere esta DDS por DFID, sem login.",
+    "copy_link": "Copiar link",
+    "link_copied": "Link copiado"
   },
   "integ": { "label": "Integrado aos sistemas que o agro já usa" },
   "trust": {
