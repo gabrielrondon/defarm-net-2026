@@ -175,6 +175,7 @@
   },
   "spec": {
     "live": "On the network",
+    "phrase": "A herd in {{local}}, registered and verifiable.",
     "verify": "Scan to verify",
     "label": "Proof specimen",
     "country": "BR",

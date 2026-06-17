@@ -86,24 +86,20 @@ export function ProofSpecimen() {
         />
       )}
 
-      <div className="mb-4 flex items-center justify-between border-b border-dashed border-border pb-4">
+      <div className="mb-4 border-b border-dashed border-border pb-4">
         <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{t("spec.label")}</span>
-        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-primary">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          {t("spec.live")}
-        </span>
       </div>
 
       <div key={i} className="spec-rotate">
-        <div className="mb-2 flex items-center gap-2">
+        <div className="mb-3 flex items-center gap-2">
           <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground/70">{ufDisplay}</span>
           <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-foreground/70">{muniDisplay}</span>
-          <span className="ml-auto inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-primary">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />{t("spec.status")}
-          </span>
         </div>
-        <div className="mb-1 break-all font-mono text-[15px] font-medium tracking-tight sm:text-[17px]">{s.dfid}</div>
-        <div className="mb-4 font-mono text-[12px] text-muted-foreground">{maskFarm(s.farm)} · CAR {maskId(s.car)}</div>
+        <p className="mb-3 text-[19px] font-semibold leading-snug tracking-tight sm:text-[22px]" style={{ textWrap: "balance" }}>
+          {t("spec.phrase", { local: `${muniDisplay}-${ufDisplay}` })}
+        </p>
+        <div className="mb-1 font-mono text-[11px] text-muted-foreground">{maskFarm(s.farm)} · CAR {maskId(s.car)}</div>
+        <div className="mb-4 break-all font-mono text-[11px] text-muted-foreground/70">{s.dfid}</div>
 
         <Link
           to={verifyPath}
@@ -124,7 +120,7 @@ export function ProofSpecimen() {
 
         <div className="flex items-center justify-between">
           <AnchorStatus status="confirmed" compact />
-          <span className="rounded-full border border-transparent bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-primary">{t("spec.eudr")}</span>
+          <span className="rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("spec.eudr")}</span>
         </div>
       </div>
     </div>
