@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { FileText, Search, Lock, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileText, Search, Lock, ArrowRight, ShieldCheck, Loader2, AlertTriangle, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
-import { emitEudr, type EudrStatement } from "@/lib/api/products";
+import { emitEudr, listEudrEmissions, getEudrEmission, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
 
 // Tela "Declaração de Due Diligence (EUDR)" — VITRINE GATED. Por decisão de
 // produto (e §6.4 do paper EUDR), defarm.net/eudr é demonstração: mostra o
@@ -105,10 +106,20 @@ export default function EudrScreen() {
   // Anônimo: demonstração (DEMO) + qualquer ação abre o gate de contato.
   // Logado: emite a DDS real (POST /eudr/emit, consome créditos); ao emitir, o
   // statement real substitui o DEMO. Sem saldo → gate "precisa de créditos".
+  const { toast } = useToast();
   const [stmt, setStmt] = useState<EudrStatement>(DEMO);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<"demo" | "emitted" | "consulted">("demo");
   const [emitInfo, setEmitInfo] = useState<{ charged: number; balance: number | null } | null>(null);
+  const [consultAt, setConsultAt] = useState<string | null>(null);
+  const [emissions, setEmissions] = useState<EudrEmissionSummary[]>([]);
+
+  const loadEmissions = () => {
+    if (!isAuthenticated) return;
+    listEudrEmissions().then(setEmissions).catch(() => {});
+  };
+  useEffect(loadEmissions, [isAuthenticated]);
 
   const openGate = (reason: "demo" | "credits" = "demo") => {
     setGateReason(reason);
@@ -123,16 +134,38 @@ export default function EudrScreen() {
       if (r.emitted && r.statement) {
         setStmt(r.statement);
         setEmitInfo({ charged: r.charged_credits, balance: r.balance_remaining });
+        setConsultAt(null);
+        setView("emitted");
+        loadEmissions();
       } else {
+        // sem saldo / não provisionado → funil de créditos (#52: só este caso)
         openGate("credits");
       }
     } catch {
-      openGate("credits");
+      // erro de servidor/rede ≠ falta de crédito (#52)
+      toast({ title: t("eudr.emit_error"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
-  const isDemo = !emitInfo;
+  // Consultar uma DDS já emitida (grátis) — fase 2.
+  const consult = async (id: string) => {
+    setLoading(true);
+    try {
+      const d = await getEudrEmission(id);
+      setStmt(d.statement);
+      setEmitInfo(null);
+      setConsultAt(d.emitted_at);
+      setView("consulted");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      toast({ title: t("eudr.consult_error"), variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+  const isDemo = view === "demo";
+  const incomplete = !isDemo && !stmt.eudr_ready; // #51: emitida mas sem origem/operador resolvidos
 
   const o = stmt.origin[0];
   const anchor = anchorStateOf(stmt.immutability.anchor_status);
@@ -199,10 +232,54 @@ export default function EudrScreen() {
               <Button onClick={() => openGate("demo")}>{t("eudr.load")}</Button>
             )}
           </div>
-          {emitInfo && (
-            <div className="mb-5 rounded-xl border border-primary/30 px-4 py-3 text-[13px]" style={{ background: "hsl(var(--primary) / 0.07)" }}>
-              {t("eudr.emit_ok", { credits: emitInfo.charged })}
-              {emitInfo.balance != null ? ` · ${t("eudr.emit_balance", { balance: emitInfo.balance })}` : ""}
+          {!isDemo && (
+            <div
+              className={"mb-5 rounded-xl border px-4 py-3 text-[13px] " + (incomplete ? "border-amber-300" : "border-primary/30")}
+              style={{ background: incomplete ? "hsl(38 92% 50% / 0.08)" : "hsl(var(--primary) / 0.07)" }}
+            >
+              <span className="font-medium">
+                {view === "emitted" && emitInfo
+                  ? `${t("eudr.emit_ok", { credits: emitInfo.charged })}${emitInfo.balance != null ? ` · ${t("eudr.emit_balance", { balance: emitInfo.balance })}` : ""}`
+                  : view === "consulted" && consultAt
+                  ? t("eudr.consult_ok", { at: consultAt.replace("T", " ").slice(0, 16) })
+                  : ""}
+              </span>
+              {incomplete && (
+                <span className="ml-1 inline-flex items-center gap-1 text-amber-700">
+                  <AlertTriangle className="h-3.5 w-3.5" /> {t("eudr.emit_incomplete")}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Minhas DDS — emissões anteriores (consulta grátis, fase 2) */}
+          {isAuthenticated && emissions.length > 0 && (
+            <div className="mb-5 rounded-2xl border border-border bg-card p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-[14px] font-semibold">
+                <History className="h-4 w-4 text-primary" />
+                {t("eudr.my_dds")}
+              </h3>
+              <div className="divide-y divide-border">
+                {emissions.map((e) => (
+                  <button
+                    key={e.id}
+                    onClick={() => consult(e.id)}
+                    disabled={loading}
+                    className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-1 py-2.5 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <span className="break-all font-mono text-[12.5px] font-medium">{e.dfid}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">{e.emitted_at.replace("T", " ").slice(0, 16)}</span>
+                    {!e.eudr_ready && (
+                      <span className="inline-flex items-center gap-1 font-mono text-[10.5px] text-amber-700">
+                        <AlertTriangle className="h-3 w-3" />
+                        {t("eudr.incomplete_tag")}
+                      </span>
+                    )}
+                    <span className="ml-auto font-mono text-[11px] text-muted-foreground">{e.charged_credits > 0 ? `−${e.charged_credits}` : "—"}</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

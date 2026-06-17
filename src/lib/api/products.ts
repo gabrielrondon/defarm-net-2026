@@ -115,3 +115,21 @@ export interface EudrEmitResponse {
 export function emitEudr(dfid: string): Promise<EudrEmitResponse> {
   return registryRequest<EudrEmitResponse>(`/eudr/emit${buildQueryString({ dfid })}`, { method: "POST" });
 }
+
+// "Minhas DDS" (fase 2): consultar emissões já feitas é GRÁTIS.
+export interface EudrEmissionSummary {
+  id: string;
+  dfid: string;
+  eudr_ready: boolean;
+  charged_credits: number;
+  emitted_at: string;
+}
+export interface EudrEmissionDetail extends EudrEmissionSummary {
+  statement: EudrStatement;
+}
+export function listEudrEmissions(): Promise<EudrEmissionSummary[]> {
+  return registryRequest<EudrEmissionSummary[]>("/eudr/emissions");
+}
+export function getEudrEmission(id: string): Promise<EudrEmissionDetail> {
+  return registryRequest<EudrEmissionDetail>(`/eudr/emissions/${encodeURIComponent(id)}`);
+}
