@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
+import { ShieldCheck, AlertTriangle, Loader2, ExternalLink, Download } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnchorStatus, anchorStateOf } from "@/components/proof";
@@ -59,6 +60,85 @@ export default function PublicEudrVerify() {
   const anchor = stmt ? anchorStateOf(stmt.immutability.anchor_status) : "pending";
   const emittedFmt = emittedAt ? emittedAt.replace("T", " ").slice(0, 16) + "Z" : "";
 
+  const verifyUrl = `https://defarm.net/eudr/v/${encodeURIComponent(stmt?.dfid || dfid)}`;
+  const qrRef = useRef<HTMLDivElement>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  // PDF formal (mascarado) — gerado do payload público do verify, então NUNCA
+  // contém CNPJ cru (já vem mascarado da emissão). QR + hashes tornam o PDF
+  // verificável de forma independente. O PDF completo (CNPJ cru + geo) é Fase 2,
+  // num endpoint autorizado pelo workspace que cadastrou o operador.
+  const downloadPdf = async () => {
+    if (!stmt) return;
+    setPdfBusy(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const W = doc.internal.pageSize.getWidth();
+      const M = 48;
+      let y = M;
+      const line = (txt: string, size = 10, bold = false, color = "#1c1917") => {
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setFontSize(size);
+        doc.setTextColor(color);
+        for (const ln of doc.splitTextToSize(txt, W - M * 2)) {
+          if (y > doc.internal.pageSize.getHeight() - M) { doc.addPage(); y = M; }
+          doc.text(ln, M, y);
+          y += size + 4;
+        }
+      };
+      const rule = () => { doc.setDrawColor("#e7e5e4"); doc.line(M, y, W - M, y); y += 12; };
+
+      doc.setFillColor("#1e6b46");
+      doc.rect(0, 0, W, 6, "F");
+      line("DeFarm", 18, true, "#1e6b46");
+      line(t("eudr.title"), 12, true);
+      line(`DFID: ${stmt.dfid}`, 10);
+      line(`${t("eudr.generated")}: ${emittedFmt}  ·  ${stmt.eudr_ready ? t("eudrv.ready") : t("eudrv.partial")}`, 10, false, stmt.eudr_ready ? "#1e6b46" : "#b45309");
+      y += 6; rule();
+
+      // QR (verificação ao vivo)
+      const canvas = qrRef.current?.querySelector("canvas");
+      if (canvas) {
+        try { doc.addImage(canvas.toDataURL("image/png"), "PNG", W - M - 96, y, 96, 96); } catch { /* ignore */ }
+      }
+      line(t("eudrv.share_t"), 11, true);
+      line(verifyUrl, 9, false, "#1e6b46");
+      y += 84;
+      rule();
+
+      // Origem
+      line(t("eudr.origin_t"), 12, true);
+      for (const o of stmt.origin || []) {
+        const c = o.compliance;
+        line(`CAR ${o.car}${o.area_ha ? ` · ${o.area_ha} ha` : ""}`, 10, true);
+        if (c) line(`${c.status === "ok" ? "COMPLIANT" : (c.summary || c.status)}${c.score != null ? ` · ${c.score}` : ""}`, 10, false, c.status === "ok" ? "#1e6b46" : "#b45309");
+      }
+      y += 4; rule();
+
+      // Trilho de due diligence (operador já mascarado no payload)
+      line(t("eudr.dd_t"), 12, true);
+      for (const dd of stmt.due_diligence || []) {
+        line(`${dd.identifier_type}: ${dd.identifier}${dd.verdict ? `  →  ${dd.verdict}${dd.score != null ? ` · ${dd.score}` : ""}` : ""}`, 10, true);
+        for (const ch of dd.checks || []) line(`   • ${ch.source} — ${ch.status}`, 9, false, "#57534e");
+      }
+      if (stmt.operator) line(`Operador: ${stmt.operator.identifier_type} ${stmt.operator.identifier} (${stmt.operator.role})`, 9, false, "#57534e");
+      y += 4; rule();
+
+      // Imutabilidade
+      line(t("eudrv.proof_t"), 12, true);
+      line(`${t("eudrv.proof_tx")}: ${stmt.immutability.anchor_tx || "—"}`, 9, false, "#57534e");
+      line(`${t("eudrv.proof_cid")}: ${stmt.immutability.latest_cid || "—"}`, 9, false, "#57534e");
+      line(`Chain: ${stmt.immutability.chain || "stellar"} · ${stmt.immutability.anchor_status || ""}`, 9, false, "#57534e");
+      y += 8;
+      line(t("eudrv.note"), 8, false, "#78716c");
+
+      doc.save(`DDS-EUDR-${stmt.dfid}.pdf`);
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -96,8 +176,16 @@ export default function PublicEudrVerify() {
                   </span>
                   <span className="ml-auto font-mono text-[11px] text-muted-foreground">{t("eudr.generated")}: {emittedFmt}</span>
                 </div>
-                <div className="mt-3 border-t border-dashed border-border pt-3">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-border pt-3">
                   <AnchorStatus status={anchor} compact />
+                  <button
+                    onClick={downloadPdf}
+                    disabled={pdfBusy}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-medium transition-colors hover:bg-muted disabled:opacity-60"
+                  >
+                    {pdfBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    {pdfBusy ? t("eudrv.pdf_gen") : t("eudrv.pdf")}
+                  </button>
                 </div>
               </div>
 
@@ -105,6 +193,56 @@ export default function PublicEudrVerify() {
               <div className="mt-5">
                 <EudrVerifyShare dfid={stmt.dfid} />
               </div>
+
+              {/* QR oculto p/ embutir no PDF (verificação ao vivo) */}
+              <div ref={qrRef} className="sr-only" aria-hidden="true">
+                <QRCodeCanvas value={verifyUrl} size={192} level="M" fgColor="#1e6b46" />
+              </div>
+
+              {/* Prova on-chain — hashes verificáveis de forma independente */}
+              {(stmt.immutability.anchor_tx || stmt.immutability.latest_cid) ? (
+                <section className="mt-5 rounded-2xl border border-border bg-card p-6">
+                  <h3 className="mb-1 flex items-center gap-2 text-[18px] font-semibold">
+                    <ShieldCheck className="h-[18px] w-[18px] text-primary" />
+                    {t("eudrv.proof_t")}
+                  </h3>
+                  <p className="mb-4 max-w-2xl text-[13px] text-muted-foreground">{t("eudrv.proof_d")}</p>
+                  <div className="space-y-2.5">
+                    {stmt.immutability.anchor_tx && (
+                      <a
+                        href={`https://stellar.expert/explorer/public/tx/${stmt.immutability.anchor_tx}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted/50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t("eudrv.proof_tx")}</span>
+                          <span className="block break-all font-mono text-[12.5px] text-primary">{stmt.immutability.anchor_tx}</span>
+                        </span>
+                        <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      </a>
+                    )}
+                    {stmt.immutability.latest_cid && (
+                      <a
+                        href={`https://gateway.pinata.cloud/ipfs/${stmt.immutability.latest_cid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 transition-colors hover:bg-muted/50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">{t("eudrv.proof_cid")}</span>
+                          <span className="block break-all font-mono text-[12.5px] text-primary">{stmt.immutability.latest_cid}</span>
+                        </span>
+                        <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      </a>
+                    )}
+                  </div>
+                </section>
+              ) : (
+                <p className="mt-5 rounded-xl border border-dashed border-border p-3.5 text-[12.5px] text-muted-foreground">
+                  {t("eudrv.proof_pending")}
+                </p>
+              )}
 
               {/* Trilho de due diligence (operador já mascarado) */}
               <section className="mt-5 rounded-2xl border border-border bg-card p-6">

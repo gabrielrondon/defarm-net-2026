@@ -189,7 +189,14 @@
     "share_t": "Public verification",
     "share_d": "Scan the QR or share the link — any buyer verifies this DDS by DFID, no login.",
     "copy_link": "Copy link",
-    "link_copied": "Link copied"
+    "link_copied": "Link copied",
+    "proof_t": "On-chain proof",
+    "proof_d": "Check it yourself: the statement was anchored on the Stellar blockchain and the content versioned on IPFS. The references below are public and immutable.",
+    "proof_tx": "Stellar transaction",
+    "proof_cid": "IPFS content (CID)",
+    "proof_pending": "On-chain anchoring pending — the transaction shows up here once confirmed.",
+    "pdf": "Download PDF",
+    "pdf_gen": "Generating PDF…"
   },
   "integ": { "label": "Plugged into the systems agriculture already uses" },
   "trust": {
