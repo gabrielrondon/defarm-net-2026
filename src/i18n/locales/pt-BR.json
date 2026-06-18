@@ -189,7 +189,14 @@
     "share_t": "Verificação pública",
     "share_d": "Escaneie o QR ou compartilhe o link — qualquer comprador confere esta DDS por DFID, sem login.",
     "copy_link": "Copiar link",
-    "link_copied": "Link copiado"
+    "link_copied": "Link copiado",
+    "proof_t": "Prova on-chain",
+    "proof_d": "Confira você mesmo: a declaração foi ancorada na blockchain Stellar e o conteúdo versionado no IPFS. As referências abaixo são públicas e imutáveis.",
+    "proof_tx": "Transação Stellar",
+    "proof_cid": "Conteúdo IPFS (CID)",
+    "proof_pending": "Ancoragem on-chain pendente — a transação aparece aqui assim que confirmar.",
+    "pdf": "Baixar PDF",
+    "pdf_gen": "Gerando PDF…"
   },
   "integ": { "label": "Integrado aos sistemas que o agro já usa" },
   "trust": {
