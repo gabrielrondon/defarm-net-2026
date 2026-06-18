@@ -134,6 +134,29 @@ export function getEudrEmission(id: string): Promise<EudrEmissionDetail> {
   return registryRequest<EudrEmissionDetail>(`/eudr/emissions/${encodeURIComponent(id)}`);
 }
 
+// Export PLENO (Fase 2): identidade CRUA do operador, pro documento formal (TRACES).
+// O backend só devolve cru a admin/autoridade/enriquecedor (senão 403). operator_full
+// vem null quando o snapshot não tem operador resolvido.
+export interface EudrRawParty {
+  identifier_type: string;
+  identifier: string;
+  role: string;
+  car: string | null;
+}
+export interface EudrFullExport {
+  id: string;
+  dfid: string;
+  emitted_at: string;
+  eudr_ready: boolean;
+  statement: EudrStatement;
+  operator_full: EudrRawParty | null;
+  previous_parties_full: EudrRawParty[];
+  authorized_level: string;
+}
+export function getEudrEmissionFull(id: string): Promise<EudrFullExport> {
+  return registryRequest<EudrFullExport>(`/eudr/emissions/${encodeURIComponent(id)}/full`);
+}
+
 // Saldo de créditos do workspace logado (GET /partner/usage) — pro chip de saldo.
 export interface PartnerUsage {
   balance_remaining: number;
