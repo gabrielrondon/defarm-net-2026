@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { QRCodeCanvas } from "qrcode.react";
 import { FileText, Search, Lock, ArrowRight, ShieldCheck, Loader2, AlertTriangle, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -20,7 +21,8 @@ import {
 import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
-import { emitEudr, listEudrEmissions, getEudrEmission, getPartnerUsage, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
+import { emitEudr, listEudrEmissions, getEudrEmission, getEudrEmissionFull, getPartnerUsage, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
+import { downloadEudrPdf, type EudrPdfLabels } from "@/lib/eudr-pdf";
 import { EudrVerifyShare } from "@/components/EudrVerifyShare";
 
 // Tela "Declaração de Due Diligence (EUDR)" — VITRINE GATED. Por decisão de
@@ -128,6 +130,10 @@ export default function EudrScreen() {
   const [emissions, setEmissions] = useState<EudrEmissionSummary[]>([]);
   const [balance, setBalance] = useState<number | null>(null);
   const [mapGeo, setMapGeo] = useState<CarGeoJSON | null>(null);
+  // id da emissão atual (emitida/consultada) — pro export PLENO (/full) e PDF.
+  const [emissionId, setEmissionId] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
 
   const loadEmissions = () => {
     if (!isAuthenticated) return;
@@ -165,6 +171,7 @@ export default function EudrScreen() {
         setStmt(r.statement);
         setEmitInfo({ charged: r.charged_credits, balance: r.balance_remaining });
         setConsultAt(null);
+        setEmissionId(r.emission_id);
         setView("emitted");
         loadEmissions();
       } else {
@@ -186,6 +193,7 @@ export default function EudrScreen() {
       setStmt(d.statement);
       setEmitInfo(null);
       setConsultAt(d.emitted_at);
+      setEmissionId(id);
       setView("consulted");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
@@ -194,6 +202,58 @@ export default function EudrScreen() {
       setLoading(false);
     }
   };
+  // Rótulos i18n do PDF (o gerador é agnóstico de idioma).
+  const pdfLabels = (): EudrPdfLabels => ({
+    title: t("eudr.title"),
+    generated: t("eudr.generated"),
+    ready: t("eudrv.ready"),
+    partial: t("eudrv.partial"),
+    share_t: t("eudrv.share_t"),
+    origin_t: t("eudr.origin_t"),
+    dd_t: t("eudr.dd_t"),
+    proof_t: t("eudrv.proof_t"),
+    proof_tx: t("eudrv.proof_tx"),
+    proof_cid: t("eudrv.proof_cid"),
+    note: t("eudrv.note"),
+    operator: t("eudr.operator_label"),
+  });
+  const qrDataUrl = () => qrRef.current?.querySelector("canvas")?.toDataURL("image/png");
+  const emittedFmt = () =>
+    (consultAt || stmt.generated_at || "").replace("T", " ").slice(0, 16) + "Z";
+
+  // PDF padrão (mascarado) — do statement em tela; nunca tem CNPJ cru.
+  const downloadMasked = async () => {
+    setPdfBusy(true);
+    try {
+      await downloadEudrPdf({ statement: stmt, dfid: stmt.dfid, emittedAt: emittedFmt(), labels: pdfLabels(), qrDataUrl: qrDataUrl() });
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+  // PDF COMPLETO (formal) — pede a identidade crua via /full; 403 → cai no mascarado.
+  const downloadFull = async () => {
+    if (!emissionId) { await downloadMasked(); return; }
+    setPdfBusy(true);
+    try {
+      const full = await getEudrEmissionFull(emissionId);
+      await downloadEudrPdf({
+        statement: full.statement,
+        dfid: full.dfid,
+        emittedAt: emittedFmt(),
+        labels: pdfLabels(),
+        qrDataUrl: qrDataUrl(),
+        operatorOverride: full.operator_full?.identifier,
+        previousParties: full.previous_parties_full,
+      });
+    } catch {
+      // não autorizado (403) ou erro → baixa o mascarado e avisa.
+      toast({ title: t("eudr.pdf_full_denied") });
+      await downloadMasked();
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
   const hasReal = view === "emitted" || view === "consulted";
   const loggedEmpty = isAuthenticated && !hasReal; // logado, nada emitido/consultado → estado vazio
   const showDemo = !isAuthenticated; // anônimo = vitrine demo (fixture + selo + gate de contato)
@@ -225,15 +285,23 @@ export default function EudrScreen() {
                   {t("eudr.demo_tag")}
                 </span>
               )}
-              {(showDemo || hasReal) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => (showDemo ? openGate("demo") : toast({ title: t("eudr.export_soon") }))}
-                >
+              {showDemo && (
+                <Button variant="outline" size="sm" onClick={() => openGate("demo")}>
                   <FileText className="mr-1.5 h-[15px] w-[15px]" />
                   {t("eudr.export")}
                 </Button>
+              )}
+              {hasReal && (
+                <>
+                  <Button variant="outline" size="sm" disabled={pdfBusy} onClick={downloadMasked}>
+                    {pdfBusy ? <Loader2 className="mr-1.5 h-[15px] w-[15px] animate-spin" /> : <FileText className="mr-1.5 h-[15px] w-[15px]" />}
+                    {t("eudr.pdf")}
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={pdfBusy} onClick={downloadFull}>
+                    <ShieldCheck className="mr-1.5 h-[15px] w-[15px]" />
+                    {t("eudr.pdf_full")}
+                  </Button>
+                </>
               )}
             </div>
           </header>
@@ -304,6 +372,12 @@ export default function EudrScreen() {
           {hasReal && (
             <div className="mb-5">
               <EudrVerifyShare dfid={stmt.dfid} />
+            </div>
+          )}
+          {/* QR oculto p/ embutir no PDF (verificação ao vivo) */}
+          {hasReal && (
+            <div ref={qrRef} className="sr-only" aria-hidden="true">
+              <QRCodeCanvas value={`https://defarm.net/eudr/v/${encodeURIComponent(stmt.dfid)}`} size={192} level="M" fgColor="#1e6b46" />
             </div>
           )}
 

@@ -9,6 +9,7 @@ import { AnchorStatus, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { verifyEudrPublic, type EudrStatement } from "@/lib/api/products";
+import { downloadEudrPdf } from "@/lib/eudr-pdf";
 import { EudrVerifyShare } from "@/components/EudrVerifyShare";
 
 // Verificação PÚBLICA da DDS (EUDR) — o importador/auditor confere uma Declaração
@@ -66,74 +67,33 @@ export default function PublicEudrVerify() {
 
   // PDF formal (mascarado) — gerado do payload público do verify, então NUNCA
   // contém CNPJ cru (já vem mascarado da emissão). QR + hashes tornam o PDF
-  // verificável de forma independente. O PDF completo (CNPJ cru + geo) é Fase 2,
-  // num endpoint autorizado pelo workspace que cadastrou o operador.
+  // verificável de forma independente. O PDF COMPLETO (CNPJ cru) é o export
+  // autorizado da Fase 2, exposto no "Minhas DDS" logado (não aqui no público).
   const downloadPdf = async () => {
     if (!stmt) return;
     setPdfBusy(true);
     try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ unit: "pt", format: "a4" });
-      const W = doc.internal.pageSize.getWidth();
-      const M = 48;
-      let y = M;
-      const line = (txt: string, size = 10, bold = false, color = "#1c1917") => {
-        doc.setFont("helvetica", bold ? "bold" : "normal");
-        doc.setFontSize(size);
-        doc.setTextColor(color);
-        for (const ln of doc.splitTextToSize(txt, W - M * 2)) {
-          if (y > doc.internal.pageSize.getHeight() - M) { doc.addPage(); y = M; }
-          doc.text(ln, M, y);
-          y += size + 4;
-        }
-      };
-      const rule = () => { doc.setDrawColor("#e7e5e4"); doc.line(M, y, W - M, y); y += 12; };
-
-      doc.setFillColor("#1e6b46");
-      doc.rect(0, 0, W, 6, "F");
-      line("DeFarm", 18, true, "#1e6b46");
-      line(t("eudr.title"), 12, true);
-      line(`DFID: ${stmt.dfid}`, 10);
-      line(`${t("eudr.generated")}: ${emittedFmt}  ·  ${stmt.eudr_ready ? t("eudrv.ready") : t("eudrv.partial")}`, 10, false, stmt.eudr_ready ? "#1e6b46" : "#b45309");
-      y += 6; rule();
-
-      // QR (verificação ao vivo)
       const canvas = qrRef.current?.querySelector("canvas");
-      if (canvas) {
-        try { doc.addImage(canvas.toDataURL("image/png"), "PNG", W - M - 96, y, 96, 96); } catch { /* ignore */ }
-      }
-      line(t("eudrv.share_t"), 11, true);
-      line(verifyUrl, 9, false, "#1e6b46");
-      y += 84;
-      rule();
-
-      // Origem
-      line(t("eudr.origin_t"), 12, true);
-      for (const o of stmt.origin || []) {
-        const c = o.compliance;
-        line(`CAR ${o.car}${o.area_ha ? ` · ${o.area_ha} ha` : ""}`, 10, true);
-        if (c) line(`${c.status === "ok" ? "COMPLIANT" : (c.summary || c.status)}${c.score != null ? ` · ${c.score}` : ""}`, 10, false, c.status === "ok" ? "#1e6b46" : "#b45309");
-      }
-      y += 4; rule();
-
-      // Trilho de due diligence (operador já mascarado no payload)
-      line(t("eudr.dd_t"), 12, true);
-      for (const dd of stmt.due_diligence || []) {
-        line(`${dd.identifier_type}: ${dd.identifier}${dd.verdict ? `  →  ${dd.verdict}${dd.score != null ? ` · ${dd.score}` : ""}` : ""}`, 10, true);
-        for (const ch of dd.checks || []) line(`   • ${ch.source} — ${ch.status}`, 9, false, "#57534e");
-      }
-      if (stmt.operator) line(`Operador: ${stmt.operator.identifier_type} ${stmt.operator.identifier} (${stmt.operator.role})`, 9, false, "#57534e");
-      y += 4; rule();
-
-      // Imutabilidade
-      line(t("eudrv.proof_t"), 12, true);
-      line(`${t("eudrv.proof_tx")}: ${stmt.immutability.anchor_tx || "—"}`, 9, false, "#57534e");
-      line(`${t("eudrv.proof_cid")}: ${stmt.immutability.latest_cid || "—"}`, 9, false, "#57534e");
-      line(`Chain: ${stmt.immutability.chain || "stellar"} · ${stmt.immutability.anchor_status || ""}`, 9, false, "#57534e");
-      y += 8;
-      line(t("eudrv.note"), 8, false, "#78716c");
-
-      doc.save(`DDS-EUDR-${stmt.dfid}.pdf`);
+      await downloadEudrPdf({
+        statement: stmt,
+        dfid: stmt.dfid,
+        emittedAt: emittedFmt,
+        qrDataUrl: canvas?.toDataURL("image/png"),
+        labels: {
+          title: t("eudr.title"),
+          generated: t("eudr.generated"),
+          ready: t("eudrv.ready"),
+          partial: t("eudrv.partial"),
+          share_t: t("eudrv.share_t"),
+          origin_t: t("eudr.origin_t"),
+          dd_t: t("eudr.dd_t"),
+          proof_t: t("eudrv.proof_t"),
+          proof_tx: t("eudrv.proof_tx"),
+          proof_cid: t("eudrv.proof_cid"),
+          note: t("eudrv.note"),
+          operator: t("eudr.operator_label"),
+        },
+      });
     } finally {
       setPdfBusy(false);
     }
