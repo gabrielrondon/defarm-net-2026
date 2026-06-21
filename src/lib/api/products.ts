@@ -180,3 +180,49 @@ export interface EudrPublicVerify {
 export function verifyEudrPublic(dfid: string): Promise<EudrPublicVerify> {
   return registryPublicRequest<EudrPublicVerify>(`/eudr/verify/${encodeURIComponent(dfid)}`);
 }
+
+// ── Análise de polígono cru (EUDR) — produto pago por créditos (C5) ─────────
+// POST /eudr/polygon-report (JWT): o engines cobra créditos do workspace e chama
+// a Check API server-side (key fora do browser). Devolve o JSON COMPLETO do Check
+// (verdict/score/sources/details/summary/metadata) pra renderizar o report React.
+// Veja src/lib/eudr-report.ts pra a normalização raw -> EudrReportData.
+
+// GeoJSON aceito: Polygon/MultiPolygon, Feature ou FeatureCollection (o backend
+// extrai a 1ª geometria). country é só rótulo de região ("*" = global).
+export interface EudrPolygonReportResponse {
+  ok: boolean;
+  reason: string | null; // "insufficient_credits" | "not_provisioned" | "inactive"
+  charged_credits: number;
+  balance_remaining: number | null;
+  report: CheckReportRaw | null;
+}
+
+// Resposta crua do /check (campos tolerantes — o front normaliza).
+export interface CheckReportRaw {
+  checkId?: string;
+  timestamp?: string;
+  verdict?: string;
+  score?: number;
+  sources?: CheckSourceRaw[];
+  summary?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+export interface CheckSourceRaw {
+  name?: string;
+  category?: string;
+  status?: string;
+  severity?: string;
+  message?: string;
+  details?: Record<string, unknown>;
+  evidence?: { dataSource?: string; url?: string; lastUpdate?: string } | null;
+}
+
+export function getEudrPolygonReport(
+  geometry: unknown,
+  country: string
+): Promise<EudrPolygonReportResponse> {
+  return registryRequest<EudrPolygonReportResponse>("/eudr/polygon-report", {
+    method: "POST",
+    body: JSON.stringify({ geometry, country }),
+  });
+}
