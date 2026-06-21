@@ -48,6 +48,7 @@ import OesaDashboard from "./pages/app/OesaDashboard";
 import VerifyDfid from "./pages/app/VerifyDfid";
 import ScoreScreen from "./pages/app/ScoreScreen";
 import EudrScreen from "./pages/app/EudrScreen";
+import EudrPolygonReport from "./pages/app/EudrPolygonReport";
 import ItemDetail from "./pages/app/ItemDetail";
 import NovoItem from "./pages/app/NovoItem";
 import EventosList from "./pages/app/EventosList";
@@ -303,6 +304,14 @@ const App = () => (
               element={
                 <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><NovoCircuito /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/eudr/poligono"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
+                  <AppLayout><EudrPolygonReport /></AppLayout>
                 </RequireWorkspaceAccess>
               }
             />
