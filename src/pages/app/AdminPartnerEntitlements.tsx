@@ -15,6 +15,7 @@ import {
   type PartnerSummary,
   type UpsertEntitlementRequest,
 } from "@/lib/api/partner-entitlements";
+import { listWorkspaces, type AdminWorkspace } from "@/lib/api/admin-users";
 
 interface FormState {
   workspace_id: string;
@@ -78,6 +79,25 @@ export default function AdminPartnerEntitlements() {
     queryKey: ["admin-partners"],
     queryFn: listPartners,
   });
+
+  // Busca de workspace pra o admin achar o ID (parceiro novo não está em
+  // "provisionados"; ninguém decora UUID). Busca por nome/slug/email/tipo.
+  const [wsSearch, setWsSearch] = useState("");
+  const workspacesQuery = useQuery({
+    queryKey: ["admin-workspaces"],
+    queryFn: listWorkspaces,
+  });
+  const workspaceMatches = useMemo(() => {
+    const all = workspacesQuery.data ?? [];
+    const q = wsSearch.trim().toLowerCase();
+    if (!q) return [] as AdminWorkspace[];
+    return all
+      .filter((w) =>
+        [w.name, w.slug, w.owner_email ?? "", w.workspace_type, w.id]
+          .some((f) => String(f).toLowerCase().includes(q))
+      )
+      .slice(0, 8);
+  }, [workspacesQuery.data, wsSearch]);
 
   const holdsQuery = useQuery({
     queryKey: ["admin-partner-holds", selected],
@@ -229,13 +249,62 @@ export default function AdminPartnerEntitlements() {
               </div>
             )}
 
+            {!selected && (
+              <Field label="Buscar workspace (nome, slug, e-mail do dono ou tipo)">
+                <Input
+                  value={wsSearch}
+                  placeholder="ex.: nome do parceiro, e-mail, slug…"
+                  onChange={(e) => setWsSearch(e.target.value)}
+                />
+                {workspacesQuery.isLoading && (
+                  <p className="mt-1 text-xs text-muted-foreground">Carregando workspaces…</p>
+                )}
+                {wsSearch.trim() && workspaceMatches.length === 0 && !workspacesQuery.isLoading && (
+                  <p className="mt-1 text-xs text-muted-foreground">Nenhum workspace encontrado.</p>
+                )}
+                {workspaceMatches.length > 0 && (
+                  <ul className="mt-1 divide-y rounded-md border">
+                    {workspaceMatches.map((w) => (
+                      <li key={w.id}>
+                        <button
+                          type="button"
+                          className="w-full p-2 text-left text-sm hover:bg-muted"
+                          onClick={() => {
+                            setField("workspace_id", w.id);
+                            setWsSearch("");
+                          }}
+                        >
+                          <div className="font-medium">
+                            {w.name}{" "}
+                            <span className="text-xs text-muted-foreground">· {w.workspace_type}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {w.owner_email ? `${w.owner_email} · ` : ""}
+                            {w.slug} · {w.id.slice(0, 8)}…
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Field>
+            )}
+
             <Field label="Workspace ID">
               <Input
                 value={form.workspace_id}
-                placeholder="UUID do workspace do parceiro"
+                placeholder="UUID do workspace (use a busca acima pra preencher)"
                 disabled={!!selected}
                 onChange={(e) => setField("workspace_id", e.target.value)}
               />
+              {!selected && form.workspace_id.trim() && (() => {
+                const w = (workspacesQuery.data ?? []).find((x) => x.id === form.workspace_id.trim());
+                return w ? (
+                  <p className="mt-1 text-xs text-green-700">
+                    ✓ {w.name} · {w.workspace_type}{w.owner_email ? ` · ${w.owner_email}` : ""}
+                  </p>
+                ) : null;
+              })()}
             </Field>
 
             <Field label="Value chains permitidos (separados por vírgula)">
