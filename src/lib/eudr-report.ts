@@ -56,7 +56,24 @@ export interface EudrReportData {
     areaHa: number;
     generatedAt: string;
     geometry: unknown;
+    alertOverlay?: unknown; // FeatureCollection do footprint do desmate (se o check expor)
   };
+}
+
+// Constrói o overlay de alertas (footprint do desmate) a partir dos pontos que o
+// checker GFW Integrated expõe em details.alert_points ([[lng,lat], ...]).
+function buildAlertOverlay(sources: EudrSourceN[]): unknown | undefined {
+  const gfw = sources.find((s) => s.key === "gfw_integrated");
+  const pts = (gfw?.details as Record<string, unknown> | undefined)?.alert_points;
+  if (!Array.isArray(pts) || pts.length === 0) return undefined;
+  const features = pts
+    .filter((p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(Number(p[0])) && Number.isFinite(Number(p[1])))
+    .map((p) => ({
+      type: "Feature" as const,
+      properties: {},
+      geometry: { type: "Point" as const, coordinates: [Number(p[0]), Number(p[1])] },
+    }));
+  return features.length ? { type: "FeatureCollection" as const, features } : undefined;
 }
 
 // ── Tokens (reaproveitados do sample/spec) ───────────────────────────────
@@ -190,6 +207,7 @@ export function normalizeCheckReport(
       areaHa: areaHaOf(geometry),
       generatedAt: report.timestamp ?? (meta.timestamp as string) ?? "",
       geometry,
+      alertOverlay: buildAlertOverlay(sources),
     },
   };
 }
