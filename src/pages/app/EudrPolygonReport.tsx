@@ -15,6 +15,7 @@ import {
   type Locale,
 } from "@/lib/eudr-report";
 import { EudrReportView, EudrReportSkeleton } from "@/components/eudr/EudrReportView";
+import { downloadEudrReportPdf } from "@/lib/eudr-report-pdf";
 
 const COPY = {
   "pt-BR": {
@@ -246,7 +247,11 @@ export default function EudrPolygonReport() {
                     : ""}
                 </p>
               )}
-              <EudrReportView data={data} locale={locale} />
+              <EudrReportView
+                data={data}
+                locale={locale}
+                onDownloadPdf={() => downloadEudrReportPdf(data, locale)}
+              />
             </>
           )}
 

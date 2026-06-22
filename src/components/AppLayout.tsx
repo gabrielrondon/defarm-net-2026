@@ -16,6 +16,7 @@ import {
   Camera,
   Landmark,
   ClipboardCheck,
+  Trees,
   Compass,
   BarChart3,
   Users,
@@ -78,14 +79,15 @@ const navCatalog: NavItem[] = [
   { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
   { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
   { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance" },
+  { icon: Trees, label: "EUDR — Polígono", href: "/app/eudr/poligono" },
 ];
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
   partner: ["/app/parceiro", "https://docs.defarm.net/docs/getting-started", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
-  producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance"],
-  certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
-  processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance"],
-  government: ["/app/governo/docs", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance"],
+  producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance", "/app/eudr/poligono"],
+  certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance", "/app/eudr/poligono"],
+  processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance", "/app/eudr/poligono"],
+  government: ["/app/governo/docs", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance", "/app/eudr/poligono"],
 };
 
 // Presentation for the role-based action menu (engines #119, decision D12). The

@@ -322,6 +322,7 @@ export function EudrReportView({
         <EudrMap
           geometry={data.metadata.geometry}
           areaHa={data.metadata.areaHa}
+          alertOverlay={data.metadata.alertOverlay}
           locale={locale}
           className="h-[280px] md:h-full md:min-h-[320px]"
         />
