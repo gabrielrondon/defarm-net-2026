@@ -39,6 +39,14 @@ export function EudrMap({ geometry, areaHa, alertOverlay, locale, className = ""
     if (alertOverlay) {
       L.geoJSON(alertOverlay as any, {
         style: { color: "#b42318", weight: 1, fillColor: "#b42318", fillOpacity: 0.25 },
+        pointToLayer: (_feature, latlng) =>
+          L.circleMarker(latlng, {
+            radius: 3,
+            color: "#b42318",
+            weight: 1,
+            fillColor: "#b42318",
+            fillOpacity: 0.55,
+          }),
       }).addTo(map);
     }
 
