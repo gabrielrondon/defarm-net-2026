@@ -39,6 +39,20 @@ export async function getPublicItemCanonicalIdentifier(
   return registryRequest<PublicCanonicalIdentifier>(`/items/${dfid}/canonical/public`);
 }
 
+export interface PublicIdentifierEntry {
+  identifier_type: string;
+  value: string;
+  is_canonical: boolean;
+}
+export interface PublicIdentifiers {
+  identifiers: PublicIdentifierEntry[];
+}
+// Todos os identificadores PÚBLICOS (não-PII) do item — canônicos e contextuais
+// (ex.: chip + SISBOV). O backend já filtra CPF/CNPJ/IE.
+export async function getPublicItemIdentifiers(dfid: string): Promise<PublicIdentifiers> {
+  return registryRequest<PublicIdentifiers>(`/items/${dfid}/identifiers/public`);
+}
+
 export async function getPublicItemProofs(dfid: string): Promise<PublicItemProofs> {
   return registryRequest<PublicItemProofs>(`/items/${dfid}/proofs/public`);
 }
