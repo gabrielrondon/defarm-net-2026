@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Coins } from "lucide-react";
 import { getMyUsage } from "@/lib/api/partner-entitlements";
 
@@ -43,12 +45,17 @@ export function PartnerUsageCard({ locale = "pt-BR" }: { locale?: "pt-BR" | "en"
         ))}
       </div>
       {u.holds_pending > 0 && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          {t(
-            "Itens na fila aguardam liberação do time DeFarm (ou mais saldo).",
-            "Queued items await release by the DeFarm team (or more balance)."
-          )}
-        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">
+            {t(
+              "Itens na fila aguardam liberação do time DeFarm (ou mais saldo).",
+              "Queued items await release by the DeFarm team (or more balance)."
+            )}
+          </p>
+          <Button asChild size="sm" variant="outline" className="shrink-0">
+            <Link to="/contato">{t("Solicitar saldo", "Request balance")}</Link>
+          </Button>
+        </div>
       )}
     </Card>
   );

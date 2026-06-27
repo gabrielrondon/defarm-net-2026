@@ -7,9 +7,10 @@ import {
   PartnerKit,
   PartnerRouting,
   PartnerIntake,
+  PartnerEmbed,
 } from "@/components/partner";
 import { PartnerUsageCard } from "@/components/partner/PartnerUsageCard";
-import { BarChart3, PackageOpen, Route, Database, BookOpen, FlaskConical, ExternalLink, Languages } from "lucide-react";
+import { BarChart3, PackageOpen, Route, Database, Code2, BookOpen, FlaskConical, ExternalLink, Languages } from "lucide-react";
 import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
 
 const tabs = [
@@ -17,6 +18,7 @@ const tabs = [
   { value: "kit", label: { "pt-BR": "Kit Parceiro", en: "Partner Kit" }, icon: PackageOpen },
   { value: "routing", label: { "pt-BR": "Roteamento", en: "Routing" }, icon: Route },
   { value: "intake", label: { "pt-BR": "Intake", en: "Intake" }, icon: Database },
+  { value: "embed", label: { "pt-BR": "Embed", en: "Embed" }, icon: Code2 },
 ] as const;
 
 export default function PartnerPortal() {
@@ -111,6 +113,7 @@ export default function PartnerPortal() {
           {activeTab === "kit" ? <PartnerKit /> : null}
           {activeTab === "routing" ? <PartnerRouting /> : null}
           {activeTab === "intake" ? <PartnerIntake /> : null}
+          {activeTab === "embed" ? <PartnerEmbed locale={locale} /> : null}
         </TabsContent>
       </Tabs>
     </div>
