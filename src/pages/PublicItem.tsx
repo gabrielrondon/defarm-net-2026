@@ -45,6 +45,7 @@ import {
   ApiError,
   getPublicItem,
   getPublicItemCanonicalIdentifier,
+  getPublicItemIdentifiers,
   getPublicItemEvents,
   getPublicItemProofs,
   resolvePublicItemByIdentifier,
@@ -1308,6 +1309,23 @@ export default function PublicItem() {
     retry: 1,
   });
 
+  // Todos os identificadores públicos (não-PII): SISBOV, RFID/chip, CAR… multi-canônico.
+  const { data: publicIdentifiers } = useQuery({
+    queryKey: ["public-item-identifiers", resolvedDfid],
+    queryFn: () => getPublicItemIdentifiers(resolvedDfid!),
+    enabled: !!resolvedDfid,
+    retry: 1,
+  });
+  const identifierBadges = useMemo(() => {
+    const labels: Record<string, string> = { sisbov: "SISBOV", chip: "RFID", rfid: "RFID", car: "CAR" };
+    return (publicIdentifiers?.identifiers ?? []).map((i) => ({
+      key: `${i.identifier_type}:${i.value}`,
+      label: labels[i.identifier_type.toLowerCase()] ?? i.identifier_type.toUpperCase(),
+      value: i.value,
+      canonical: i.is_canonical,
+    }));
+  }, [publicIdentifiers]);
+
   const itemDeprecated = useMemo(() => {
     if (resolveDeprecated) return true;
     if (error instanceof ApiError && error.status === 410 && error.code === "item_deprecated") return true;
@@ -2077,10 +2095,26 @@ export default function PublicItem() {
               {sanitySummary?.lastWeight && (
                 <span className="text-lg font-bold text-stone-800">{sanitySummary.lastWeight} <span className="text-sm font-normal text-stone-400">kg</span></span>
               )}
-              {canonicalIdentifier && (
-                <span className="text-xs text-stone-400 font-mono">
-                  {canonicalIdentifier.label}: {maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated)}
-                </span>
+              {identifierBadges.length > 0 ? (
+                identifierBadges.map((b) => (
+                  <span
+                    key={b.key}
+                    className={`text-xs font-mono px-2 py-0.5 rounded-full border ${
+                      b.canonical
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-stone-100 text-stone-600 border-stone-200"
+                    }`}
+                    title={b.canonical ? "Identificador canônico" : "Identificador"}
+                  >
+                    {b.label}: {b.value}
+                  </span>
+                ))
+              ) : (
+                canonicalIdentifier && (
+                  <span className="text-xs text-stone-400 font-mono">
+                    {canonicalIdentifier.label}: {maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated)}
+                  </span>
+                )
               )}
             </div>
 
