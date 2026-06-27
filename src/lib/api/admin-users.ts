@@ -185,6 +185,29 @@ export async function listWorkspaces(): Promise<AdminWorkspace[]> {
   return authRequest<AdminWorkspace[]>("/api/admin/workspaces");
 }
 
+// --- Reprocess raw ingestion payload (admin) ---
+
+export interface ReprocessIngestionResponse {
+  raw_payload_id: string;
+  status: string;
+  dry_run: boolean;
+  items_found: number;
+  items_enriched: number;
+  events_created: number;
+  events_skipped_duplicate: number;
+}
+
+/** Re-run the pipeline for a stored raw payload (admin-only). dryRun=true simulates without persisting. */
+export async function reprocessIngestion(
+  rawPayloadId: string,
+  dryRun = false
+): Promise<ReprocessIngestionResponse> {
+  return authRequest<ReprocessIngestionResponse>(
+    `/api/admin/reprocess-ingestion/${rawPayloadId}${buildQueryString({ dry_run: dryRun })}`,
+    { method: "POST" }
+  );
+}
+
 export async function createWorkspace(data: CreateWorkspaceRequest): Promise<AdminWorkspace> {
   return authRequest<AdminWorkspace>("/api/admin/workspaces", {
     method: "POST",

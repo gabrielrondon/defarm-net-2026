@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { listRawPayloads, downloadRawPayload, type RawPayloadSummary } from "@/lib/api/partner-routing";
-import { listWorkspaces, type AdminWorkspace } from "@/lib/api/admin-users";
+import { listWorkspaces, reprocessIngestion, type AdminWorkspace } from "@/lib/api/admin-users";
 import { Link } from "react-router-dom";
 
 function csvEscape(value: string): string {
@@ -100,6 +100,30 @@ export default function AdminPartnerPayloads() {
     () => (workspacesQuery.data || []).filter((w: AdminWorkspace) => w.workspace_type === "partner"),
     [workspacesQuery.data]
   );
+
+  const [reprocessing, setReprocessing] = useState(false);
+  const handleReprocess = async (rawPayloadId: string, dryRun: boolean) => {
+    if (!dryRun && !window.confirm("Reprocessar este payload? O pipeline roda de novo e pode criar/enriquecer itens e eventos.")) {
+      return;
+    }
+    setReprocessing(true);
+    try {
+      const r = await reprocessIngestion(rawPayloadId, dryRun);
+      toast({
+        title: dryRun ? "Simulação concluída (dry-run)" : "Reprocessamento concluído",
+        description: `status: ${r.status} · itens: ${r.items_found} (enriquecidos ${r.items_enriched}) · eventos: ${r.events_created} (dup ignorados ${r.events_skipped_duplicate})`,
+      });
+      if (!dryRun) payloadsQuery.refetch();
+    } catch (e: any) {
+      toast({
+        title: dryRun ? "Falha na simulação" : "Falha no reprocessamento",
+        description: e?.message || "Não foi possível reprocessar o payload.",
+        variant: "destructive",
+      });
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   const rows = payloadsQuery.data?.rows || [];
   const filteredRows = rows.filter((row: RawPayloadSummary) => {
@@ -513,6 +537,24 @@ export default function AdminPartnerPayloads() {
                   >
                     <Download className="h-4 w-4 mr-1" />
                     Baixar payload bruto
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={reprocessing}
+                    onClick={() => handleReprocess(selected.id, true)}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Simular (dry-run)
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={reprocessing}
+                    onClick={() => handleReprocess(selected.id, false)}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Reprocessar
                   </Button>
                   <Button variant="ghost" size="sm" asChild>
                     <a
