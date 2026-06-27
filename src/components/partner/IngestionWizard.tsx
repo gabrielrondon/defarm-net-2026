@@ -8,7 +8,6 @@ import {
   partnerIntakePreview,
   getPartnerDefaultCircuit,
   type DefaultCircuitResponse,
-  type PartnerIntakePreviewResponse,
   type PartnerIntakeResponse,
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
@@ -39,7 +38,7 @@ export function IngestionWizard() {
   const [loading, setLoading] = useState(true);
   const [previewing, setPreviewing] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [preview, setPreview] = useState<PartnerIntakePreviewResponse | null>(null);
+  const [preview, setPreview] = useState<PartnerIntakeResponse | null>(null);
   const [result, setResult] = useState<PartnerIntakeResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -451,7 +450,10 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
   );
 }
 
-function PreviewResults({ preview }: { preview: PartnerIntakePreviewResponse }) {
+function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
+  const s = preview.summary;
+  const routes = preview.routes ?? [];
+  const unresolved = s?.unresolved_rows ?? 0;
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border p-5 space-y-5">
@@ -462,51 +464,40 @@ function PreviewResults({ preview }: { preview: PartnerIntakePreviewResponse }) 
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <StatCard label="Linhas" value={preview.total_rows} />
-          <StatCard label="Roteáveis" value={preview.resolvable_rows} variant="primary" />
-          <StatCard label="Pendentes" value={preview.unresolved_rows} variant={preview.unresolved_rows > 0 ? "destructive" : undefined} />
+          <StatCard label="Linhas" value={s?.total_rows ?? 0} />
+          <StatCard label="Processáveis" value={s?.processed_rows ?? 0} variant="primary" />
+          <StatCard label="Pendentes" value={unresolved} variant={unresolved > 0 ? "destructive" : undefined} />
         </div>
 
-        {/* Routing plan — show what will happen */}
-        {preview.routing_plan?.length > 0 && (
+        {/* Routes — show what will happen */}
+        {routes.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               O que vai acontecer
             </p>
             <div className="space-y-2">
-              {preview.routing_plan.slice(0, 4).map((plan, i) => (
+              {routes.slice(0, 4).map((route, i) => (
                 <div
                   key={i}
                   className="flex items-start gap-3 rounded-lg bg-muted/30 px-3 py-2.5 text-xs animate-fade-in"
                   style={{ animationDelay: `${i * 80}ms` }}
                 >
                   <span className="mt-0.5">
-                    {plan.status === "routed_existing" ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                    ) : plan.status === "would_auto_create" ? (
-                      <ArrowRight className="h-3.5 w-3.5 text-amber-500" />
-                    ) : (
-                      <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
+                    <ArrowRight className="h-3.5 w-3.5 text-primary" />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground">
-                      {plan.identifier_type.toUpperCase()}: <span className="font-mono">{plan.identifier_value}</span>
+                      {route.route_type.toUpperCase()}: <span className="font-mono">{route.route_value}</span>
                     </p>
                     <p className="text-muted-foreground mt-0.5">
-                      {plan.rows} linha(s) →{" "}
-                      {plan.status === "routed_existing"
-                        ? "será vinculado a um circuito existente"
-                        : plan.status === "would_auto_create"
-                        ? "criará um novo circuito automaticamente"
-                        : "não encontrou regra de roteamento"}
+                      {route.rows} linha(s) · {route.items} item(ns) · {route.status}
                     </p>
                   </div>
                 </div>
               ))}
-              {preview.routing_plan.length > 4 && (
+              {routes.length > 4 && (
                 <p className="text-xs text-muted-foreground text-center">
-                  + {preview.routing_plan.length - 4} outro(s) destino(s)
+                  + {routes.length - 4} outro(s) destino(s)
                 </p>
               )}
             </div>
@@ -526,10 +517,11 @@ function PreviewResults({ preview }: { preview: PartnerIntakePreviewResponse }) 
 }
 
 function TestResults({ result }: { result: PartnerIntakeResponse }) {
-  const totalRows = result.summary?.total_rows || result.total_rows;
-  const itemsLinked = result.summary?.items_linked || result.items?.length || 0;
+  const totalRows = result.summary?.total_rows ?? 0;
+  const itemsLinked = result.summary?.items_created ?? result.items?.length ?? 0;
   const routes = result.routes || [];
   const items = result.items || [];
+  const circuitLinks = result.verbose?.circuit_links ?? [];
 
   return (
     <div className="space-y-4">
@@ -600,9 +592,9 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
         )}
 
         {/* Circuit links */}
-        {result.circuit_links?.length ? (
+        {circuitLinks.length ? (
           <div className="flex justify-center gap-2">
-            {result.circuit_links.map((link) => (
+            {circuitLinks.map((link) => (
               <Button key={link.circuit_id} variant="outline" size="sm" asChild>
                 <a href={link.app_url} target="_blank" rel="noopener noreferrer">
                   Ver circuito <ExternalLink className="h-3 w-3 ml-1" />
@@ -624,10 +616,11 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
 }
 
 function DoneResults({ result }: { result: PartnerIntakeResponse }) {
-  const totalRows = result.summary?.total_rows || result.total_rows;
-  const itemsLinked = result.summary?.items_linked || result.items?.length || 0;
-  const batchCount = result.summary?.routed_batches || result.routed_batches?.length || 0;
+  const totalRows = result.summary?.total_rows ?? 0;
+  const itemsLinked = result.summary?.items ?? result.items?.length ?? 0;
+  const batchCount = result.verbose?.routed_batches?.length ?? 0;
   const items = result.items || [];
+  const circuitLinks = result.verbose?.circuit_links ?? [];
 
   return (
     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-8 space-y-5">
@@ -688,9 +681,9 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
         </div>
       ) : null}
 
-      {result.circuit_links?.length ? (
+      {circuitLinks.length ? (
         <div className="flex justify-center gap-2">
-          {result.circuit_links.map((link) => (
+          {circuitLinks.map((link) => (
             <Button key={link.circuit_id} variant="outline" size="sm" asChild>
               <a href={link.app_url} target="_blank" rel="noopener noreferrer">
                 Ver circuito <ExternalLink className="h-3 w-3 ml-1" />
