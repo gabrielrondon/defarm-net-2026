@@ -129,6 +129,7 @@ const adminNavItems: NavItem[] = [
   { icon: Layers, label: "Cadeias de Valor", href: "/app/admin/cadeias-valor" },
   { icon: Mail, label: "Leads de Contato", href: "/app/admin/leads-contato" },
   { icon: Database, label: "Payloads Parceiros", href: "/app/admin/payloads-parceiros" },
+  { icon: Shield, label: "Higiene de Dados", href: "/app/admin/data-hygiene" },
   { icon: Coins, label: "Entitlements", href: "/app/admin/entitlements" },
   { icon: ListTodo, label: "Fila de Jobs", href: "/app/admin/jobs" },
 ];
