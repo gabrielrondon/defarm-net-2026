@@ -1,12 +1,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   PartnerOverview,
   PartnerKit,
   PartnerRouting,
-  PartnerIntake,
+  PartnerOperations,
   PartnerEmbed,
 } from "@/components/partner";
 import { PartnerUsageCard } from "@/components/partner/PartnerUsageCard";
@@ -17,7 +18,7 @@ const tabs = [
   { value: "overview", label: { "pt-BR": "Visão Geral", en: "Overview" }, icon: BarChart3 },
   { value: "kit", label: { "pt-BR": "Kit Parceiro", en: "Partner Kit" }, icon: PackageOpen },
   { value: "routing", label: { "pt-BR": "Roteamento", en: "Routing" }, icon: Route },
-  { value: "intake", label: { "pt-BR": "Intake", en: "Intake" }, icon: Database },
+  { value: "intake", label: { "pt-BR": "Operações", en: "Operations" }, icon: Database },
   { value: "embed", label: { "pt-BR": "Embed", en: "Embed" }, icon: Code2 },
 ] as const;
 
@@ -78,9 +79,11 @@ export default function PartnerPortal() {
                 <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
               </a>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setActiveTab("intake")}>
-              <FlaskConical className="h-4 w-4 mr-1.5" />
-              {locale === "en" ? "Playground (preview)" : "Playground (preview)"}
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/app/parceiro/ingestao">
+                <FlaskConical className="h-4 w-4 mr-1.5" />
+                {locale === "en" ? "Send data (wizard)" : "Enviar dados (wizard)"}
+              </Link>
             </Button>
             <Button variant="outline" size="sm" asChild>
               <a href="https://docs.defarm.net/docs/api#upload" target="_blank" rel="noreferrer">
@@ -112,7 +115,7 @@ export default function PartnerPortal() {
           {activeTab === "overview" ? <PartnerOverview /> : null}
           {activeTab === "kit" ? <PartnerKit /> : null}
           {activeTab === "routing" ? <PartnerRouting /> : null}
-          {activeTab === "intake" ? <PartnerIntake /> : null}
+          {activeTab === "intake" ? <PartnerOperations /> : null}
           {activeTab === "embed" ? <PartnerEmbed locale={locale} /> : null}
         </TabsContent>
       </Tabs>
