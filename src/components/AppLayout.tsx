@@ -123,6 +123,7 @@ const capabilityPresentation: Record<
 const adminNavItems: NavItem[] = [
   { icon: Trees, label: "EUDR — Polígono", href: "/app/eudr/poligono" },
   { icon: BarChart3, label: "Métricas", href: "/app/admin/metricas" },
+  { icon: ClipboardCheck, label: "Verificação de Claims", href: "/app/claims" },
   { icon: Search, label: "Busca/Analytics", href: "/app/admin/search-analytics" },
   { icon: Users, label: "Usuários", href: "/app/admin/usuarios" },
   { icon: Fingerprint, label: "Identificadores", href: "/app/admin/identificadores" },
