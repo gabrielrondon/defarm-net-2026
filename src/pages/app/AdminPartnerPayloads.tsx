@@ -486,30 +486,30 @@ export default function AdminPartnerPayloads() {
                     <p className="text-sm">{selected.payload_size_bytes.toLocaleString("pt-BR")} bytes</p>
                   </div>
                 </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">SHA256</p>
-                  <p className="text-xs font-mono break-all">{selected.payload_sha256}</p>
-                </div>
+                <details className="rounded-lg border p-3">
+                  <summary className="text-xs text-muted-foreground cursor-pointer select-none">SHA256</summary>
+                  <p className="mt-2 text-xs font-mono break-all">{selected.payload_sha256}</p>
+                </details>
                 {selected.error_message ? (
                   <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
                     <p className="text-xs text-muted-foreground">Erro retornado</p>
                     <p className="text-sm text-destructive">{selected.error_message}</p>
                   </div>
                 ) : null}
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground mb-2">Resposta snapshot (quando disponível)</p>
-                  <pre className="max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
+                <details className="rounded-lg border p-3" open>
+                  <summary className="text-xs text-muted-foreground cursor-pointer select-none">Resposta snapshot (quando disponível)</summary>
+                  <pre className="mt-2 max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
                     {JSON.stringify((selected.metadata as any)?.response_snapshot || {
                       note: "Sem response_snapshot neste registro (payload antigo ou anterior ao patch).",
                     }, null, 2)}
                   </pre>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground mb-2">Metadata operacional</p>
-                  <pre className="max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
+                </details>
+                <details className="rounded-lg border p-3">
+                  <summary className="text-xs text-muted-foreground cursor-pointer select-none">Metadata operacional</summary>
+                  <pre className="mt-2 max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
                     {JSON.stringify(selected.metadata, null, 2)}
                   </pre>
-                </div>
+                </details>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
