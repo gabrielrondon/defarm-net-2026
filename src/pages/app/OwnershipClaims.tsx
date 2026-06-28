@@ -290,6 +290,8 @@ export default function OwnershipClaims() {
         </p>
       </div>
 
+      {!isAdmin && (
+      <>
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-xl border border-border bg-background p-3">
           <p className="text-xs text-muted-foreground">Claims enviados</p>
@@ -578,6 +580,8 @@ export default function OwnershipClaims() {
           </div>
         )}
       </section>
+      </>
+      )}
 
       {isAdmin && (
         <section className="bg-background border border-border rounded-xl p-4 space-y-3">
