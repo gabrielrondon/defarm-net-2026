@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -425,6 +426,13 @@ export default function AdminUsers() {
         </p>
       </div>
 
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="workspaces">Workspaces</TabsTrigger>
+        </TabsList>
+        <TabsContent value="users" className="space-y-6">
+
       <Card>
         <CardHeader>
           <CardTitle>Criar Usuário</CardTitle>
@@ -738,6 +746,8 @@ export default function AdminUsers() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+        <TabsContent value="workspaces" className="space-y-6">
 
       <Card>
         <CardHeader>
@@ -883,6 +893,8 @@ export default function AdminUsers() {
           ))}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
