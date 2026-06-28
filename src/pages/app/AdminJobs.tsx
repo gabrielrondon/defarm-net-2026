@@ -338,7 +338,7 @@ export default function AdminJobs() {
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <KeyValue
-                  label="Ingested"
+                  label="Ingeridos"
                   value={String(pipelineStatusQuery.data?.pipeline.ingested.total ?? 0)}
                 />
                 <KeyValue
@@ -354,31 +354,31 @@ export default function AdminJobs() {
                   value={String(pipelineStatusQuery.data?.pipeline.stellar_anchored.total ?? 0)}
                 />
                 <KeyValue
-                  label="Fully tokenized"
+                  label="Tokenizados"
                   value={String(
                     pipelineStatusQuery.data?.pipeline.fully_tokenized.total ?? 0
                   )}
                 />
                 <KeyValue
-                  label="Pending confirm."
+                  label="Confirmação pendente"
                   value={String(
                     pipelineStatusQuery.data?.pipeline.stuck.pending_confirmation ?? 0
                   )}
                 />
               </div>
               <div className="rounded border border-amber-400/40 bg-amber-50/40 p-3 text-xs text-amber-900">
-                missing_stellar:{" "}
+                Sem Stellar:{" "}
                 <strong>
                   {pipelineStatusQuery.data?.pipeline.stuck.missing_stellar ?? 0}
                 </strong>{" "}
-                • pending_confirmation:{" "}
+                • Confirmação pendente:{" "}
                 <strong>
                   {pipelineStatusQuery.data?.pipeline.stuck.pending_confirmation ?? 0}
                 </strong>
               </div>
               {(pipelineStatusQuery.data?.pipeline.stuck.pending_confirmation ?? 0) > 0 && (
                 <div className="rounded border border-yellow-500/40 bg-yellow-50/40 p-3 text-xs text-yellow-900">
-                  Há anchors em <strong>pending_confirmation</strong>. Se permanecer alto por muito tempo, validar listener/confirmador.
+                  Há âncoras com <strong>confirmação pendente</strong>. Se permanecer alto por muito tempo, validar listener/confirmador.
                 </div>
               )}
               <div className="space-y-1">
