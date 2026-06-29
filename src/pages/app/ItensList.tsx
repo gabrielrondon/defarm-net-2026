@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { anchorStateOf } from "@/components/proof";
 import { getItems, getItem, getCircuits, getCircuitItems, getItemAnchors, updateItemStatus, Item } from "@/lib/defarm-api";
 import { PushToCircuitDialog } from "@/components/item-detail/PushToCircuitDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -300,7 +301,8 @@ export default function ItensList() {
                 const allIdentifiers = details?.identifiers || [];
                 const stellarAnchors = anchors?.blockchain_anchors || [];
                 const ipfsRefs = anchors?.storage_refs || [];
-                const latestStellar = stellarAnchors[0];
+                // #151 Fase C: só anchor CONFIRMADO conta como prova on-chain.
+                const latestStellar = stellarAnchors.find((a: any) => anchorStateOf(a?.status) === "confirmed");
                 const latestIpfs = ipfsRefs[0];
                 const itemCircuits = circuitItemsMap[item.id] || [];
                 const isTokenized = item.dfid?.startsWith("DFID-");
