@@ -1,5 +1,6 @@
 import { Tag, MapPin, Wheat, Calendar, Link2, ExternalLink, Hash, Database } from "lucide-react";
 import { Item, IdentifierResponse, AdapterBlockchainAnchor, AdapterStorageRef, ItemVersionInfo } from "@/lib/defarm-api";
+import { anchorStateOf } from "@/components/proof";
 import { formatTime } from "./constants";
 
 interface ItemIdentifiersProps {
@@ -13,8 +14,17 @@ interface ItemIdentifiersProps {
 
 function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
   const txHash = anchor.transaction_hash || "";
-  if (!txHash) return null;
-  const explorerUrl = anchor.stellar_url || 
+  // #151 Fase C: só anchor CONFIRMADO on-chain expõe o hash/explorer como prova.
+  // pending = ainda em confirmação; failed/qualquer não-confirmado = não ancorado.
+  const state = anchorStateOf(anchor.status);
+  if (state !== "confirmed" || !txHash) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        {state === "pending" ? "Em confirmação…" : "Não ancorado"}
+      </span>
+    );
+  }
+  const explorerUrl = anchor.stellar_url ||
     `https://stellar.expert/explorer/public/tx/${txHash}`;
   return (
     <a

@@ -60,6 +60,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { anchorStateOf } from "@/components/proof";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -747,7 +748,9 @@ export default function CircuitoDetail() {
                 const allIdentifiers = details?.identifiers || [];
                 const stellarAnchors = anchors?.blockchain_anchors || [];
                 const ipfsRefs = anchors?.storage_refs || [];
-                const latestStellar = stellarAnchors[0];
+                // #151 Fase C: só anchor CONFIRMADO on-chain conta como prova (esconde o
+                // explorer p/ pending/failed; o fallback "não ancorado" cobre quando não há confirmado).
+                const latestStellar = stellarAnchors.find((a: any) => anchorStateOf(a?.status) === "confirmed");
                 const latestIpfs = ipfsRefs[0];
 
                 const normalizedItemStatus = (item.status || "").trim().toLowerCase();
