@@ -630,6 +630,31 @@ export default function AdminJobs() {
                   value={String(queueQuery.data?.xlm_low_balance_threshold ?? 0)}
                 />
               </div>
+              {queueQuery.data?.stellar_source_account && (
+                <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Carteira (top-up)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(queueQuery.data!.stellar_source_account!);
+                        toast({ title: "Endereço da carteira copiado" });
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                  <p className="mt-1 break-all font-mono text-xs text-foreground">
+                    {queueQuery.data.stellar_source_account}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Envie XLM para este endereço para abastecer a fila de ancoragem.
+                  </p>
+                </div>
+              )}
               <p className="text-[11px] text-muted-foreground">
                 Atualizado em {queueQuery.dataUpdatedAt ? formatTs(new Date(queueQuery.dataUpdatedAt).toISOString()) : "-"}
               </p>
