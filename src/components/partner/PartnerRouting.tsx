@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DefaultCircuitCard } from "@/components/partner/DefaultCircuitCard";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
 import { deleteRoutingRule, listRoutingRules, upsertRoutingRule, type RoutingRule } from "@/lib/api/partner-routing";
@@ -89,6 +90,8 @@ export function PartnerRouting() {
 
   return (
     <div className="space-y-6">
+      <DefaultCircuitCard />
+
       {/* Add rule */}
       <div className="rounded-xl bg-muted/40 p-4">
         <p className="text-sm font-medium text-foreground mb-3">Nova regra</p>
