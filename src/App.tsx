@@ -35,6 +35,7 @@ import StellarTranche2 from "./pages/StellarTranche2";
 
 import Caderneta from "./pages/app/Caderneta";
 import CircuitosList from "./pages/app/CircuitosList";
+import MeusCircuitos from "./pages/app/MeusCircuitos";
 import CircuitoDetail from "./pages/app/CircuitoDetail";
 import NovoCircuito from "./pages/app/NovoCircuito";
 import EditarCircuito from "./pages/app/EditarCircuito";
@@ -297,6 +298,14 @@ const App = () => (
               element={
                 <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
                   <AppLayout><CircuitosList /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/meus-circuitos"
+              element={
+                <RequireWorkspaceAccess allowed={["producer", "partner", "processor", "certifier", "government"]}>
+                  <AppLayout><MeusCircuitos /></AppLayout>
                 </RequireWorkspaceAccess>
               }
             />
