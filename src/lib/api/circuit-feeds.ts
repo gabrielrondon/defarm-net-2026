@@ -5,7 +5,7 @@ export interface CircuitFeed {
   id: string;
   source_circuit_id: string;
   target_circuit_id: string;
-  direction: "grant" | "invite";
+  direction: "grant" | "invite" | "request";
   status: "pending" | "active" | "revoked";
   scope_artifact_types: string[] | null;
   mode: string;
@@ -43,6 +43,52 @@ export async function revokeCircuitFeed(
   feedId: string,
 ): Promise<void> {
   return registryRequest<void>(`/circuits/${sourceCircuitId}/feeds/${feedId}/revoke`, {
+    method: "POST",
+  });
+}
+
+// --- B2: feed bidirecional com consentimento ---
+
+/** Convite (direction='invite'): o dono do TARGET convida um source a alimentá-lo. */
+export async function createFeedInvitation(
+  targetCircuitId: string,
+  sourceCircuitId: string,
+  scopeArtifactTypes: string[] | null,
+): Promise<CircuitFeed> {
+  return registryRequest<CircuitFeed>(`/circuits/${targetCircuitId}/feed-invitations`, {
+    method: "POST",
+    body: JSON.stringify({
+      source_circuit_id: sourceCircuitId,
+      scope_artifact_types: scopeArtifactTypes,
+    }),
+  });
+}
+
+/** Pedido (direction='request'): o dono do SOURCE pede p/ alimentar um target. */
+export async function createFeedRequest(
+  sourceCircuitId: string,
+  targetCircuitId: string,
+  scopeArtifactTypes: string[] | null,
+): Promise<CircuitFeed> {
+  return registryRequest<CircuitFeed>(`/circuits/${sourceCircuitId}/feed-requests`, {
+    method: "POST",
+    body: JSON.stringify({
+      target_circuit_id: targetCircuitId,
+      scope_artifact_types: scopeArtifactTypes,
+    }),
+  });
+}
+
+/** Aceitar/aprovar um feed pendente (o lado que consente). Ativa + backfill. */
+export async function acceptFeed(feedId: string): Promise<CreateCircuitFeedResponse> {
+  return registryRequest<CreateCircuitFeedResponse>(`/feeds/${feedId}/accept`, {
+    method: "POST",
+  });
+}
+
+/** Recusar um feed pendente (o lado que consente). */
+export async function rejectFeed(feedId: string): Promise<void> {
+  return registryRequest<void>(`/feeds/${feedId}/reject`, {
     method: "POST",
   });
 }
