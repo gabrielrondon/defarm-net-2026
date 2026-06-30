@@ -42,18 +42,21 @@ import {
   Clock,
   Zap,
   ShieldAlert,
+  Pencil,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   listPartnerApiKeys,
   createPartnerApiKey,
   revokePartnerApiKey,
+  editPartnerApiKey,
   getPartnerApiKeyMetrics,
 } from "@/lib/api/admin";
 import { getCircuits } from "@/lib/api/circuits";
 import type {
   PartnerApiKeyResponse,
   ApiKeyMetricsResponse,
+  EditPartnerApiKeyRequest,
   Circuit,
 } from "@/lib/api/types";
 
@@ -93,6 +96,16 @@ export default function ApiKeys() {
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<PartnerApiKeyResponse | null>(null);
   const [revoking, setRevoking] = useState(false);
+
+  // Edit (metadados mutáveis — scope/circuito são imutáveis)
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<PartnerApiKeyResponse | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editRateMin, setEditRateMin] = useState("");
+  const [editRateDay, setEditRateDay] = useState("");
+  const [editExpiry, setEditExpiry] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -177,6 +190,45 @@ export default function ApiKeys() {
       });
     } finally {
       setRevoking(false);
+    }
+  };
+
+  const openEdit = (key: PartnerApiKeyResponse) => {
+    setEditTarget(key);
+    setEditName(key.key_name);
+    setEditDescription(key.description ?? "");
+    setEditRateMin(key.rate_limit_per_minute != null ? String(key.rate_limit_per_minute) : "");
+    setEditRateDay(key.rate_limit_per_day != null ? String(key.rate_limit_per_day) : "");
+    setEditExpiry("");
+    setEditOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editTarget) return;
+    setEditing(true);
+    try {
+      // Só metadados mutáveis. Expiração só muda se preenchida (dias a partir de agora).
+      const payload: EditPartnerApiKeyRequest = {
+        key_name: editName.trim(),
+        description: editDescription,
+      };
+      if (editRateMin !== "") payload.rate_limit_per_minute = Number(editRateMin);
+      if (editRateDay !== "") payload.rate_limit_per_day = Number(editRateDay);
+      if (editExpiry !== "") payload.expires_in_days = Number(editExpiry);
+
+      await editPartnerApiKey(editTarget.id, payload);
+      toast({ title: "API Key atualizada", description: `"${editName.trim()}" foi salva.` });
+      setEditOpen(false);
+      setEditTarget(null);
+      fetchData();
+    } catch (err: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: err?.message || "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setEditing(false);
     }
   };
 
@@ -348,6 +400,16 @@ export default function ApiKeys() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {key.is_active && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEdit(key)}
+                          title="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -476,6 +538,94 @@ export default function ApiKeys() {
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Criar chave
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit dialog — só metadados mutáveis (scope/circuito imutáveis) */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar API Key</DialogTitle>
+            <DialogDescription>
+              Edite nome, descrição, limites e expiração. Escopo e circuito são fixos —
+              para mudar o acesso, revogue e crie uma nova chave.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {editTarget ? (
+              <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+                Escopo:{" "}
+                <strong>
+                  {editTarget.scope === "workspace_ingestion" ? "Recepção inteligente" : "Circuito específico"}
+                </strong>{" "}
+                (imutável)
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="editName">Nome da chave *</Label>
+              <Input
+                id="editName"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="ex: Integração ERP"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDesc">Descrição</Label>
+              <Input
+                id="editDesc"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Para que será usada"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="editRateMin">Limite / minuto</Label>
+                <Input
+                  id="editRateMin"
+                  type="number"
+                  value={editRateMin}
+                  onChange={(e) => setEditRateMin(e.target.value)}
+                  placeholder="60"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editRateDay">Limite / dia</Label>
+                <Input
+                  id="editRateDay"
+                  type="number"
+                  value={editRateDay}
+                  onChange={(e) => setEditRateDay(e.target.value)}
+                  placeholder="10000"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editExpiry">Nova expiração em dias (opcional)</Label>
+              <Input
+                id="editExpiry"
+                type="number"
+                value={editExpiry}
+                onChange={(e) => setEditExpiry(e.target.value)}
+                placeholder="deixe vazio para manter"
+              />
+              <p className="text-xs text-muted-foreground">
+                {editTarget?.expires_at
+                  ? `Atual: expira em ${new Date(editTarget.expires_at).toLocaleDateString("pt-BR")}`
+                  : "Atual: sem expiração"}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEdit} disabled={editing || !editName.trim()}>
+              {editing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar
             </Button>
           </DialogFooter>
         </DialogContent>

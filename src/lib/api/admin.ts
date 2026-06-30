@@ -4,6 +4,7 @@ import type {
   CreateApiKeyResponse,
   CreatePartnerApiKeyRequest,
   CreatePartnerApiKeyResponse,
+  EditPartnerApiKeyRequest,
   PartnerApiKeyResponse,
   ApiKeyMetricsResponse,
 } from "./types";
@@ -56,6 +57,16 @@ export async function listPartnerApiKeys(): Promise<PartnerApiKeyResponse[]> {
 export async function revokePartnerApiKey(keyId: string): Promise<void> {
   return registryRequest<void>(`/partner/api-keys/${keyId}`, {
     method: "DELETE",
+  });
+}
+
+export async function editPartnerApiKey(
+  keyId: string,
+  data: EditPartnerApiKeyRequest
+): Promise<PartnerApiKeyResponse> {
+  return registryRequest<PartnerApiKeyResponse>(`/partner/api-keys/${keyId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
   });
 }
 

@@ -862,6 +862,16 @@ export interface CreatePartnerApiKeyResponse {
   message: string;
 }
 
+/** Edição de api-key — só metadados mutáveis. scope/circuit/hash são imutáveis
+ *  (trocar isso = revogar+recriar). Campos ausentes não mudam (COALESCE no backend). */
+export interface EditPartnerApiKeyRequest {
+  key_name?: string;
+  description?: string;
+  rate_limit_per_minute?: number;
+  rate_limit_per_day?: number;
+  expires_in_days?: number;
+}
+
 export interface ApiKeyMetricsResponse {
   api_key_id: string;
   requests_total: number;
