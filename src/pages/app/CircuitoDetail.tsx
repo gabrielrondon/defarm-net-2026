@@ -80,6 +80,7 @@ import {
 } from "@/lib/api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import { CircuitFeeds } from "@/components/circuit/CircuitFeeds";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 export default function CircuitoDetail() {
   const { user } = useAuth();
@@ -577,6 +578,15 @@ export default function CircuitoDetail() {
         </div>
       </div>
 
+      <Tabs defaultValue="itens" className="space-y-4">
+        <TabsList className="flex flex-wrap h-auto">
+          <TabsTrigger value="itens">Itens</TabsTrigger>
+          <TabsTrigger value="feeds">Feeds</TabsTrigger>
+          <TabsTrigger value="compartilhamento">Compartilhamento</TabsTrigger>
+          <TabsTrigger value="propriedades">Propriedades</TabsTrigger>
+        </TabsList>
+
+      <TabsContent value="compartilhamento">
       <div className="bg-background border border-border rounded-xl p-4 space-y-3">
         <div>
           <h2 className="font-semibold text-foreground">Compartilhamento público</h2>
@@ -655,6 +665,9 @@ export default function CircuitoDetail() {
         </div>
       </div>
 
+      </TabsContent>
+
+      <TabsContent value="propriedades">
       <div className="bg-background border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -708,9 +721,14 @@ export default function CircuitoDetail() {
         )}
       </div>
 
+      </TabsContent>
+
+      <TabsContent value="feeds">
       {/* Feeds entre circuitos (artifact-model Track B / A1) */}
       <CircuitFeeds circuitId={id!} />
+      </TabsContent>
 
+      <TabsContent value="itens">
       {/* Items table */}
       <div className="bg-background border border-border rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -911,6 +929,8 @@ export default function CircuitoDetail() {
           </div>
         )}
       </div>
+      </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       {circuit && (
