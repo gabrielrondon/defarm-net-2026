@@ -215,7 +215,8 @@ export interface DefaultCircuitResponse {
   circuit_id: string;
   name: string;
   is_staging: boolean;
-  source: "ApiKeyMetadata" | "PartnerStagingFlag" | "Fallback" | "WorkspaceSetting";
+  // Backend serializa em snake_case; mantemos string ampla por robustez.
+  source: "api_key_metadata" | "partner_staging_flag" | "fallback" | "workspace_setting" | string;
   workspace_id: string;
   changed: boolean;
 }
