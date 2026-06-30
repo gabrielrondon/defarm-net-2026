@@ -5,6 +5,7 @@ import { getCircuits } from "@/lib/api/circuits";
 import { listPartnerApiKeys, getPartnerApiKeyMetrics } from "@/lib/api/admin";
 import { listIngestionTemplates } from "@/lib/api/ingestion-templates";
 import { listRawPayloads, listRoutingIssues } from "@/lib/api/partner-routing";
+import { ReceptionStrip } from "@/components/partner/ReceptionStrip";
 import type { Circuit, PartnerApiKeyResponse } from "@/lib/api/types";
 
 interface OverviewMetrics {
@@ -108,6 +109,9 @@ export function PartnerOverview() {
 
   return (
     <div className="space-y-6">
+      {/* "Seu recebimento": responde onde caem / está funcionando / como mando, na cara */}
+      <ReceptionStrip />
+
       {/* Metrics row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
