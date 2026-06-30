@@ -74,6 +74,7 @@ const navCatalog: NavItem[] = [
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
+  { icon: GitBranch, label: "Meus Circuitos", href: "/app/meus-circuitos" },
   { icon: Package, label: "Itens", href: "/app/itens" },
   { icon: Activity, label: "Eventos", href: "/app/eventos" },
   { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
@@ -85,7 +86,7 @@ const navCatalog: NavItem[] = [
 ];
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
-  partner: ["/app/parceiro", "/app/parceiro/ingestao", "https://docs.defarm.net/docs/getting-started", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
+  partner: ["/app/parceiro", "/app/parceiro/ingestao", "/app/meus-circuitos", "/app/itens", "https://docs.defarm.net/docs/getting-started", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
   producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance", "/app/eudr/poligono"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance", "/app/eudr/poligono"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance", "/app/eudr/poligono"],
