@@ -91,6 +91,8 @@ export interface QueueStatusResponse {
   xlm_low_balance_threshold: number;
   low_xlm_mode: boolean;
   active_queues: string[];
+  /** G-address pública da carteira p/ top-up (admin). Null se não derivou. */
+  stellar_source_account?: string | null;
 }
 
 export interface TokenizationHealthResponse {
