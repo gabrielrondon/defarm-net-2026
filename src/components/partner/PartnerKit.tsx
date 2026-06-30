@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 import { CheckCircle2, Copy, ExternalLink, FileText, Link2 } from "lucide-react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const KIT_TEMPLATE = `value_chain,country,year,sisbov,chip,ear_tag,birth_date,sex,lot_name,zone_name,source_system
 BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,parceiro_a
@@ -210,93 +211,118 @@ export function PartnerKit() {
         Importante: o endpoint <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions</code> já faz roteamento inteligente e não exige template.
       </p>
 
-      {/* Code examples — collapsible sections */}
-      <div className="space-y-4">
+      {/* Code examples — accordion enxuto (era 7 cards sempre abertos = parede de texto) */}
+      <div className="space-y-3">
         <p className="section-label">Referência de integração</p>
+        <p className="text-xs text-muted-foreground -mt-1">
+          O essencial é o Passo 1. Abra os blocos abaixo conforme precisar — nada além do envio é obrigatório.
+        </p>
+        <Accordion type="single" collapsible defaultValue="step1" className="space-y-2">
+          <AccordionItem value="client" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">Cliente oficial para parceiro (recomendado)</AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Use <code className="text-xs bg-muted px-1 py-0.5 rounded">@defarm/partner-client</code> para enviar arquivos,
+                interpretar resposta e reconciliar links por referência do parceiro.
+              </p>
+              <pre className="code-block">{PARTNER_CLIENT_EXAMPLE}</pre>
+              <p className="text-xs text-muted-foreground">
+                Kit para IA/copilot disponível em <code className="text-xs bg-muted px-1 py-0.5 rounded">docs/partner/ai-skill-kit.md</code>.
+              </p>
+            </AccordionContent>
+          </AccordionItem>
 
-        <Card className="p-4 space-y-3">
-          <p className="text-sm font-medium text-foreground">Cliente oficial para parceiro (recomendado)</p>
-          <p className="text-xs text-muted-foreground">
-            Use <code className="text-xs bg-muted px-1 py-0.5 rounded">@defarm/partner-client</code> para enviar arquivos,
-            interpretar resposta e reconciliar links por referência do parceiro.
-          </p>
-          <pre className="code-block">{PARTNER_CLIENT_EXAMPLE}</pre>
-          <p className="text-xs text-muted-foreground">
-            Kit para IA/copilot disponível em <code className="text-xs bg-muted px-1 py-0.5 rounded">docs/partner/ai-skill-kit.md</code>.
-          </p>
-        </Card>
+          <AccordionItem value="jwt" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">Login JWT (setup)</AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">Use JWT para configuração. API key para operação diária.</p>
+                <Button size="sm" variant="ghost" onClick={copyJwt} className="h-7 px-2 text-xs shrink-0">
+                  {copied === "jwt" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                  {copied === "jwt" ? "Copiado" : "Copiar"}
+                </Button>
+              </div>
+              <pre className="code-block">{JWT_LOGIN_EXAMPLE}</pre>
+            </AccordionContent>
+          </AccordionItem>
 
-        <Card className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Login JWT (setup)</p>
-            <Button size="sm" variant="ghost" onClick={copyJwt} className="h-7 px-2 text-xs">
-              {copied === "jwt" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-              {copied === "jwt" ? "Copiado" : "Copiar"}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Use JWT para configuração. API key para operação diária.
-          </p>
-          <pre className="code-block">{JWT_LOGIN_EXAMPLE}</pre>
-        </Card>
+          <AccordionItem value="step1" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">
+              <span className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">Passo 1</span>
+                Upload via cURL (básico)
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <div className="flex justify-end">
+                <Button size="sm" variant="ghost" onClick={copyCurl} className="h-7 px-2 text-xs">
+                  {copied === "curl" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                  {copied === "curl" ? "Copiado" : "Copiar"}
+                </Button>
+              </div>
+              <pre className="code-block">{CURL_EXAMPLE}</pre>
+              <p className="text-xs text-muted-foreground">
+                Alternativa: também aceitamos JSON direto no body (sem multipart), útil para integração backend-to-backend.
+              </p>
+              <pre className="code-block">{JSON_DIRECT_EXAMPLE}</pre>
+            </AccordionContent>
+          </AccordionItem>
 
-        <Card className="p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Passo 1 (básico)</p>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Upload via cURL</p>
-            <Button size="sm" variant="ghost" onClick={copyCurl} className="h-7 px-2 text-xs">
-              {copied === "curl" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-              {copied === "curl" ? "Copiado" : "Copiar"}
-            </Button>
-          </div>
-          <pre className="code-block">{CURL_EXAMPLE}</pre>
-          <p className="text-xs text-muted-foreground">
-            Alternativa: também aceitamos JSON direto no body (sem multipart), útil para integração backend-to-backend.
-          </p>
-          <pre className="code-block">{JSON_DIRECT_EXAMPLE}</pre>
-        </Card>
+          <AccordionItem value="step2" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">
+              <span className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">Passo 2</span>
+                Preview (dry-run) antes do envio real
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions/preview</code> para simular roteamento sem tokenizar.
+              </p>
+              <pre className="code-block">{PREVIEW_EXAMPLE}</pre>
+            </AccordionContent>
+          </AccordionItem>
 
-        <Card className="p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Passo 2 (validação)</p>
-          <p className="text-sm font-medium text-foreground">Preview (dry-run) antes do envio real</p>
-          <p className="text-xs text-muted-foreground">
-            Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions/preview</code> para simular roteamento sem tokenizar.
-          </p>
-          <pre className="code-block">{PREVIEW_EXAMPLE}</pre>
-        </Card>
+          <AccordionItem value="step3" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">
+              <span className="flex items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">Passo 3</span>
+                Template opcional (mapeamento)
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Se precisar mapear nomes de colunas diferentes, crie template e envie <code className="text-xs bg-muted px-1 py-0.5 rounded">template_id</code> no upload.
+                </p>
+                <Button size="sm" variant="ghost" onClick={copyTemplateApi} className="h-7 px-2 text-xs shrink-0">
+                  {copied === "template" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                  {copied === "template" ? "Copiado" : "Copiar"}
+                </Button>
+              </div>
+              <pre className="code-block">{TEMPLATE_API_EXAMPLE}</pre>
+            </AccordionContent>
+          </AccordionItem>
 
-        <Card className="p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Passo 3 (opcional)</p>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Template opcional (mapeamento)</p>
-            <Button size="sm" variant="ghost" onClick={copyTemplateApi} className="h-7 px-2 text-xs">
-              {copied === "template" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-              {copied === "template" ? "Copiado" : "Copiar"}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Se precisar mapear nomes de colunas diferentes, crie template e envie <code className="text-xs bg-muted px-1 py-0.5 rounded">template_id</code> no upload.
-          </p>
-          <pre className="code-block">{TEMPLATE_API_EXAMPLE}</pre>
-        </Card>
+          <AccordionItem value="ai" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">Opcional — AI Skill + Client</AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">Se quiser acelerar com IA/copilot, use o cliente oficial e o kit de prompt.</p>
+              <pre className="code-block">{`npm install @defarm/partner-client\nhttps://docs.defarm.net/docs/partner-tooling`}</pre>
+            </AccordionContent>
+          </AccordionItem>
 
-        <Card className="p-4 space-y-3">
-          <p className="text-xs uppercase tracking-wide text-primary font-semibold">Opcional (AI Skill)</p>
-          <p className="text-sm font-medium text-foreground">AI Skill + Client</p>
-          <p className="text-xs text-muted-foreground">
-            Se quiser acelerar com IA/copilot, use o cliente oficial e o kit de prompt.
-          </p>
-          <pre className="code-block">{`npm install @defarm/partner-client\nhttps://docs.defarm.net/docs/partner-tooling`}</pre>
-        </Card>
-
-        <Card className="p-4 space-y-3">
-          <p className="text-sm font-medium text-foreground">Resposta útil para navegação</p>
-          <p className="text-xs text-muted-foreground">
-            Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">items[].url</code> para abrir item por item (DFID + identificadores) e
-            <code className="text-xs bg-muted px-1 py-0.5 rounded ml-1">errors[]</code> para saber exatamente o que corrigir.
-          </p>
-          <pre className="code-block">{RESPONSE_EXAMPLE}</pre>
-        </Card>
+          <AccordionItem value="response" className="border rounded-lg px-4">
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">Resposta útil para navegação</AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">items[].url</code> para abrir item por item (DFID + identificadores) e
+                <code className="text-xs bg-muted px-1 py-0.5 rounded ml-1">errors[]</code> para saber exatamente o que corrigir.
+              </p>
+              <pre className="code-block">{RESPONSE_EXAMPLE}</pre>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
       {/* Checklist — flat list, no card */}

@@ -36,6 +36,8 @@ import {
   Mail,
   Coins,
   Upload,
+  Route,
+  PackageOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -64,12 +66,15 @@ const navCatalog: NavItem[] = [
   { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
   { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
   { icon: Upload, label: "Enviar dados", href: "/app/parceiro/ingestao" },
+  { icon: Route, label: "Roteamento", href: "/app/parceiro/roteamento" },
   { icon: BookOpen, label: "Docs", href: "https://docs.defarm.net/docs/getting-started", external: true },
   { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
   { icon: Key, label: "API Keys", href: "/app/api-keys" },
   { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
   { icon: TerminalSquare, label: "CLI", href: "/app/cli" },
   { icon: Code2, label: "SDK", href: "/app/sdk" },
+  { icon: PackageOpen, label: "Kit", href: "/app/parceiro/kit" },
+  { icon: Layers, label: "Embed", href: "/app/parceiro/embed" },
   { icon: Building2, label: "Docs Governo", href: "/app/governo/docs" },
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
@@ -86,11 +91,26 @@ const navCatalog: NavItem[] = [
 ];
 
 const navByWorkspace: Record<WorkspaceType, string[]> = {
-  partner: ["/app/parceiro", "/app/parceiro/ingestao", "/app/meus-circuitos", "/app/itens", "https://docs.defarm.net/docs/getting-started", "/app/parceiro/logs", "/app/api-keys", "/app/webhooks", "/app/cli", "/app/sdk"],
+  partner: ["/app/parceiro", "/app/parceiro/ingestao", "/app/parceiro/roteamento", "/app/parceiro/logs", "/app/meus-circuitos", "/app/itens", "/app/parceiro/kit", "/app/parceiro/embed", "/app/cli", "/app/sdk", "https://docs.defarm.net/docs/getting-started", "/app/api-keys", "/app/webhooks"],
   producer: ["/app", "/app/claims", "/app/circuitos", "/app/itens", "/app/eventos", "/app/finance", "/app/compliance", "/app/eudr/poligono"],
   certifier: ["/app/claims", "/app/propriedades/rebanho", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance", "/app/eudr/poligono"],
   processor: ["/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/finance", "/app/compliance", "/app/eudr/poligono"],
   government: ["/app/governo/docs", "/app/circuitos", "/app/itens", "/app/eventos", "/app/auditoria", "/app/compliance", "/app/eudr/poligono"],
+};
+
+// Menu lateral agrupado por seção (hoje só o parceiro). Onda A: dissolvemos as abas
+// do Portal e demos a cada capacidade um lar coerente no menu, em vez do split
+// arbitrário aba-vs-sidebar. Workspaces sem grupo caem no render liso (1 grupo sem
+// label = lista plana, comportamento idêntico ao anterior).
+type NavGroup = { label?: string; hrefs: string[] };
+const navGroupsByWorkspace: Partial<Record<WorkspaceType, NavGroup[]>> = {
+  partner: [
+    { hrefs: ["/app/parceiro"] },
+    { label: "Operar", hrefs: ["/app/parceiro/ingestao", "/app/parceiro/roteamento", "/app/parceiro/logs"] },
+    { label: "Catálogo", hrefs: ["/app/meus-circuitos", "/app/itens"] },
+    { label: "Integração", hrefs: ["/app/parceiro/kit", "/app/parceiro/embed", "/app/cli", "/app/sdk", "https://docs.defarm.net/docs/getting-started"] },
+    { label: "Config", hrefs: ["/app/api-keys", "/app/webhooks"] },
+  ],
 };
 
 // Presentation for the role-based action menu (engines #119, decision D12). The
@@ -149,11 +169,27 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [demoSwitchLoading, setDemoSwitchLoading] = useState(false);
   const workspaceType = user?.workspace_type || "producer";
   const workspaceMenu = navByWorkspace[workspaceType as WorkspaceType] ?? navByWorkspace.producer;
-  const visibleNavItems = user?.is_admin
+  const resolveNavItems = (hrefs: string[]) =>
+    hrefs
+      .map((href) => navCatalog.find((item) => item.href === href))
+      .filter((item): item is NavItem => !!item);
+  // Render agrupado quando o workspace tem seções (parceiro); senão, 1 grupo sem
+  // label = lista plana (idêntico ao comportamento anterior).
+  const navGroups: { label?: string; items: NavItem[] }[] = user?.is_admin
     ? []
-    : workspaceMenu
-        .map((href) => navCatalog.find((item) => item.href === href))
-        .filter((item): item is NavItem => !!item);
+    : (navGroupsByWorkspace[workspaceType as WorkspaceType] ?? [{ hrefs: workspaceMenu }]).map((g) => ({
+        label: g.label,
+        items: resolveNavItems(g.hrefs),
+      }));
+  // Item ativo = href interno mais específico (longest prefix) que casa com a rota
+  // atual. Evita destaque duplo agora que sub-rotas do parceiro (ingestao/roteamento)
+  // são itens próprios ao lado de "/app/parceiro".
+  const activeHref = navGroups
+    .flatMap((g) => g.items)
+    .filter((item) => !item.external)
+    .map((item) => item.href)
+    .filter((href) => location.pathname === href || (href !== "/app" && location.pathname.startsWith(href + "/")))
+    .sort((a, b) => b.length - a.length)[0];
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -320,47 +356,55 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {visibleNavItems.map((item) => {
-            const isActive =
-              !item.external &&
-              (location.pathname === item.href ||
-                (item.href !== "/app" && location.pathname.startsWith(item.href)));
+          {navGroups.map((group, gi) => (
+            <div key={group.label ?? `group-${gi}`} className={cn("space-y-1", gi > 0 && "pt-3")}>
+              {group.label ? (
+                <div className="pb-1 px-3">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {group.label}
+                  </span>
+                </div>
+              ) : null}
+              {group.items.map((item) => {
+                const isActive = !item.external && item.href === activeHref;
 
-            if (item.external) {
-              return (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                  <ExternalLink className="h-4 w-4 ml-auto" />
-                </a>
-              );
-            }
+                if (item.external) {
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setSidebarOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                      <ExternalLink className="h-4 w-4 ml-auto" />
+                    </a>
+                  );
+                }
 
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-                {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
 
           {/* Ações da persona — backend-driven (capabilities, #119) */}
           {!user?.is_admin && actionSections.length > 0 && (
