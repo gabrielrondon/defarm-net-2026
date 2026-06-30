@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getArtifactPresentation } from "@/lib/artifact-presentation";
 import { anchorStateOf } from "@/components/proof";
 import { getItems, getItem, getCircuits, getCircuitItems, getItemAnchors, updateItemStatus, Item } from "@/lib/defarm-api";
 import { PushToCircuitDialog } from "@/components/item-detail/PushToCircuitDialog";
@@ -306,6 +307,8 @@ export default function ItensList() {
                 const latestIpfs = ipfsRefs[0];
                 const itemCircuits = circuitItemsMap[item.id] || [];
                 const isTokenized = item.dfid?.startsWith("DFID-");
+                const pres = getArtifactPresentation(item.artifact_type);
+                const ArtifactIcon = pres.icon;
 
                 return (
                   <TableRow
@@ -318,9 +321,13 @@ export default function ItensList() {
                       <div className="flex items-center gap-3">
                         <div className={cn(
                           "w-8 h-8 rounded-lg flex items-center justify-center",
-                          isTokenized ? "bg-primary/10" : "bg-muted"
+                          pres.known ? pres.accent : isTokenized ? "bg-primary/10" : "bg-muted"
                         )}>
-                          <QrCode className={cn("h-4 w-4", isTokenized ? "text-primary" : "text-muted-foreground")} />
+                          {pres.known ? (
+                            <ArtifactIcon className="h-4 w-4" />
+                          ) : (
+                            <QrCode className={cn("h-4 w-4", isTokenized ? "text-primary" : "text-muted-foreground")} />
+                          )}
                         </div>
                         <p className="font-mono text-sm font-medium text-foreground">
                           {(item.dfid || "").length > 20 ? `${item.dfid.slice(0, 20)}...` : item.dfid}
@@ -358,6 +365,15 @@ export default function ItensList() {
                     {/* Cadeia / País */}
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
+                        {pres.known && (
+                          <span className={cn(
+                            "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs",
+                            pres.accent
+                          )}>
+                            <ArtifactIcon className="h-3 w-3" />
+                            {pres.label}
+                          </span>
+                        )}
                         {item.value_chain && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
                             {item.value_chain}
