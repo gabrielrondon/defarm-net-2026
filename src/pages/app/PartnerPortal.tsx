@@ -1,29 +1,16 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  PartnerOverview,
-  PartnerKit,
-  PartnerRouting,
-  PartnerOperations,
-  PartnerEmbed,
-} from "@/components/partner";
+import { PartnerOverview } from "@/components/partner";
 import { PartnerUsageCard } from "@/components/partner/PartnerUsageCard";
-import { BarChart3, PackageOpen, Route, Database, Code2, Languages } from "lucide-react";
+import { Languages } from "lucide-react";
 import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
 
-const tabs = [
-  { value: "overview", label: { "pt-BR": "Visão Geral", en: "Overview" }, icon: BarChart3 },
-  { value: "kit", label: { "pt-BR": "Kit Parceiro", en: "Partner Kit" }, icon: PackageOpen },
-  { value: "routing", label: { "pt-BR": "Roteamento", en: "Routing" }, icon: Route },
-  { value: "intake", label: { "pt-BR": "Operações", en: "Operations" }, icon: Database },
-  { value: "embed", label: { "pt-BR": "Embed", en: "Embed" }, icon: Code2 },
-] as const;
-
+/**
+ * Portal do Parceiro = dashboard (Visão Geral). Onda A: dissolvemos as abas
+ * (Kit/Roteamento/Operações/Embed) — cada capacidade virou item do menu lateral,
+ * agrupado em Operar/Catálogo/Integração/Config. Aqui mora só o "como estou indo":
+ * Seu recebimento + uso/saldo + onboarding.
+ */
 export default function PartnerPortal() {
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["value"]>("overview");
   const { locale, setLocale } = usePartnerPortalLocale();
 
   return (
@@ -59,31 +46,11 @@ export default function PartnerPortal() {
         </p>
       </div>
 
-
       <PartnerUsageCard locale={locale} />
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as (typeof tabs)[number]["value"])} className="w-full">
-        <TabsList className="w-full justify-start overflow-x-auto flex-nowrap h-auto p-0.5 bg-transparent border-b border-border rounded-none mb-8 gap-1">
-          {tabs.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm whitespace-nowrap rounded-lg data-[state=active]:bg-muted data-[state=active]:shadow-none data-[state=inactive]:text-muted-foreground border-0"
-            >
-              <tab.icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label[locale]}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value={activeTab}>
-          {activeTab === "overview" ? <PartnerOverview /> : null}
-          {activeTab === "kit" ? <PartnerKit /> : null}
-          {activeTab === "routing" ? <PartnerRouting /> : null}
-          {activeTab === "intake" ? <PartnerOperations /> : null}
-          {activeTab === "embed" ? <PartnerEmbed locale={locale} /> : null}
-        </TabsContent>
-      </Tabs>
+      <div className="mt-8">
+        <PartnerOverview />
+      </div>
     </div>
   );
 }

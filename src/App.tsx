@@ -88,6 +88,8 @@ import PartnerDocs from "./pages/app/PartnerDocs";
 import PartnerRoteamento from "./pages/app/PartnerRoteamento";
 import PartnerIngestao from "./pages/app/PartnerIngestao";
 import PartnerLogs from "./pages/app/PartnerLogs";
+import PartnerKitPage from "./pages/app/PartnerKitPage";
+import PartnerEmbedPage from "./pages/app/PartnerEmbedPage";
 import OwnershipClaims from "./pages/app/OwnershipClaims";
 import PropertyHerd from "./pages/app/PropertyHerd";
 import GovernmentDocs from "./pages/app/GovernmentDocs";
@@ -501,6 +503,22 @@ const App = () => (
               element={
                 <RequireWorkspaceAccess allowed={["partner"]}>
                   <AppLayout><PartnerLogs /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/parceiro/kit"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerKitPage /></AppLayout>
+                </RequireWorkspaceAccess>
+              }
+            />
+            <Route
+              path="/app/parceiro/embed"
+              element={
+                <RequireWorkspaceAccess allowed={["partner"]}>
+                  <AppLayout><PartnerEmbedPage /></AppLayout>
                 </RequireWorkspaceAccess>
               }
             />
