@@ -16,7 +16,12 @@ import {
 import { Inbox } from "lucide-react";
 
 // Traduz a origem técnica do default p/ linguagem do usuário (sem jargão).
+// O backend serializa em snake_case (partner_staging_flag); aceitamos também PascalCase por robustez.
 const SOURCE_LABEL: Record<string, string> = {
+  api_key_metadata: "definido na sua chave de API",
+  workspace_setting: "definido por você",
+  partner_staging_flag: "padrão automático do workspace",
+  fallback: "automático (circuito mais antigo)",
   ApiKeyMetadata: "definido na sua chave de API",
   WorkspaceSetting: "definido por você",
   PartnerStagingFlag: "padrão automático do workspace",
