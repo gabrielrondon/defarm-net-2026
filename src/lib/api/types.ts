@@ -9,6 +9,10 @@ export interface Item {
   id: string;
   dfid: string;
   value_chain: string;
+  /** O que o DFID representa (animal | commodity | lot | property | ...). Exposto
+   *  pelo engine (ItemResponse.artifact_type); guia o render-by-type. Pode ser null
+   *  em itens antigos não classificados. */
+  artifact_type?: string | null;
   country: string;
   year: number;
   status: string;

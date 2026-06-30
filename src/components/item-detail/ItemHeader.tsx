@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Item } from "@/lib/defarm-api";
+import { getArtifactPresentation } from "@/lib/artifact-presentation";
 import { PushToCircuitDialog } from "./PushToCircuitDialog";
 import { EditMetadataDialog } from "./EditMetadataDialog";
 import { DeprecateItemDialog } from "./DeprecateItemDialog";
@@ -37,6 +38,8 @@ export function ItemHeader({ item }: ItemHeaderProps) {
   const [isDeprecateOpen, setIsDeprecateOpen] = useState(false);
   const dfid = item?.dfid ?? "";
   const isTokenized = dfid.startsWith("DFID-");
+  const pres = getArtifactPresentation(item.artifact_type);
+  const ArtifactIcon = pres.icon;
 
   const handleCopyDfid = () => {
     if (dfid) {
@@ -62,10 +65,12 @@ export function ItemHeader({ item }: ItemHeaderProps) {
             <div
               className={cn(
                 "w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0",
-                isTokenized ? "bg-primary/10" : "bg-muted"
+                pres.known ? pres.accent : isTokenized ? "bg-primary/10" : "bg-muted"
               )}
             >
-              {isTokenized ? (
+              {pres.known ? (
+                <ArtifactIcon className="h-7 w-7" />
+              ) : isTokenized ? (
                 <QrCode className="h-7 w-7 text-primary" />
               ) : (
                 <Package className="h-7 w-7 text-muted-foreground" />
@@ -119,6 +124,17 @@ export function ItemHeader({ item }: ItemHeaderProps) {
                     </>
                   )}
                 </span>
+                {pres.known ? (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                      pres.accent
+                    )}
+                  >
+                    <ArtifactIcon className="h-3 w-3" />
+                    {pres.label}
+                  </span>
+                ) : null}
               </div>
               <button
                 onClick={handleCopyDfid}
