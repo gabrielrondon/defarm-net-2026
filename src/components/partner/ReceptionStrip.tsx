@@ -20,7 +20,8 @@ export function ReceptionStrip() {
   });
 
   const defaultName = defaultQuery.data?.name;
-  const recentCount = recentQuery.data?.length ?? 0;
+  // listRawPayloads retorna { rows, count } — não um array. (bug pego pelo Hetzner)
+  const recentCount = recentQuery.data?.rows?.length ?? 0;
 
   return (
     <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
