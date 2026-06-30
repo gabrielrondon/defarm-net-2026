@@ -79,6 +79,7 @@ import {
   type PropertyCompliance,
 } from "@/lib/api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
+import { CircuitFeeds } from "@/components/circuit/CircuitFeeds";
 import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 export default function CircuitoDetail() {
   const { user } = useAuth();
@@ -706,6 +707,9 @@ export default function CircuitoDetail() {
           </div>
         )}
       </div>
+
+      {/* Feeds entre circuitos (artifact-model Track B / A1) */}
+      <CircuitFeeds circuitId={id!} />
 
       {/* Items table */}
       <div className="bg-background border border-border rounded-2xl overflow-hidden">
