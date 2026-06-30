@@ -6,6 +6,7 @@ import {
   getAdminJobsSummary,
   getAdminPipelineStatus,
   getAdminQueueStatus,
+  getAdminReanchorStatus,
   getAdminTokenizationHealth,
   listAdminJobs,
   retryAdminJob,
@@ -190,6 +191,12 @@ export default function AdminJobs() {
   const tokenizationHealthQuery = useQuery({
     queryKey: ["admin-tokenization-health"],
     queryFn: getAdminTokenizationHealth,
+    refetchInterval: 15000,
+  });
+
+  const reanchorQuery = useQuery({
+    queryKey: ["admin-reanchor-status"],
+    queryFn: getAdminReanchorStatus,
     refetchInterval: 15000,
   });
 
@@ -659,6 +666,45 @@ export default function AdminJobs() {
                 Atualizado em {queueQuery.dataUpdatedAt ? formatTs(new Date(queueQuery.dataUpdatedAt).toISOString()) : "-"}
               </p>
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            Re-anchor (remediação)
+            <Badge variant={reanchorQuery.data?.enabled ? "default" : "secondary"}>
+              {reanchorQuery.data?.enabled
+                ? reanchorQuery.data?.pilot_active
+                  ? "piloto"
+                  : "ligado"
+                : "desligado"}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {reanchorQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando…</p>
+          ) : reanchorQuery.data ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <KeyValue label="Confirmados" value={String(reanchorQuery.data.confirmed)} />
+                <KeyValue label="Failed (total)" value={String(reanchorQuery.data.failed_total)} />
+                <KeyValue label="Elegíveis" value={String(reanchorQuery.data.eligible)} />
+                <KeyValue label="Esgotados" value={String(reanchorQuery.data.maxed)} />
+                <KeyValue label="Em confirmação" value={String(reanchorQuery.data.pending_inflight)} />
+                <KeyValue label="Re-anchors (1h)" value={String(reanchorQuery.data.reanchored_last_hour)} />
+                <KeyValue label="Gate XLM" value={String(reanchorQuery.data.xlm_min)} />
+                <KeyValue label="Tentativas máx" value={String(reanchorQuery.data.max_attempts)} />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Último re-anchor: {reanchorQuery.data.last_reanchor_at ? formatTs(reanchorQuery.data.last_reanchor_at) : "—"}
+                {" · "}lote {reanchorQuery.data.batch}/ciclo · espaçamento {reanchorQuery.data.spacing_secs}s
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Sem dados.</p>
           )}
         </CardContent>
       </Card>

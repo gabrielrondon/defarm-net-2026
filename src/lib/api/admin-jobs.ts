@@ -95,6 +95,22 @@ export interface QueueStatusResponse {
   stellar_source_account?: string | null;
 }
 
+export interface ReanchorStatusResponse {
+  enabled: boolean;
+  pilot_active: boolean;
+  max_attempts: number;
+  batch: number;
+  spacing_secs: number;
+  xlm_min: number;
+  confirmed: number;
+  failed_total: number;
+  eligible: number;
+  maxed: number;
+  pending_inflight: number;
+  reanchored_last_hour: number;
+  last_reanchor_at: string | null;
+}
+
 export interface TokenizationHealthResponse {
   total_items: number;
   by_value_chain: Record<
@@ -251,6 +267,10 @@ export async function retryAdminJobsBatch(
 
 export async function getAdminQueueStatus(): Promise<QueueStatusResponse> {
   return registryRequest<QueueStatusResponse>("/adapter/admin/queues");
+}
+
+export async function getAdminReanchorStatus(): Promise<ReanchorStatusResponse> {
+  return registryRequest<ReanchorStatusResponse>("/adapter/admin/reanchor-status");
 }
 
 export async function getAdminTokenizationHealth(): Promise<TokenizationHealthResponse> {
