@@ -311,16 +311,16 @@ export default function ApiKeys() {
                   <TableCell>
                     {key.scope === "workspace_ingestion" ? (
                       <div className="space-y-1">
-                        <Badge variant="outline" className="font-mono text-xs">workspace_ingestion</Badge>
+                        <Badge variant="secondary" className="text-xs">Recepção inteligente</Badge>
                         {key.staging_circuit_id ? (
                           <p className="text-xs text-muted-foreground">
-                            staging: {getCircuitName(key.staging_circuit_id)}
+                            Recebe em: {getCircuitName(key.staging_circuit_id)}
                           </p>
                         ) : null}
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        <Badge variant="outline" className="font-mono text-xs">circuit</Badge>
+                        <Badge variant="secondary" className="text-xs">Circuito específico</Badge>
                         {key.circuit_id ? (
                           <p className="text-xs text-muted-foreground">{getCircuitName(key.circuit_id)}</p>
                         ) : null}
@@ -405,12 +405,15 @@ export default function ApiKeys() {
                   <SelectValue placeholder="Selecione o escopo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="circuit">circuit (chave por cliente/circuito)</SelectItem>
-                  <SelectItem value="workspace_ingestion">workspace_ingestion (intake inteligente)</SelectItem>
+                  <SelectItem value="workspace_ingestion">
+                    Recepção inteligente (o sistema roteia os dados)
+                  </SelectItem>
+                  <SelectItem value="circuit">Circuito específico (uma chave por circuito)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Recomendado para parceiro: <code>workspace_ingestion</code>.
+                Recomendado: <strong>Recepção inteligente</strong> — você manda os dados e o sistema
+                decide o destino pelas suas regras (apontar um circuito é opcional).
               </p>
             </div>
             {newKeyScope === "circuit" ? (

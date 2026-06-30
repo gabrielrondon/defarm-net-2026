@@ -267,7 +267,8 @@ export default function NovoItem() {
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-foreground">Identificadores *</h2>
               <p className="text-sm text-muted-foreground">
-                Informe ao menos um identificador canônico (ex: SISBOV, Brinco, GTA)
+                Informe ao menos um identificador <strong>canônico</strong> — o principal, que
+                identifica este item de forma única (ex: SISBOV, Brinco, GTA). Os demais são opcionais.
               </p>
             </div>
           </div>

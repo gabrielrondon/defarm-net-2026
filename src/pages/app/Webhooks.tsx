@@ -343,7 +343,7 @@ export default function WebhooksPage() {
           <div className="space-y-1">
             <Badge variant="secondary" className="bg-amber-100 text-amber-800 border border-amber-300/60">Beta</Badge>
             <p className="text-sm text-foreground">
-              Esta seção está em fase beta. Como seu workspace está com Dev Experiment ativado, você já pode usar e validar os fluxos.
+              Esta seção está em fase beta. Você já pode usar e validar os fluxos de notificação no seu workspace.
             </p>
           </div>
         </div>
