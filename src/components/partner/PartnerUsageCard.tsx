@@ -48,8 +48,8 @@ export function PartnerUsageCard({ locale = "pt-BR" }: { locale?: "pt-BR" | "en"
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
             {t(
-              "Itens na fila aguardam liberação do time DeFarm (ou mais saldo).",
-              "Queued items await release by the DeFarm team (or more balance)."
+              "Recebidos e na fila para tokenizar — não é erro. Entram na blockchain assim que houver crédito disponível.",
+              "Received and queued for tokenization — not an error. They go on-chain as soon as credit is available."
             )}
           </p>
           <Button asChild size="sm" variant="outline" className="shrink-0">

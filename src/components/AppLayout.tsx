@@ -187,6 +187,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         s
       ): s is { key: string; label: string; icon: typeof BookOpen; route: string; personas?: string[] } =>
         // só exibe ações já com tela (route) e adequadas à persona atual.
+        // 'read.settings' fica de fora: Configurações já tem entrada fixa no rodapé (evita duplicata).
+        s.key !== "read.settings" &&
         Boolean(s.label) &&
         Boolean(s.route) &&
         (!s.personas || s.personas.includes(workspaceType))
@@ -451,7 +453,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               onClick={() => navigate("/app/configuracoes")}
             >
               <Settings className="h-4 w-4 mr-2" />
-              Config
+              Configurações
             </Button>
             <Button
               variant="ghost"

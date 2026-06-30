@@ -11,7 +11,7 @@ import {
   PartnerEmbed,
 } from "@/components/partner";
 import { PartnerUsageCard } from "@/components/partner/PartnerUsageCard";
-import { BarChart3, PackageOpen, Route, Database, Code2, BookOpen, FlaskConical, ExternalLink, Languages } from "lucide-react";
+import { BarChart3, PackageOpen, Route, Database, Code2, Languages } from "lucide-react";
 import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
 
 const tabs = [
@@ -59,41 +59,6 @@ export default function PartnerPortal() {
         </p>
       </div>
 
-      <Card className="mb-6 p-4 md:p-5 border-primary/20 bg-primary/5">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              {locale === "en" ? "Quick partner integration" : "Integração rápida do parceiro"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {locale === "en"
-                ? "Official docs are the source of truth. Use the portal Playground to validate with your real key."
-                : "A documentação oficial é a fonte de verdade. Use o Playground no portal para validar com sua chave real."}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="default" size="sm" asChild>
-              <a href="https://docs.defarm.net/docs/getting-started" target="_blank" rel="noreferrer">
-                <BookOpen className="h-4 w-4 mr-1.5" />
-                {locale === "en" ? "Official docs" : "Docs oficiais"}
-                <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-              </a>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/app/parceiro/ingestao">
-                <FlaskConical className="h-4 w-4 mr-1.5" />
-                {locale === "en" ? "Send data (wizard)" : "Enviar dados (wizard)"}
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href="https://docs.defarm.net/docs/api#upload" target="_blank" rel="noreferrer">
-                API / Upload
-                <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-              </a>
-            </Button>
-          </div>
-        </div>
-      </Card>
 
       <PartnerUsageCard locale={locale} />
 
