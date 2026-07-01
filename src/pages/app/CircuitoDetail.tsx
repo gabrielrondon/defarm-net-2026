@@ -63,9 +63,10 @@ import { cn } from "@/lib/utils";
 import { anchorStateOf } from "@/components/proof";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  getCircuit, 
-  getCircuitItems, 
+import {
+  getCircuit,
+  setCircuitVerified,
+  getCircuitItems,
   getJoinRequests,
   addItemToCircuit,
   getItems,
@@ -80,6 +81,7 @@ import {
 } from "@/lib/api";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import { CircuitFeeds } from "@/components/circuit/CircuitFeeds";
+import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 export default function CircuitoDetail() {
@@ -102,6 +104,22 @@ export default function CircuitoDetail() {
     queryKey: ["circuit", id],
     queryFn: () => getCircuit(id!),
     enabled: !!id,
+  });
+
+  // Admin: conceder/remover o selo "Verificado pela DeFarm".
+  const verifyMutation = useMutation({
+    mutationFn: (verified: boolean) => setCircuitVerified(id!, verified),
+    onSuccess: (_data, verified) => {
+      toast({
+        title: verified ? "Selo concedido" : "Selo removido",
+        description: verified
+          ? "Este circuito agora aparece como Verificado pela DeFarm."
+          : "O selo de verificado foi removido.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["circuit", id] });
+      queryClient.invalidateQueries({ queryKey: ["circuits"] });
+    },
+    onError: () => toast({ title: "Não foi possível alterar o selo", variant: "destructive" }),
   });
 
   // Fetch circuit items
@@ -342,6 +360,18 @@ export default function CircuitoDetail() {
                 <h1 className="text-2xl font-bold text-foreground">
                   {circuit.name}
                 </h1>
+                {isVerified(circuit) ? <VerifiedBadge /> : null}
+                {user?.is_admin ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    disabled={verifyMutation.isPending}
+                    onClick={() => verifyMutation.mutate(!isVerified(circuit))}
+                  >
+                    {isVerified(circuit) ? "Remover selo" : "Conceder selo"}
+                  </Button>
+                ) : null}
                 {(() => {
                   const normalizedStatus = normalizeCircuitStatus(circuit.status);
                   return (

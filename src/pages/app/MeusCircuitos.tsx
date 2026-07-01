@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/partner-routing";
 import type { Circuit } from "@/lib/api/types";
 import { Star, Info, Copy, Plus, ArrowRight, Circle } from "lucide-react";
+import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
 
 // Identificadores de TERRA/propriedade — circuito auto-criado por um deles = "de propriedade".
 const PROPERTY_IDENTIFIERS = [
@@ -99,9 +100,9 @@ export default function MeusCircuitos() {
       else clients.push(c);
     }
     // Meus: padrão primeiro, depois alfabético. Auto-criados: alfabético.
-    mine.sort((a, b) =>
-      a.id === defaultId ? -1 : b.id === defaultId ? 1 : a.name.localeCompare(b.name),
-    );
+    // Ordem: padrão → verificados (destaque) → alfabético.
+    const rank = (c: Circuit) => (c.id === defaultId ? 0 : isVerified(c) ? 1 : 2);
+    mine.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
     properties.sort((a, b) => a.name.localeCompare(b.name));
     clients.sort((a, b) => a.name.localeCompare(b.name));
     return { mine, properties, clients };
@@ -115,7 +116,7 @@ export default function MeusCircuitos() {
     return (
       <Card
         key={c.id}
-        className={isDefault ? "border-primary/50 ring-1 ring-primary/20" : ""}
+        className={isDefault || isVerified(c) ? "border-primary/50 ring-1 ring-primary/20" : ""}
       >
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
@@ -135,6 +136,8 @@ export default function MeusCircuitos() {
               </Badge>
             )}
           </div>
+
+          {isVerified(c) ? <VerifiedBadge /> : null}
 
           {isDefault ? (
             <p className="text-xs text-muted-foreground">

@@ -43,6 +43,14 @@ export async function deleteCircuit(id: string): Promise<void> {
   await registryRequest(`/circuits/${id}`, { method: "DELETE" });
 }
 
+/** Admin: concede/remove o selo "Verificado pela DeFarm" (metadata.verified). */
+export async function setCircuitVerified(id: string, verified: boolean): Promise<Circuit> {
+  return registryRequest<Circuit>(`/admin/circuits/${id}/verify`, {
+    method: "POST",
+    body: JSON.stringify({ verified }),
+  });
+}
+
 // Circuit Members
 export async function getCircuitMembers(circuitId: string): Promise<ListMembersResponse> {
   return registryRequest<ListMembersResponse>(`/circuits/${circuitId}/members`);
