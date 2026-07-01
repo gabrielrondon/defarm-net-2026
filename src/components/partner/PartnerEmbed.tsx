@@ -4,14 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Code2, Copy, Check, ExternalLink } from "lucide-react";
+import { Copy, Check, ExternalLink } from "lucide-react";
 import { getCircuits } from "@/lib/api/circuits";
 import { createEmbedToken, type CreateEmbedTokenResponse } from "@/lib/api/partner-routing";
 
 /**
- * Embed token generator for the partner portal.
- * Lets the partner mint a short-lived token to embed the portfolio view
- * (items + blockchain proofs) into their end-client's app.
+ * "Link de Visualização" — gera um link temporário e só-leitura (sem login) pra
+ * alguém ver o portfólio verificado de um circuito (itens + provas on-chain).
+ * O token expira em minutos. Embutir num site (iframe) fica como opção avançada.
  */
 export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) {
   const t = (pt: string, en: string) => (locale === "en" ? en : pt);
@@ -52,27 +52,22 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
 
   const fields = result
     ? [
-        { key: "token", label: "token", value: result.token },
-        { key: "url", label: "embed_url", value: result.embed_url },
-        { key: "iframe", label: "iframe", value: iframeSnippet },
+        {
+          key: "url",
+          label: t("Link de visualização (compartilhe este)", "View link (share this)"),
+          value: result.embed_url,
+        },
+        {
+          key: "iframe",
+          label: t("Embutir no seu site (iframe · avançado)", "Embed in your site (iframe · advanced)"),
+          value: iframeSnippet,
+        },
+        { key: "token", label: t("Token (avançado)", "Token (advanced)"), value: result.token },
       ]
     : [];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Code2 className="h-5 w-5 text-primary" />
-          {t("Embed do portfólio", "Portfolio embed")}
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          {t(
-            "Gere um token de curta duração para embarcar a visão de portfólio (itens e provas em blockchain) na aplicação do seu cliente final.",
-            "Generate a short-lived token to embed the portfolio view (items and blockchain proofs) into your end-client's application."
-          )}
-        </p>
-      </div>
-
       <Card className="p-4 md:p-5 space-y-4">
         <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
           <div className="space-y-1.5">
@@ -109,7 +104,7 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
             />
           </div>
           <Button onClick={generate} disabled={!circuitId || loading}>
-            {loading ? t("Gerando…", "Generating…") : t("Gerar token", "Generate token")}
+            {loading ? t("Gerando…", "Generating…") : t("Gerar link", "Generate link")}
           </Button>
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
@@ -118,7 +113,7 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
       {result && (
         <Card className="p-4 md:p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{t("Token gerado", "Token generated")}</p>
+            <p className="text-sm font-medium">{t("Link gerado", "Link generated")}</p>
             <span className="text-xs text-muted-foreground">
               {t("Expira em", "Expires at")}: {new Date(result.expires_at).toLocaleString()}
             </span>
@@ -136,7 +131,7 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
           ))}
           <Button asChild size="sm" variant="outline">
             <a href={result.embed_url} target="_blank" rel="noreferrer">
-              {t("Abrir preview", "Open preview")}
+              {t("Ver como o cliente vê", "See what the client sees")}
               <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
             </a>
           </Button>
