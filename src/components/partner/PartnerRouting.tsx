@@ -12,6 +12,7 @@ import { Loader2, Route, Trash2 } from "lucide-react";
 
 const IDENTIFIERS = [
   { value: "car", label: "CAR" },
+  { value: "exploracao", label: "Exploração (MAPA)" },
   { value: "land_dfid", label: "LAND DFID" },
   { value: "cnpj", label: "CNPJ" },
   { value: "cpf", label: "CPF" },

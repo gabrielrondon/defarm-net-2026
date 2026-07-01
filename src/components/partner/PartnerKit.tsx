@@ -149,7 +149,7 @@ export function PartnerKit() {
       <div>
         <h2 className="text-foreground">Kit Parceiro</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          Passo 1: envie dados com <code className="text-xs bg-muted px-1.5 py-0.5 rounded">value_chain</code> + identificador do ativo rastreável (BEEF: SISBOV preferencial ou CHIP) para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/v1/partner/ingestions</code>. Identificadores como CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/LAND_DFID/IE/CNPJ/CPF são de roteamento e contexto.
+          Passo 1: envie dados com <code className="text-xs bg-muted px-1.5 py-0.5 rounded">value_chain</code> + identificador do ativo rastreável (BEEF: SISBOV preferencial ou CHIP) para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/v1/partner/ingestions</code>. Identificadores como CAR/EXPLORAÇÃO(MAPA)/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/LAND_DFID/IE/CNPJ/CPF são de roteamento e contexto.
           Passo 2: valide no preview e suba em produção com API key real. Passo 3: use template/avançados só se necessário.
         </p>
       </div>

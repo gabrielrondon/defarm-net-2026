@@ -40,8 +40,8 @@ export function PartnerRoutingIssues() {
   const formatIssueType = (identifierType: string) => {
     if (identifierType === "unknown") {
       return isEn
-        ? "Missing routing identifier (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/IE)"
-        : "Sem identificador de roteamento (LAND_DFID/CAR/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/IE)";
+        ? "Missing routing identifier (LAND_DFID/CAR/EXPLORACAO/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/IE)"
+        : "Sem identificador de roteamento (LAND_DFID/CAR/EXPLORAÇÃO/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/IE)";
     }
     return identifierType.toUpperCase();
   };

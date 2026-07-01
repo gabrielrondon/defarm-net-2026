@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 // Identificadores de TERRA/propriedade — circuito auto-criado por um deles = "de propriedade".
 const PROPERTY_IDENTIFIERS = [
   "car",
+  "exploracao",
   "land_dfid",
   "ccir",
   "nirf",
