@@ -18,6 +18,7 @@ import {
 import type { Circuit } from "@/lib/api/types";
 import { Star, Info, Copy, Plus, ArrowRight, Circle } from "lucide-react";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
+import { cn } from "@/lib/utils";
 
 // Identificadores de TERRA/propriedade — circuito auto-criado por um deles = "de propriedade".
 const PROPERTY_IDENTIFIERS = [
@@ -116,8 +117,16 @@ export default function MeusCircuitos() {
     return (
       <Card
         key={c.id}
-        className={isDefault || isVerified(c) ? "border-primary/50 ring-1 ring-primary/20" : ""}
+        className={cn(
+          "overflow-hidden",
+          isDefault || isVerified(c) ? "border-primary/50 ring-1 ring-primary/20" : "",
+        )}
       >
+        {c.public_banner_url ? (
+          <div className="h-24 w-full bg-muted">
+            <img src={c.public_banner_url} alt="" className="h-full w-full object-cover" />
+          </div>
+        ) : null}
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <Link

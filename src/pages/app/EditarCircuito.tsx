@@ -36,6 +36,8 @@ export default function EditarCircuito() {
   const [publicDescription, setPublicDescription] = useState("");
   const [publicContactEmail, setPublicContactEmail] = useState("");
   const [publicWebsite, setPublicWebsite] = useState("");
+  const [publicBannerUrl, setPublicBannerUrl] = useState("");
+  const [publicLogoUrl, setPublicLogoUrl] = useState("");
   const [publicShowCompliance, setPublicShowCompliance] = useState(false);
 
   // Fetch circuit data
@@ -59,6 +61,8 @@ export default function EditarCircuito() {
       setPublicDescription(circuit.public_description || "");
       setPublicContactEmail(circuit.public_contact_email || "");
       setPublicWebsite(circuit.public_website || "");
+      setPublicBannerUrl(circuit.public_banner_url || "");
+      setPublicLogoUrl(circuit.public_logo_url || "");
       const showCompliance = (circuit.settings as Record<string, unknown> | null | undefined)?.public_show_compliance;
       setPublicShowCompliance(showCompliance === true);
     }
@@ -103,6 +107,8 @@ export default function EditarCircuito() {
       public_description: visibility === "public" ? publicDescription : null,
       public_contact_email: visibility === "public" ? publicContactEmail : null,
       public_website: visibility === "public" ? publicWebsite : null,
+      public_banner_url: publicBannerUrl.trim() || null,
+      public_logo_url: publicLogoUrl.trim() || null,
     });
   };
 
@@ -324,6 +330,39 @@ export default function EditarCircuito() {
                   value={publicWebsite}
                   onChange={(e) => setPublicWebsite(e.target.value)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="publicBannerUrl">Imagem de fundo (banner)</Label>
+                <Input
+                  id="publicBannerUrl"
+                  type="url"
+                  placeholder="https://.../banner.jpg"
+                  value={publicBannerUrl}
+                  onChange={(e) => setPublicBannerUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Aparece como fundo do card (Meus Circuitos) e como banner na página pública.
+                  Cole a URL de um PNG/JPEG hospedado.
+                </p>
+                {publicBannerUrl ? (
+                  <img src={publicBannerUrl} alt="" className="h-20 w-full object-cover rounded-md border border-border" />
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="publicLogoUrl">Logo</Label>
+                <Input
+                  id="publicLogoUrl"
+                  type="url"
+                  placeholder="https://.../logo.png"
+                  value={publicLogoUrl}
+                  onChange={(e) => setPublicLogoUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Aparece na página pública do circuito.</p>
+                {publicLogoUrl ? (
+                  <img src={publicLogoUrl} alt="" className="h-12 w-12 object-contain rounded-md border border-border" />
+                ) : null}
               </div>
             </div>
           </div>
