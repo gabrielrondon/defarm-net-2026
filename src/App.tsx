@@ -74,6 +74,7 @@ import AdminMetrics from "./pages/app/AdminMetrics";
 import AdminUsers from "./pages/app/AdminUsers";
 import AdminCanonicalIdentifiers from "./pages/app/AdminCanonicalIdentifiers";
 import AdminValueChains from "./pages/app/AdminValueChains";
+import AdminCircuitos from "./pages/app/AdminCircuitos";
 import AdminJobs from "./pages/app/AdminJobs";
 import AdminSearchAnalytics from "./pages/app/AdminSearchAnalytics";
 import AdminPartnerPayloads from "./pages/app/AdminPartnerPayloads";
@@ -586,6 +587,14 @@ const App = () => (
               element={
                 <RequireAdmin>
                   <AppLayout><AdminValueChains /></AppLayout>
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/app/admin/circuitos"
+              element={
+                <RequireAdmin>
+                  <AppLayout><AdminCircuitos /></AppLayout>
                 </RequireAdmin>
               }
             />
