@@ -1,5 +1,5 @@
 import {
-  PawPrint,
+  Tag,
   Wheat,
   Boxes,
   Trees,
@@ -46,7 +46,7 @@ export interface ArtifactPresentation {
 }
 
 const PRESENTATIONS: Record<ArtifactType, Omit<ArtifactPresentation, "known">> = {
-  animal: { icon: PawPrint, label: "Animal", accent: "bg-amber-500/10 text-amber-700" },
+  animal: { icon: Tag, label: "Animal", accent: "bg-amber-500/10 text-amber-700" },
   commodity: { icon: Wheat, label: "Commodity", accent: "bg-lime-500/10 text-lime-700" },
   lot: { icon: Boxes, label: "Lote", accent: "bg-violet-500/10 text-violet-700" },
   property: { icon: Trees, label: "Propriedade", accent: "bg-emerald-500/10 text-emerald-700" },
