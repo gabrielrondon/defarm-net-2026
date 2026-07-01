@@ -750,6 +750,9 @@ export interface ValueChainPolicy {
   display_name: string;
   is_active: boolean;
   is_test_only: boolean;
+  /** Tipo de artefato padrão da cadeia (animal | commodity | ...). Opcional até o
+   *  engine #188 entrar em produção (antes disso o endpoint não retorna o campo). */
+  primary_artifact_type?: string;
   created_at: string;
   updated_at: string;
 }

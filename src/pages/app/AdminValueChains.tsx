@@ -219,6 +219,7 @@ export default function AdminValueChains() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Teste</TableHead>
+                  <TableHead>Tipo padrão</TableHead>
                   <TableHead>Criado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -269,6 +270,13 @@ export default function AdminValueChains() {
                         />
                         {row.is_test_only ? <Badge variant="outline">Sim</Badge> : <Badge variant="secondary">Não</Badge>}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {row.primary_artifact_type ? (
+                        <Badge variant="outline" className="capitalize">{row.primary_artifact_type}</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>{new Date(row.created_at).toLocaleDateString("pt-BR")}</TableCell>
                     <TableCell className="text-right">
