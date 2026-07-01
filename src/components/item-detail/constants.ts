@@ -1,5 +1,5 @@
 import {
-  Baby,
+  Sprout,
   Weight,
   Syringe,
   Pill,
@@ -111,7 +111,7 @@ export const eventTypeIcons: Record<string, LucideIcon> = {
   item_updated: RefreshCw,
   item_archived: Archive,
   item_status_changed: RefreshCw,
-  item_born: Baby,
+  item_born: Sprout,
   item_weighed: Weight,
   item_vaccinated: Syringe,
   item_treated: Pill,
