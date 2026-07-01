@@ -38,6 +38,7 @@ import {
   Upload,
   Route,
   PackageOpen,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -74,7 +75,7 @@ const navCatalog: NavItem[] = [
   { icon: TerminalSquare, label: "CLI", href: "/app/cli" },
   { icon: Code2, label: "SDK", href: "/app/sdk" },
   { icon: PackageOpen, label: "Kit", href: "/app/parceiro/kit" },
-  { icon: Layers, label: "Embed", href: "/app/parceiro/embed" },
+  { icon: Share2, label: "Link de Visualização", href: "/app/parceiro/embed" },
   { icon: Building2, label: "Docs Governo", href: "/app/governo/docs" },
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
