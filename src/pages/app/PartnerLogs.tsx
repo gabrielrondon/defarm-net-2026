@@ -127,6 +127,9 @@ export default function PartnerLogs() {
   const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
   const [loading, setLoading] = useState(true);
   const [rawHistory, setRawHistory] = useState<RawPayloadSummary[]>([]);
+  const [rawCursor, setRawCursor] = useState<string | null>(null);
+  const [rawHasMore, setRawHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [localLogs, setLocalLogs] = useState<PartnerRequestLogEntry[]>(getLogEntries);
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "api" | "payload">("all");
@@ -138,10 +141,13 @@ export default function PartnerLogs() {
   const seenIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
 
-  const loadRawHistory = useCallback(async () => {
+  const loadRawHistory = useCallback(async (cursor?: string | null) => {
     try {
-      const response = await listRawPayloads(120);
-      setRawHistory(response.rows);
+      const response = await listRawPayloads(120, undefined, cursor ?? undefined);
+      // cursor presente = "carregar mais" (anexa); ausente = primeira página (substitui).
+      setRawHistory((prev) => (cursor ? [...prev, ...response.rows] : response.rows));
+      setRawCursor(response.next_cursor ?? null);
+      setRawHasMore(!!response.next_cursor);
     } catch (err) {
       const description =
         err instanceof ApiError
@@ -421,6 +427,24 @@ export default function PartnerLogs() {
           ))}
         </div>
       )}
+
+      {rawHasMore && sourceFilter !== "api" ? (
+        <div className="flex justify-center pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={loadingMore}
+            onClick={async () => {
+              setLoadingMore(true);
+              await loadRawHistory(rawCursor);
+              setLoadingMore(false);
+            }}
+          >
+            {loadingMore ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {metadataLocale === "en" ? "Load more received" : "Carregar mais recebimentos"}
+          </Button>
+        </div>
+      ) : null}
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">

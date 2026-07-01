@@ -53,6 +53,8 @@ export interface RawPayloadSummary {
 export interface ListRawPayloadsResponse {
   rows: RawPayloadSummary[];
   count: number;
+  /** Cursor da próxima página (created_at do último item). Ausente/null = fim. */
+  next_cursor?: string | null;
 }
 
 export interface IntakeBatchResult {
@@ -252,10 +254,11 @@ export async function deleteRoutingRule(id: string): Promise<void> {
 
 export async function listRawPayloads(
   limit = 50,
-  workspaceId?: string
+  workspaceId?: string,
+  before?: string
 ): Promise<ListRawPayloadsResponse> {
   return registryRequest<ListRawPayloadsResponse>(
-    `/partner/ingestions/raw${buildQueryString({ limit, workspace_id: workspaceId })}`
+    `/partner/ingestions/raw${buildQueryString({ limit, workspace_id: workspaceId, before })}`
   );
 }
 
