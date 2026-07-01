@@ -53,8 +53,10 @@ import {
   getPartnerApiKeyMetrics,
 } from "@/lib/api/admin";
 import { getCircuits } from "@/lib/api/circuits";
+import { Checkbox } from "@/components/ui/checkbox";
 import type {
   PartnerApiKeyResponse,
+  PartnerApiKeyScope,
   ApiKeyMetricsResponse,
   EditPartnerApiKeyRequest,
   Circuit,
@@ -74,10 +76,11 @@ export default function ApiKeys() {
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
-  const [newKeyScope, setNewKeyScope] = useState<"circuit" | "workspace_ingestion">(
+  const [newKeyScope, setNewKeyScope] = useState<PartnerApiKeyScope>(
     isPartnerWorkspace ? "workspace_ingestion" : "circuit"
   );
   const [newKeyCircuit, setNewKeyCircuit] = useState("");
+  const [newKeyCircuits, setNewKeyCircuits] = useState<string[]>([]);
   const [newKeyStagingCircuit, setNewKeyStagingCircuit] = useState("");
   const [newKeyDescription, setNewKeyDescription] = useState("");
   const [newKeyExpiry, setNewKeyExpiry] = useState("");
@@ -106,6 +109,10 @@ export default function ApiKeys() {
   const [editRateMin, setEditRateMin] = useState("");
   const [editRateDay, setEditRateDay] = useState("");
   const [editExpiry, setEditExpiry] = useState("");
+  // Onda G: scope editável.
+  const [editScope, setEditScope] = useState<PartnerApiKeyScope>("circuit");
+  const [editCircuit, setEditCircuit] = useState("");
+  const [editCircuits, setEditCircuits] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -134,12 +141,14 @@ export default function ApiKeys() {
   const handleCreate = async () => {
     if (!newKeyName) return;
     if (newKeyScope === "circuit" && !newKeyCircuit) return;
+    if (newKeyScope === "circuits" && newKeyCircuits.length === 0) return;
     setCreating(true);
     try {
       const result = await createPartnerApiKey({
         key_name: newKeyName,
         scope: newKeyScope,
         circuit_id: newKeyScope === "circuit" ? newKeyCircuit : undefined,
+        circuit_ids: newKeyScope === "circuits" ? newKeyCircuits : undefined,
         staging_circuit_id:
           newKeyScope === "workspace_ingestion" && newKeyStagingCircuit
             ? newKeyStagingCircuit
@@ -200,14 +209,35 @@ export default function ApiKeys() {
     setEditRateMin(key.rate_limit_per_minute != null ? String(key.rate_limit_per_minute) : "");
     setEditRateDay(key.rate_limit_per_day != null ? String(key.rate_limit_per_day) : "");
     setEditExpiry("");
+    setEditScope(key.scope);
+    setEditCircuit(key.circuit_id ?? "");
+    setEditCircuits(key.circuit_ids ?? []);
     setEditOpen(true);
   };
 
   const handleEdit = async () => {
     if (!editTarget) return;
+
+    // Onda G: só mexe no scope se o usuário mudou algo scope-relacionado.
+    const scopeChanged = editScope !== editTarget.scope;
+    const circuitChanged =
+      editScope === "circuit" && editCircuit !== (editTarget.circuit_id ?? "");
+    const circuitsProvided = editScope === "circuits" && editCircuits.length > 0;
+    const touchScope = scopeChanged || circuitChanged || circuitsProvided;
+    if (touchScope) {
+      if (editScope === "circuit" && !editCircuit) {
+        toast({ title: "Escolha um circuito", variant: "destructive" });
+        return;
+      }
+      if (editScope === "circuits" && editCircuits.length === 0) {
+        toast({ title: "Escolha ao menos um circuito", variant: "destructive" });
+        return;
+      }
+    }
+
     setEditing(true);
     try {
-      // Só metadados mutáveis. Expiração só muda se preenchida (dias a partir de agora).
+      // Metadados. Expiração só muda se preenchida (dias a partir de agora).
       const payload: EditPartnerApiKeyRequest = {
         key_name: editName.trim(),
         description: editDescription,
@@ -215,6 +245,11 @@ export default function ApiKeys() {
       if (editRateMin !== "") payload.rate_limit_per_minute = Number(editRateMin);
       if (editRateDay !== "") payload.rate_limit_per_day = Number(editRateDay);
       if (editExpiry !== "") payload.expires_in_days = Number(editExpiry);
+      if (touchScope) {
+        payload.scope = editScope;
+        if (editScope === "circuit") payload.circuit_id = editCircuit;
+        if (editScope === "circuits") payload.circuit_ids = editCircuits;
+      }
 
       await editPartnerApiKey(editTarget.id, payload);
       toast({ title: "API Key atualizada", description: `"${editName.trim()}" foi salva.` });
@@ -462,7 +497,7 @@ export default function ApiKeys() {
             </div>
             <div className="space-y-2">
               <Label>Escopo *</Label>
-              <Select value={newKeyScope} onValueChange={(v: "circuit" | "workspace_ingestion") => setNewKeyScope(v)}>
+              <Select value={newKeyScope} onValueChange={(v: PartnerApiKeyScope) => setNewKeyScope(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o escopo" />
                 </SelectTrigger>
@@ -471,6 +506,8 @@ export default function ApiKeys() {
                     Recepção inteligente (o sistema roteia os dados)
                   </SelectItem>
                   <SelectItem value="circuit">Circuito específico (uma chave por circuito)</SelectItem>
+                  <SelectItem value="circuits">Vários circuitos (conjunto escolhido)</SelectItem>
+                  <SelectItem value="workspace">Todo o workspace (global)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -493,6 +530,35 @@ export default function ApiKeys() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            ) : null}
+            {newKeyScope === "circuits" ? (
+              <div className="space-y-2">
+                <Label>Circuitos * (escolha um ou mais)</Label>
+                <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto rounded-md border p-2">
+                  {circuits.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={newKeyCircuits.includes(c.id)}
+                        onCheckedChange={(chk) =>
+                          setNewKeyCircuits((prev) =>
+                            chk ? [...prev, c.id] : prev.filter((x) => x !== c.id)
+                          )
+                        }
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  A chave vale apenas para os circuitos marcados. Editável depois.
+                </p>
+              </div>
+            ) : null}
+            {newKeyScope === "workspace" ? (
+              <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
+                <strong>Global:</strong> a chave vale para qualquer circuito do seu workspace
+                (inclusive os criados no futuro). Use com cuidado — é o acesso mais amplo.
               </div>
             ) : null}
             {newKeyScope === "workspace_ingestion" ? (
@@ -533,7 +599,8 @@ export default function ApiKeys() {
               disabled={
                 creating ||
                 !newKeyName ||
-                (newKeyScope === "circuit" && !newKeyCircuit)
+                (newKeyScope === "circuit" && !newKeyCircuit) ||
+                (newKeyScope === "circuits" && newKeyCircuits.length === 0)
               }
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -549,20 +616,66 @@ export default function ApiKeys() {
           <DialogHeader>
             <DialogTitle>Editar API Key</DialogTitle>
             <DialogDescription>
-              Edite nome, descrição, limites e expiração. Escopo e circuito são fixos —
-              para mudar o acesso, revogue e crie uma nova chave.
+              Edite nome, descrição, limites, expiração e o escopo de acesso (circuito único,
+              conjunto de circuitos ou workspace inteiro).
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {editTarget ? (
-              <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
-                Escopo:{" "}
-                <strong>
-                  {editTarget.scope === "workspace_ingestion" ? "Recepção inteligente" : "Circuito específico"}
-                </strong>{" "}
-                (imutável)
-              </div>
-            ) : null}
+            <div className="space-y-2">
+              <Label>Escopo</Label>
+              <Select value={editScope} onValueChange={(v: PartnerApiKeyScope) => setEditScope(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="workspace_ingestion">Recepção inteligente</SelectItem>
+                  <SelectItem value="circuit">Circuito específico</SelectItem>
+                  <SelectItem value="circuits">Vários circuitos (conjunto)</SelectItem>
+                  <SelectItem value="workspace">Todo o workspace (global)</SelectItem>
+                </SelectContent>
+              </Select>
+              {editScope === "circuit" ? (
+                <Select value={editCircuit} onValueChange={setEditCircuit}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um circuito" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {circuits.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+              {editScope === "circuits" ? (
+                <>
+                  <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto rounded-md border p-2">
+                    {circuits.map((c) => (
+                      <label key={c.id} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={editCircuits.includes(c.id)}
+                          onCheckedChange={(chk) =>
+                            setEditCircuits((prev) =>
+                              chk ? [...prev, c.id] : prev.filter((x) => x !== c.id)
+                            )
+                          }
+                        />
+                        {c.name}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Marque os circuitos para (re)definir o conjunto desta chave.
+                  </p>
+                </>
+              ) : null}
+              {editScope === "workspace" ? (
+                <p className="text-xs text-muted-foreground">
+                  Global: a chave passa a valer para qualquer circuito do workspace.
+                </p>
+              ) : null}
+            </div>
             <div className="space-y-2">
               <Label htmlFor="editName">Nome da chave *</Label>
               <Input

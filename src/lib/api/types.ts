@@ -838,12 +838,16 @@ export interface CreateApiKeyResponse {
 
 // --- Partner API Keys ---
 
+export type PartnerApiKeyScope = "circuit" | "circuits" | "workspace" | "workspace_ingestion";
+
 export interface PartnerApiKeyResponse {
   id: string;
   key_name: string;
-  scope: "circuit" | "workspace_ingestion";
+  scope: PartnerApiKeyScope;
   workspace_id?: string | null;
   circuit_id?: string | null;
+  /** Conjunto de circuitos (scope='circuits'). Onda G. */
+  circuit_ids?: string[] | null;
   staging_circuit_id?: string | null;
   is_active: boolean;
   created_at: string;
@@ -857,8 +861,9 @@ export interface PartnerApiKeyResponse {
 
 export interface CreatePartnerApiKeyRequest {
   key_name: string;
-  scope?: "circuit" | "workspace_ingestion";
+  scope?: PartnerApiKeyScope;
   circuit_id?: string | null;
+  circuit_ids?: string[] | null;
   staging_circuit_id?: string | null;
   description?: string | null;
   expires_in_days?: number | null;
@@ -869,14 +874,17 @@ export interface CreatePartnerApiKeyResponse {
   message: string;
 }
 
-/** Edição de api-key — só metadados mutáveis. scope/circuit/hash são imutáveis
- *  (trocar isso = revogar+recriar). Campos ausentes não mudam (COALESCE no backend). */
+/** Edição de api-key. Metadados + (Onda G) scope editável. Campos ausentes não mudam. */
 export interface EditPartnerApiKeyRequest {
   key_name?: string;
   description?: string;
   rate_limit_per_minute?: number;
   rate_limit_per_day?: number;
   expires_in_days?: number;
+  /** Novo scope (Onda G). Ausente = não altera. */
+  scope?: PartnerApiKeyScope;
+  circuit_id?: string | null;
+  circuit_ids?: string[] | null;
 }
 
 export interface ApiKeyMetricsResponse {
