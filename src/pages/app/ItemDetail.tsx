@@ -29,7 +29,7 @@ export default function ItemDetail() {
   // Fetch item details (includes identifiers and events)
   const { data: itemDetails, isLoading: isLoadingItem, error: itemError } = useQuery({
     queryKey: ["item", id],
-    queryFn: () => getItem(id!),
+    queryFn: () => getItem(id!, { includeProvenance: true }),
     enabled: !!id,
     retry: 1,
     retryDelay: 1000,
@@ -214,6 +214,7 @@ export default function ItemDetail() {
           blockchainAnchors={anchorsData?.blockchain_anchors}
           storageRefs={anchorsData?.storage_refs}
           versions={versionsData?.versions}
+          provenance={itemDetails?.provenance}
         />
         <ItemTimeline events={allEvents} isLoading={isLoadingEvents} />
       </div>

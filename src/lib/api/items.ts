@@ -24,8 +24,14 @@ export async function getItems(params?: ItemFilters): Promise<Item[]> {
   return response.items;
 }
 
-export async function getItem(id: string): Promise<ItemDetailsResponse> {
-  const response = await registryRequest<any>(`/items/${id}`);
+export async function getItem(
+  id: string,
+  opts?: { includeProvenance?: boolean },
+): Promise<ItemDetailsResponse> {
+  // T3: opt into per-field provenance only when a surface will render it, so the
+  // default read keeps its lean shape (the backend omits the field otherwise).
+  const qs = opts?.includeProvenance ? "?include=provenance" : "";
+  const response = await registryRequest<any>(`/items/${id}${qs}`);
   // Handle both new format (ItemDetailsResponse) and legacy flat format
   if (response.item) {
     return response as ItemDetailsResponse;
