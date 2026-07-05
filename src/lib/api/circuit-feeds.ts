@@ -9,9 +9,22 @@ export interface CircuitFeed {
   status: "pending" | "active" | "revoked";
   scope_artifact_types: string[] | null;
   mode: string;
+  /**
+   * Fase 5 (esqueleto×carne): O QUE este feed consentiu compartilhar. Por padrão só
+   * o esqueleto (item) viaja; `share_attribute_layers=true` também deixa as camadas
+   * de atributos (a "carne") do source viajarem ao target — sempre filtradas pela
+   * shared_projection (nunca PII). Opt-in explícito. Ausente em feeds legados.
+   */
+  sharing_scope: { share_attribute_layers?: boolean } & Record<string, unknown> | null;
+  sharing_policy_version: string | null;
   created_at: string;
   activated_at: string | null;
   revoked_at: string | null;
+}
+
+/** True se este feed consentiu compartilhar as camadas de atributos (carne), não só o esqueleto. */
+export function feedSharesLayers(feed: Pick<CircuitFeed, "sharing_scope">): boolean {
+  return feed.sharing_scope?.share_attribute_layers === true;
 }
 
 export interface CreateCircuitFeedResponse {
@@ -28,12 +41,14 @@ export async function createCircuitFeed(
   sourceCircuitId: string,
   targetCircuitId: string,
   scopeArtifactTypes: string[] | null,
+  shareAttributeLayers = false,
 ): Promise<CreateCircuitFeedResponse> {
   return registryRequest<CreateCircuitFeedResponse>(`/circuits/${sourceCircuitId}/feeds`, {
     method: "POST",
     body: JSON.stringify({
       target_circuit_id: targetCircuitId,
       scope_artifact_types: scopeArtifactTypes,
+      share_attribute_layers: shareAttributeLayers,
     }),
   });
 }
@@ -54,12 +69,14 @@ export async function createFeedInvitation(
   targetCircuitId: string,
   sourceCircuitId: string,
   scopeArtifactTypes: string[] | null,
+  shareAttributeLayers = false,
 ): Promise<CircuitFeed> {
   return registryRequest<CircuitFeed>(`/circuits/${targetCircuitId}/feed-invitations`, {
     method: "POST",
     body: JSON.stringify({
       source_circuit_id: sourceCircuitId,
       scope_artifact_types: scopeArtifactTypes,
+      share_attribute_layers: shareAttributeLayers,
     }),
   });
 }
@@ -69,12 +86,14 @@ export async function createFeedRequest(
   sourceCircuitId: string,
   targetCircuitId: string,
   scopeArtifactTypes: string[] | null,
+  shareAttributeLayers = false,
 ): Promise<CircuitFeed> {
   return registryRequest<CircuitFeed>(`/circuits/${sourceCircuitId}/feed-requests`, {
     method: "POST",
     body: JSON.stringify({
       target_circuit_id: targetCircuitId,
       scope_artifact_types: scopeArtifactTypes,
+      share_attribute_layers: shareAttributeLayers,
     }),
   });
 }

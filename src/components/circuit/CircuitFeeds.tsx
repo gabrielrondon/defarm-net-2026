@@ -30,6 +30,7 @@ import {
   rejectFeed,
   listCircuitFeeds,
   revokeCircuitFeed,
+  feedSharesLayers,
   type CircuitFeed,
 } from "@/lib/api/circuit-feeds";
 import { ArrowRight, ArrowLeft, Plus, X, Check, Clock, Workflow } from "lucide-react";
@@ -77,6 +78,9 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
   const [mode, setMode] = useState<Mode>("grant");
   const [picked, setPicked] = useState("");
   const [scope, setScope] = useState<string[]>([]);
+  // Fase 5 (esqueleto×carne): opt-in explícito p/ compartilhar as camadas de
+  // atributos (carne), não só o esqueleto. Default OFF, espelhando o backend.
+  const [shareLayers, setShareLayers] = useState(false);
 
   const feedsQuery = useQuery({
     queryKey: ["circuit-feeds", circuitId],
@@ -124,15 +128,16 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
     setMode("grant");
     setPicked("");
     setScope([]);
+    setShareLayers(false);
     setOpen(false);
   };
 
   const createMut = useMutation({
     mutationFn: () => {
       const sc = scope.length ? scope : null;
-      if (mode === "grant") return createCircuitFeed(circuitId, picked, sc);
-      if (mode === "invite") return createFeedInvitation(circuitId, picked, sc);
-      return createFeedRequest(circuitId, picked, sc);
+      if (mode === "grant") return createCircuitFeed(circuitId, picked, sc, shareLayers);
+      if (mode === "invite") return createFeedInvitation(circuitId, picked, sc, shareLayers);
+      return createFeedRequest(circuitId, picked, sc, shareLayers);
     },
     onSuccess: () => {
       toast({
@@ -189,6 +194,11 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
     !s || s.length === 0
       ? "todos os tipos"
       : s.map((t) => ARTIFACT_TYPES.find((a) => a.value === t)?.label ?? t).join(", ");
+
+  // Fase 5: mostra no badge do feed se ele também compartilha as camadas (carne),
+  // não só o esqueleto — junto do escopo de tipos.
+  const feedLabel = (f: CircuitFeed) =>
+    scopeLabel(f.scope_artifact_types) + (feedSharesLayers(f) ? " · camadas" : "");
 
   return (
     <Card>
@@ -268,6 +278,22 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
                   ))}
                 </div>
               </div>
+              <label className="flex items-start gap-2 rounded-md border border-border/60 p-2.5 text-sm">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={shareLayers}
+                  onCheckedChange={(c) => setShareLayers(c === true)}
+                />
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-medium">Compartilhar camadas de atributos (carne)</span>
+                  <span className="text-xs text-muted-foreground">
+                    Por padrão só o esqueleto (o item) viaja. Marque para também
+                    compartilhar a metadata que este circuito contribuiu — sempre filtrada
+                    (nunca dados pessoais), e isso não a torna pública. Revogável a qualquer
+                    momento.
+                  </span>
+                </span>
+              </label>
             </div>
             <DialogFooter>
               <Button onClick={() => createMut.mutate()} disabled={!picked || createMut.isPending}>
@@ -303,7 +329,7 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
                         : "quer alimentar este circuito"}
                     </span>
                     <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                      {scopeLabel(f.scope_artifact_types)}
+                      {feedLabel(f)}
                     </Badge>
                   </span>
                   <span className="flex items-center gap-1 shrink-0">
@@ -352,7 +378,7 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
                       : `Pediu para alimentar ${nameOf(otherOf(f))} — aguardando aprovação`}
                   </span>
                   <Badge variant="outline" className="shrink-0 text-[10px]">
-                    {scopeLabel(f.scope_artifact_types)}
+                    {feedLabel(f)}
                   </Badge>
                 </li>
               ))}
@@ -377,7 +403,7 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
                     <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary" />
                     <span className="truncate font-medium">{nameOf(f.target_circuit_id)}</span>
                     <Badge variant="secondary" className="shrink-0 text-[10px]">
-                      {scopeLabel(f.scope_artifact_types)}
+                      {feedLabel(f)}
                     </Badge>
                   </span>
                   <button
@@ -408,7 +434,7 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
                   <ArrowLeft className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   <span className="truncate font-medium">{nameOf(f.source_circuit_id)}</span>
                   <Badge variant="secondary" className="shrink-0 text-[10px]">
-                    {scopeLabel(f.scope_artifact_types)}
+                    {feedLabel(f)}
                   </Badge>
                 </li>
               ))}
