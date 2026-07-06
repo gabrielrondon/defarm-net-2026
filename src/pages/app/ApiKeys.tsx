@@ -310,8 +310,22 @@ export default function ApiKeys() {
 
   const getDefaultStagingCircuit = () => {
     const tagged = circuits.find((c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true");
-    return tagged?.id || circuits[0]?.id || "";
+    // Only pin a genuinely-tagged staging circuit. Dropping the circuits[0] fallback
+    // means "no tag" → empty staging_circuit_id → the backend resolve_default_circuit
+    // auto-resolves, matching what the card promises ("criado automaticamente"). Pinning
+    // an arbitrary circuits[0] here would make the key contradict the card (Hetzner #119).
+    return tagged?.id || "";
   };
+
+  // Onda 3, Fatia 1: name of the circuit that receives data when no routing rule
+  // matches — shown in the "Recepção inteligente" card so the partner sees WHERE the
+  // default lands. Only a GENUINELY tagged staging circuit is named; we don't guess
+  // with circuits[0] (that would mislabel an arbitrary circuit as "the default").
+  // Empty → the card says it will be created on the first send.
+  const taggedStagingCircuit = circuits.find(
+    (c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true"
+  );
+  const defaultStagingCircuitName = taggedStagingCircuit?.name || "";
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -506,9 +520,32 @@ export default function ApiKeys() {
                 <div className="rounded-md border bg-muted/20 p-3">
                   <div className="text-sm font-medium">Recepção inteligente</div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Você manda os dados e a DeFarm escolhe o destino pelas suas regras — sem
-                    precisar apontar um circuito. É a opção certa para a maioria das integrações.
+                    Você manda os dados sem apontar circuito. A DeFarm roteia cada item
+                    automaticamente pelas regras que você configura (por exploração, CAR,
+                    CNPJ…). O que não casar nenhuma regra cai no seu <strong>circuito
+                    padrão</strong>
+                    {defaultStagingCircuitName ? (
+                      <> — hoje <strong>{defaultStagingCircuitName}</strong>.</>
+                    ) : (
+                      <> (criado automaticamente no seu primeiro envio).</>
+                    )}
                   </p>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => navigate("/app/meus-circuitos")}
+                      className="text-primary underline underline-offset-2"
+                    >
+                      Ver circuitos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/app/parceiro/roteamento")}
+                      className="text-primary underline underline-offset-2"
+                    >
+                      Configurar roteamento
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <Select value={newKeyScope} onValueChange={(v: PartnerApiKeyScope) => setNewKeyScope(v)}>
