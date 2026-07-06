@@ -55,11 +55,31 @@ export interface IdentifierResponse {
   is_canonical: boolean;
 }
 
+/**
+ * T3 (esqueleto×carne): per-field provenance of the composed item metadata,
+ * returned only when the item is fetched with `?include=provenance`. Keyed by the
+ * SAME field names as `item.metadata`; each value names the contribution that won
+ * that field. `origin: "legacy"` for the unprovenanced legacy blob; otherwise the
+ * winning layer's author/trust/visibility. Resolve `source_workspace_id` to a name
+ * via `getPublicWorkspace` (never show the raw UUID).
+ */
+export interface FieldProvenance {
+  origin?: "legacy";
+  source_workspace_id?: string;
+  source_circuit_id?: string;
+  trust_level?: string | null;
+  visibility?: string;
+  via?: "own" | "public" | "feed";
+  updated_at?: string;
+}
+
 export interface ItemDetailsResponse {
   item: Item;
   identifiers: IdentifierResponse[];
   canonical_identifier?: IdentifierResponse | null;
   events: Event[];
+  /** Present only when fetched with `?include=provenance`. */
+  provenance?: Record<string, FieldProvenance> | null;
 }
 
 export interface CreateItemResponse {

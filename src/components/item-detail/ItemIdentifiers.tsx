@@ -2,6 +2,9 @@ import { Tag, MapPin, Wheat, Calendar, Link2, ExternalLink, Hash, Database } fro
 import { Item, IdentifierResponse, AdapterBlockchainAnchor, AdapterStorageRef, ItemVersionInfo } from "@/lib/defarm-api";
 import { anchorStateOf } from "@/components/proof";
 import { formatTime } from "./constants";
+import { useQueries } from "@tanstack/react-query";
+import { getPublicWorkspace } from "@/lib/api/workspaces";
+import type { FieldProvenance } from "@/lib/api/types";
 
 interface ItemIdentifiersProps {
   item: Item;
@@ -10,6 +13,9 @@ interface ItemIdentifiersProps {
   blockchainAnchors?: AdapterBlockchainAnchor[];
   storageRefs?: AdapterStorageRef[];
   versions?: ItemVersionInfo[];
+  /** T3: per-field provenance of the composed metadata (only present when the item
+   *  was fetched with `?include=provenance`). */
+  provenance?: Record<string, FieldProvenance> | null;
 }
 
 function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
@@ -57,10 +63,55 @@ function IpfsLink({ storageRef }: { storageRef: AdapterStorageRef }) {
   );
 }
 
-export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, blockchainAnchors = [], storageRefs = [], versions = [] }: ItemIdentifiersProps) {
+export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, blockchainAnchors = [], storageRefs = [], versions = [], provenance }: ItemIdentifiersProps) {
   const metadata = item?.metadata || {};
   const metadataEntries = Object.entries(metadata);
   const itemId = item?.id ?? "";
+
+  // T3: resolve the distinct source workspaces of the metadata provenance to names
+  // (never surface a raw UUID — Hetzner). Legacy-origin fields carry no workspace.
+  const provenanceWorkspaceIds = provenance
+    ? Array.from(
+        new Set(
+          Object.values(provenance)
+            .map((p) => p.source_workspace_id)
+            .filter((x): x is string => !!x),
+        ),
+      )
+    : [];
+  const workspaceQueries = useQueries({
+    queries: provenanceWorkspaceIds.map((wsId) => ({
+      queryKey: ["public-workspace", wsId],
+      queryFn: () => getPublicWorkspace(wsId),
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+  const workspaceName = (wsId?: string): string | null => {
+    if (!wsId) return null;
+    const idx = provenanceWorkspaceIds.indexOf(wsId);
+    return (idx >= 0 ? workspaceQueries[idx]?.data?.name : null) ?? null;
+  };
+
+  // A muted one-liner under each metadata value: who asserted it (resolved name),
+  // its trust tier, and whether it reached us via a consented feed vs our own data.
+  const renderProvenance = (key: string) => {
+    const p = provenance?.[key];
+    if (!p) return null;
+    if (p.origin === "legacy") {
+      return <span className="text-[10px] text-muted-foreground">legado</span>;
+    }
+    // `||` (not `??`) so an empty resolved name ("") also falls back — else "por ".
+    const who = workspaceName(p.source_workspace_id) || "outra origem";
+    const trust = p.trust_level ? ` · ${p.trust_level}` : "";
+    const shared = p.via === "feed" ? " · compartilhado" : "";
+    return (
+      <span className="text-[10px] text-muted-foreground">
+        por {who}
+        {trust}
+        {shared}
+      </span>
+    );
+  };
   const hasAnchors = blockchainAnchors.length > 0 || storageRefs.length > 0;
 
   return (
@@ -315,10 +366,13 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
           </h3>
           <div className="space-y-2">
             {metadataEntries.map(([key, value]) => (
-              <div key={key} className="flex justify-between text-sm">
+              <div key={key} className="flex justify-between gap-3 text-sm">
                 <span className="text-muted-foreground">{key}</span>
-                <span className="text-foreground">
-                  {typeof value === "object" ? JSON.stringify(value) : String(value)}
+                <span className="flex flex-col items-end text-right">
+                  <span className="text-foreground">
+                    {typeof value === "object" ? JSON.stringify(value) : String(value)}
+                  </span>
+                  {renderProvenance(key)}
                 </span>
               </div>
             ))}
