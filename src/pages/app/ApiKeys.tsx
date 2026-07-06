@@ -79,6 +79,11 @@ export default function ApiKeys() {
   const [newKeyScope, setNewKeyScope] = useState<PartnerApiKeyScope>(
     isPartnerWorkspace ? "workspace_ingestion" : "circuit"
   );
+  // Onboarding DX (Onda 3, Fatia 1): for a PARTNER workspace the common case ("Recepção
+  // inteligente") is the default and the only thing shown; the other scopes live behind
+  // a disclosure. For a non-partner (default scope 'circuit') the collapsed card would
+  // LIE, so start expanded — they get the plain scope Select, no card (Hetzner #118).
+  const [showAdvancedScope, setShowAdvancedScope] = useState(!isPartnerWorkspace);
   const [newKeyCircuit, setNewKeyCircuit] = useState("");
   const [newKeyCircuits, setNewKeyCircuits] = useState<string[]>([]);
   const [newKeyStagingCircuit, setNewKeyStagingCircuit] = useState("");
@@ -496,28 +501,56 @@ export default function ApiKeys() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Escopo *</Label>
-              <Select value={newKeyScope} onValueChange={(v: PartnerApiKeyScope) => setNewKeyScope(v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o escopo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="workspace_ingestion">
-                    Recepção inteligente (o sistema roteia os dados)
-                  </SelectItem>
-                  <SelectItem value="circuit">Circuito específico (uma chave por circuito)</SelectItem>
-                  <SelectItem value="circuits">Vários circuitos (conjunto escolhido)</SelectItem>
-                  <SelectItem value="workspace">Todo o workspace (global)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Recomendado: <strong>Recepção inteligente</strong> — você manda os dados e o sistema
-                decide o destino pelas suas regras (apontar um circuito é opcional).
-              </p>
+              <Label>Como esta chave recebe seus dados</Label>
+              {!showAdvancedScope ? (
+                <div className="rounded-md border bg-muted/20 p-3">
+                  <div className="text-sm font-medium">Recepção inteligente</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Você manda os dados e a DeFarm escolhe o destino pelas suas regras — sem
+                    precisar apontar um circuito. É a opção certa para a maioria das integrações.
+                  </p>
+                </div>
+              ) : (
+                <Select value={newKeyScope} onValueChange={(v: PartnerApiKeyScope) => setNewKeyScope(v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o escopo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="workspace_ingestion">Recepção inteligente (padrão)</SelectItem>
+                    <SelectItem value="circuit">Um circuito específico</SelectItem>
+                    <SelectItem value="circuits">Vários circuitos</SelectItem>
+                    <SelectItem value="workspace">Todo o workspace (acesso amplo)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {/* The card/disclosure UX only makes sense where the collapsed default is
+                  truthful — i.e. a partner workspace (default 'workspace_ingestion').
+                  Non-partners just get the plain Select above, no toggle. */}
+              {isPartnerWorkspace ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowAdvancedScope((v) => {
+                      const next = !v;
+                      // Collapsing returns to the default so the card above stays truthful.
+                      if (!next) setNewKeyScope("workspace_ingestion");
+                      return next;
+                    })
+                  }
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                >
+                  {showAdvancedScope
+                    ? "Ocultar opções avançadas"
+                    : "Opções avançadas — escolher circuito manualmente"}
+                </button>
+              ) : null}
             </div>
             {newKeyScope === "circuit" ? (
               <div className="space-y-2">
                 <Label>Circuito *</Label>
+                <p className="text-xs text-muted-foreground">
+                  Um circuito é onde seus dados caem — um destino rastreável no seu workspace.
+                </p>
                 <Select value={newKeyCircuit} onValueChange={setNewKeyCircuit}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um circuito" />
@@ -561,13 +594,10 @@ export default function ApiKeys() {
                 (inclusive os criados no futuro). Use com cuidado — é o acesso mais amplo.
               </div>
             ) : null}
-            {newKeyScope === "workspace_ingestion" ? (
+            {showAdvancedScope && newKeyScope === "workspace_ingestion" ? (
               <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
-                Sem configuração adicional: a DeFarm escolhe automaticamente o circuito interno de ingestão.
-                <br />
-                <span className="opacity-80">
-                  Avançado (opcional): você ainda pode definir manualmente no backend via <code>staging_circuit_id</code>.
-                </span>
+                Sem configuração adicional: a DeFarm escolhe automaticamente o circuito de
+                recepção dos seus dados.
               </div>
             ) : null}
             <div className="space-y-2">
