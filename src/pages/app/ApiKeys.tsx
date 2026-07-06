@@ -313,6 +313,14 @@ export default function ApiKeys() {
     return tagged?.id || circuits[0]?.id || "";
   };
 
+  // Onda 3, Fatia 1: name of the circuit that receives data when no routing rule
+  // matches — shown in the "Recepção inteligente" card so the partner sees WHERE the
+  // default lands (empty until the first workspace_ingestion key auto-creates it).
+  const defaultStagingCircuitId = getDefaultStagingCircuit();
+  const defaultStagingCircuitName = defaultStagingCircuitId
+    ? getCircuitName(defaultStagingCircuitId)
+    : "";
+
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
@@ -506,9 +514,32 @@ export default function ApiKeys() {
                 <div className="rounded-md border bg-muted/20 p-3">
                   <div className="text-sm font-medium">Recepção inteligente</div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Você manda os dados e a DeFarm escolhe o destino pelas suas regras — sem
-                    precisar apontar um circuito. É a opção certa para a maioria das integrações.
+                    Você manda os dados sem apontar circuito. A DeFarm roteia cada item
+                    automaticamente pelas regras que você configura (por exploração, CAR,
+                    CNPJ…). O que não casar nenhuma regra cai no seu <strong>circuito
+                    padrão</strong>
+                    {defaultStagingCircuitName ? (
+                      <> — hoje <strong>{defaultStagingCircuitName}</strong>.</>
+                    ) : (
+                      <> (criado automaticamente no seu primeiro envio).</>
+                    )}
                   </p>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => navigate("/app/meus-circuitos")}
+                      className="text-primary underline underline-offset-2"
+                    >
+                      Ver circuitos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/app/parceiro/roteamento")}
+                      className="text-primary underline underline-offset-2"
+                    >
+                      Configurar roteamento
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <Select value={newKeyScope} onValueChange={(v: PartnerApiKeyScope) => setNewKeyScope(v)}>
