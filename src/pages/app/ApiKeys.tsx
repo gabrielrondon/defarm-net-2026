@@ -310,7 +310,11 @@ export default function ApiKeys() {
 
   const getDefaultStagingCircuit = () => {
     const tagged = circuits.find((c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true");
-    return tagged?.id || circuits[0]?.id || "";
+    // Only pin a genuinely-tagged staging circuit. Dropping the circuits[0] fallback
+    // means "no tag" → empty staging_circuit_id → the backend resolve_default_circuit
+    // auto-resolves, matching what the card promises ("criado automaticamente"). Pinning
+    // an arbitrary circuits[0] here would make the key contradict the card (Hetzner #119).
+    return tagged?.id || "";
   };
 
   // Onda 3, Fatia 1: name of the circuit that receives data when no routing rule
