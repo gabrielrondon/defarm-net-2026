@@ -315,11 +315,13 @@ export default function ApiKeys() {
 
   // Onda 3, Fatia 1: name of the circuit that receives data when no routing rule
   // matches — shown in the "Recepção inteligente" card so the partner sees WHERE the
-  // default lands (empty until the first workspace_ingestion key auto-creates it).
-  const defaultStagingCircuitId = getDefaultStagingCircuit();
-  const defaultStagingCircuitName = defaultStagingCircuitId
-    ? getCircuitName(defaultStagingCircuitId)
-    : "";
+  // default lands. Only a GENUINELY tagged staging circuit is named; we don't guess
+  // with circuits[0] (that would mislabel an arbitrary circuit as "the default").
+  // Empty → the card says it will be created on the first send.
+  const taggedStagingCircuit = circuits.find(
+    (c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true"
+  );
+  const defaultStagingCircuitName = taggedStagingCircuit?.name || "";
 
   return (
     <div className="max-w-5xl mx-auto">
