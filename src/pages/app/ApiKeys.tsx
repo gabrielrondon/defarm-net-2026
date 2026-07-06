@@ -79,10 +79,11 @@ export default function ApiKeys() {
   const [newKeyScope, setNewKeyScope] = useState<PartnerApiKeyScope>(
     isPartnerWorkspace ? "workspace_ingestion" : "circuit"
   );
-  // Onboarding DX (Onda 3, Fatia 1): the common case ("Recepção inteligente") is the
-  // default and the only thing shown; the other scopes live behind this disclosure so
-  // the scope panel stops overwhelming the first-time partner.
-  const [showAdvancedScope, setShowAdvancedScope] = useState(false);
+  // Onboarding DX (Onda 3, Fatia 1): for a PARTNER workspace the common case ("Recepção
+  // inteligente") is the default and the only thing shown; the other scopes live behind
+  // a disclosure. For a non-partner (default scope 'circuit') the collapsed card would
+  // LIE, so start expanded — they get the plain scope Select, no card (Hetzner #118).
+  const [showAdvancedScope, setShowAdvancedScope] = useState(!isPartnerWorkspace);
   const [newKeyCircuit, setNewKeyCircuit] = useState("");
   const [newKeyCircuits, setNewKeyCircuits] = useState<string[]>([]);
   const [newKeyStagingCircuit, setNewKeyStagingCircuit] = useState("");
@@ -522,22 +523,27 @@ export default function ApiKeys() {
                   </SelectContent>
                 </Select>
               )}
-              <button
-                type="button"
-                onClick={() =>
-                  setShowAdvancedScope((v) => {
-                    const next = !v;
-                    // Collapsing returns to the default so the card above stays truthful.
-                    if (!next) setNewKeyScope("workspace_ingestion");
-                    return next;
-                  })
-                }
-                className="text-xs text-muted-foreground underline underline-offset-2"
-              >
-                {showAdvancedScope
-                  ? "Ocultar opções avançadas"
-                  : "Opções avançadas — escolher circuito manualmente"}
-              </button>
+              {/* The card/disclosure UX only makes sense where the collapsed default is
+                  truthful — i.e. a partner workspace (default 'workspace_ingestion').
+                  Non-partners just get the plain Select above, no toggle. */}
+              {isPartnerWorkspace ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowAdvancedScope((v) => {
+                      const next = !v;
+                      // Collapsing returns to the default so the card above stays truthful.
+                      if (!next) setNewKeyScope("workspace_ingestion");
+                      return next;
+                    })
+                  }
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                >
+                  {showAdvancedScope
+                    ? "Ocultar opções avançadas"
+                    : "Opções avançadas — escolher circuito manualmente"}
+                </button>
+              ) : null}
             </div>
             {newKeyScope === "circuit" ? (
               <div className="space-y-2">
