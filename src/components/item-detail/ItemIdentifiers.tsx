@@ -100,7 +100,8 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
     if (p.origin === "legacy") {
       return <span className="text-[10px] text-muted-foreground">legado</span>;
     }
-    const who = workspaceName(p.source_workspace_id) ?? "outra origem";
+    // `||` (not `??`) so an empty resolved name ("") also falls back — else "por ".
+    const who = workspaceName(p.source_workspace_id) || "outra origem";
     const trust = p.trust_level ? ` · ${p.trust_level}` : "";
     const shared = p.via === "feed" ? " · compartilhado" : "";
     return (
