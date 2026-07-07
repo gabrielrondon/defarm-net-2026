@@ -56,13 +56,14 @@ function routeTypeLabel(routeType: string): string {
 
 // Status por rota, humanizado. Valores reais vindos de PartnerRouteOutput.status
 // (partner_routing.rs): no preview (dry-run) — routed_existing | would_auto_create |
-// routed_source_fallback; no caminho real, batch.status herda receipt.status
-// (completed) ou failed. Fallback devolve o valor cru pra qualquer status novo.
+// routed_source_fallback; no caminho real, batch.status herda receipt.status, que pode
+// ser completed | partial (parte das linhas falhou) | failed. Fallback devolve o cru.
 const ROUTE_STATUS_LABELS: Record<string, string> = {
   routed_existing: "vai pro circuito da regra",
   would_auto_create: "criaria um circuito novo",
   routed_source_fallback: "vai pro circuito padrão",
   completed: "concluído",
+  partial: "parcialmente concluído",
   failed: "falhou",
 };
 
