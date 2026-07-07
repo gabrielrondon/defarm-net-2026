@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
@@ -30,48 +31,17 @@ import {
 
 type WizardStep = "upload" | "preview" | "test" | "production" | "done" | "error";
 
-// Onda 3, Fatia 1: humanize the routing identifier a batch was routed by (the backend
-// sets route_type = the identifier_type: car/exploracao/cnpj/...). Was rendered raw
-// UPPERCASE ("EXPLORACAO"). Falls back to Title Case for any unmapped type.
-const ROUTE_TYPE_LABELS: Record<string, string> = {
-  car: "CAR",
-  exploracao: "Exploração (MAPA)",
-  land_dfid: "LAND DFID",
-  cnpj: "CNPJ",
-  cpf: "CPF",
-  ccir: "CCIR",
-  nirf: "NIRF",
-  incra: "INCRA",
-  cib: "CIB",
-  matricula: "Matrícula",
-  georef: "GEOREF",
-  ie: "Inscrição estadual",
-  inscricao_estadual: "Inscrição estadual",
-};
-
-function routeTypeLabel(routeType: string): string {
-  const key = routeType.toLowerCase();
-  return ROUTE_TYPE_LABELS[key] ?? routeType.charAt(0).toUpperCase() + routeType.slice(1).toLowerCase();
-}
-
-// Status por rota, humanizado. Valores reais vindos de PartnerRouteOutput.status
-// (partner_routing.rs): no preview (dry-run) — routed_existing | would_auto_create |
-// routed_source_fallback; no caminho real, batch.status herda receipt.status, que pode
-// ser completed | partial (parte das linhas falhou) | failed. Fallback devolve o cru.
-const ROUTE_STATUS_LABELS: Record<string, string> = {
-  routed_existing: "vai pro circuito da regra",
-  would_auto_create: "criaria um circuito novo",
-  routed_source_fallback: "vai pro circuito padrão",
-  completed: "concluído",
-  partial: "parcialmente concluído",
-  failed: "falhou",
-};
-
-function routeStatusLabel(status: string): string {
-  return ROUTE_STATUS_LABELS[status?.toLowerCase()] ?? status;
-}
+// Enums humanizados via catálogo i18n. A KEY do lookup é sempre a string do enum do
+// backend (route_type/route.status/source) — a tradução muda o valor exibido, não a
+// key. Fallback (defaultValue) devolve o valor cru pra qualquer valor novo do backend.
+// - routeType: car/exploracao/land_dfid/cnpj/... (identifier_type do batch roteado)
+// - routeStatus: routed_existing|would_auto_create|routed_source_fallback (preview) +
+//   completed|partial|failed (real, batch.status <- receipt.status)
+// - circuitSource: api_key_metadata|partner_staging_flag|fallback|workspace_setting
+//   (DefaultCircuitSource, #[serde(rename_all = "snake_case")], partner_keys.rs:125)
 
 export function IngestionWizard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [step, setStep] = useState<WizardStep>("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -126,7 +96,11 @@ export function IngestionWizard() {
           if (err instanceof ApiError && err.status === 404) {
             setNoCircuit(true);
           } else if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
-            toast({ title: "Erro de autenticação", description: "Sem permissão para acessar o circuito padrão.", variant: "destructive" });
+            toast({
+              title: t("portal.ingestion.authError.title"),
+              description: t("portal.ingestion.authError.desc"),
+              variant: "destructive",
+            });
           } else {
             // Fallback transitório
             if (circuitsData.status === "fulfilled" && circuitsData.value[0]) {
@@ -142,7 +116,7 @@ export function IngestionWizard() {
       }
     }
     init();
-  }, []);
+  }, [t, toast]);
 
   const handleFileSelect = async (selectedFile: File) => {
     setFile(selectedFile);
@@ -164,7 +138,7 @@ export function IngestionWizard() {
           ? `${err.message} (${err.status})`
           : err instanceof Error
           ? err.message
-          : "Falha ao gerar prévia.";
+          : t("portal.ingestion.errors.previewFailed");
       setErrorMsg(msg);
     } finally {
       setPreviewing(false);
@@ -192,7 +166,7 @@ export function IngestionWizard() {
           ? `${err.message} (${err.status})`
           : err instanceof Error
           ? err.message
-          : "Falha na ingestão.";
+          : t("portal.ingestion.errors.ingestionFailed");
       setErrorMsg(msg);
       setStep("error");
     } finally {
@@ -220,29 +194,29 @@ export function IngestionWizard() {
     return (
       <div className="flex flex-col items-center justify-center py-16 space-y-3 animate-fade-in">
         <XCircle className="h-8 w-8 text-muted-foreground/40" />
-        <p className="text-sm font-medium text-foreground">Nenhum circuito elegível encontrado</p>
+        <p className="text-sm font-medium text-foreground">{t("portal.ingestion.noCircuit.title")}</p>
         <p className="text-xs text-muted-foreground text-center max-w-xs">
-          Não foi possível identificar um circuito padrão para este workspace. Entre em contato com o suporte ou crie um circuito primeiro.
+          {t("portal.ingestion.noCircuit.desc")}
         </p>
         <Button variant="outline" size="sm" asChild>
-          <Link to="/app/circuitos/novo">Criar circuito</Link>
+          <Link to="/app/circuitos/novo">{t("portal.ingestion.noCircuit.create")}</Link>
         </Button>
       </div>
     );
   }
 
-  // Chaves em snake_case: DefaultCircuitSource tem #[serde(rename_all = "snake_case")]
-  // (partner_keys.rs:125), então o backend serializa api_key_metadata / partner_staging_flag
-  // / fallback / workspace_setting. As chaves PascalCase anteriores NUNCA batiam → o badge
-  // vazava o valor cru em snake_case. Agora casam.
-  const sourceLabel: Record<string, string> = {
-    api_key_metadata: "via API Key",
-    partner_staging_flag: "staging",
-    fallback: "fallback",
-    workspace_setting: "configuração",
-  };
+  const circuitSourceLabel = defaultCircuitInfo
+    ? t(`portal.enums.circuitSource.${defaultCircuitInfo.source}`, {
+        defaultValue: defaultCircuitInfo.source,
+      })
+    : "";
 
-  const stepLabels = { upload: "Upload", preview: "Preview", test: "Teste", done: "Produção" } as const;
+  const stepLabels = {
+    upload: t("portal.ingestion.steps.upload"),
+    preview: t("portal.ingestion.steps.preview"),
+    test: t("portal.ingestion.steps.test"),
+    done: t("portal.ingestion.steps.done"),
+  } as const;
   const stepOrder = { upload: 0, preview: 1, test: 2, done: 3 };
   const currentOrder = { upload: 0, preview: 1, test: 2, production: 3, done: 3, error: -1 }[step];
 
@@ -253,14 +227,15 @@ export function IngestionWizard() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground animate-fade-in">
           <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
           <span>
-            Circuito: <span className="font-medium text-foreground">{defaultCircuitInfo.name}</span>
+            {t("portal.ingestion.circuitBadge.label")}{" "}
+            <span className="font-medium text-foreground">{defaultCircuitInfo.name}</span>
           </span>
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono">
-            {sourceLabel[defaultCircuitInfo.source] || defaultCircuitInfo.source}
+            {circuitSourceLabel}
           </span>
           {defaultCircuitInfo.is_staging && (
             <span className="rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 text-[10px]">
-              staging
+              {t("portal.ingestion.circuitBadge.staging")}
             </span>
           )}
         </div>
@@ -295,10 +270,10 @@ export function IngestionWizard() {
               <label className="cursor-pointer block">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
                 <p className="text-sm font-medium text-foreground">
-                  Experimente — arraste um arquivo ou clique para selecionar
+                  {t("portal.ingestion.upload.title")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  CSV ou JSON · Mostramos o que vai acontecer antes de gravar nada — sem risco
+                  {t("portal.ingestion.upload.hint")}
                 </p>
                 <input
                   type="file"
@@ -323,7 +298,7 @@ export function IngestionWizard() {
             {previewing ? (
               <div className="flex flex-col items-center justify-center py-12 animate-fade-in">
                 <Loader2 className="h-6 w-6 animate-spin text-primary mb-3" />
-                <p className="text-sm text-muted-foreground">Analisando estrutura do arquivo...</p>
+                <p className="text-sm text-muted-foreground">{t("portal.ingestion.preview.analyzing")}</p>
               </div>
             ) : preview ? (
               <div className="animate-fade-in space-y-4">
@@ -341,7 +316,7 @@ export function IngestionWizard() {
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          Enviar para teste
+                          {t("portal.ingestion.preview.sendToTest")}
                           <ArrowRight className="h-4 w-4 ml-1.5" />
                         </>
                       )}
@@ -356,10 +331,10 @@ export function IngestionWizard() {
                     {processing ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : testCircuit ? (
-                      "Publicar direto"
+                      t("portal.ingestion.preview.publishDirect")
                     ) : (
                       <>
-                        Processar
+                        {t("portal.ingestion.preview.process")}
                         <ArrowRight className="h-4 w-4 ml-1.5" />
                       </>
                     )}
@@ -383,13 +358,13 @@ export function IngestionWizard() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    Publicar na cadeia real
+                    {t("portal.ingestion.test.publishReal")}
                     <ArrowRight className="h-4 w-4 ml-1.5" />
                   </>
                 )}
               </Button>
               <Button variant="ghost" size="sm" onClick={reset}>
-                Recomeçar
+                {t("portal.ingestion.common.restart")}
               </Button>
             </div>
           </div>
@@ -401,7 +376,7 @@ export function IngestionWizard() {
             <DoneResults result={result} />
             <Button variant="outline" onClick={reset} className="w-full">
               <RotateCcw className="h-4 w-4 mr-1.5" />
-              Enviar outro arquivo
+              {t("portal.ingestion.done.sendAnother")}
             </Button>
           </div>
         )}
@@ -412,13 +387,13 @@ export function IngestionWizard() {
             <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center space-y-3">
               <XCircle className="h-8 w-8 text-destructive mx-auto" />
               <div>
-                <h3 className="text-foreground">Falha na ingestão</h3>
+                <h3 className="text-foreground">{t("portal.ingestion.error.title")}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{errorMsg}</p>
               </div>
             </div>
             <Button variant="outline" onClick={reset} className="w-full">
               <RotateCcw className="h-4 w-4 mr-1.5" />
-              Tentar novamente
+              {t("portal.ingestion.error.retry")}
             </Button>
           </div>
         )}
@@ -432,7 +407,7 @@ export function IngestionWizard() {
             className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors inline-flex items-center gap-1"
           >
             <SkipForward className="h-3 w-3" />
-            Pular estas etapas
+            {t("portal.ingestion.skip")}
           </button>
         </div>
       )}
@@ -442,15 +417,18 @@ export function IngestionWizard() {
         <Key className="h-5 w-5 text-muted-foreground/50 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-foreground">
-            Esta ação também pode ser feita via API.
+            {t("portal.ingestion.apiBanner.title")}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Use o endpoint <code className="text-xs font-mono bg-muted px-1 rounded">POST /partner/ingestions</code> com sua API key.
+            <Trans
+              i18nKey="portal.ingestion.apiBanner.desc"
+              components={{ code: <code className="text-xs font-mono bg-muted px-1 rounded" /> }}
+            />
           </p>
         </div>
         <Button variant="ghost" size="sm" asChild className="shrink-0">
           <Link to="/app/api-keys">
-            API Keys
+            {t("portal.ingestion.common.apiKeys")}
             <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
           </Link>
         </Button>
@@ -462,6 +440,7 @@ export function IngestionWizard() {
 /* ─── Sub-components ─── */
 
 function FileBadge({ file, onReset }: { file: File | null; onReset: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
       <FileUp className="h-4 w-4 text-primary shrink-0" />
@@ -475,27 +454,29 @@ function FileBadge({ file, onReset }: { file: File | null; onReset: () => void }
         onClick={onReset}
         className="text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
-        Trocar
+        {t("portal.ingestion.common.change")}
       </button>
     </div>
   );
 }
 
 function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="animate-fade-in rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-center space-y-3">
       <XCircle className="h-6 w-6 text-destructive mx-auto" />
-      <p className="text-sm text-foreground font-medium">Erro na análise</p>
+      <p className="text-sm text-foreground font-medium">{t("portal.ingestion.errorCard.title")}</p>
       <p className="text-xs text-muted-foreground">{message}</p>
       <Button variant="outline" size="sm" onClick={onRetry}>
         <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-        Tentar novamente
+        {t("portal.ingestion.error.retry")}
       </Button>
     </div>
   );
 }
 
 function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
+  const { t } = useTranslation();
   const s = preview.summary;
   const routes = preview.routes ?? [];
   const unresolved = s?.unresolved_rows ?? 0;
@@ -505,25 +486,25 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
         <div className="flex items-start gap-2">
           <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-foreground">Simulação — nada foi gravado</p>
+            <p className="text-sm font-medium text-foreground">{t("portal.ingestion.preview.simulationTitle")}</p>
             <p className="text-xs text-muted-foreground">
-              Prévia segura, sem risco. Veja o que aconteceria se você enviar de verdade.
+              {t("portal.ingestion.preview.simulationDesc")}
             </p>
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <StatCard label="Linhas" value={s?.total_rows ?? 0} />
-          <StatCard label="Processáveis" value={s?.processed_rows ?? 0} variant="primary" />
-          <StatCard label="Pendentes" value={unresolved} variant={unresolved > 0 ? "destructive" : undefined} />
+          <StatCard label={t("portal.ingestion.stats.rows")} value={s?.total_rows ?? 0} />
+          <StatCard label={t("portal.ingestion.stats.processable")} value={s?.processed_rows ?? 0} variant="primary" />
+          <StatCard label={t("portal.ingestion.stats.pending")} value={unresolved} variant={unresolved > 0 ? "destructive" : undefined} />
         </div>
 
         {/* Routes — show what will happen */}
         {routes.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              O que vai acontecer
+              {t("portal.ingestion.preview.whatWillHappen")}
             </p>
             <div className="space-y-2">
               {routes.slice(0, 4).map((route, i) => (
@@ -537,17 +518,21 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground">
-                      {routeTypeLabel(route.route_type)}: <span className="font-mono">{route.route_value}</span>
+                      {t(`portal.enums.routeType.${route.route_type?.toLowerCase()}`, { defaultValue: route.route_type })}: <span className="font-mono">{route.route_value}</span>
                     </p>
                     <p className="text-muted-foreground mt-0.5">
-                      {route.rows} linha(s) · {route.items} item(ns) · {routeStatusLabel(route.status)}
+                      {t("portal.ingestion.preview.routeLine", {
+                        rows: route.rows,
+                        items: route.items,
+                        status: t(`portal.enums.routeStatus.${route.status?.toLowerCase()}`, { defaultValue: route.status }),
+                      })}
                     </p>
                   </div>
                 </div>
               ))}
               {routes.length > 4 && (
                 <p className="text-xs text-muted-foreground text-center">
-                  + {routes.length - 4} outro(s) destino(s)
+                  {t("portal.ingestion.preview.moreDestinations", { count: routes.length - 4 })}
                 </p>
               )}
             </div>
@@ -558,9 +543,8 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
       {/* Explanation */}
       <div className="rounded-xl bg-primary/5 border border-primary/10 px-4 py-3">
         <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="font-medium text-foreground">Como funciona?</span>{" "}
-          Cada linha sempre cai no seu circuito padrão e, em paralelo, é roteada por
-          identificador (CAR, exploração, CNPJ…) pro circuito certo. Nada foi gravado — esta é a prévia.
+          <span className="font-medium text-foreground">{t("portal.ingestion.preview.howItWorksLabel")}</span>{" "}
+          {t("portal.ingestion.preview.howItWorksBody")}
         </p>
       </div>
     </div>
@@ -568,6 +552,7 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
 }
 
 function TestResults({ result }: { result: PartnerIntakeResponse }) {
+  const { t } = useTranslation();
   const totalRows = result.summary?.total_rows ?? 0;
   const itemsLinked = result.summary?.items_created ?? result.items?.length ?? 0;
   const routes = result.routes || [];
@@ -581,20 +566,20 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <CheckCircle2 className="h-6 w-6 text-primary" />
           </div>
-          <p className="text-sm font-medium text-foreground">Teste concluído com sucesso</p>
+          <p className="text-sm font-medium text-foreground">{t("portal.ingestion.test.successTitle")}</p>
         </div>
 
         {/* What was created */}
         <div className="grid grid-cols-2 gap-3">
-          <StatCard label="Linhas processadas" value={totalRows} />
-          <StatCard label="Itens criados" value={itemsLinked} variant="primary" />
+          <StatCard label={t("portal.ingestion.test.rowsProcessed")} value={totalRows} />
+          <StatCard label={t("portal.ingestion.test.itemsCreated")} value={itemsLinked} variant="primary" />
         </div>
 
         {/* Routes created */}
         {routes.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Rotas processadas
+              {t("portal.ingestion.test.routesProcessed")}
             </p>
             {routes.slice(0, 3).map((route, i) => (
               <div
@@ -603,10 +588,11 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <span className="font-mono text-foreground">
-                  {routeTypeLabel(route.route_type)}: {route.route_value}
+                  {t(`portal.enums.routeType.${route.route_type?.toLowerCase()}`, { defaultValue: route.route_type })}: {route.route_value}
                 </span>
                 <span className="text-muted-foreground">
-                  {route.rows} linhas · {route.items} itens · <span className="text-primary">{routeStatusLabel(route.status)}</span>
+                  {t("portal.ingestion.test.routeCount", { rows: route.rows, items: route.items })}{" · "}
+                  <span className="text-primary">{t(`portal.enums.routeStatus.${route.status?.toLowerCase()}`, { defaultValue: route.status })}</span>
                 </span>
               </div>
             ))}
@@ -617,7 +603,7 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
         {items.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Exemplo de itens criados
+              {t("portal.ingestion.test.itemsSampleTitle")}
             </p>
             {items.slice(0, 3).map((item, i) => (
               <div
@@ -629,14 +615,14 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
                 <span className="font-mono text-foreground truncate">{item.dfid}</span>
                 {item.partner_reference && (
                   <span className="text-muted-foreground ml-auto shrink-0">
-                    ref: {item.partner_reference}
+                    {t("portal.ingestion.common.ref", { value: item.partner_reference })}
                   </span>
                 )}
               </div>
             ))}
             {items.length > 3 && (
               <p className="text-xs text-muted-foreground text-center">
-                + {items.length - 3} outro(s) item(ns)
+                {t("portal.ingestion.test.moreItems", { count: items.length - 3 })}
               </p>
             )}
           </div>
@@ -648,7 +634,7 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
             {circuitLinks.map((link) => (
               <Button key={link.circuit_id} variant="outline" size="sm" asChild>
                 <a href={link.app_url} target="_blank" rel="noopener noreferrer">
-                  Ver circuito <ExternalLink className="h-3 w-3 ml-1" />
+                  {t("portal.ingestion.common.viewCircuit")} <ExternalLink className="h-3 w-3 ml-1" />
                 </a>
               </Button>
             ))}
@@ -658,8 +644,8 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
 
       <div className="rounded-xl bg-primary/5 border border-primary/10 px-4 py-3">
         <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="font-medium text-foreground">Próximo passo:</span>{" "}
-          Os dados estão em um circuito de teste. Revise os itens criados acima. Quando estiver satisfeito, publique na cadeia de valor real.
+          <span className="font-medium text-foreground">{t("portal.ingestion.test.nextStepLabel")}</span>{" "}
+          {t("portal.ingestion.test.nextStepBody")}
         </p>
       </div>
     </div>
@@ -667,6 +653,7 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
 }
 
 function DoneResults({ result }: { result: PartnerIntakeResponse }) {
+  const { t } = useTranslation();
   const totalRows = result.summary?.total_rows ?? 0;
   // Alinhado ao campo canônico items_created (o mesmo que o TestResults usa) — antes
   // lia summary.items e divergia da contagem mostrada no teste vs na publicação.
@@ -681,20 +668,20 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-scale-in">
           <PartyPopper className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="text-foreground">Ingestão concluída!</h3>
+        <h3 className="text-foreground">{t("portal.ingestion.done.title")}</h3>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Linhas" value={totalRows} />
-        <StatCard label="Itens" value={itemsLinked} variant="primary" />
-        <StatCard label="Lotes" value={batchCount} />
+        <StatCard label={t("portal.ingestion.stats.rows")} value={totalRows} />
+        <StatCard label={t("portal.ingestion.done.items")} value={itemsLinked} variant="primary" />
+        <StatCard label={t("portal.ingestion.done.batches")} value={batchCount} />
       </div>
 
       {/* Sample DFIDs */}
       {items.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">
-            Itens publicados
+            {t("portal.ingestion.done.itemsPublished")}
           </p>
           {items.slice(0, 3).map((item, i) => (
             <div
@@ -713,14 +700,14 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
               </a>
               {item.partner_reference && (
                 <span className="text-muted-foreground ml-auto shrink-0">
-                  ref: {item.partner_reference}
+                  {t("portal.ingestion.common.ref", { value: item.partner_reference })}
                 </span>
               )}
             </div>
           ))}
           {items.length > 3 && (
             <p className="text-xs text-muted-foreground text-center">
-              + {items.length - 3} outro(s)
+              {t("portal.ingestion.done.moreGeneric", { count: items.length - 3 })}
             </p>
           )}
         </div>
@@ -739,7 +726,7 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
           {circuitLinks.map((link) => (
             <Button key={link.circuit_id} variant="outline" size="sm" asChild>
               <a href={link.app_url} target="_blank" rel="noopener noreferrer">
-                Ver circuito <ExternalLink className="h-3 w-3 ml-1" />
+                {t("portal.ingestion.common.viewCircuit")} <ExternalLink className="h-3 w-3 ml-1" />
               </a>
             </Button>
           ))}

@@ -790,5 +790,132 @@
     "rbb": "Nó observador",
     "cowpro": "Parceiro de Dados: Prova de Vida",
     "gerbov": "Parceiro de Dados: ERP"
+  },
+  "portal": {
+    "enums": {
+      "routeType": {
+        "car": "CAR",
+        "exploracao": "Exploração (MAPA)",
+        "land_dfid": "LAND DFID",
+        "cnpj": "CNPJ",
+        "cpf": "CPF",
+        "ccir": "CCIR",
+        "nirf": "NIRF",
+        "incra": "INCRA",
+        "cib": "CIB",
+        "matricula": "Matrícula",
+        "georef": "GEOREF",
+        "ie": "Inscrição estadual",
+        "inscricao_estadual": "Inscrição estadual"
+      },
+      "routeStatus": {
+        "routed_existing": "vai pro circuito da regra",
+        "would_auto_create": "criaria um circuito novo",
+        "routed_source_fallback": "vai pro circuito padrão",
+        "completed": "concluído",
+        "partial": "parcialmente concluído",
+        "failed": "falhou"
+      },
+      "circuitSource": {
+        "api_key_metadata": "via API Key",
+        "partner_staging_flag": "staging",
+        "fallback": "fallback",
+        "workspace_setting": "configuração"
+      }
+    },
+    "ingestion": {
+      "authError": {
+        "title": "Erro de autenticação",
+        "desc": "Sem permissão para acessar o circuito padrão."
+      },
+      "errors": {
+        "previewFailed": "Falha ao gerar prévia.",
+        "ingestionFailed": "Falha na ingestão."
+      },
+      "noCircuit": {
+        "title": "Nenhum circuito elegível encontrado",
+        "desc": "Não foi possível identificar um circuito padrão para este workspace. Entre em contato com o suporte ou crie um circuito primeiro.",
+        "create": "Criar circuito"
+      },
+      "circuitBadge": {
+        "label": "Circuito:",
+        "staging": "staging"
+      },
+      "steps": {
+        "upload": "Upload",
+        "preview": "Preview",
+        "test": "Teste",
+        "done": "Produção"
+      },
+      "upload": {
+        "title": "Experimente — arraste um arquivo ou clique para selecionar",
+        "hint": "CSV ou JSON · Mostramos o que vai acontecer antes de gravar nada — sem risco"
+      },
+      "preview": {
+        "analyzing": "Analisando estrutura do arquivo...",
+        "sendToTest": "Enviar para teste",
+        "publishDirect": "Publicar direto",
+        "process": "Processar",
+        "simulationTitle": "Simulação — nada foi gravado",
+        "simulationDesc": "Prévia segura, sem risco. Veja o que aconteceria se você enviar de verdade.",
+        "whatWillHappen": "O que vai acontecer",
+        "routeLine": "{{rows}} linha(s) · {{items}} item(ns) · {{status}}",
+        "moreDestinations": "+ {{count}} outro(s) destino(s)",
+        "howItWorksLabel": "Como funciona?",
+        "howItWorksBody": "Cada linha sempre cai no seu circuito padrão e, em paralelo, é roteada por identificador (CAR, exploração, CNPJ…) pro circuito certo. Nada foi gravado — esta é a prévia."
+      },
+      "stats": {
+        "rows": "Linhas",
+        "processable": "Processáveis",
+        "pending": "Pendentes"
+      },
+      "test": {
+        "publishReal": "Publicar na cadeia real",
+        "successTitle": "Teste concluído com sucesso",
+        "rowsProcessed": "Linhas processadas",
+        "itemsCreated": "Itens criados",
+        "routesProcessed": "Rotas processadas",
+        "routeCount": "{{rows}} linhas · {{items}} itens",
+        "itemsSampleTitle": "Exemplo de itens criados",
+        "moreItems": "+ {{count}} outro(s) item(ns)",
+        "nextStepLabel": "Próximo passo:",
+        "nextStepBody": "Os dados estão em um circuito de teste. Revise os itens criados acima. Quando estiver satisfeito, publique na cadeia de valor real."
+      },
+      "done": {
+        "sendAnother": "Enviar outro arquivo",
+        "title": "Ingestão concluída!",
+        "items": "Itens",
+        "batches": "Lotes",
+        "itemsPublished": "Itens publicados",
+        "moreGeneric": "+ {{count}} outro(s)"
+      },
+      "error": {
+        "title": "Falha na ingestão",
+        "retry": "Tentar novamente"
+      },
+      "errorCard": {
+        "title": "Erro na análise"
+      },
+      "skip": "Pular estas etapas",
+      "apiBanner": {
+        "title": "Esta ação também pode ser feita via API.",
+        "desc": "Use o endpoint <code>POST /partner/ingestions</code> com sua API key."
+      },
+      "common": {
+        "restart": "Recomeçar",
+        "change": "Trocar",
+        "ref": "ref: {{value}}",
+        "viewCircuit": "Ver circuito",
+        "apiKeys": "API Keys"
+      }
+    },
+    "reception": {
+      "title": "Seu recebimento",
+      "landsIn": "Seus dados caem em <strong>{{name}}</strong> por padrão.",
+      "changeCircuits": "trocar / ver circuitos",
+      "recentReceived": "{{count}} envio(s) recente(s) recebido(s) — tudo fluindo.",
+      "noneYet": "Nenhum envio ainda — comece mandando seus dados.",
+      "sendData": "Enviar dados"
+    }
   }
 }

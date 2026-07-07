@@ -790,5 +790,132 @@
     "rbb": "Observer node",
     "cowpro": "Data Partner: Proof of Life",
     "gerbov": "Data Partner: ERP"
+  },
+  "portal": {
+    "enums": {
+      "routeType": {
+        "car": "CAR",
+        "exploracao": "Holding (MAPA)",
+        "land_dfid": "LAND DFID",
+        "cnpj": "CNPJ",
+        "cpf": "CPF",
+        "ccir": "CCIR",
+        "nirf": "NIRF",
+        "incra": "INCRA",
+        "cib": "CIB",
+        "matricula": "Registration",
+        "georef": "GEOREF",
+        "ie": "State registration",
+        "inscricao_estadual": "State registration"
+      },
+      "routeStatus": {
+        "routed_existing": "goes to the rule's circuit",
+        "would_auto_create": "would create a new circuit",
+        "routed_source_fallback": "goes to the default circuit",
+        "completed": "completed",
+        "partial": "partially completed",
+        "failed": "failed"
+      },
+      "circuitSource": {
+        "api_key_metadata": "via API key",
+        "partner_staging_flag": "staging",
+        "fallback": "fallback",
+        "workspace_setting": "setting"
+      }
+    },
+    "ingestion": {
+      "authError": {
+        "title": "Authentication error",
+        "desc": "No permission to access the default circuit."
+      },
+      "errors": {
+        "previewFailed": "Failed to generate preview.",
+        "ingestionFailed": "Ingestion failed."
+      },
+      "noCircuit": {
+        "title": "No eligible circuit found",
+        "desc": "Couldn't identify a default circuit for this workspace. Contact support or create a circuit first.",
+        "create": "Create circuit"
+      },
+      "circuitBadge": {
+        "label": "Circuit:",
+        "staging": "staging"
+      },
+      "steps": {
+        "upload": "Upload",
+        "preview": "Preview",
+        "test": "Test",
+        "done": "Production"
+      },
+      "upload": {
+        "title": "Try it — drag a file or click to select",
+        "hint": "CSV or JSON · We show what will happen before writing anything — no risk"
+      },
+      "preview": {
+        "analyzing": "Analyzing file structure...",
+        "sendToTest": "Send to test",
+        "publishDirect": "Publish directly",
+        "process": "Process",
+        "simulationTitle": "Simulation — nothing was saved",
+        "simulationDesc": "Safe preview, no risk. See what would happen if you send for real.",
+        "whatWillHappen": "What will happen",
+        "routeLine": "{{rows}} row(s) · {{items}} item(s) · {{status}}",
+        "moreDestinations": "+ {{count}} more destination(s)",
+        "howItWorksLabel": "How does it work?",
+        "howItWorksBody": "Each row always lands in your default circuit and, in parallel, is routed by identifier (CAR, holding, CNPJ…) to the right circuit. Nothing was saved — this is the preview."
+      },
+      "stats": {
+        "rows": "Rows",
+        "processable": "Processable",
+        "pending": "Pending"
+      },
+      "test": {
+        "publishReal": "Publish to the real chain",
+        "successTitle": "Test completed successfully",
+        "rowsProcessed": "Rows processed",
+        "itemsCreated": "Items created",
+        "routesProcessed": "Routes processed",
+        "routeCount": "{{rows}} rows · {{items}} items",
+        "itemsSampleTitle": "Sample of created items",
+        "moreItems": "+ {{count}} more item(s)",
+        "nextStepLabel": "Next step:",
+        "nextStepBody": "The data is in a test circuit. Review the items created above. When you're satisfied, publish to the real value chain."
+      },
+      "done": {
+        "sendAnother": "Send another file",
+        "title": "Ingestion complete!",
+        "items": "Items",
+        "batches": "Batches",
+        "itemsPublished": "Published items",
+        "moreGeneric": "+ {{count}} more"
+      },
+      "error": {
+        "title": "Ingestion failed",
+        "retry": "Try again"
+      },
+      "errorCard": {
+        "title": "Analysis error"
+      },
+      "skip": "Skip these steps",
+      "apiBanner": {
+        "title": "This action can also be done via API.",
+        "desc": "Use the <code>POST /partner/ingestions</code> endpoint with your API key."
+      },
+      "common": {
+        "restart": "Restart",
+        "change": "Change",
+        "ref": "ref: {{value}}",
+        "viewCircuit": "View circuit",
+        "apiKeys": "API Keys"
+      }
+    },
+    "reception": {
+      "title": "Your reception",
+      "landsIn": "Your data lands in <strong>{{name}}</strong> by default.",
+      "changeCircuits": "change / view circuits",
+      "recentReceived": "{{count}} recent submission(s) received — everything flowing.",
+      "noneYet": "No submissions yet — start by sending your data.",
+      "sendData": "Send data"
+    }
   }
 }
