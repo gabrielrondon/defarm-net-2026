@@ -821,6 +821,19 @@
         "partner_staging_flag": "staging",
         "fallback": "fallback",
         "workspace_setting": "configuração"
+      },
+      "issueStatus": {
+        "open": "Aberto",
+        "in_review": "Em análise",
+        "resolved": "Resolvido",
+        "rejected": "Rejeitado"
+      },
+      "issueReason": {
+        "missing_identifier": "sem identificador",
+        "missing_value_chain": "sem value_chain",
+        "missing_trackable_identifier": "sem identificador do ativo",
+        "empty_after_normalization": "identificador inválido",
+        "no_routing_rule": "sem regra de roteamento"
       }
     },
     "ingestion": {
@@ -916,6 +929,97 @@
       "recentReceived": "{{count}} envio(s) recente(s) recebido(s) — tudo fluindo.",
       "noneYet": "Nenhum envio ainda — comece mandando seus dados.",
       "sendData": "Enviar dados"
+    },
+    "common": {
+      "save": "Salvar",
+      "loading": "Carregando…"
+    },
+    "routing": {
+      "header": {
+        "section": "Operação",
+        "title": "Roteamento",
+        "desc": "Defina para qual circuito cada identificador deve ir — e resolva o que chegou sem regra."
+      },
+      "newRule": "Nova regra",
+      "valuePlaceholder": "Valor",
+      "circuitPlaceholder": "Circuito",
+      "activeRules": "Regras ativas · {{count}}",
+      "empty": {
+        "title": "Nenhuma regra",
+        "desc": "Crie a primeira regra acima."
+      },
+      "toasts": {
+        "loadError": "Erro ao carregar roteamento",
+        "ruleSaved": "Regra salva",
+        "ruleSaveError": "Falha ao salvar regra",
+        "ruleRemoved": "Regra removida",
+        "ruleRemoveError": "Falha ao remover"
+      },
+      "defaultCircuit": {
+        "title": "Circuito padrão",
+        "desc": "É para onde seus dados vão quando você <strong>não</strong> especifica um circuito no envio. Apontar um circuito é sempre opcional — no mínimo, basta o identificador e a cadeia de valor.",
+        "targetLabel": "Destino padrão",
+        "choosePlaceholder": "Escolha um circuito",
+        "currentLabel": "Atual:",
+        "toasts": {
+          "updatedTitle": "Circuito padrão atualizado",
+          "updatedDesc": "Seus dados vão para \"{{name}}\" quando você não especificar um circuito.",
+          "updateError": "Não foi possível atualizar o circuito padrão"
+        },
+        "source": {
+          "api_key_metadata": "definido na sua chave de API",
+          "workspace_setting": "definido por você",
+          "partner_staging_flag": "padrão automático do workspace",
+          "fallback": "automático (circuito mais antigo)"
+        }
+      },
+      "issues": {
+        "title": "Pendências de Roteamento",
+        "desc": "Itens que chegaram sem regra/identificador resolvível. Assuma e resolva com regra para evitar recorrência.",
+        "totalListed": "Total listado",
+        "open": "Abertas",
+        "inReview": "Em revisão",
+        "targetCircuitPlaceholder": "Circuito destino para resolução rápida",
+        "quickAction": "Ação rápida: cria regra já vinculando a pendência ao circuito escolhido.",
+        "statusFilterPlaceholder": "Status da pendência",
+        "filter": {
+          "openInReview": "Abertas + em revisão",
+          "openOnly": "Só abertas",
+          "inReviewOnly": "Só em revisão",
+          "resolved": "Resolvidas",
+          "rejected": "Rejeitadas"
+        },
+        "assignedToMe": "Mostrar apenas atribuídas para mim",
+        "refresh": "Atualizar pendências",
+        "none": "Nenhuma pendência no momento.",
+        "emptyValue": "(vazio)",
+        "typeReasonLine": "tipo: {{type}} · motivo: {{reason}}",
+        "lastEvent": "último evento: {{date}}",
+        "occurrences": "{{count}} ocorrência(s)",
+        "assigned": "atribuída",
+        "claim": "Assumir",
+        "resolveWithRule": "Resolver com regra",
+        "resolveManually": "Resolver manual",
+        "typeMissingFull": "Sem identificador de roteamento (LAND_DFID/CAR/EXPLORAÇÃO/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/IE)",
+        "notesRuleResolved": "Resolvido no Partner Portal",
+        "notesManualResolved": "Resolvido manualmente no Partner Portal",
+        "toasts": {
+          "loadErrorTitle": "Erro ao carregar pendências",
+          "loadErrorDesc": "Não foi possível carregar as pendências de roteamento.",
+          "claimedTitle": "Pendência assumida",
+          "claimedDesc": "Agora ela está em revisão para seu usuário.",
+          "claimErrorTitle": "Falha ao assumir pendência",
+          "claimErrorDesc": "Não foi possível atribuir a pendência.",
+          "resolvedTitle": "Pendência resolvida",
+          "resolvedDesc": "Regra criada e pendência encerrada.",
+          "resolveErrorTitle": "Falha ao resolver pendência",
+          "resolveErrorDesc": "Não foi possível criar regra e resolver automaticamente.",
+          "closedTitle": "Pendência encerrada",
+          "closedDesc": "Marcada como resolvida manualmente.",
+          "closeErrorTitle": "Falha ao encerrar pendência",
+          "closeErrorDesc": "Não foi possível marcar como resolvida."
+        }
+      }
     }
   }
 }

@@ -821,6 +821,19 @@
         "partner_staging_flag": "staging",
         "fallback": "fallback",
         "workspace_setting": "setting"
+      },
+      "issueStatus": {
+        "open": "Open",
+        "in_review": "In review",
+        "resolved": "Resolved",
+        "rejected": "Rejected"
+      },
+      "issueReason": {
+        "missing_identifier": "missing identifier",
+        "missing_value_chain": "missing value_chain",
+        "missing_trackable_identifier": "missing trackable identifier",
+        "empty_after_normalization": "invalid identifier after normalization",
+        "no_routing_rule": "no routing rule"
       }
     },
     "ingestion": {
@@ -916,6 +929,97 @@
       "recentReceived": "{{count}} recent submission(s) received — everything flowing.",
       "noneYet": "No submissions yet — start by sending your data.",
       "sendData": "Send data"
+    },
+    "common": {
+      "save": "Save",
+      "loading": "Loading…"
+    },
+    "routing": {
+      "header": {
+        "section": "Operation",
+        "title": "Routing",
+        "desc": "Define which circuit each identifier goes to — and resolve what arrived without a rule."
+      },
+      "newRule": "New rule",
+      "valuePlaceholder": "Value",
+      "circuitPlaceholder": "Circuit",
+      "activeRules": "Active rules · {{count}}",
+      "empty": {
+        "title": "No rules",
+        "desc": "Create the first rule above."
+      },
+      "toasts": {
+        "loadError": "Failed to load routing",
+        "ruleSaved": "Rule saved",
+        "ruleSaveError": "Failed to save rule",
+        "ruleRemoved": "Rule removed",
+        "ruleRemoveError": "Failed to remove"
+      },
+      "defaultCircuit": {
+        "title": "Default circuit",
+        "desc": "It's where your data goes when you <strong>don't</strong> specify a circuit on submission. Pointing to a circuit is always optional — at minimum, just the identifier and the value chain are enough.",
+        "targetLabel": "Default destination",
+        "choosePlaceholder": "Choose a circuit",
+        "currentLabel": "Current:",
+        "toasts": {
+          "updatedTitle": "Default circuit updated",
+          "updatedDesc": "Your data goes to \"{{name}}\" when you don't specify a circuit.",
+          "updateError": "Couldn't update the default circuit"
+        },
+        "source": {
+          "api_key_metadata": "set in your API key",
+          "workspace_setting": "set by you",
+          "partner_staging_flag": "workspace automatic default",
+          "fallback": "automatic (oldest circuit)"
+        }
+      },
+      "issues": {
+        "title": "Routing issues",
+        "desc": "Items that arrived without a resolvable rule/identifier. Claim and resolve with a rule to avoid recurrence.",
+        "totalListed": "Total listed",
+        "open": "Open",
+        "inReview": "In review",
+        "targetCircuitPlaceholder": "Target circuit for quick resolution",
+        "quickAction": "Quick action: create a rule linked to selected circuit.",
+        "statusFilterPlaceholder": "Issue status",
+        "filter": {
+          "openInReview": "Open + in review",
+          "openOnly": "Open only",
+          "inReviewOnly": "In review only",
+          "resolved": "Resolved",
+          "rejected": "Rejected"
+        },
+        "assignedToMe": "Show only assigned to me",
+        "refresh": "Refresh issues",
+        "none": "No issues at the moment.",
+        "emptyValue": "(empty)",
+        "typeReasonLine": "type: {{type}} · reason: {{reason}}",
+        "lastEvent": "last event: {{date}}",
+        "occurrences": "{{count}} occurrence(s)",
+        "assigned": "assigned",
+        "claim": "Claim",
+        "resolveWithRule": "Resolve with rule",
+        "resolveManually": "Resolve manually",
+        "typeMissingFull": "Missing routing identifier (LAND_DFID/CAR/EXPLORACAO/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/IE)",
+        "notesRuleResolved": "Resolved in Partner Portal",
+        "notesManualResolved": "Manually resolved in Partner Portal",
+        "toasts": {
+          "loadErrorTitle": "Failed to load routing issues",
+          "loadErrorDesc": "Could not load routing issues.",
+          "claimedTitle": "Issue claimed",
+          "claimedDesc": "Issue is now in review for your user.",
+          "claimErrorTitle": "Failed to claim issue",
+          "claimErrorDesc": "Could not assign issue.",
+          "resolvedTitle": "Issue resolved",
+          "resolvedDesc": "Rule created and issue closed.",
+          "resolveErrorTitle": "Failed to resolve issue",
+          "resolveErrorDesc": "Could not create rule and resolve automatically.",
+          "closedTitle": "Issue closed",
+          "closedDesc": "Marked as manually resolved.",
+          "closeErrorTitle": "Failed to close issue",
+          "closeErrorDesc": "Could not mark as resolved."
+        }
+      }
     }
   }
 }
