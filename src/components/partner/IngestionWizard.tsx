@@ -30,6 +30,30 @@ import {
 
 type WizardStep = "upload" | "preview" | "test" | "production" | "done" | "error";
 
+// Onda 3, Fatia 1: humanize the routing identifier a batch was routed by (the backend
+// sets route_type = the identifier_type: car/exploracao/cnpj/...). Was rendered raw
+// UPPERCASE ("EXPLORACAO"). Falls back to Title Case for any unmapped type.
+const ROUTE_TYPE_LABELS: Record<string, string> = {
+  car: "CAR",
+  exploracao: "Exploração (MAPA)",
+  land_dfid: "LAND DFID",
+  cnpj: "CNPJ",
+  cpf: "CPF",
+  ccir: "CCIR",
+  nirf: "NIRF",
+  incra: "INCRA",
+  cib: "CIB",
+  matricula: "Matrícula",
+  georef: "GEOREF",
+  ie: "Inscrição estadual",
+  inscricao_estadual: "Inscrição estadual",
+};
+
+function routeTypeLabel(routeType: string): string {
+  const key = routeType.toLowerCase();
+  return ROUTE_TYPE_LABELS[key] ?? routeType.charAt(0).toUpperCase() + routeType.slice(1).toLowerCase();
+}
+
 export function IngestionWizard() {
   const { toast } = useToast();
   const [step, setStep] = useState<WizardStep>("upload");
@@ -487,7 +511,7 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground">
-                      {route.route_type.toUpperCase()}: <span className="font-mono">{route.route_value}</span>
+                      {routeTypeLabel(route.route_type)}: <span className="font-mono">{route.route_value}</span>
                     </p>
                     <p className="text-muted-foreground mt-0.5">
                       {route.rows} linha(s) · {route.items} item(ns) · {route.status}
@@ -552,7 +576,7 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <span className="font-mono text-foreground">
-                  {route.route_type.toUpperCase()}: {route.route_value}
+                  {routeTypeLabel(route.route_type)}: {route.route_value}
                 </span>
                 <span className="text-muted-foreground">
                   {route.rows} linhas · {route.items} itens · <span className="text-primary">{route.status}</span>
