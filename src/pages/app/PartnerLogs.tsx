@@ -125,6 +125,20 @@ function buildRawPayloadSummary(row: RawPayloadSummary): string {
 export default function PartnerLogs() {
   const { toast } = useToast();
   const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
+  // Humaniza o status de payload persistido (enum cru completed/failed/pending) bilíngue.
+  const formatPayloadStatus = (status: string | null | undefined): string => {
+    const en = metadataLocale === "en";
+    switch (status) {
+      case "completed":
+        return en ? "Completed" : "Concluído";
+      case "failed":
+        return en ? "Failed" : "Falhou";
+      case "pending":
+        return en ? "Pending" : "Pendente";
+      default:
+        return status ?? (en ? "network" : "rede");
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [rawHistory, setRawHistory] = useState<RawPayloadSummary[]>([]);
   const [rawCursor, setRawCursor] = useState<string | null>(null);
@@ -412,7 +426,9 @@ export default function PartnerLogs() {
                             ? "bg-destructive/10 text-destructive border-destructive/20"
                             : "bg-muted text-muted-foreground border-border")
                   }`}>
-                    {entry.source === "api" ? (entry.item.status ?? "rede") : entry.item.status}
+                    {entry.source === "api"
+                      ? (entry.item.status ?? (metadataLocale === "en" ? "network" : "rede"))
+                      : formatPayloadStatus(entry.item.status)}
                   </span>
                   <span className={`text-[11px] px-2 py-1 rounded-full border ${
                     entry.source === "api"

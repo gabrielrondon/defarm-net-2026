@@ -46,6 +46,21 @@ export function PartnerRoutingIssues() {
     return identifierType.toUpperCase();
   };
 
+  const formatIssueStatus = (status: string) => {
+    switch (status) {
+      case "open":
+        return isEn ? "Open" : "Aberto";
+      case "in_review":
+        return isEn ? "In review" : "Em análise";
+      case "resolved":
+        return isEn ? "Resolved" : "Resolvido";
+      case "rejected":
+        return isEn ? "Rejected" : "Rejeitado";
+      default:
+        return status;
+    }
+  };
+
   const formatIssueReason = (reason: string) => {
     if (reason === "missing_identifier") return isEn ? "missing identifier" : "sem identificador";
     if (reason === "missing_value_chain") return isEn ? "missing value_chain" : "sem value_chain";
@@ -183,7 +198,7 @@ export function PartnerRoutingIssues() {
                     {issue.occurrences} {isEn ? "occurrence(s)" : "ocorrência(s)"}
                   </span>
                   <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
-                    {issue.status}
+                    {formatIssueStatus(issue.status)}
                   </span>
                   {issue.assigned_to ? (
                     <span className="text-xs px-2 py-1 rounded-full border bg-muted text-muted-foreground border-border w-fit">
