@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const ROTATING_PHRASES = [
   { before: "Transforme seus dados de rastreabilidade em", highlight: "liquidez" },
@@ -66,17 +66,6 @@ export function HeroSection() {
               <Link to="/contato">
                 Solicitar Demo
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              asChild
-              className="btn-offset font-semibold px-8 py-6 text-lg border-2 rounded-lg"
-            >
-              <Link to="/solucoes">
-                <Play className="mr-2 h-5 w-5" />
-                Ver Soluções
               </Link>
             </Button>
           </div>
