@@ -833,7 +833,9 @@
         "missing_value_chain": "missing value_chain",
         "missing_trackable_identifier": "missing trackable identifier",
         "empty_after_normalization": "invalid identifier after normalization",
-        "no_routing_rule": "no routing rule"
+        "no_routing_rule": "no routing rule",
+        "invalid_value_chain": "invalid value_chain",
+        "canonical_conflict": "identity conflict between DFIDs"
       }
     },
     "ingestion": {

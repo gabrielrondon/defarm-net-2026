@@ -833,7 +833,9 @@
         "missing_value_chain": "sem value_chain",
         "missing_trackable_identifier": "sem identificador do ativo",
         "empty_after_normalization": "identificador inválido",
-        "no_routing_rule": "sem regra de roteamento"
+        "no_routing_rule": "sem regra de roteamento",
+        "invalid_value_chain": "value_chain inválida",
+        "canonical_conflict": "conflito de identidade entre DFIDs"
       }
     },
     "ingestion": {
