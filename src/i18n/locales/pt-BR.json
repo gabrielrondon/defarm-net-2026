@@ -841,6 +841,29 @@
         "private": "Privado",
         "restricted": "Restrito",
         "public": "Público"
+      },
+      "circuitStatus": {
+        "active": "Ativo",
+        "inactive": "Inativo",
+        "archived": "Arquivado"
+      },
+      "circuitType": {
+        "private": "Privado",
+        "shared": "Compartilhado",
+        "public": "Público",
+        "enterprise": "Enterprise"
+      },
+      "itemStatus": {
+        "active": "Ativo",
+        "inactive": "Inativo",
+        "archived": "Arquivado",
+        "pending": "Pendente"
+      },
+      "complianceStatus": {
+        "ok": "Conforme",
+        "warning": "Atenção",
+        "blocked": "Bloqueado",
+        "unknown": "Desconhecido"
       }
     },
     "ingestion": {
@@ -1168,6 +1191,87 @@
           "valueChainComment": "a cadeia de valor",
           "circuitIdComment": "aponta pra este circuito"
         }
+      },
+      "detail": {
+        "notFoundDesc": "O circuito que você está procurando não existe ou você não tem permissão para acessá-lo.",
+        "toasts": {
+          "sealGranted": "Selo concedido",
+          "sealRemoved": "Selo removido",
+          "sealGrantedDesc": "Este circuito agora aparece como Verificado pela DeFarm.",
+          "sealRemovedDesc": "O selo de verificado foi removido.",
+          "sealError": "Não foi possível alterar o selo",
+          "itemPushed": "Item enviado!",
+          "itemPushedDesc": "O item foi adicionado ao circuito com sucesso.",
+          "itemPushError": "Erro ao enviar item",
+          "complianceRefreshed": "Compliance atualizado",
+          "complianceRefreshError": "Falha ao atualizar compliance"
+        },
+        "removeSeal": "Remover selo",
+        "grantSeal": "Conceder selo",
+        "noDescription": "Sem descrição",
+        "statusHelp": "Status operacional: Ativo aparece em listas e fluxos de operação; Inativo mantém histórico, mas sai dos fluxos principais.",
+        "govGuide": "Guia gov: circuito compartilhado",
+        "pushItem": "Push Item",
+        "pushDialogTitle": "Enviar Item para o Circuito",
+        "pushDialogDesc": "Selecione um item para enviar ao circuito \"{{name}}\"",
+        "noItemsToPush": "Nenhum item disponível para enviar",
+        "createNewItem": "Criar novo item",
+        "sendItem": "Enviar Item",
+        "edit": "Editar",
+        "manageMembers": "Gerenciar membros",
+        "joinRequests": "Solicitações de entrada",
+        "deleteCircuit": "Excluir circuito",
+        "stats": {
+          "items": "Itens",
+          "members": "Membros",
+          "visibility": "Visibilidade",
+          "category": "Categoria"
+        },
+        "tabs": {
+          "items": "Itens",
+          "feeds": "Feeds",
+          "sharing": "Compartilhamento",
+          "properties": "Propriedades"
+        },
+        "sharing": {
+          "title": "Compartilhamento público",
+          "descPublic": "Use este link para compartilhar a página pública do circuito.",
+          "descPrivate": "Este circuito está privado. Torne público em Editar para gerar uma página compartilhável.",
+          "currentState": "Estado atual:",
+          "slug": "slug:",
+          "urlPlaceholder": "Disponível quando a visibilidade for Público",
+          "copyUrl": "Copiar URL",
+          "share": "Compartilhar",
+          "openPublic": "Abrir página pública",
+          "makePublic": "Tornar público"
+        },
+        "properties": {
+          "title": "Compliance por propriedade (LAND)",
+          "desc": "Verificações simples por LAND/CAR vinculadas aos itens deste circuito.",
+          "none": "Sem propriedades LAND vinculadas no circuito.",
+          "carLine": "CAR: {{car}} · Última checagem: {{date}}",
+          "carNotInformed": "não informado",
+          "checkNA": "n/d",
+          "refresh": "Atualizar"
+        },
+        "items": {
+          "title": "Itens no Circuito",
+          "searchPlaceholder": "Buscar itens...",
+          "thDfid": "DFID",
+          "thIdentifiers": "Identificadores",
+          "thChainCountry": "Cadeia / País",
+          "thAnchors": "Anchors",
+          "thStatus": "Status",
+          "thUpdate": "Atualização",
+          "moreIdentifiers": "+{{count}} mais",
+          "emptySearch": "Nenhum item encontrado",
+          "emptyNone": "Nenhum item no circuito",
+          "emptySearchDesc": "Tente uma busca diferente",
+          "emptyNoneDesc": "Envie itens para começar a rastrear neste circuito"
+        },
+        "shareText": "Veja o circuito \"{{name}}\" na DeFarm",
+        "shareSubject": "Circuito {{name}} - DeFarm",
+        "shareMessage": "Veja o circuito \"{{name}}\" na DeFarm: {{url}}"
       }
     }
   }

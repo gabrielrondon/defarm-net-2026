@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -84,8 +85,9 @@ import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import { CircuitFeeds } from "@/components/circuit/CircuitFeeds";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { circuitStatusLabel, circuitTypeLabel, isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
+import { isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
 export default function CircuitoDetail() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -112,15 +114,15 @@ export default function CircuitoDetail() {
     mutationFn: (verified: boolean) => setCircuitVerified(id!, verified),
     onSuccess: (_data, verified) => {
       toast({
-        title: verified ? "Selo concedido" : "Selo removido",
+        title: verified ? t("portal.circuits.detail.toasts.sealGranted") : t("portal.circuits.detail.toasts.sealRemoved"),
         description: verified
-          ? "Este circuito agora aparece como Verificado pela DeFarm."
-          : "O selo de verificado foi removido.",
+          ? t("portal.circuits.detail.toasts.sealGrantedDesc")
+          : t("portal.circuits.detail.toasts.sealRemovedDesc"),
       });
       queryClient.invalidateQueries({ queryKey: ["circuit", id] });
       queryClient.invalidateQueries({ queryKey: ["circuits"] });
     },
-    onError: () => toast({ title: "Não foi possível alterar o selo", variant: "destructive" }),
+    onError: () => toast({ title: t("portal.circuits.detail.toasts.sealError"), variant: "destructive" }),
   });
 
   // Fetch circuit items
@@ -194,16 +196,16 @@ export default function CircuitoDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuitItems", id] });
       toast({
-        title: "Item enviado!",
-        description: "O item foi adicionado ao circuito com sucesso.",
+        title: t("portal.circuits.detail.toasts.itemPushed"),
+        description: t("portal.circuits.detail.toasts.itemPushedDesc"),
       });
       setIsPushDialogOpen(false);
       setSelectedItem("");
     },
     onError: (error) => {
       toast({
-        title: "Erro ao enviar item",
-        description: error instanceof Error ? error.message : "Tente novamente",
+        title: t("portal.circuits.detail.toasts.itemPushError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -264,15 +266,15 @@ export default function CircuitoDetail() {
       <div className="max-w-2xl mx-auto text-center py-12">
         <GitBranch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          Circuito não encontrado
+          {t("portal.circuits.edit.notFound")}
         </h1>
         <p className="text-muted-foreground mb-6">
-          O circuito que você está procurando não existe ou você não tem permissão para acessá-lo.
+          {t("portal.circuits.detail.notFoundDesc")}
         </p>
         <Link to="/app/circuitos">
           <Button>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Circuitos
+            {t("portal.circuits.edit.backToCircuits")}
           </Button>
         </Link>
       </div>
@@ -282,17 +284,19 @@ export default function CircuitoDetail() {
   const isPublic = isCircuitPublic(circuit.visibility);
   const publicPathId = (circuit.public_slug || "").trim() || circuit.id;
   const publicUrl = `${window.location.origin}/c/${publicPathId}`;
-  const publicUrlPlaceholder = "Disponível quando a visibilidade for Público";
-  const visibilityLabel = isPublic ? "Público" : "Privado";
-  const typeLabel = circuitTypeLabel(circuit.circuit_type);
+  const publicUrlPlaceholder = t("portal.circuits.detail.sharing.urlPlaceholder");
+  const visibilityLabel = isPublic
+    ? t("portal.enums.circuitVisibility.public")
+    : t("portal.enums.circuitVisibility.private");
+  const typeLabel = t(`portal.enums.circuitType.${circuit.circuit_type?.toLowerCase()}`, { defaultValue: circuit.circuit_type });
   const memberCount = Array.isArray((circuit as any).members)
     ? (circuit as any).members.length
     : typeof (circuit as any).member_count === "number"
     ? (circuit as any).member_count
     : 1;
-  const shareMessage = `Veja o circuito "${circuit.name}" na DeFarm: ${publicUrl}`;
+  const shareMessage = t("portal.circuits.detail.shareMessage", { name: circuit.name, url: publicUrl });
   const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
-  const emailShareUrl = `mailto:?subject=${encodeURIComponent(`Circuito ${circuit.name} - DeFarm`)}&body=${encodeURIComponent(shareMessage)}`;
+  const emailShareUrl = `mailto:?subject=${encodeURIComponent(t("portal.circuits.detail.shareSubject", { name: circuit.name }))}&body=${encodeURIComponent(shareMessage)}`;
 
   const handleCopyPublicUrl = () => {
     navigator.clipboard.writeText(publicUrl);
@@ -305,8 +309,8 @@ export default function CircuitoDetail() {
     if (!navigator.share) return;
     try {
       await navigator.share({
-        title: `Circuito ${circuit.name} - DeFarm`,
-        text: `Veja o circuito "${circuit.name}" na DeFarm`,
+        title: t("portal.circuits.detail.shareSubject", { name: circuit.name }),
+        text: t("portal.circuits.detail.shareText", { name: circuit.name }),
         url: publicUrl,
       });
     } catch {
@@ -327,11 +331,11 @@ export default function CircuitoDetail() {
       setRefreshingProperty(property.property_dfid);
       await refreshPropertyCompliance(property.property_dfid, true);
       await queryClient.invalidateQueries({ queryKey: ["circuitPropertyCompliance", id] });
-      toast({ title: "Compliance atualizado", description: property.property_dfid });
+      toast({ title: t("portal.circuits.detail.toasts.complianceRefreshed"), description: property.property_dfid });
     } catch (error) {
       toast({
-        title: "Falha ao atualizar compliance",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("portal.circuits.detail.toasts.complianceRefreshError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -348,7 +352,7 @@ export default function CircuitoDetail() {
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground w-fit"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar para Circuitos
+          {t("portal.circuits.edit.backToCircuits")}
         </button>
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -370,7 +374,7 @@ export default function CircuitoDetail() {
                     disabled={verifyMutation.isPending}
                     onClick={() => verifyMutation.mutate(!isVerified(circuit))}
                   >
-                    {isVerified(circuit) ? "Remover selo" : "Conceder selo"}
+                    {isVerified(circuit) ? t("portal.circuits.detail.removeSeal") : t("portal.circuits.detail.grantSeal")}
                   </Button>
                 ) : null}
                 {(() => {
@@ -396,21 +400,21 @@ export default function CircuitoDetail() {
                         : "bg-amber-600"
                     )}
                   />
-                  {circuitStatusLabel(circuit.status)}
+                  {t(`portal.enums.circuitStatus.${circuit.status?.toLowerCase()}`, { defaultValue: circuit.status })}
                 </span>
                   );
                 })()}
               </div>
-              <p className="text-muted-foreground">{circuit.description || "Sem descrição"}</p>
+              <p className="text-muted-foreground">{circuit.description || t("portal.circuits.detail.noDescription")}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Status operacional: Ativo aparece em listas e fluxos de operação; Inativo mantém histórico, mas sai dos fluxos principais.
+                {t("portal.circuits.detail.statusHelp")}
               </p>
               {user?.workspace_type === "government" && (
                 <div className="mt-3">
                   <Button asChild variant="outline" size="sm">
                     <Link to="/app/governo/docs#shared-circuit">
                       <ClipboardCheck className="h-4 w-4 mr-2" />
-                      Guia gov: circuito compartilhado
+                      {t("portal.circuits.detail.govGuide")}
                     </Link>
                   </Button>
                 </div>
@@ -436,14 +440,14 @@ export default function CircuitoDetail() {
               <DialogTrigger asChild>
                 <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground">
                   <Plus className="h-4 w-4 mr-2" />
-                  Push Item
+                  {t("portal.circuits.detail.pushItem")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Enviar Item para o Circuito</DialogTitle>
+                  <DialogTitle>{t("portal.circuits.detail.pushDialogTitle")}</DialogTitle>
                   <DialogDescription>
-                    Selecione um item para enviar ao circuito "{circuit.name}"
+                    {t("portal.circuits.detail.pushDialogDesc", { name: circuit.name })}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -486,16 +490,16 @@ export default function CircuitoDetail() {
                   ) : (
                     <div className="text-center py-6 text-muted-foreground">
                       <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Nenhum item disponível para enviar</p>
+                      <p className="text-sm">{t("portal.circuits.detail.noItemsToPush")}</p>
                       <Link to="/app/itens/novo" className="text-primary text-sm hover:underline">
-                        Criar novo item
+                        {t("portal.circuits.detail.createNewItem")}
                       </Link>
                     </div>
                   )}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsPushDialogOpen(false)}>
-                    Cancelar
+                    {t("portal.common.cancel")}
                   </Button>
                   <Button
                     onClick={handlePushItem}
@@ -504,7 +508,7 @@ export default function CircuitoDetail() {
                     {pushMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      "Enviar Item"
+                      t("portal.circuits.detail.sendItem")
                     )}
                   </Button>
                 </DialogFooter>
@@ -521,17 +525,17 @@ export default function CircuitoDetail() {
                 <DropdownMenuItem asChild>
                   <Link to={`/app/circuitos/${id}/editar`} className="flex items-center">
                     <Pencil className="h-4 w-4 mr-2" />
-                    Editar
+                    {t("portal.circuits.detail.edit")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsMembersDialogOpen(true)}>
                   <Users className="h-4 w-4 mr-2" />
-                  Gerenciar membros
+                  {t("portal.circuits.detail.manageMembers")}
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to={`/app/circuitos/${id}/solicitacoes`} className="flex items-center">
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Solicitações de entrada
+                    {t("portal.circuits.detail.joinRequests")}
                     {safePendingJoinRequests.length > 0 && (
                       <span className="ml-2 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs px-2 py-0.5">
                         {safePendingJoinRequests.length}
@@ -545,7 +549,7 @@ export default function CircuitoDetail() {
                   onClick={() => setIsDeleteDialogOpen(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir circuito
+                  {t("portal.circuits.detail.deleteCircuit")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -562,7 +566,7 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{safeCircuitItems.length}</p>
-              <p className="text-sm text-muted-foreground">Itens</p>
+              <p className="text-sm text-muted-foreground">{t("portal.circuits.detail.stats.items")}</p>
             </div>
           </div>
         </div>
@@ -573,7 +577,7 @@ export default function CircuitoDetail() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{memberCount}</p>
-              <p className="text-sm text-muted-foreground">Membros</p>
+              <p className="text-sm text-muted-foreground">{t("portal.circuits.detail.stats.members")}</p>
             </div>
           </div>
         </div>
@@ -590,7 +594,7 @@ export default function CircuitoDetail() {
               <p className="text-lg font-bold text-foreground">
                 {visibilityLabel}
               </p>
-              <p className="text-sm text-muted-foreground">Visibilidade</p>
+              <p className="text-sm text-muted-foreground">{t("portal.circuits.detail.stats.visibility")}</p>
             </div>
           </div>
         </div>
@@ -600,10 +604,10 @@ export default function CircuitoDetail() {
               <Shield className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground capitalize">
+              <p className="text-lg font-bold text-foreground">
                 {typeLabel}
               </p>
-              <p className="text-sm text-muted-foreground">Categoria</p>
+              <p className="text-sm text-muted-foreground">{t("portal.circuits.detail.stats.category")}</p>
             </div>
           </div>
         </div>
@@ -611,26 +615,26 @@ export default function CircuitoDetail() {
 
       <Tabs defaultValue="itens" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">
-          <TabsTrigger value="itens">Itens</TabsTrigger>
-          <TabsTrigger value="feeds">Feeds</TabsTrigger>
-          <TabsTrigger value="compartilhamento">Compartilhamento</TabsTrigger>
-          <TabsTrigger value="propriedades">Propriedades</TabsTrigger>
+          <TabsTrigger value="itens">{t("portal.circuits.detail.tabs.items")}</TabsTrigger>
+          <TabsTrigger value="feeds">{t("portal.circuits.detail.tabs.feeds")}</TabsTrigger>
+          <TabsTrigger value="compartilhamento">{t("portal.circuits.detail.tabs.sharing")}</TabsTrigger>
+          <TabsTrigger value="propriedades">{t("portal.circuits.detail.tabs.properties")}</TabsTrigger>
         </TabsList>
 
       <TabsContent value="compartilhamento">
       <div className="bg-background border border-border rounded-xl p-4 space-y-3">
         <div>
-          <h2 className="font-semibold text-foreground">Compartilhamento público</h2>
+          <h2 className="font-semibold text-foreground">{t("portal.circuits.detail.sharing.title")}</h2>
           <p className="text-sm text-muted-foreground">
             {isPublic
-              ? "Use este link para compartilhar a página pública do circuito."
-              : "Este circuito está privado. Torne público em Editar para gerar uma página compartilhável."}
+              ? t("portal.circuits.detail.sharing.descPublic")
+              : t("portal.circuits.detail.sharing.descPrivate")}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Estado atual: <span className="font-medium">{visibilityLabel}</span>
+            {t("portal.circuits.detail.sharing.currentState")} <span className="font-medium">{visibilityLabel}</span>
             {isPublic && circuit.public_slug ? (
               <>
-                {" · "}slug: <span className="font-mono">{circuit.public_slug}</span>
+                {" · "}{t("portal.circuits.detail.sharing.slug")} <span className="font-mono">{circuit.public_slug}</span>
               </>
             ) : null}
           </p>
@@ -643,7 +647,7 @@ export default function CircuitoDetail() {
           />
           <Button variant="outline" onClick={handleCopyPublicUrl} disabled={!isPublic}>
             {copiedPublicUrl ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            Copiar URL
+            {t("portal.circuits.detail.sharing.copyUrl")}
           </Button>
           {isPublic ? (
             <a href={whatsappShareUrl} target="_blank" rel="noopener noreferrer">
@@ -674,14 +678,14 @@ export default function CircuitoDetail() {
           {isPublic && (
             <Button variant="outline" onClick={handleNativeShare} disabled={!navigator.share}>
               <QrCode className="h-4 w-4 mr-2" />
-              Compartilhar
+              {t("portal.circuits.detail.sharing.share")}
             </Button>
           )}
           {isPublic && (
             <Link to={`/c/${publicPathId}`} target="_blank">
               <Button variant="outline">
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Abrir página pública
+                {t("portal.circuits.detail.sharing.openPublic")}
               </Button>
             </Link>
           )}
@@ -689,7 +693,7 @@ export default function CircuitoDetail() {
             <Link to={`/app/circuitos/${id}/editar`}>
               <Button variant="outline">
                 <Pencil className="h-4 w-4 mr-2" />
-                Tornar público
+                {t("portal.circuits.detail.sharing.makePublic")}
               </Button>
             </Link>
           )}
@@ -704,15 +708,15 @@ export default function CircuitoDetail() {
           <div>
             <h2 className="font-semibold text-foreground flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-primary" />
-              Compliance por propriedade (LAND)
+              {t("portal.circuits.detail.properties.title")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Verificações simples por LAND/CAR vinculadas aos itens deste circuito.
+              {t("portal.circuits.detail.properties.desc")}
             </p>
           </div>
         </div>
         {!circuitCompliance || circuitCompliance.properties.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sem propriedades LAND vinculadas no circuito.</p>
+          <p className="text-sm text-muted-foreground">{t("portal.circuits.detail.properties.none")}</p>
         ) : (
           <div className="space-y-2">
             {circuitCompliance.properties.map((property) => (
@@ -723,13 +727,15 @@ export default function CircuitoDetail() {
                 <div>
                   <p className="font-mono text-sm">{property.property_dfid}</p>
                   <p className="text-xs text-muted-foreground">
-                    CAR: {property.car || "não informado"} · Última checagem:{" "}
-                    {property.checked_at ? new Date(property.checked_at).toLocaleString("pt-BR") : "n/d"}
+                    {t("portal.circuits.detail.properties.carLine", {
+                      car: property.car || t("portal.circuits.detail.properties.carNotInformed"),
+                      date: property.checked_at ? new Date(property.checked_at).toLocaleString("pt-BR") : t("portal.circuits.detail.properties.checkNA"),
+                    })}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={cn("text-xs px-2 py-1 rounded-full font-medium", complianceBadge(property.status))}>
-                    {(property.status || "unknown").toUpperCase()}
+                    {t(`portal.enums.complianceStatus.${(property.status || "unknown").toLowerCase()}`, { defaultValue: property.status })}
                     {typeof property.score === "number" ? ` · ${property.score}` : ""}
                   </span>
                   <Button
@@ -743,7 +749,7 @@ export default function CircuitoDetail() {
                     ) : (
                       <RefreshCcw className="h-3.5 w-3.5 mr-2" />
                     )}
-                    Atualizar
+                    {t("portal.circuits.detail.properties.refresh")}
                   </Button>
                 </div>
               </div>
@@ -763,11 +769,11 @@ export default function CircuitoDetail() {
       {/* Items table */}
       <div className="bg-background border border-border rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold text-foreground">Itens no Circuito</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t("portal.circuits.detail.items.title")}</h2>
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar itens..."
+              placeholder={t("portal.circuits.detail.items.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -784,12 +790,12 @@ export default function CircuitoDetail() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>DFID</TableHead>
-                <TableHead>Identificadores</TableHead>
-                <TableHead>Cadeia / País</TableHead>
-                <TableHead>Anchors</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Atualização</TableHead>
+                <TableHead>{t("portal.circuits.detail.items.thDfid")}</TableHead>
+                <TableHead>{t("portal.circuits.detail.items.thIdentifiers")}</TableHead>
+                <TableHead>{t("portal.circuits.detail.items.thChainCountry")}</TableHead>
+                <TableHead>{t("portal.circuits.detail.items.thAnchors")}</TableHead>
+                <TableHead>{t("portal.circuits.detail.items.thStatus")}</TableHead>
+                <TableHead>{t("portal.circuits.detail.items.thUpdate")}</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -845,7 +851,7 @@ export default function CircuitoDetail() {
                           </div>
                         ))}
                         {allIdentifiers.length > 2 && (
-                          <span className="text-[10px] text-muted-foreground">+{allIdentifiers.length - 2} mais</span>
+                          <span className="text-[10px] text-muted-foreground">{t("portal.circuits.detail.items.moreIdentifiers", { count: allIdentifiers.length - 2 })}</span>
                         )}
                       </div>
                     ) : (
@@ -925,7 +931,7 @@ export default function CircuitoDetail() {
                       ) : (
                         <XCircle className="h-3 w-3" />
                       )}
-                      {isItemActive ? "Ativo" : item.status}
+                      {t(`portal.enums.itemStatus.${normalizedItemStatus}`, { defaultValue: item.status })}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -946,16 +952,16 @@ export default function CircuitoDetail() {
           <div className="text-center py-12">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">
-              {searchQuery ? "Nenhum item encontrado" : "Nenhum item no circuito"}
+              {searchQuery ? t("portal.circuits.detail.items.emptySearch") : t("portal.circuits.detail.items.emptyNone")}
             </h3>
             <p className="text-muted-foreground mb-4">
               {searchQuery
-                ? "Tente uma busca diferente"
-                : "Envie itens para começar a rastrear neste circuito"}
+                ? t("portal.circuits.detail.items.emptySearchDesc")
+                : t("portal.circuits.detail.items.emptyNoneDesc")}
             </p>
             <Button onClick={() => setIsPushDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Push Item
+              {t("portal.circuits.detail.pushItem")}
             </Button>
           </div>
         )}
