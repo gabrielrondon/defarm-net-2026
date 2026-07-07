@@ -1273,6 +1273,49 @@
         "shareSubject": "Circuito {{name}} - DeFarm",
         "shareMessage": "Veja o circuito \"{{name}}\" na DeFarm: {{url}}"
       }
+    },
+    "items": {
+      "list": {
+        "loading": "Carregando itens...",
+        "errorTitle": "Erro ao carregar itens",
+        "errorFallback": "Tente novamente mais tarde",
+        "title": "Itens",
+        "subtitle": "Todos os itens rastreados nos circuitos do seu workspace",
+        "importCsv": "Importar CSV/JSON",
+        "newItem": "Novo Item",
+        "searchPlaceholder": "Buscar por DFID, cadeia, país...",
+        "statusPrefix": "Status:",
+        "filterAll": "Todos",
+        "filterActive": "Ativos",
+        "filterDeprecated": "Deprecated",
+        "statsTotal": "Total de itens",
+        "statsTokenized": "Tokenizados",
+        "statsActive": "Ativos",
+        "statsCircuits": "Circuitos",
+        "loadNote": "Identificadores e provas on-chain carregados para os primeiros 30 itens (de {{total}}). Os demais aparecem na lista, com detalhes em cada item.",
+        "thDfid": "DFID",
+        "thIdentifiers": "Identificadores",
+        "thChainCountry": "Cadeia / País",
+        "thCircuits": "Circuito(s)",
+        "thAnchors": "Anchors",
+        "thStatus": "Status",
+        "thUpdate": "Atualização",
+        "moreIdentifiers": "+{{count}} mais",
+        "localStatus": "Local",
+        "viewDetails": "Ver detalhes",
+        "sendToCircuit": "Enviar para circuito",
+        "deprecate": "Depreciar",
+        "empty": "Nenhum item encontrado",
+        "emptySearchDesc": "Tente uma busca diferente",
+        "emptyNoneDesc": "Cadastre seu primeiro item",
+        "createItem": "Criar Item",
+        "toasts": {
+          "deprecated": "Item depreciado",
+          "deprecatedDesc": "O status foi atualizado.",
+          "deprecateError": "Erro ao depreciar",
+          "noCircuitError": "Não foi possível determinar o circuito do item."
+        }
+      }
     }
   }
 }
