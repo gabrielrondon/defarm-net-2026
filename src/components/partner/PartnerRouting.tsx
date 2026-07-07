@@ -42,13 +42,16 @@ export function PartnerRouting() {
       const [rulesData, circuitsData] = await Promise.all([listRoutingRules(), getCircuits()]);
       setRules(rulesData);
       setCircuits(circuitsData);
-      if (!circuitId && circuitsData[0]) setCircuitId(circuitsData[0].id);
+      // Default só na primeira carga: o updater funcional lê o valor atual (prev),
+      // então não precisamos de circuitId na dep-array (o que causava double-fetch,
+      // #5) nem corremos o risco de resetar a seleção do usuário em load() manual.
+      if (circuitsData[0]) setCircuitId((prev) => prev || circuitsData[0].id);
     } catch {
       toast({ title: "Erro ao carregar roteamento", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [toast, circuitId]);
+  }, [toast]);
 
   useEffect(() => { load(); }, [load]);
 

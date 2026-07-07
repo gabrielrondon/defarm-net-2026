@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { deleteCircuit, Circuit } from "@/lib/defarm-api";
+import { useAuth } from "@/contexts/AuthContext";
+import { circuitsListPath } from "@/lib/circuitNav";
 
 interface DeleteCircuitDialogProps {
   circuit: Circuit;
@@ -27,6 +29,7 @@ export function DeleteCircuitDialog({
   onOpenChange,
 }: DeleteCircuitDialogProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [confirmText, setConfirmText] = useState("");
@@ -40,7 +43,7 @@ export function DeleteCircuitDialog({
         description: `O circuito "${circuit.name}" foi excluído com sucesso.`,
       });
       onOpenChange(false);
-      navigate("/app/circuitos");
+      navigate(circuitsListPath(user?.workspace_type));
     },
     onError: (error) => {
       toast({
