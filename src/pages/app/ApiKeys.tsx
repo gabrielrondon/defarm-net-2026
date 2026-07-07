@@ -520,15 +520,16 @@ export default function ApiKeys() {
                 <div className="rounded-md border bg-muted/20 p-3">
                   <div className="text-sm font-medium">Recepção inteligente</div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Você manda os dados sem apontar circuito. A DeFarm roteia cada item
-                    automaticamente pelas regras que você configura (por exploração, CAR,
-                    CNPJ…). O que não casar nenhuma regra cai no seu <strong>circuito
-                    padrão</strong>
+                    Você manda os dados sem apontar circuito. Eles sempre caem no seu{" "}
+                    <strong>circuito padrão</strong>
                     {defaultStagingCircuitName ? (
-                      <> — hoje <strong>{defaultStagingCircuitName}</strong>.</>
+                      <> (hoje <strong>{defaultStagingCircuitName}</strong>)</>
                     ) : (
-                      <> (criado automaticamente no seu primeiro envio).</>
-                    )}
+                      <> (criado automaticamente no seu primeiro envio)</>
+                    )}{" "}
+                    e, em paralelo, a DeFarm roteia cada item por identificador (CAR,
+                    exploração, CNPJ…) pros circuitos certos — que você usa pra organizar
+                    e exibir dados aos seus clientes.
                   </p>
                   <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                     <button
