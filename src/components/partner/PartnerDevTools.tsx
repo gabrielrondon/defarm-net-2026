@@ -124,6 +124,12 @@ const SDK_CATALOG: SdkItem[] = [
   },
 ];
 
+// Only the TypeScript/Node SDK is actually published today. The rest are announced but
+// not yet in their registries (pip/composer/gem/nuget/go/maven all 404), so we show them
+// as "Em breve" — no copyable install command that would fail — instead of implying they
+// exist. Add an id here when its package ships.
+const PUBLISHED_SDK_IDS = new Set(["typescript"]);
+
 function LanguageLogo({ language, slug }: { language: string; slug: string }) {
   return (
     <img
@@ -198,40 +204,62 @@ export function PartnerSdkTools() {
       </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {SDK_CATALOG.map((sdk) => (
-          <Card key={sdk.id} className="p-5 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h4 className="font-semibold text-foreground inline-flex items-center gap-2">
-                <LanguageLogo language={sdk.language} slug={sdk.slug} />
-                {sdk.language}
-              </h4>
-              <Badge variant={sdk.status === "stable" ? "default" : "secondary"}>v{sdk.version}</Badge>
-            </div>
+        {SDK_CATALOG.map((sdk) => {
+          const comingSoon = !PUBLISHED_SDK_IDS.has(sdk.id);
+          return (
+            <Card key={sdk.id} className={`p-5 space-y-3${comingSoon ? " opacity-60" : ""}`}>
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="font-semibold text-foreground inline-flex items-center gap-2">
+                  <LanguageLogo language={sdk.language} slug={sdk.slug} />
+                  {sdk.language}
+                </h4>
+                {comingSoon ? (
+                  <Badge variant="outline">Em breve</Badge>
+                ) : (
+                  <Badge variant={sdk.status === "stable" ? "default" : "secondary"}>v{sdk.version}</Badge>
+                )}
+              </div>
 
-            <p className="text-xs text-muted-foreground">{sdk.note}</p>
+              <p className="text-xs text-muted-foreground">{sdk.note}</p>
 
-            <div className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Pacote:</span> <code>{sdk.packageName}</code>
-            </div>
+              {comingSoon ? (
+                <p className="text-xs italic text-muted-foreground">
+                  Pacote em breve — por enquanto use o SDK TypeScript ou a API direta.
+                </p>
+              ) : (
+                <>
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Pacote:</span>{" "}
+                    <code>{sdk.packageName}</code>
+                  </div>
 
-            <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{sdk.install}</pre>
+                  <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">
+                    {sdk.install}
+                  </pre>
 
-            <div className="flex items-center justify-between gap-2">
-              <Button size="sm" variant="outline" onClick={() => copy(sdk.id, sdk.install)}>
-                {copied === sdk.id ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-                Copiar install
-              </Button>
-              <a
-                href={sdk.repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-primary hover:underline"
-              >
-                Abrir pacote
-              </a>
-            </div>
-          </Card>
-        ))}
+                  <div className="flex items-center justify-between gap-2">
+                    <Button size="sm" variant="outline" onClick={() => copy(sdk.id, sdk.install)}>
+                      {copied === sdk.id ? (
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                      ) : (
+                        <Copy className="h-4 w-4 mr-2" />
+                      )}
+                      Copiar install
+                    </Button>
+                    <a
+                      href={sdk.repoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Abrir pacote
+                    </a>
+                  </div>
+                </>
+              )}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

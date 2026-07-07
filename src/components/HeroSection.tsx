@@ -60,10 +60,13 @@ export function HeroSection() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
             <Button
               size="lg"
+              asChild
               className="btn-offset bg-primary hover:bg-primary text-primary-foreground font-semibold px-8 py-6 text-lg rounded-lg"
             >
-              Solicitar Demo
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <Link to="/contato">
+                Solicitar Demo
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
             <Button
               variant="outline"
