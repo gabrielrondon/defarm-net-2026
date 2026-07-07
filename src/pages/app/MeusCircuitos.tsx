@@ -18,6 +18,7 @@ import {
 import type { Circuit } from "@/lib/api/types";
 import { Star, Info, Copy, Plus, ArrowRight, Circle } from "lucide-react";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
+import { circuitVisibilityLabel } from "@/lib/circuit-ui";
 import { cn } from "@/lib/utils";
 
 // Identificadores de TERRA/propriedade — circuito auto-criado por um deles = "de propriedade".
@@ -141,8 +142,8 @@ export default function MeusCircuitos() {
                 <Star className="h-3 w-3" /> Padrão
               </Badge>
             ) : (
-              <Badge variant="outline" className="shrink-0 text-[10px] capitalize">
-                {c.visibility}
+              <Badge variant="outline" className="shrink-0 text-[10px]">
+                {circuitVisibilityLabel(c.visibility)}
               </Badge>
             )}
           </div>

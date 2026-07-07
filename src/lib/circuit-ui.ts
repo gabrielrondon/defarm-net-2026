@@ -25,3 +25,13 @@ export function circuitTypeLabel(raw?: string | null): string {
 export function isCircuitPublic(visibility?: string | null): boolean {
   return (visibility || "").trim().toLowerCase() === "public";
 }
+
+// Visibilidade de circuito, humanizada. Valores reais do CHECK circuits_visibility_check
+// (migration 20250204000001): private | restricted | public. Fallback devolve o cru.
+export function circuitVisibilityLabel(raw?: string | null): string {
+  const value = (raw || "").trim().toLowerCase();
+  if (value === "private") return "Privado";
+  if (value === "restricted") return "Restrito";
+  if (value === "public") return "Público";
+  return raw || "—";
+}

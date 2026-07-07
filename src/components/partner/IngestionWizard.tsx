@@ -54,6 +54,23 @@ function routeTypeLabel(routeType: string): string {
   return ROUTE_TYPE_LABELS[key] ?? routeType.charAt(0).toUpperCase() + routeType.slice(1).toLowerCase();
 }
 
+// Status por rota, humanizado. Valores reais vindos de PartnerRouteOutput.status
+// (partner_routing.rs): no preview (dry-run) — routed_existing | would_auto_create |
+// routed_source_fallback; no caminho real, batch.status herda receipt.status, que pode
+// ser completed | partial (parte das linhas falhou) | failed. Fallback devolve o cru.
+const ROUTE_STATUS_LABELS: Record<string, string> = {
+  routed_existing: "vai pro circuito da regra",
+  would_auto_create: "criaria um circuito novo",
+  routed_source_fallback: "vai pro circuito padrão",
+  completed: "concluído",
+  partial: "parcialmente concluído",
+  failed: "falhou",
+};
+
+function routeStatusLabel(status: string): string {
+  return ROUTE_STATUS_LABELS[status?.toLowerCase()] ?? status;
+}
+
 export function IngestionWizard() {
   const { toast } = useToast();
   const [step, setStep] = useState<WizardStep>("upload");
@@ -214,11 +231,15 @@ export function IngestionWizard() {
     );
   }
 
+  // Chaves em snake_case: DefaultCircuitSource tem #[serde(rename_all = "snake_case")]
+  // (partner_keys.rs:125), então o backend serializa api_key_metadata / partner_staging_flag
+  // / fallback / workspace_setting. As chaves PascalCase anteriores NUNCA batiam → o badge
+  // vazava o valor cru em snake_case. Agora casam.
   const sourceLabel: Record<string, string> = {
-    ApiKeyMetadata: "via API Key",
-    PartnerStagingFlag: "staging",
-    Fallback: "fallback",
-    WorkspaceSetting: "configuração",
+    api_key_metadata: "via API Key",
+    partner_staging_flag: "staging",
+    fallback: "fallback",
+    workspace_setting: "configuração",
   };
 
   const stepLabels = { upload: "Upload", preview: "Preview", test: "Teste", done: "Produção" } as const;
@@ -519,7 +540,7 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
                       {routeTypeLabel(route.route_type)}: <span className="font-mono">{route.route_value}</span>
                     </p>
                     <p className="text-muted-foreground mt-0.5">
-                      {route.rows} linha(s) · {route.items} item(ns) · {route.status}
+                      {route.rows} linha(s) · {route.items} item(ns) · {routeStatusLabel(route.status)}
                     </p>
                   </div>
                 </div>
@@ -585,7 +606,7 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
                   {routeTypeLabel(route.route_type)}: {route.route_value}
                 </span>
                 <span className="text-muted-foreground">
-                  {route.rows} linhas · {route.items} itens · <span className="text-primary">{route.status}</span>
+                  {route.rows} linhas · {route.items} itens · <span className="text-primary">{routeStatusLabel(route.status)}</span>
                 </span>
               </div>
             ))}
