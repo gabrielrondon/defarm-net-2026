@@ -1,4 +1,5 @@
 import { Tag, MapPin, Wheat, Calendar, Link2, ExternalLink, Hash, Database } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Item, IdentifierResponse, AdapterBlockchainAnchor, AdapterStorageRef, ItemVersionInfo } from "@/lib/defarm-api";
 import { anchorStateOf } from "@/components/proof";
 import { formatTime } from "./constants";
@@ -19,6 +20,7 @@ interface ItemIdentifiersProps {
 }
 
 function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
+  const { t } = useTranslation();
   const txHash = anchor.transaction_hash || "";
   // #151 Fase C: só anchor CONFIRMADO on-chain expõe o hash/explorer como prova.
   // pending = ainda em confirmação; failed/qualquer não-confirmado = não ancorado.
@@ -26,7 +28,7 @@ function StellarLink({ anchor }: { anchor: AdapterBlockchainAnchor }) {
   if (state !== "confirmed" || !txHash) {
     return (
       <span className="text-xs text-muted-foreground">
-        {state === "pending" ? "Em confirmação…" : "Não ancorado"}
+        {state === "pending" ? t("portal.items.detail.identifiers.stellarConfirming") : t("portal.items.detail.identifiers.notAnchored")}
       </span>
     );
   }
@@ -64,6 +66,7 @@ function IpfsLink({ storageRef }: { storageRef: AdapterStorageRef }) {
 }
 
 export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, blockchainAnchors = [], storageRefs = [], versions = [], provenance }: ItemIdentifiersProps) {
+  const { t } = useTranslation();
   const metadata = item?.metadata || {};
   const metadataEntries = Object.entries(metadata);
   const itemId = item?.id ?? "";
@@ -98,15 +101,15 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
     const p = provenance?.[key];
     if (!p) return null;
     if (p.origin === "legacy") {
-      return <span className="text-[10px] text-muted-foreground">legado</span>;
+      return <span className="text-[10px] text-muted-foreground">{t("portal.items.detail.identifiers.provLegacy")}</span>;
     }
-    // `||` (not `??`) so an empty resolved name ("") also falls back — else "por ".
-    const who = workspaceName(p.source_workspace_id) || "outra origem";
+    // `||` (not `??`) so an empty resolved name ("") also falls back.
+    const who = workspaceName(p.source_workspace_id) || t("portal.items.detail.identifiers.provOtherOrigin");
     const trust = p.trust_level ? ` · ${p.trust_level}` : "";
-    const shared = p.via === "feed" ? " · compartilhado" : "";
+    const shared = p.via === "feed" ? ` · ${t("portal.items.detail.identifiers.provShared")}` : "";
     return (
       <span className="text-[10px] text-muted-foreground">
-        por {who}
+        {t("portal.items.detail.identifiers.provBy", { who })}
         {trust}
         {shared}
       </span>
@@ -123,8 +126,8 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
             <Tag className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Informações</h2>
-            <p className="text-sm text-muted-foreground">Dados do item</p>
+            <h2 className="text-lg font-semibold text-foreground">{t("portal.items.detail.identifiers.infoTitle")}</h2>
+            <p className="text-sm text-muted-foreground">{t("portal.items.detail.identifiers.infoDesc")}</p>
           </div>
         </div>
 
@@ -133,7 +136,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
             <div className="flex items-center gap-2 mb-1">
               <Wheat className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground uppercase">
-                Cadeia de Valor
+                {t("portal.items.detail.identifiers.valueChain")}
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
@@ -145,7 +148,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
             <div className="flex items-center gap-2 mb-1">
               <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground uppercase">
-                País
+                {t("portal.items.detail.identifiers.country")}
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
@@ -157,7 +160,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
             <div className="flex items-center gap-2 mb-1">
               <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground uppercase">
-                Ano / Safra
+                {t("portal.items.detail.identifiers.yearSeason")}
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
@@ -175,8 +178,8 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
               <Hash className="h-5 w-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Identificadores</h2>
-              <p className="text-sm text-muted-foreground">{identifiers.length} registrado(s)</p>
+              <h2 className="text-lg font-semibold text-foreground">{t("portal.items.detail.identifiers.title")}</h2>
+              <p className="text-sm text-muted-foreground">{t("portal.items.detail.identifiers.registered", { count: identifiers.length })}</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -198,7 +201,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
                     </span>
                     {isCan && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium">
-                        canônico
+                        {t("portal.items.detail.identifiers.canonical")}
                       </span>
                     )}
                   </div>
@@ -218,15 +221,15 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
               <Database className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Tokenização</h2>
-              <p className="text-sm text-muted-foreground">Anchors blockchain & IPFS</p>
+              <h2 className="text-lg font-semibold text-foreground">{t("portal.items.detail.identifiers.tokenization")}</h2>
+              <p className="text-sm text-muted-foreground">{t("portal.items.detail.identifiers.anchorsSubtitle")}</p>
             </div>
           </div>
 
           {blockchainAnchors.length > 0 && (
             <div className="space-y-2 mb-4">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Stellar ({blockchainAnchors.length})
+                {t("portal.items.detail.identifiers.stellarCount", { count: blockchainAnchors.length })}
               </h4>
               {blockchainAnchors.map((anchor, i) => (
                 <div key={i} className="p-3 bg-purple-500/5 border border-purple-500/10 rounded-lg space-y-1">
@@ -237,12 +240,12 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
                   <StellarLink anchor={anchor} />
                   {anchor.asset_code && (
                     <p className="text-xs text-muted-foreground">
-                      Asset: <span className="font-mono text-foreground">{anchor.asset_code}</span>
+                      {t("portal.items.detail.identifiers.asset")} <span className="font-mono text-foreground">{anchor.asset_code}</span>
                     </p>
                   )}
                   {anchor.memo && (
                     <p className="text-xs text-muted-foreground truncate">
-                      Memo: <span className="font-mono text-foreground">{anchor.memo}</span>
+                      {t("portal.items.detail.identifiers.memo")} <span className="font-mono text-foreground">{anchor.memo}</span>
                     </p>
                   )}
                 </div>
@@ -254,7 +257,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
           {(storageRefs.length > 0 || versions.length > 0) && (
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Histórico de CIDs ({storageRefs.length + versions.length})
+                {t("portal.items.detail.identifiers.cidHistory", { count: storageRefs.length + versions.length })}
               </h4>
               {/* Show versions first (they have version numbers), then storageRefs as fallback */}
               {versions.length > 0 ? (
@@ -272,7 +275,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
                         v{version.version}
                         {version.is_latest && (
                           <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                            atual
+                            {t("portal.items.detail.identifiers.current")}
                           </span>
                         )}
                       </span>
@@ -304,7 +307,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
                         {ref.pin_status || "pinned"}
                         {i === 0 && (
                           <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                            atual
+                            {t("portal.items.detail.identifiers.current")}
                           </span>
                         )}
                       </span>
@@ -321,22 +324,22 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
 
       {/* Metadata */}
       <div className="bg-background border border-border rounded-2xl p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-4">Metadados</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-4">{t("portal.items.detail.identifiers.metadata")}</h3>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Criado em</span>
+            <span className="text-muted-foreground">{t("portal.items.detail.identifiers.createdAt")}</span>
             <span className="text-foreground">
               {formatTime(item?.registered_at || item?.created_at)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Última atualização</span>
+            <span className="text-muted-foreground">{t("portal.items.detail.identifiers.lastUpdate")}</span>
             <span className="text-foreground">
               {formatTime(item?.last_updated_at || item?.updated_at)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">ID</span>
+            <span className="text-muted-foreground">{t("portal.items.detail.identifiers.idLabel")}</span>
             <span className="text-foreground font-mono text-xs">
               {itemId.length > 15
                 ? `${itemId.slice(0, 15)}...`
@@ -362,7 +365,7 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
       {metadataEntries.length > 0 && (
         <div className="bg-background border border-border rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-foreground mb-4">
-            Dados Adicionais
+            {t("portal.items.detail.identifiers.additionalData")}
           </h3>
           <div className="space-y-2">
             {metadataEntries.map(([key, value]) => (

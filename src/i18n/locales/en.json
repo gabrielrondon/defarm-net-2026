@@ -1315,6 +1315,87 @@
           "deprecateError": "Failed to deprecate",
           "noCircuitError": "Couldn't determine the item's circuit."
         }
+      },
+      "detail": {
+        "notFound": "Item not found",
+        "notFoundDesc": "The item you're looking for doesn't exist or you don't have permission to access it.",
+        "backToItems": "Back to Items",
+        "property": {
+          "title": "Property trail (LAND)",
+          "desc": "Custody/provenance associations of the item by land DFID.",
+          "transferOption": "Transfer (GTA)",
+          "annotationOption": "Static annotation",
+          "gtaPlaceholder": "GTA (required for transfer)",
+          "link": "Link",
+          "loading": "Loading links...",
+          "empty": "No property links registered for this item.",
+          "transfer": "Transfer",
+          "transferWithGta": "Transfer · GTA {{gta}}",
+          "annotation": "Annotation",
+          "ended": "Ended",
+          "active": "Active",
+          "period": "Period: {{period}}",
+          "periodOpen": "open",
+          "endLink": "End link"
+        },
+        "compliance": {
+          "title": "Compliance of active LAND properties",
+          "desc": "Verification summary per linked and active property.",
+          "loading": "Loading compliance...",
+          "empty": "No active LAND properties to check.",
+          "noData": "No compliance data available.",
+          "carLine": "CAR: {{car}} · Last check: {{date}}",
+          "carNotInformed": "not informed",
+          "checkNA": "n/a",
+          "refresh": "Refresh"
+        },
+        "toasts": {
+          "linkCreated": "Link created",
+          "linkCreatedDesc": "Item associated with the property.",
+          "linkError": "Failed to link property",
+          "linkRemoved": "Link removed",
+          "linkRemovedDesc": "The link was ended (soft unlink).",
+          "unlinkError": "Failed to remove link",
+          "complianceRefreshed": "Compliance refreshed",
+          "complianceRefreshError": "Failed to refresh compliance"
+        },
+        "header": {
+          "statusAlive": "Alive",
+          "tokenized": "Tokenized",
+          "local": "Local",
+          "copyDfid": "Copy DFID",
+          "pushToCircuit": "Push to Circuit",
+          "editMetadata": "Edit metadata",
+          "deprecateItem": "Deprecate item"
+        },
+        "identifiers": {
+          "stellarConfirming": "Confirming…",
+          "notAnchored": "Not anchored",
+          "infoTitle": "Information",
+          "infoDesc": "Item data",
+          "valueChain": "Value Chain",
+          "country": "Country",
+          "yearSeason": "Year / Season",
+          "title": "Identifiers",
+          "registered": "{{count}} registered",
+          "canonical": "canonical",
+          "tokenization": "Tokenization",
+          "anchorsSubtitle": "Blockchain & IPFS anchors",
+          "stellarCount": "Stellar ({{count}})",
+          "asset": "Asset:",
+          "memo": "Memo:",
+          "cidHistory": "CID history ({{count}})",
+          "current": "current",
+          "metadata": "Metadata",
+          "createdAt": "Created at",
+          "lastUpdate": "Last update",
+          "idLabel": "ID",
+          "additionalData": "Additional Data",
+          "provLegacy": "legacy",
+          "provBy": "by {{who}}",
+          "provOtherOrigin": "another source",
+          "provShared": "shared"
+        }
       }
     }
   }
