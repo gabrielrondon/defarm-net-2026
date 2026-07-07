@@ -641,7 +641,9 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
 
 function DoneResults({ result }: { result: PartnerIntakeResponse }) {
   const totalRows = result.summary?.total_rows ?? 0;
-  const itemsLinked = result.summary?.items ?? result.items?.length ?? 0;
+  // Alinhado ao campo canônico items_created (o mesmo que o TestResults usa) — antes
+  // lia summary.items e divergia da contagem mostrada no teste vs na publicação.
+  const itemsLinked = result.summary?.items_created ?? result.items?.length ?? 0;
   const batchCount = result.verbose?.routed_batches?.length ?? 0;
   const items = result.items || [];
   const circuitLinks = result.verbose?.circuit_links ?? [];
