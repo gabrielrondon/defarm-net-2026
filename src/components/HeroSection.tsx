@@ -7,7 +7,8 @@ const ROTATING_PHRASES = [
   { before: "Transforme seus dados de rastreabilidade em", highlight: "liquidez" },
   { before: "Organize seus ativos em uma", highlight: "caderneta digital" },
   { before: "Compartilhe seus certificados com", highlight: "quem quiser" },
-  { before: "Transforme sua caderneta em", highlight: "oportunidades de crédito" },
+  // "oportunidades de crédito" removido: promete o Score de crédito, que ainda não é
+  // funcional. Voltar quando a feature existir de verdade.
 ];
 
 export function HeroSection() {

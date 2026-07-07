@@ -137,7 +137,9 @@ const capabilityPresentation: Record<
   "read.my_attestations": { label: "Meus certificados", icon: ClipboardCheck },
   "read.prospect": { label: "Prospectar fornecedores", icon: Search },
   "read.dashboard": { label: "Painel", icon: BarChart3, route: "/app/oesa/dashboard" },
-  "read.score": { label: "Score de crédito", icon: Coins, route: "/score" },
+  // Score de crédito ainda não é funcional → não exibimos ao parceiro (route ausente =
+  // não mostramos, mesmo padrão dos stubs). Visível só pro admin via adminNavItems.
+  "read.score": { label: "Score de crédito", icon: Coins },
   "read.verify": { label: "Verificar DFID", icon: Shield, route: "/app/verificar" },
   "read.settings": { label: "Configurações", icon: Settings, route: "/app/configuracoes" },
 };
@@ -156,6 +158,9 @@ const adminNavItems: NavItem[] = [
   { icon: Shield, label: "Higiene de Dados", href: "/app/admin/data-hygiene" },
   { icon: Coins, label: "Entitlements", href: "/app/admin/entitlements" },
   { icon: ListTodo, label: "Fila de Jobs", href: "/app/admin/jobs" },
+  // Score de crédito: feature ainda não-funcional, escondida do parceiro; só admin vê
+  // (pra trabalhar nela) até virar real.
+  { icon: Coins, label: "Score de crédito", href: "/score" },
 ];
 
 interface AppLayoutProps {

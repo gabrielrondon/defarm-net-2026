@@ -237,7 +237,9 @@ const App = () => (
             <Route path="/sobre" element={<Sobre />} />
             <Route path="/contato" element={<Contato />} />
             <Route path="/para/:persona" element={<ParaPersona />} />
-            <Route path="/score" element={<ScoreScreen />} />
+            {/* Score de crédito ainda não é funcional — admin-only até virar real (some
+                do nav do parceiro; a rota pública também é gateada pra ninguém achar por URL). */}
+            <Route path="/score" element={<RequireAdmin><ScoreScreen /></RequireAdmin>} />
             <Route path="/eudr" element={<EudrScreen />} />
             <Route path="/eudr/v/:dfid" element={<PublicEudrVerify />} />
             <Route path="/privacidade" element={<Privacidade />} />
