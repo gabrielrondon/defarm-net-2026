@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Trans, useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -15,24 +16,14 @@ import {
 } from "@/lib/api/partner-routing";
 import { Inbox } from "lucide-react";
 
-// Traduz a origem técnica do default p/ linguagem do usuário (sem jargão).
-// O backend serializa em snake_case (partner_staging_flag); aceitamos também PascalCase por robustez.
-const SOURCE_LABEL: Record<string, string> = {
-  api_key_metadata: "definido na sua chave de API",
-  workspace_setting: "definido por você",
-  partner_staging_flag: "padrão automático do workspace",
-  fallback: "automático (circuito mais antigo)",
-  ApiKeyMetadata: "definido na sua chave de API",
-  WorkspaceSetting: "definido por você",
-  PartnerStagingFlag: "padrão automático do workspace",
-  Fallback: "automático (circuito mais antigo)",
-};
-
 /**
  * Circuito padrão — "onde meus dados caem quando não especifico um circuito".
  * Antes só era resolvido por trás (mágica escondida); aqui o parceiro VÊ e ESCOLHE.
+ * A origem técnica do default (DefaultCircuitSource, snake_case do backend) é
+ * humanizada via portal.routing.defaultCircuit.source.* (defaultValue = cru).
  */
 export function DefaultCircuitCard() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -49,14 +40,14 @@ export function DefaultCircuitCard() {
     mutationFn: (circuitId: string) => updatePartnerDefaultCircuit(circuitId),
     onSuccess: (data) => {
       toast({
-        title: "Circuito padrão atualizado",
-        description: `Seus dados vão para "${data.name}" quando você não especificar um circuito.`,
+        title: t("portal.routing.defaultCircuit.toasts.updatedTitle"),
+        description: t("portal.routing.defaultCircuit.toasts.updatedDesc", { name: data.name }),
       });
       qc.invalidateQueries({ queryKey: ["partner-default-circuit"] });
     },
     onError: () =>
       toast({
-        title: "Não foi possível atualizar o circuito padrão",
+        title: t("portal.routing.defaultCircuit.toasts.updateError"),
         variant: "destructive",
       }),
   });
@@ -69,18 +60,16 @@ export function DefaultCircuitCard() {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Inbox className="h-4 w-4 text-primary" />
-          Circuito padrão
+          {t("portal.routing.defaultCircuit.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          É para onde seus dados vão quando você <strong>não</strong> especifica um
-          circuito no envio. Apontar um circuito é sempre opcional — no mínimo, basta o
-          identificador e a cadeia de valor.
+          <Trans i18nKey="portal.routing.defaultCircuit.desc" components={{ strong: <strong /> }} />
         </p>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Destino padrão
+            {t("portal.routing.defaultCircuit.targetLabel")}
           </label>
           <Select
             value={current?.circuit_id ?? ""}
@@ -89,7 +78,7 @@ export function DefaultCircuitCard() {
           >
             <SelectTrigger className="max-w-md">
               <SelectValue
-                placeholder={defaultQuery.isLoading ? "Carregando…" : "Escolha um circuito"}
+                placeholder={defaultQuery.isLoading ? t("portal.common.loading") : t("portal.routing.defaultCircuit.choosePlaceholder")}
               />
             </SelectTrigger>
             <SelectContent>
@@ -103,8 +92,8 @@ export function DefaultCircuitCard() {
         </div>
         {current && (
           <p className="text-[11px] text-muted-foreground">
-            Atual: <span className="font-medium text-foreground">{current.name}</span>
-            {current.source ? ` · ${SOURCE_LABEL[current.source] ?? current.source}` : ""}
+            {t("portal.routing.defaultCircuit.currentLabel")} <span className="font-medium text-foreground">{current.name}</span>
+            {current.source ? ` · ${t(`portal.routing.defaultCircuit.source.${current.source}`, { defaultValue: current.source })}` : ""}
           </p>
         )}
       </CardContent>
