@@ -836,6 +836,11 @@
         "no_routing_rule": "no routing rule",
         "invalid_value_chain": "invalid value_chain",
         "canonical_conflict": "identity conflict between DFIDs"
+      },
+      "circuitVisibility": {
+        "private": "Private",
+        "restricted": "Restricted",
+        "public": "Public"
       }
     },
     "ingestion": {
@@ -934,7 +939,10 @@
     },
     "common": {
       "save": "Save",
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "back": "Back",
+      "cancel": "Cancel",
+      "tryAgain": "Try again"
     },
     "routing": {
       "header": {
@@ -1020,6 +1028,145 @@
           "closedDesc": "Marked as manually resolved.",
           "closeErrorTitle": "Failed to close issue",
           "closeErrorDesc": "Could not mark as resolved."
+        }
+      }
+    },
+    "circuits": {
+      "form": {
+        "basicInfo": "Basic info",
+        "basicInfoDesc": "Circuit name and description",
+        "nameLabel": "Circuit name *",
+        "namePlaceholder": "E.g.: Organic Beef Chain",
+        "descLabel": "Description",
+        "descPlaceholder": "Describe the purpose of this circuit...",
+        "visibilitySection": "Visibility",
+        "visibilitySectionDesc": "Who can see the circuit's data",
+        "visibilityLabel": "Visibility",
+        "visibilityHint": "Public circuits can be seen by anyone with the link"
+      },
+      "new": {
+        "title": "New Circuit",
+        "subtitle": "Create a new circuit to share traceable data",
+        "typeLabel": "Circuit type",
+        "typeOptions": {
+          "private": "Private",
+          "shared": "Shared",
+          "public": "Public"
+        },
+        "visibilityOptions": {
+          "private": "Private",
+          "public": "Public"
+        },
+        "submit": "Create Circuit",
+        "toasts": {
+          "createdTitle": "Circuit created!",
+          "createdDesc": "The circuit \"{{name}}\" was created successfully.",
+          "createError": "Failed to create circuit",
+          "sessionInvalidTitle": "Invalid session",
+          "sessionInvalidDesc": "Log in again to create a circuit."
+        }
+      },
+      "edit": {
+        "title": "Edit Circuit",
+        "subtitle": "Update the circuit \"{{name}}\" information",
+        "notFound": "Circuit not found",
+        "backToCircuits": "Back to Circuits",
+        "visibilityOptions": {
+          "private": "Private",
+          "restricted": "Restricted (members only)",
+          "public": "Public"
+        },
+        "statusLabel": "Operational status",
+        "statusOptions": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "statusHint": {
+          "active": "Active: the circuit appears as operational and enters the default flows.",
+          "inactive": "Inactive: keeps history, but leaves the main operational flows."
+        },
+        "discoveryTitle": "Discovery & Public Profile",
+        "discoveryDesc": "Configure how your circuit appears to the public",
+        "enableDiscovery": "Enable discovery",
+        "enableDiscoveryHint": "Lets others find your circuit",
+        "searchable": "Searchable",
+        "searchableHint": "Appears in public circuit searches",
+        "allowJoin": "Accept join requests",
+        "allowJoinHint": "Lets visitors request to join",
+        "showCompliance": "Show Compliance publicly",
+        "showComplianceHint": "When on, the public page shows the compliance status of the circuit's LAND properties.",
+        "slugLabel": "Public URL (slug)",
+        "slugPlaceholder": "my-circuit",
+        "publicLink": "Public link: {{url}}",
+        "publicDescLabel": "Public description",
+        "publicDescPlaceholder": "Description shown on the public page...",
+        "contactEmailLabel": "Public contact email",
+        "contactEmailPlaceholder": "contact@farm.com",
+        "websiteLabel": "Website",
+        "websitePlaceholder": "https://yourfarm.com",
+        "bannerLabel": "Background image (banner)",
+        "bannerPlaceholder": "https://.../banner.jpg",
+        "bannerHint": "Appears as the card background (My Circuits) and as the banner on the public page. Paste the URL of a hosted PNG/JPEG.",
+        "logoLabel": "Logo",
+        "logoPlaceholder": "https://.../logo.png",
+        "logoHint": "Appears on the circuit's public page.",
+        "submit": "Save Changes",
+        "toasts": {
+          "updatedTitle": "Circuit updated!",
+          "updatedDesc": "The changes were saved successfully.",
+          "updateError": "Failed to update"
+        }
+      },
+      "delete": {
+        "title": "Delete Circuit",
+        "desc": "This action is <strong>irreversible</strong>. All circuit data will be permanently removed.",
+        "aboutTo": "You're about to delete:",
+        "confirmPrompt": "Type <name>{{name}}</name> to confirm:",
+        "namePlaceholder": "Circuit name",
+        "deleting": "Deleting...",
+        "confirm": "Delete Permanently",
+        "toasts": {
+          "deletedTitle": "Circuit deleted",
+          "deletedDesc": "The circuit \"{{name}}\" was deleted successfully.",
+          "deleteError": "Failed to delete"
+        }
+      },
+      "mine": {
+        "title": "My Circuits",
+        "subtitle": "Each circuit is a destination for your data. The <strong>default</strong> receives what you send without pointing — hover the <icon></icon> on each one to see how to send.",
+        "newCircuit": "New circuit",
+        "empty": "You don't have any circuits yet. Create the first one to start receiving data.",
+        "createFirst": "Create circuit",
+        "defaultBadge": "Default",
+        "defaultCardHint": "The data you send <strong>without pointing to a circuit</strong> lands here automatically.",
+        "pointHere": "To send here, point to this circuit:",
+        "receivingDefault": "receiving by default",
+        "makeDefault": "Make default",
+        "howToSendAria": "How to send",
+        "howToSendTitle": "How to send to \"{{name}}\"",
+        "howDefault": "With your smart Reception key, just send — it lands here by default.",
+        "howNonDefault": "Point to the circuit in the item itself (circuit_id field), or use a key/routing rule for this circuit.",
+        "minDefault": "The minimum for each item is just identifier + chain:",
+        "minNonDefault": "Include the circuit_id in the item to land here:",
+        "copyExample": "Copy example",
+        "copyCircuitIdentifier": "Circuit identifier",
+        "copyExampleLabel": "Example",
+        "copied": "{{what}} copied",
+        "defaultUpdatedTitle": "Default circuit updated",
+        "defaultUpdatedDesc": "Your data without a destination now lands in \"{{name}}\".",
+        "defaultUpdateError": "Couldn't change the default",
+        "sections": {
+          "mineTitle": "My circuits",
+          "mineHint": "Created by you or that you take part in — not tied to a specific property.",
+          "propertiesTitle": "Property circuits",
+          "propertiesHint": "Created automatically when receiving data from a property (CAR/land).",
+          "clientsTitle": "Client circuits",
+          "clientsHint": "Created automatically when receiving data from a client (CNPJ/CPF)."
+        },
+        "payload": {
+          "identifierComment": "your canonical identifier",
+          "valueChainComment": "the value chain",
+          "circuitIdComment": "points to this circuit"
         }
       }
     }
