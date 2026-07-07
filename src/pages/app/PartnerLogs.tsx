@@ -112,33 +112,44 @@ function prettyJson(value: unknown): string {
   }
 }
 
-function buildRawPayloadSummary(row: RawPayloadSummary): string {
+// Rótulo bilíngue do status de payload persistido. Enum alinhado ao CHECK real de
+// ingestion_raw_payloads.status (migration 20260223000006):
+// received | processing | completed | partial | failed (DEFAULT 'received').
+// Módulo-level pra ser reusado tanto pelo badge quanto pelo resumo (não vazar cru).
+function payloadStatusLabel(status: string | null | undefined, en: boolean): string {
+  switch (status) {
+    case "received":
+      return en ? "Received" : "Recebido";
+    case "processing":
+      return en ? "Processing" : "Processando";
+    case "completed":
+      return en ? "Completed" : "Concluído";
+    case "partial":
+      return en ? "Partial" : "Parcial";
+    case "failed":
+      return en ? "Failed" : "Falhou";
+    default:
+      // NOT NULL + DEFAULT 'received' → ~inatingível pra payload persistido.
+      return status ?? "—";
+  }
+}
+
+function buildRawPayloadSummary(row: RawPayloadSummary, en: boolean): string {
   const pieces = [
-    `${row.status}`,
+    payloadStatusLabel(row.status, en),
     `${row.payload_size_bytes.toLocaleString("pt-BR")} bytes`,
     row.file_name || "payload",
   ];
-  if (row.error_message) pieces.push(`erro: ${row.error_message}`);
+  if (row.error_message) pieces.push(`${en ? "error" : "erro"}: ${row.error_message}`);
   return pieces.join(" · ");
 }
 
 export default function PartnerLogs() {
   const { toast } = useToast();
   const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
-  // Humaniza o status de payload persistido (enum cru completed/failed/pending) bilíngue.
-  const formatPayloadStatus = (status: string | null | undefined): string => {
-    const en = metadataLocale === "en";
-    switch (status) {
-      case "completed":
-        return en ? "Completed" : "Concluído";
-      case "failed":
-        return en ? "Failed" : "Falhou";
-      case "pending":
-        return en ? "Pending" : "Pendente";
-      default:
-        return status ?? (en ? "network" : "rede");
-    }
-  };
+  // Delega ao helper module-level (mesmo enum usado no resumo do payload).
+  const formatPayloadStatus = (status: string | null | undefined): string =>
+    payloadStatusLabel(status, metadataLocale === "en");
   const [loading, setLoading] = useState(true);
   const [rawHistory, setRawHistory] = useState<RawPayloadSummary[]>([]);
   const [rawCursor, setRawCursor] = useState<string | null>(null);
@@ -406,7 +417,7 @@ export default function PartnerLogs() {
                   <p className="text-xs text-muted-foreground truncate">
                     {entry.source === "api"
                       ? entry.item.responseSummary || entry.item.errorMessage || "Sem resumo"
-                      : buildRawPayloadSummary(entry.item)}
+                      : buildRawPayloadSummary(entry.item, metadataLocale === "en")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
