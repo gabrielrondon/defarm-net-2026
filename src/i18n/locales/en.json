@@ -841,6 +841,29 @@
         "private": "Private",
         "restricted": "Restricted",
         "public": "Public"
+      },
+      "circuitStatus": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "archived": "Archived"
+      },
+      "circuitType": {
+        "private": "Private",
+        "shared": "Shared",
+        "public": "Public",
+        "enterprise": "Enterprise"
+      },
+      "itemStatus": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "archived": "Archived",
+        "pending": "Pending"
+      },
+      "complianceStatus": {
+        "ok": "Compliant",
+        "warning": "Warning",
+        "blocked": "Blocked",
+        "unknown": "Unknown"
       }
     },
     "ingestion": {
@@ -1168,6 +1191,87 @@
           "valueChainComment": "the value chain",
           "circuitIdComment": "points to this circuit"
         }
+      },
+      "detail": {
+        "notFoundDesc": "The circuit you're looking for doesn't exist or you don't have permission to access it.",
+        "toasts": {
+          "sealGranted": "Seal granted",
+          "sealRemoved": "Seal removed",
+          "sealGrantedDesc": "This circuit now appears as Verified by DeFarm.",
+          "sealRemovedDesc": "The verified seal was removed.",
+          "sealError": "Couldn't change the seal",
+          "itemPushed": "Item sent!",
+          "itemPushedDesc": "The item was added to the circuit successfully.",
+          "itemPushError": "Failed to send item",
+          "complianceRefreshed": "Compliance refreshed",
+          "complianceRefreshError": "Failed to refresh compliance"
+        },
+        "removeSeal": "Remove seal",
+        "grantSeal": "Grant seal",
+        "noDescription": "No description",
+        "statusHelp": "Operational status: Active appears in lists and operation flows; Inactive keeps history but leaves the main flows.",
+        "govGuide": "Gov guide: shared circuit",
+        "pushItem": "Push Item",
+        "pushDialogTitle": "Send Item to Circuit",
+        "pushDialogDesc": "Select an item to send to the circuit \"{{name}}\"",
+        "noItemsToPush": "No items available to send",
+        "createNewItem": "Create new item",
+        "sendItem": "Send Item",
+        "edit": "Edit",
+        "manageMembers": "Manage members",
+        "joinRequests": "Join requests",
+        "deleteCircuit": "Delete circuit",
+        "stats": {
+          "items": "Items",
+          "members": "Members",
+          "visibility": "Visibility",
+          "category": "Category"
+        },
+        "tabs": {
+          "items": "Items",
+          "feeds": "Feeds",
+          "sharing": "Sharing",
+          "properties": "Properties"
+        },
+        "sharing": {
+          "title": "Public sharing",
+          "descPublic": "Use this link to share the circuit's public page.",
+          "descPrivate": "This circuit is private. Make it public in Edit to generate a shareable page.",
+          "currentState": "Current state:",
+          "slug": "slug:",
+          "urlPlaceholder": "Available when visibility is Public",
+          "copyUrl": "Copy URL",
+          "share": "Share",
+          "openPublic": "Open public page",
+          "makePublic": "Make public"
+        },
+        "properties": {
+          "title": "Compliance by property (LAND)",
+          "desc": "Simple checks per LAND/CAR linked to this circuit's items.",
+          "none": "No LAND properties linked to the circuit.",
+          "carLine": "CAR: {{car}} · Last check: {{date}}",
+          "carNotInformed": "not informed",
+          "checkNA": "n/a",
+          "refresh": "Refresh"
+        },
+        "items": {
+          "title": "Items in the Circuit",
+          "searchPlaceholder": "Search items...",
+          "thDfid": "DFID",
+          "thIdentifiers": "Identifiers",
+          "thChainCountry": "Chain / Country",
+          "thAnchors": "Anchors",
+          "thStatus": "Status",
+          "thUpdate": "Updated",
+          "moreIdentifiers": "+{{count}} more",
+          "emptySearch": "No items found",
+          "emptyNone": "No items in the circuit",
+          "emptySearchDesc": "Try a different search",
+          "emptyNoneDesc": "Send items to start tracking in this circuit"
+        },
+        "shareText": "See the circuit \"{{name}}\" on DeFarm",
+        "shareSubject": "Circuit {{name}} - DeFarm",
+        "shareMessage": "See the circuit \"{{name}}\" on DeFarm: {{url}}"
       }
     }
   }
