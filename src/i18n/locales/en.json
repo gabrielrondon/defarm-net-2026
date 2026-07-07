@@ -1273,6 +1273,49 @@
         "shareSubject": "Circuit {{name}} - DeFarm",
         "shareMessage": "See the circuit \"{{name}}\" on DeFarm: {{url}}"
       }
+    },
+    "items": {
+      "list": {
+        "loading": "Loading items...",
+        "errorTitle": "Failed to load items",
+        "errorFallback": "Try again later",
+        "title": "Items",
+        "subtitle": "All items tracked in your workspace's circuits",
+        "importCsv": "Import CSV/JSON",
+        "newItem": "New Item",
+        "searchPlaceholder": "Search by DFID, chain, country...",
+        "statusPrefix": "Status:",
+        "filterAll": "All",
+        "filterActive": "Active",
+        "filterDeprecated": "Deprecated",
+        "statsTotal": "Total items",
+        "statsTokenized": "Tokenized",
+        "statsActive": "Active",
+        "statsCircuits": "Circuits",
+        "loadNote": "Identifiers and on-chain proofs loaded for the first 30 items (of {{total}}). The rest appear in the list, with details on each item.",
+        "thDfid": "DFID",
+        "thIdentifiers": "Identifiers",
+        "thChainCountry": "Chain / Country",
+        "thCircuits": "Circuit(s)",
+        "thAnchors": "Anchors",
+        "thStatus": "Status",
+        "thUpdate": "Updated",
+        "moreIdentifiers": "+{{count}} more",
+        "localStatus": "Local",
+        "viewDetails": "View details",
+        "sendToCircuit": "Send to circuit",
+        "deprecate": "Deprecate",
+        "empty": "No items found",
+        "emptySearchDesc": "Try a different search",
+        "emptyNoneDesc": "Register your first item",
+        "createItem": "Create Item",
+        "toasts": {
+          "deprecated": "Item deprecated",
+          "deprecatedDesc": "The status was updated.",
+          "deprecateError": "Failed to deprecate",
+          "noCircuitError": "Couldn't determine the item's circuit."
+        }
+      }
     }
   }
 }

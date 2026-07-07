@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { BulkImportDialog } from "@/components/BulkImportDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -51,18 +52,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AdapterAnchorsResponse, ItemDetailsResponse } from "@/lib/api/types";
 
-// Item status vem do backend em minúsculo (active/inactive/archived/pending) — humaniza
-// para PT. Antes o status pill comparava === "Active" (maiúsculo) e mostrava TODO item
-// ativo como inativo, com o enum cru como rótulo.
-const ITEM_STATUS_LABELS: Record<string, string> = {
-  active: "Ativo",
-  inactive: "Inativo",
-  archived: "Arquivado",
-  pending: "Pendente",
-  local: "Local",
-};
+// Item status: humanizado via portal.enums.itemStatus (keyado pelos valores do CHECK
+// items_status_check: active/inactive/archived/pending) + "local" (pseudo-status de UI,
+// item otimista antes de sincronizar) via portal.items.list.localStatus.
 
 export default function ItensList() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "deprecated">("all");
   const [pushDialogItem, setPushDialogItem] = useState<Item | null>(null);
@@ -153,7 +148,7 @@ export default function ItensList() {
       const itemCircuits = circuitItemsMap[id] || [];
       const circuitId = itemCircuits[0]?.id;
       if (!circuitId) {
-        throw new Error("Não foi possível determinar o circuito do item.");
+        throw new Error(t("portal.items.list.toasts.noCircuitError"));
       }
       return updateItemStatus(id, {
         status: "inactive",
@@ -163,12 +158,12 @@ export default function ItensList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] });
-      toast({ title: "Item depreciado", description: "O status foi atualizado." });
+      toast({ title: t("portal.items.list.toasts.deprecated"), description: t("portal.items.list.toasts.deprecatedDesc") });
     },
     onError: (err) => {
       toast({
-        title: "Erro ao depreciar",
-        description: err instanceof Error ? err.message : "Tente novamente",
+        title: t("portal.items.list.toasts.deprecateError"),
+        description: err instanceof Error ? err.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -193,7 +188,7 @@ export default function ItensList() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Carregando itens...</p>
+          <p className="text-muted-foreground">{t("portal.items.list.loading")}</p>
         </div>
       </div>
     );
@@ -204,14 +199,14 @@ export default function ItensList() {
       <div className="max-w-2xl mx-auto text-center py-12">
         <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          Erro ao carregar itens
+          {t("portal.items.list.errorTitle")}
         </h1>
         <p className="text-muted-foreground mb-6">
-          {error instanceof Error ? error.message : "Tente novamente mais tarde"}
+          {error instanceof Error ? error.message : t("portal.items.list.errorFallback")}
         </p>
         <Button onClick={() => refetch()}>
           <RefreshCw className="h-4 w-4 mr-2" />
-          Tentar novamente
+          {t("portal.common.tryAgain")}
         </Button>
       </div>
     );
@@ -222,22 +217,22 @@ export default function ItensList() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Itens</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t("portal.items.list.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Todos os itens rastreados nos circuitos do seu workspace
+            {t("portal.items.list.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
           {canBulkIngest && (
             <Button variant="outline" onClick={() => setBulkOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
-              Importar CSV/JSON
+              {t("portal.items.list.importCsv")}
             </Button>
           )}
           <Link to="/app/itens/novo">
             <Button className="btn-offset bg-primary hover:bg-primary text-primary-foreground">
               <Plus className="h-4 w-4 mr-2" />
-              Novo Item
+              {t("portal.items.list.newItem")}
             </Button>
           </Link>
         </div>
@@ -248,7 +243,7 @@ export default function ItensList() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por DFID, cadeia, país..."
+            placeholder={t("portal.items.list.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -258,13 +253,13 @@ export default function ItensList() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
               <Filter className="h-4 w-4 mr-2" />
-              Status: {statusFilter === "all" ? "Todos" : statusFilter === "active" ? "Ativos" : "Deprecated"}
+              {t("portal.items.list.statusPrefix")} {statusFilter === "all" ? t("portal.items.list.filterAll") : statusFilter === "active" ? t("portal.items.list.filterActive") : t("portal.items.list.filterDeprecated")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setStatusFilter("all")}>Todos</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter("active")}>Ativos</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter("deprecated")}>Deprecated</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("all")}>{t("portal.items.list.filterAll")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("active")}>{t("portal.items.list.filterActive")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("deprecated")}>{t("portal.items.list.filterDeprecated")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -273,19 +268,19 @@ export default function ItensList() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-background border border-border rounded-xl p-4">
           <p className="text-2xl font-bold text-foreground">{items.length}</p>
-          <p className="text-sm text-muted-foreground">Total de itens</p>
+          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsTotal")}</p>
         </div>
         <div className="bg-background border border-border rounded-xl p-4">
           <p className="text-2xl font-bold text-foreground">{tokenizedCount}</p>
-          <p className="text-sm text-muted-foreground">Tokenizados</p>
+          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsTokenized")}</p>
         </div>
         <div className="bg-background border border-border rounded-xl p-4">
           <p className="text-2xl font-bold text-foreground">{activeCount}</p>
-          <p className="text-sm text-muted-foreground">Ativos</p>
+          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsActive")}</p>
         </div>
         <div className="bg-background border border-border rounded-xl p-4">
           <p className="text-2xl font-bold text-foreground">{circuits.length}</p>
-          <p className="text-sm text-muted-foreground">Circuitos</p>
+          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsCircuits")}</p>
         </div>
       </div>
 
@@ -295,20 +290,19 @@ export default function ItensList() {
           <TooltipProvider>
           {items.length > 30 && (
             <p className="mb-2 text-xs text-muted-foreground">
-              Identificadores e provas on-chain carregados para os primeiros 30 itens
-              (de {items.length}). Os demais aparecem na lista, com detalhes em cada item.
+              {t("portal.items.list.loadNote", { total: items.length })}
             </p>
           )}
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>DFID</TableHead>
-                <TableHead>Identificadores</TableHead>
-                <TableHead>Cadeia / País</TableHead>
-                <TableHead>Circuito(s)</TableHead>
-                <TableHead>Anchors</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Atualização</TableHead>
+                <TableHead>{t("portal.items.list.thDfid")}</TableHead>
+                <TableHead>{t("portal.items.list.thIdentifiers")}</TableHead>
+                <TableHead>{t("portal.items.list.thChainCountry")}</TableHead>
+                <TableHead>{t("portal.items.list.thCircuits")}</TableHead>
+                <TableHead>{t("portal.items.list.thAnchors")}</TableHead>
+                <TableHead>{t("portal.items.list.thStatus")}</TableHead>
+                <TableHead>{t("portal.items.list.thUpdate")}</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -371,7 +365,7 @@ export default function ItensList() {
                             </div>
                           ))}
                           {allIdentifiers.length > 2 && (
-                            <span className="text-[10px] text-muted-foreground">+{allIdentifiers.length - 2} mais</span>
+                            <span className="text-[10px] text-muted-foreground">{t("portal.items.list.moreIdentifiers", { count: allIdentifiers.length - 2 })}</span>
                           )}
                         </div>
                       ) : (
@@ -496,7 +490,9 @@ export default function ItensList() {
                         ) : (
                           <XCircle className="h-3 w-3" />
                         )}
-                        {ITEM_STATUS_LABELS[item.status?.toLowerCase() ?? ""] ?? item.status ?? "—"}
+                        {item.status?.toLowerCase() === "local"
+                          ? t("portal.items.list.localStatus")
+                          : t(`portal.enums.itemStatus.${item.status?.toLowerCase() ?? ""}`, { defaultValue: item.status ?? "—" })}
                       </span>
                     </TableCell>
 
@@ -519,19 +515,19 @@ export default function ItensList() {
                           <DropdownMenuItem asChild>
                             <Link to={`/app/itens/${item.id}`} className="flex items-center">
                               <ExternalLink className="h-4 w-4 mr-2" />
-                              Ver detalhes
+                              {t("portal.items.list.viewDetails")}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setPushDialogItem(item); }}>
                             <GitBranch className="h-4 w-4 mr-2" />
-                            Enviar para circuito
+                            {t("portal.items.list.sendToCircuit")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={(e) => { e.stopPropagation(); depreciateMutation.mutate({ id: item.id }); }}
                           >
                             <AlertTriangle className="h-4 w-4 mr-2" />
-                            Depreciar
+                            {t("portal.items.list.deprecate")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -546,15 +542,15 @@ export default function ItensList() {
           <div className="text-center py-12">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">
-              Nenhum item encontrado
+              {t("portal.items.list.empty")}
             </h3>
             <p className="text-muted-foreground mb-4">
-              {searchQuery ? "Tente uma busca diferente" : "Cadastre seu primeiro item"}
+              {searchQuery ? t("portal.items.list.emptySearchDesc") : t("portal.items.list.emptyNoneDesc")}
             </p>
             <Link to="/app/itens/novo">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Criar Item
+                {t("portal.items.list.createItem")}
               </Button>
             </Link>
           </div>
