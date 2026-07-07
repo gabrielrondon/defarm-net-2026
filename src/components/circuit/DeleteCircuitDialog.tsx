@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export function DeleteCircuitDialog({
   open,
   onOpenChange,
 }: DeleteCircuitDialogProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -39,16 +41,16 @@ export function DeleteCircuitDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["circuits"] });
       toast({
-        title: "Circuito excluído",
-        description: `O circuito "${circuit.name}" foi excluído com sucesso.`,
+        title: t("portal.circuits.delete.toasts.deletedTitle"),
+        description: t("portal.circuits.delete.toasts.deletedDesc", { name: circuit.name }),
       });
       onOpenChange(false);
       navigate(circuitsListPath(user?.workspace_type));
     },
     onError: (error) => {
       toast({
-        title: "Erro ao excluir",
-        description: error instanceof Error ? error.message : "Tente novamente",
+        title: t("portal.circuits.delete.toasts.deleteError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -68,11 +70,10 @@ export function DeleteCircuitDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
-            Excluir Circuito
+            {t("portal.circuits.delete.title")}
           </DialogTitle>
           <DialogDescription>
-            Esta ação é <strong>irreversível</strong>. Todos os dados do circuito serão
-            permanentemente removidos.
+            <Trans i18nKey="portal.circuits.delete.desc" components={{ strong: <strong /> }} />
           </DialogDescription>
         </DialogHeader>
 
@@ -82,7 +83,7 @@ export function DeleteCircuitDialog({
               <Trash2 className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
               <div className="text-sm">
                 <p className="font-medium text-foreground mb-1">
-                  Você está prestes a excluir:
+                  {t("portal.circuits.delete.aboutTo")}
                 </p>
                 <p className="font-mono text-destructive">{circuit.name}</p>
               </div>
@@ -91,10 +92,14 @@ export function DeleteCircuitDialog({
 
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">
-              Digite <span className="font-mono font-medium text-foreground">{circuit.name}</span> para confirmar:
+              <Trans
+                i18nKey="portal.circuits.delete.confirmPrompt"
+                values={{ name: circuit.name }}
+                components={{ name: <span className="font-mono font-medium text-foreground" /> }}
+              />
             </label>
             <Input
-              placeholder="Nome do circuito"
+              placeholder={t("portal.circuits.delete.namePlaceholder")}
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               className={confirmText && !isConfirmValid ? "border-destructive" : ""}
@@ -110,7 +115,7 @@ export function DeleteCircuitDialog({
               onOpenChange(false);
             }}
           >
-            Cancelar
+            {t("portal.common.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -120,12 +125,12 @@ export function DeleteCircuitDialog({
             {deleteMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Excluindo...
+                {t("portal.circuits.delete.deleting")}
               </>
             ) : (
               <>
                 <Trash2 className="h-4 w-4 mr-2" />
-                Excluir Permanentemente
+                {t("portal.circuits.delete.confirm")}
               </>
             )}
           </Button>

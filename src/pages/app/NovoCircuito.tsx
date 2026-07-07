@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +19,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createCircuit, CreateCircuitRequest } from "@/lib/defarm-api";
 
 export default function NovoCircuito() {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [circuitType, setCircuitType] = useState("shared");
   const [visibility, setVisibility] = useState("private");
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -33,15 +35,15 @@ export default function NovoCircuito() {
     onSuccess: (circuit) => {
       queryClient.invalidateQueries({ queryKey: ["circuits"] });
       toast({
-        title: "Circuito criado!",
-        description: `O circuito "${circuit.name}" foi criado com sucesso.`,
+        title: t("portal.circuits.new.toasts.createdTitle"),
+        description: t("portal.circuits.new.toasts.createdDesc", { name: circuit.name }),
       });
       navigate(`/app/circuitos/${circuit.id}`);
     },
     onError: (error) => {
       toast({
-        title: "Erro ao criar circuito",
-        description: error instanceof Error ? error.message : "Tente novamente",
+        title: t("portal.circuits.new.toasts.createError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -52,13 +54,13 @@ export default function NovoCircuito() {
 
     if (!user?.id) {
       toast({
-        title: "Sessão inválida",
-        description: "Faça login novamente para criar um circuito.",
+        title: t("portal.circuits.new.toasts.sessionInvalidTitle"),
+        description: t("portal.circuits.new.toasts.sessionInvalidDesc"),
         variant: "destructive",
       });
       return;
     }
-    
+
     createMutation.mutate({
       name,
       description,
@@ -77,11 +79,11 @@ export default function NovoCircuito() {
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar
+          {t("portal.common.back")}
         </button>
-        <h1 className="text-3xl font-bold text-foreground">Novo Circuito</h1>
+        <h1 className="text-3xl font-bold text-foreground">{t("portal.circuits.new.title")}</h1>
         <p className="text-muted-foreground mt-1">
-          Crie um novo circuito para compartilhar dados rastreáveis
+          {t("portal.circuits.new.subtitle")}
         </p>
       </div>
 
@@ -93,17 +95,17 @@ export default function NovoCircuito() {
               <GitBranch className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Informações básicas</h2>
-              <p className="text-sm text-muted-foreground">Nome e descrição do circuito</p>
+              <h2 className="text-lg font-semibold text-foreground">{t("portal.circuits.form.basicInfo")}</h2>
+              <p className="text-sm text-muted-foreground">{t("portal.circuits.form.basicInfoDesc")}</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome do circuito *</Label>
+              <Label htmlFor="name">{t("portal.circuits.form.nameLabel")}</Label>
               <Input
                 id="name"
-                placeholder="Ex: Cadeia Bovina Orgânica"
+                placeholder={t("portal.circuits.form.namePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -111,10 +113,10 @@ export default function NovoCircuito() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">{t("portal.circuits.form.descLabel")}</Label>
               <Textarea
                 id="description"
-                placeholder="Descreva o propósito deste circuito..."
+                placeholder={t("portal.circuits.form.descPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -122,15 +124,15 @@ export default function NovoCircuito() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="circuit_type">Tipo do circuito</Label>
+              <Label htmlFor="circuit_type">{t("portal.circuits.new.typeLabel")}</Label>
               <Select value={circuitType} onValueChange={setCircuitType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="private">Privado</SelectItem>
-                  <SelectItem value="shared">Compartilhado</SelectItem>
-                  <SelectItem value="public">Público</SelectItem>
+                  <SelectItem value="private">{t("portal.circuits.new.typeOptions.private")}</SelectItem>
+                  <SelectItem value="shared">{t("portal.circuits.new.typeOptions.shared")}</SelectItem>
+                  <SelectItem value="public">{t("portal.circuits.new.typeOptions.public")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -144,24 +146,24 @@ export default function NovoCircuito() {
               <Globe className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Visibilidade</h2>
-              <p className="text-sm text-muted-foreground">Quem pode ver os dados do circuito</p>
+              <h2 className="text-lg font-semibold text-foreground">{t("portal.circuits.form.visibilitySection")}</h2>
+              <p className="text-sm text-muted-foreground">{t("portal.circuits.form.visibilitySectionDesc")}</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="visibility">Visibilidade</Label>
+            <Label htmlFor="visibility">{t("portal.circuits.form.visibilityLabel")}</Label>
             <Select value={visibility} onValueChange={setVisibility}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="private">Privado</SelectItem>
-                <SelectItem value="public">Público</SelectItem>
+                <SelectItem value="private">{t("portal.circuits.new.visibilityOptions.private")}</SelectItem>
+                <SelectItem value="public">{t("portal.circuits.new.visibilityOptions.public")}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Circuitos públicos podem ser vistos por qualquer pessoa com o link
+              {t("portal.circuits.form.visibilityHint")}
             </p>
           </div>
         </div>
@@ -174,7 +176,7 @@ export default function NovoCircuito() {
             className="flex-1"
             onClick={() => navigate(-1)}
           >
-            Cancelar
+            {t("portal.common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -185,7 +187,7 @@ export default function NovoCircuito() {
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <>
-                Criar Circuito
+                {t("portal.circuits.new.submit")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </>
             )}

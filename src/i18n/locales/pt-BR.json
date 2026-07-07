@@ -836,6 +836,11 @@
         "no_routing_rule": "sem regra de roteamento",
         "invalid_value_chain": "value_chain inválida",
         "canonical_conflict": "conflito de identidade entre DFIDs"
+      },
+      "circuitVisibility": {
+        "private": "Privado",
+        "restricted": "Restrito",
+        "public": "Público"
       }
     },
     "ingestion": {
@@ -934,7 +939,10 @@
     },
     "common": {
       "save": "Salvar",
-      "loading": "Carregando…"
+      "loading": "Carregando…",
+      "back": "Voltar",
+      "cancel": "Cancelar",
+      "tryAgain": "Tente novamente"
     },
     "routing": {
       "header": {
@@ -1020,6 +1028,145 @@
           "closedDesc": "Marcada como resolvida manualmente.",
           "closeErrorTitle": "Falha ao encerrar pendência",
           "closeErrorDesc": "Não foi possível marcar como resolvida."
+        }
+      }
+    },
+    "circuits": {
+      "form": {
+        "basicInfo": "Informações básicas",
+        "basicInfoDesc": "Nome e descrição do circuito",
+        "nameLabel": "Nome do circuito *",
+        "namePlaceholder": "Ex: Cadeia Bovina Orgânica",
+        "descLabel": "Descrição",
+        "descPlaceholder": "Descreva o propósito deste circuito...",
+        "visibilitySection": "Visibilidade",
+        "visibilitySectionDesc": "Quem pode ver os dados do circuito",
+        "visibilityLabel": "Visibilidade",
+        "visibilityHint": "Circuitos públicos podem ser vistos por qualquer pessoa com o link"
+      },
+      "new": {
+        "title": "Novo Circuito",
+        "subtitle": "Crie um novo circuito para compartilhar dados rastreáveis",
+        "typeLabel": "Tipo do circuito",
+        "typeOptions": {
+          "private": "Privado",
+          "shared": "Compartilhado",
+          "public": "Público"
+        },
+        "visibilityOptions": {
+          "private": "Privado",
+          "public": "Público"
+        },
+        "submit": "Criar Circuito",
+        "toasts": {
+          "createdTitle": "Circuito criado!",
+          "createdDesc": "O circuito \"{{name}}\" foi criado com sucesso.",
+          "createError": "Erro ao criar circuito",
+          "sessionInvalidTitle": "Sessão inválida",
+          "sessionInvalidDesc": "Faça login novamente para criar um circuito."
+        }
+      },
+      "edit": {
+        "title": "Editar Circuito",
+        "subtitle": "Atualize as informações do circuito \"{{name}}\"",
+        "notFound": "Circuito não encontrado",
+        "backToCircuits": "Voltar para Circuitos",
+        "visibilityOptions": {
+          "private": "Privado",
+          "restricted": "Restrito (apenas membros)",
+          "public": "Público"
+        },
+        "statusLabel": "Status operacional",
+        "statusOptions": {
+          "active": "Ativo",
+          "inactive": "Inativo"
+        },
+        "statusHint": {
+          "active": "Ativo: o circuito aparece como operacional e entra nos fluxos padrão.",
+          "inactive": "Inativo: mantém histórico, mas sai dos fluxos operacionais principais."
+        },
+        "discoveryTitle": "Discovery & Perfil Público",
+        "discoveryDesc": "Configure como seu circuito aparece para o público",
+        "enableDiscovery": "Habilitar discovery",
+        "enableDiscoveryHint": "Permite que outros encontrem seu circuito",
+        "searchable": "Pesquisável",
+        "searchableHint": "Aparece em buscas de circuitos públicos",
+        "allowJoin": "Aceitar solicitações de entrada",
+        "allowJoinHint": "Permite que visitantes solicitem participação",
+        "showCompliance": "Exibir Compliance publicamente",
+        "showComplianceHint": "Quando ligado, a página pública mostra o status de compliance das propriedades LAND do circuito.",
+        "slugLabel": "URL pública (slug)",
+        "slugPlaceholder": "meu-circuito",
+        "publicLink": "Link público: {{url}}",
+        "publicDescLabel": "Descrição pública",
+        "publicDescPlaceholder": "Descrição visível na página pública...",
+        "contactEmailLabel": "Email de contato público",
+        "contactEmailPlaceholder": "contato@fazenda.com",
+        "websiteLabel": "Website",
+        "websitePlaceholder": "https://suafazenda.com.br",
+        "bannerLabel": "Imagem de fundo (banner)",
+        "bannerPlaceholder": "https://.../banner.jpg",
+        "bannerHint": "Aparece como fundo do card (Meus Circuitos) e como banner na página pública. Cole a URL de um PNG/JPEG hospedado.",
+        "logoLabel": "Logo",
+        "logoPlaceholder": "https://.../logo.png",
+        "logoHint": "Aparece na página pública do circuito.",
+        "submit": "Salvar Alterações",
+        "toasts": {
+          "updatedTitle": "Circuito atualizado!",
+          "updatedDesc": "As alterações foram salvas com sucesso.",
+          "updateError": "Erro ao atualizar"
+        }
+      },
+      "delete": {
+        "title": "Excluir Circuito",
+        "desc": "Esta ação é <strong>irreversível</strong>. Todos os dados do circuito serão permanentemente removidos.",
+        "aboutTo": "Você está prestes a excluir:",
+        "confirmPrompt": "Digite <name>{{name}}</name> para confirmar:",
+        "namePlaceholder": "Nome do circuito",
+        "deleting": "Excluindo...",
+        "confirm": "Excluir Permanentemente",
+        "toasts": {
+          "deletedTitle": "Circuito excluído",
+          "deletedDesc": "O circuito \"{{name}}\" foi excluído com sucesso.",
+          "deleteError": "Erro ao excluir"
+        }
+      },
+      "mine": {
+        "title": "Meus Circuitos",
+        "subtitle": "Cada circuito é um destino dos seus dados. O <strong>padrão</strong> recebe o que você envia sem apontar — passe o mouse no <icon></icon> de cada um pra ver como enviar.",
+        "newCircuit": "Novo circuito",
+        "empty": "Você ainda não tem circuitos. Crie o primeiro pra começar a receber dados.",
+        "createFirst": "Criar circuito",
+        "defaultBadge": "Padrão",
+        "defaultCardHint": "Os dados que você envia <strong>sem apontar circuito</strong> caem aqui automaticamente.",
+        "pointHere": "Pra mandar pra cá, aponte este circuito:",
+        "receivingDefault": "recebendo por padrão",
+        "makeDefault": "Tornar padrão",
+        "howToSendAria": "Como enviar",
+        "howToSendTitle": "Como enviar pra \"{{name}}\"",
+        "howDefault": "Com sua chave de Recepção inteligente, basta enviar — cai aqui por padrão.",
+        "howNonDefault": "Aponte o circuito no próprio item (campo circuit_id), ou use uma chave/regra de roteamento deste circuito.",
+        "minDefault": "O mínimo de cada item é só identificador + cadeia:",
+        "minNonDefault": "Inclua o circuit_id no item pra cair aqui:",
+        "copyExample": "Copiar exemplo",
+        "copyCircuitIdentifier": "Identificador do circuito",
+        "copyExampleLabel": "Exemplo",
+        "copied": "{{what}} copiado",
+        "defaultUpdatedTitle": "Circuito padrão atualizado",
+        "defaultUpdatedDesc": "Seus dados sem destino agora caem em \"{{name}}\".",
+        "defaultUpdateError": "Não foi possível trocar o padrão",
+        "sections": {
+          "mineTitle": "Meus circuitos",
+          "mineHint": "Criados por você ou dos quais participa — não vinculados a uma propriedade específica.",
+          "propertiesTitle": "Circuitos de propriedades",
+          "propertiesHint": "Criados automaticamente ao receber dados de uma propriedade (CAR/terra).",
+          "clientsTitle": "Circuitos de clientes",
+          "clientsHint": "Criados automaticamente ao receber dados de um cliente (CNPJ/CPF)."
+        },
+        "payload": {
+          "identifierComment": "seu identificador canônico",
+          "valueChainComment": "a cadeia de valor",
+          "circuitIdComment": "aponta pra este circuito"
         }
       }
     }

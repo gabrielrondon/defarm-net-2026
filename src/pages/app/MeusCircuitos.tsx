@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,6 @@ import {
 import type { Circuit } from "@/lib/api/types";
 import { Star, Info, Copy, Plus, ArrowRight, Circle } from "lucide-react";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
-import { circuitVisibilityLabel } from "@/lib/circuit-ui";
 import { cn } from "@/lib/utils";
 
 // Identificadores de TERRA/propriedade — circuito auto-criado por um deles = "de propriedade".
@@ -41,6 +41,7 @@ const routingType = (c: Circuit) =>
   String((c.metadata as Record<string, unknown> | null | undefined)?.routing_identifier_type ?? "").toLowerCase();
 
 export default function MeusCircuitos() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -54,18 +55,18 @@ export default function MeusCircuitos() {
     mutationFn: (circuitId: string) => updatePartnerDefaultCircuit(circuitId),
     onSuccess: (data) => {
       toast({
-        title: "Circuito padrão atualizado",
-        description: `Seus dados sem destino agora caem em "${data.name}".`,
+        title: t("portal.circuits.mine.defaultUpdatedTitle"),
+        description: t("portal.circuits.mine.defaultUpdatedDesc", { name: data.name }),
       });
       qc.invalidateQueries({ queryKey: ["partner-default-circuit"] });
     },
     onError: () =>
-      toast({ title: "Não foi possível trocar o padrão", variant: "destructive" }),
+      toast({ title: t("portal.circuits.mine.defaultUpdateError"), variant: "destructive" }),
   });
 
   const copy = (text: string, what: string) => {
     void navigator.clipboard.writeText(text);
-    toast({ title: `${what} copiado` });
+    toast({ title: t("portal.circuits.mine.copied", { what }) });
   };
 
   const defaultId = defaultQuery.data?.circuit_id;
@@ -73,20 +74,23 @@ export default function MeusCircuitos() {
   // Exemplo de payload: o padrão recebe sem apontar (2 campos); os demais precisam
   // da 3ª linha com o circuit_id apontando pra este circuito.
   const payloadFor = (c: Circuit, isDefault: boolean) => {
+    const idComment = t("portal.circuits.mine.payload.identifierComment");
+    const vcComment = t("portal.circuits.mine.payload.valueChainComment");
+    const ciComment = t("portal.circuits.mine.payload.circuitIdComment");
     if (isDefault) {
       return `[
   {
-    "sisbov": "105705000000120",   // seu identificador canônico
-    "value_chain": "BEEF"           // a cadeia de valor
+    "sisbov": "105705000000120",   // ${idComment}
+    "value_chain": "BEEF"           // ${vcComment}
   }
 ]`;
     }
     const ref = c.slug || c.id;
     return `[
   {
-    "sisbov": "105705000000120",   // seu identificador canônico
-    "value_chain": "BEEF",          // a cadeia de valor
-    "circuit_id": "${ref}"          // aponta pra este circuito
+    "sisbov": "105705000000120",   // ${idComment}
+    "value_chain": "BEEF",          // ${vcComment}
+    "circuit_id": "${ref}"          // ${ciComment}
   }
 ]`;
   };
@@ -139,11 +143,11 @@ export default function MeusCircuitos() {
             </Link>
             {isDefault ? (
               <Badge className="shrink-0 gap-1">
-                <Star className="h-3 w-3" /> Padrão
+                <Star className="h-3 w-3" /> {t("portal.circuits.mine.defaultBadge")}
               </Badge>
             ) : (
               <Badge variant="outline" className="shrink-0 text-[10px]">
-                {circuitVisibilityLabel(c.visibility)}
+                {t(`portal.enums.circuitVisibility.${c.visibility?.toLowerCase()}`, { defaultValue: c.visibility })}
               </Badge>
             )}
           </div>
@@ -152,15 +156,14 @@ export default function MeusCircuitos() {
 
           {isDefault ? (
             <p className="text-xs text-muted-foreground">
-              Os dados que você envia <strong>sem apontar circuito</strong> caem aqui
-              automaticamente.
+              <Trans i18nKey="portal.circuits.mine.defaultCardHint" components={{ strong: <strong /> }} />
             </p>
           ) : (
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Pra mandar pra cá, aponte este circuito:</p>
+              <p>{t("portal.circuits.mine.pointHere")}</p>
               <button
                 type="button"
-                onClick={() => copy(targetRef, "Identificador do circuito")}
+                onClick={() => copy(targetRef, t("portal.circuits.mine.copyCircuitIdentifier"))}
                 className="font-mono text-[11px] text-foreground inline-flex items-center gap-1 hover:text-primary"
               >
                 {targetRef} <Copy className="h-3 w-3" />
@@ -171,7 +174,7 @@ export default function MeusCircuitos() {
           <div className="flex items-center justify-between gap-2 pt-1">
             {isDefault ? (
               <span className="text-[11px] text-primary inline-flex items-center gap-1">
-                <Circle className="h-2 w-2 fill-current" /> recebendo por padrão
+                <Circle className="h-2 w-2 fill-current" /> {t("portal.circuits.mine.receivingDefault")}
               </span>
             ) : (
               <Button
@@ -180,7 +183,7 @@ export default function MeusCircuitos() {
                 onClick={() => setDefault.mutate(c.id)}
                 disabled={setDefault.isPending}
               >
-                <Star className="h-3.5 w-3.5 mr-1" /> Tornar padrão
+                <Star className="h-3.5 w-3.5 mr-1" /> {t("portal.circuits.mine.makeDefault")}
               </Button>
             )}
 
@@ -189,7 +192,7 @@ export default function MeusCircuitos() {
                 <button
                   type="button"
                   className="text-muted-foreground hover:text-primary"
-                  aria-label="Como enviar"
+                  aria-label={t("portal.circuits.mine.howToSendAria")}
                 >
                   <Info className="h-4 w-4" />
                 </button>
@@ -197,17 +200,17 @@ export default function MeusCircuitos() {
               <PopoverContent className="w-80">
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-foreground">
-                    Como enviar pra "{c.name}"
+                    {t("portal.circuits.mine.howToSendTitle", { name: c.name })}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {isDefault
-                      ? "Com sua chave de Recepção inteligente, basta enviar — cai aqui por padrão."
-                      : "Aponte o circuito no próprio item (campo circuit_id), ou use uma chave/regra de roteamento deste circuito."}
+                      ? t("portal.circuits.mine.howDefault")
+                      : t("portal.circuits.mine.howNonDefault")}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {isDefault
-                      ? "O mínimo de cada item é só identificador + cadeia:"
-                      : "Inclua o circuit_id no item pra cair aqui:"}
+                      ? t("portal.circuits.mine.minDefault")
+                      : t("portal.circuits.mine.minNonDefault")}
                   </p>
                   <pre className="bg-muted/50 rounded-md p-2 text-[10px] font-mono overflow-x-auto text-foreground">
                     {payloadFor(c, isDefault)}
@@ -217,13 +220,13 @@ export default function MeusCircuitos() {
                       size="sm"
                       variant="outline"
                       className="text-xs h-7"
-                      onClick={() => copy(payloadFor(c, isDefault), "Exemplo")}
+                      onClick={() => copy(payloadFor(c, isDefault), t("portal.circuits.mine.copyExampleLabel"))}
                     >
-                      <Copy className="h-3 w-3 mr-1" /> Copiar exemplo
+                      <Copy className="h-3 w-3 mr-1" /> {t("portal.circuits.mine.copyExample")}
                     </Button>
                     <Button asChild size="sm" variant="ghost" className="text-xs h-7">
                       <Link to="/app/parceiro/ingestao">
-                        Enviar dados <ArrowRight className="h-3 w-3 ml-1" />
+                        {t("portal.reception.sendData")} <ArrowRight className="h-3 w-3 ml-1" />
                       </Link>
                     </Button>
                   </div>
@@ -255,31 +258,32 @@ export default function MeusCircuitos() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Meus Circuitos</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("portal.circuits.mine.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Cada circuito é um destino dos seus dados. O <strong>padrão</strong> recebe o que você
-            envia sem apontar — passe o mouse no <Info className="inline h-3.5 w-3.5" /> de cada um
-            pra ver como enviar.
+            <Trans
+              i18nKey="portal.circuits.mine.subtitle"
+              components={{ strong: <strong />, icon: <Info className="inline h-3.5 w-3.5" /> }}
+            />
           </p>
         </div>
         <Button asChild>
           <Link to="/app/circuitos/novo">
-            <Plus className="h-4 w-4 mr-1" /> Novo circuito
+            <Plus className="h-4 w-4 mr-1" /> {t("portal.circuits.mine.newCircuit")}
           </Link>
         </Button>
       </div>
 
       {circuitsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <p className="text-sm text-muted-foreground">{t("portal.common.loading")}</p>
       ) : total === 0 ? (
         <Card>
           <CardContent className="py-10 text-center space-y-3">
             <p className="text-sm text-muted-foreground">
-              Você ainda não tem circuitos. Crie o primeiro pra começar a receber dados.
+              {t("portal.circuits.mine.empty")}
             </p>
             <Button asChild>
               <Link to="/app/circuitos/novo">
-                <Plus className="h-4 w-4 mr-1" /> Criar circuito
+                <Plus className="h-4 w-4 mr-1" /> {t("portal.circuits.mine.createFirst")}
               </Link>
             </Button>
           </CardContent>
@@ -287,18 +291,18 @@ export default function MeusCircuitos() {
       ) : (
         <>
           {section(
-            "Meus circuitos",
-            "Criados por você ou dos quais participa — não vinculados a uma propriedade específica.",
+            t("portal.circuits.mine.sections.mineTitle"),
+            t("portal.circuits.mine.sections.mineHint"),
             mine,
           )}
           {section(
-            "Circuitos de propriedades",
-            "Criados automaticamente ao receber dados de uma propriedade (CAR/terra).",
+            t("portal.circuits.mine.sections.propertiesTitle"),
+            t("portal.circuits.mine.sections.propertiesHint"),
             properties,
           )}
           {section(
-            "Circuitos de clientes",
-            "Criados automaticamente ao receber dados de um cliente (CNPJ/CPF).",
+            t("portal.circuits.mine.sections.clientsTitle"),
+            t("portal.circuits.mine.sections.clientsHint"),
             clients,
           )}
         </>
