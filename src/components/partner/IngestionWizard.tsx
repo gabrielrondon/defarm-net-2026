@@ -274,10 +274,10 @@ export function IngestionWizard() {
               <label className="cursor-pointer block">
                 <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-3" />
                 <p className="text-sm font-medium text-foreground">
-                  Arraste um arquivo ou clique para selecionar
+                  Experimente — arraste um arquivo ou clique para selecionar
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  CSV ou JSON · O sistema analisa antes de gravar
+                  CSV ou JSON · Mostramos o que vai acontecer antes de gravar nada — sem risco
                 </p>
                 <input
                   type="file"
@@ -481,9 +481,14 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border p-5 space-y-5">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-primary" />
-          <p className="text-sm font-medium text-foreground">Arquivo analisado com sucesso</p>
+        <div className="flex items-start gap-2">
+          <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Simulação — nada foi gravado</p>
+            <p className="text-xs text-muted-foreground">
+              Prévia segura, sem risco. Veja o que aconteceria se você enviar de verdade.
+            </p>
+          </div>
         </div>
 
         {/* Stats */}
@@ -533,7 +538,8 @@ function PreviewResults({ preview }: { preview: PartnerIntakeResponse }) {
       <div className="rounded-xl bg-primary/5 border border-primary/10 px-4 py-3">
         <p className="text-xs text-muted-foreground leading-relaxed">
           <span className="font-medium text-foreground">Como funciona?</span>{" "}
-          Cada linha contém um identificador (CAR, SISBOV, etc.) que determina a qual circuito o item pertence. Nenhum dado foi gravado ainda — esta é apenas a prévia.
+          Cada linha sempre cai no seu circuito padrão e, em paralelo, é roteada por
+          identificador (CAR, exploração, CNPJ…) pro circuito certo. Nada foi gravado — esta é a prévia.
         </p>
       </div>
     </div>
