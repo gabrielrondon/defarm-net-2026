@@ -63,6 +63,7 @@ import { cn } from "@/lib/utils";
 import { anchorStateOf } from "@/components/proof";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { circuitsListPath } from "@/lib/circuitNav";
 import {
   getCircuit,
   setCircuitVerified,
@@ -343,7 +344,7 @@ export default function CircuitoDetail() {
       {/* Header */}
       <div className="flex flex-col gap-4">
         <button
-          onClick={() => navigate("/app/circuitos")}
+          onClick={() => navigate(circuitsListPath(user?.workspace_type))}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground w-fit"
         >
           <ArrowLeft className="h-4 w-4" />

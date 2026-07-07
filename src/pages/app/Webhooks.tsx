@@ -195,7 +195,9 @@ export default function WebhooksPage() {
       const [circuitsData, webhooksData] = await Promise.all([getCircuits(), getWebhooks()]);
       setCircuits(circuitsData);
       setWebhooks(webhooksData);
-      if (!circuitId && circuitsData[0]) setCircuitId(circuitsData[0].id);
+      // Default só na primeira carga via updater funcional (prev), pra não ter
+      // circuitId na dep-array (double-fetch, #5) nem resetar a seleção no load() manual.
+      if (circuitsData[0]) setCircuitId((prev) => prev || circuitsData[0].id);
       await loadHealth(webhooksData);
     } catch {
       toast({
@@ -206,7 +208,7 @@ export default function WebhooksPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast, circuitId, loadHealth]);
+  }, [toast, loadHealth]);
 
   useEffect(() => {
     load();

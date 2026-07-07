@@ -18,10 +18,13 @@ import { useToast } from "@/hooks/use-toast";
 import { getCircuit, updateCircuit } from "@/lib/defarm-api";
 import type { UpdateCircuitRequest } from "@/lib/api/types";
 import { isCircuitPublic } from "@/lib/circuit-ui";
+import { useAuth } from "@/contexts/AuthContext";
+import { circuitsListPath } from "@/lib/circuitNav";
 
 export default function EditarCircuito() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -127,7 +130,7 @@ export default function EditarCircuito() {
         <h1 className="text-2xl font-bold text-foreground mb-2">
           Circuito não encontrado
         </h1>
-        <Button onClick={() => navigate("/app/circuitos")}>
+        <Button onClick={() => navigate(circuitsListPath(user?.workspace_type))}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar para Circuitos
         </Button>

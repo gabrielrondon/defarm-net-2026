@@ -162,8 +162,8 @@ export default function ApiKeys() {
         expires_in_days: newKeyExpiry ? parseInt(newKeyExpiry) : undefined,
       });
       // Handle different response shapes from backend
-      const apiKey = result?.key?.api_key || (result as any)?.api_key || null;
-      setRevealedKey(apiKey);
+      const apiKey =
+        result?.key?.api_key || (result as { api_key?: string })?.api_key || null;
       setCreateOpen(false);
       setNewKeyName("");
       setNewKeyDescription("");
@@ -171,10 +171,22 @@ export default function ApiKeys() {
       setNewKeyCircuit("");
       setNewKeyStagingCircuit("");
       setNewKeyScope("circuit");
-      toast({
-        title: "API Key criada",
-        description: result?.message || "Chave criada com sucesso.",
-      });
+      if (apiKey) {
+        setRevealedKey(apiKey);
+        toast({
+          title: "API Key criada",
+          description: result?.message || "Chave criada com sucesso.",
+        });
+      } else {
+        // A chave foi criada mas o valor não veio na resposta — ele só aparece
+        // uma vez, então avisamos em vez de dar um "sucesso" sem chave pra copiar.
+        toast({
+          title: "Chave criada, mas não foi possível exibi-la",
+          description:
+            "Recrie a chave para obter o valor de acesso — ele só aparece uma vez.",
+          variant: "destructive",
+        });
+      }
       fetchData();
     } catch (err: any) {
       toast({
