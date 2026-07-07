@@ -51,6 +51,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AdapterAnchorsResponse, ItemDetailsResponse } from "@/lib/api/types";
 
+// Item status vem do backend em minúsculo (active/inactive/archived/pending) — humaniza
+// para PT. Antes o status pill comparava === "Active" (maiúsculo) e mostrava TODO item
+// ativo como inativo, com o enum cru como rótulo.
+const ITEM_STATUS_LABELS: Record<string, string> = {
+  active: "Ativo",
+  inactive: "Inativo",
+  archived: "Arquivado",
+  pending: "Pendente",
+  local: "Local",
+};
+
 export default function ItensList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "deprecated">("all");
@@ -282,6 +293,12 @@ export default function ItensList() {
       <div className="bg-background border border-border rounded-2xl overflow-hidden">
         {filteredItems.length > 0 ? (
           <TooltipProvider>
+          {items.length > 30 && (
+            <p className="mb-2 text-xs text-muted-foreground">
+              Identificadores e provas on-chain carregados para os primeiros 30 itens
+              (de {items.length}). Os demais aparecem na lista, com detalhes em cada item.
+            </p>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -470,16 +487,16 @@ export default function ItensList() {
                     <TableCell>
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
-                        item.status === "Active" 
-                          ? "bg-primary/10 text-primary" 
+                        item.status?.toLowerCase() === "active"
+                          ? "bg-primary/10 text-primary"
                           : "bg-muted text-muted-foreground"
                       )}>
-                        {item.status === "Active" ? (
+                        {item.status?.toLowerCase() === "active" ? (
                           <CheckCircle2 className="h-3 w-3" />
                         ) : (
                           <XCircle className="h-3 w-3" />
                         )}
-                        {item.status === "Active" ? "active" : item.status?.toLowerCase() || "unknown"}
+                        {ITEM_STATUS_LABELS[item.status?.toLowerCase() ?? ""] ?? item.status ?? "—"}
                       </span>
                     </TableCell>
 
