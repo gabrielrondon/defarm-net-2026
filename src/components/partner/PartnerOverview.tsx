@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Loader2, CheckCircle2, Circle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Loader2, CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCircuits } from "@/lib/api/circuits";
 import { listPartnerApiKeys, getPartnerApiKeyMetrics } from "@/lib/api/admin";
@@ -18,11 +20,37 @@ interface OverviewMetrics {
   hasRoutingPending: boolean;
 }
 
+// Onda 3, Fatia 2: guided first steps. Each step is now actionable — the first
+// undone one is surfaced as the active step with a CTA that takes the partner there.
 const ONBOARDING_STEPS = [
-  { key: "apiKey", label: "Criar API key" },
-  { key: "template", label: "Configurar template" },
-  { key: "upload", label: "Enviar primeiro arquivo" },
-  { key: "routing", label: "Resolver pendências" },
+  {
+    key: "apiKey",
+    label: "Criar API key",
+    to: "/app/api-keys",
+    cta: "Criar chave",
+    hint: "Uma chave autentica seus envios de dados.",
+  },
+  {
+    key: "template",
+    label: "Configurar template",
+    to: "/app/parceiro/ingestao",
+    cta: "Configurar",
+    hint: "Opcional: um modelo mapeia as colunas do seu arquivo automaticamente.",
+  },
+  {
+    key: "upload",
+    label: "Enviar primeiro arquivo",
+    to: "/app/parceiro/ingestao",
+    cta: "Enviar dados",
+    hint: "Mande um CSV ou JSON — a DeFarm mostra o que vai acontecer antes de gravar.",
+  },
+  {
+    key: "routing",
+    label: "Resolver pendências",
+    to: "/app/parceiro/roteamento",
+    cta: "Ver roteamento",
+    hint: "Configure regras para rotear cada item ao circuito certo.",
+  },
 ] as const;
 
 export function PartnerOverview() {
@@ -106,6 +134,8 @@ export function PartnerOverview() {
 
   const completedSteps = Object.values(stepDone).filter(Boolean).length;
   const allDone = completedSteps === ONBOARDING_STEPS.length;
+  // The next thing to do: the first step that isn't done yet.
+  const activeStep = ONBOARDING_STEPS.find((step) => !stepDone[step.key]);
 
   return (
     <div className="space-y-6">
@@ -133,7 +163,7 @@ export function PartnerOverview() {
       {!allDone && (
         <div className="rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-foreground">Setup</p>
+            <p className="text-sm font-medium text-foreground">Primeiros passos</p>
             <span className="text-xs text-muted-foreground">
               {completedSteps}/{ONBOARDING_STEPS.length}
             </span>
@@ -144,6 +174,23 @@ export function PartnerOverview() {
               style={{ width: `${(completedSteps / ONBOARDING_STEPS.length) * 100}%` }}
             />
           </div>
+          {/* The active step: the next thing to do, surfaced with a CTA that takes the
+              partner straight there — turns a passive checklist into a guided flow. */}
+          {activeStep && (
+            <div className="mb-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-primary">
+                Próximo passo
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">{activeStep.label}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{activeStep.hint}</p>
+              <Button asChild size="sm" className="mt-2">
+                <Link to={activeStep.to}>
+                  {activeStep.cta}
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </div>
+          )}
           <div className="space-y-1">
             {ONBOARDING_STEPS.map((step) => {
               const done = stepDone[step.key];
