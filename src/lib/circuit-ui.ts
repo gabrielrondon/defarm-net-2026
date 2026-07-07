@@ -5,21 +5,28 @@ export function normalizeCircuitStatus(raw?: string | null): "active" | "inactiv
   return "unknown";
 }
 
+// Status de circuito. Valores reais do CHECK circuits_status_check
+// (migration 20250204000001): active | inactive | archived. 'archived' antes caía no
+// fallback (normalizeCircuitStatus o mapeia p/ "unknown") e vazava cru — agora coberto.
 export function circuitStatusLabel(raw?: string | null): string {
-  const normalized = normalizeCircuitStatus(raw);
-  if (normalized === "active") return "Ativo";
-  if (normalized === "inactive") return "Inativo";
+  const value = (raw || "").trim().toLowerCase();
+  if (value === "active") return "Ativo";
+  if (value === "inactive") return "Inativo";
+  if (value === "archived") return "Arquivado";
   return raw || "Desconhecido";
 }
 
+// Tipo de circuito. Valores reais do CHECK circuits_type_check (migration 20250204000001,
+// DEFAULT 'private'): private | shared | public | enterprise. O mapa anterior usava
+// standard/supply_chain/compliance/audit — NENHUM casa com o enum real, então caía 100%
+// no fallback "Standard". Corrigido pros 4 valores reais.
 export function circuitTypeLabel(raw?: string | null): string {
   const value = (raw || "").trim().toLowerCase();
-  if (!value || value === "standard") return "Standard";
   if (value === "private") return "Privado";
-  if (value === "supply_chain") return "Cadeia de suprimentos";
-  if (value === "compliance") return "Compliance";
-  if (value === "audit") return "Auditoria";
-  return raw || "Standard";
+  if (value === "shared") return "Compartilhado";
+  if (value === "public") return "Público";
+  if (value === "enterprise") return "Enterprise";
+  return raw || "—";
 }
 
 export function isCircuitPublic(visibility?: string | null): boolean {
