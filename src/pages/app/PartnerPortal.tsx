@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { PartnerOverview } from "@/components/partner";
 import { PartnerUsageCard } from "@/components/partner/PartnerUsageCard";
@@ -11,14 +12,15 @@ import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLoc
  * Seu recebimento + uso/saldo + onboarding.
  */
 export default function PartnerPortal() {
+  const { t } = useTranslation();
   const { locale, setLocale } = usePartnerPortalLocale();
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <p className="section-label mb-1">Parceiro</p>
+        <p className="section-label mb-1">{t("portal.portal.section")}</p>
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-foreground">{locale === "en" ? "Partner Portal" : "Portal do Parceiro"}</h1>
+          <h1 className="text-foreground">{t("portal.portal.title")}</h1>
           <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1">
             <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
             <Button
@@ -40,13 +42,11 @@ export default function PartnerPortal() {
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-1.5 max-w-lg">
-          {locale === "en"
-            ? "Send data, monitor processing, and manage client routing."
-            : "Envie dados, acompanhe processamento e mantenha o roteamento dos seus clientes."}
+          {t("portal.portal.subtitle")}
         </p>
       </div>
 
-      <PartnerUsageCard locale={locale} />
+      <PartnerUsageCard />
 
       <div className="mt-8">
         <PartnerOverview />

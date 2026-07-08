@@ -1824,6 +1824,53 @@
         "removeError": "Falha ao remover webhook",
         "urlCopied": "URL copiada"
       }
+    },
+    "portal": {
+      "section": "Parceiro",
+      "title": "Portal do Parceiro",
+      "subtitle": "Envie dados, acompanhe processamento e mantenha o roteamento dos seus clientes."
+    },
+    "usage": {
+      "title": "Tokenizações & saldo",
+      "balance": "Saldo",
+      "today": "Hoje",
+      "month": "Mês",
+      "total": "Total",
+      "queued": "Na fila",
+      "queuedNote": "Recebidos e na fila para tokenizar — não é erro. Entram na blockchain assim que houver crédito disponível.",
+      "requestBalance": "Solicitar saldo"
+    },
+    "overview": {
+      "metrics": {
+        "circuits": "Circuitos",
+        "apiKeys": "API keys",
+        "req24h": "Req. 24h",
+        "errors24h": "Erros 24h"
+      },
+      "firstSteps": "Primeiros passos",
+      "nextStep": "Próximo passo",
+      "steps": {
+        "apiKey": {
+          "label": "Criar API key",
+          "cta": "Criar chave",
+          "hint": "Uma chave autentica seus envios de dados."
+        },
+        "template": {
+          "label": "Configurar template",
+          "cta": "Configurar",
+          "hint": "Opcional: um modelo mapeia as colunas do seu arquivo automaticamente."
+        },
+        "upload": {
+          "label": "Enviar primeiro arquivo",
+          "cta": "Enviar dados",
+          "hint": "Mande um CSV ou JSON — a DeFarm mostra o que vai acontecer antes de gravar."
+        },
+        "routing": {
+          "label": "Resolver pendências",
+          "cta": "Ver roteamento",
+          "hint": "Configure regras para rotear cada item ao circuito certo."
+        }
+      }
     }
   }
 }
