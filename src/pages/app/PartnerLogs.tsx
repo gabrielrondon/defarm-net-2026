@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation, type TFunction } from "react-i18next";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,22 +26,22 @@ type TimelineEntry =
   | { source: "api"; id: string; ts: string; item: PartnerRequestLogEntry }
   | { source: "payload"; id: string; ts: string; item: RawPayloadSummary };
 
-type MetadataLocale = "pt-BR" | "en";
 type CanonicalEntry = { canonicalKey: string; rawKeys: string[]; value: unknown };
-type FieldDef = { canonical: string; aliases: string[]; labels: Record<MetadataLocale, string> };
+type FieldDef = { canonical: string; aliases: string[] };
 
+// Rótulos dos campos canônicos vivem no catálogo (portal.logs.fields.<canonical>);
+// aqui ficam só canonical + aliases (a máquina de normalização/agrupamento).
 const FIELD_DEFS: FieldDef[] = [
-  { canonical: "value_chain", aliases: ["value_chain", "valuechain"], labels: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
-  { canonical: "sisbov", aliases: ["sisbov"], labels: { "pt-BR": "SISBOV", en: "SISBOV" } },
-  { canonical: "chip", aliases: ["chip", "rfid"], labels: { "pt-BR": "Chip", en: "Chip" } },
-  { canonical: "inscricao_estadual", aliases: ["inscricao_estadual", "ie"], labels: { "pt-BR": "Inscrição estadual", en: "State registration" } },
-  { canonical: "car", aliases: ["car"], labels: { "pt-BR": "CAR", en: "CAR" } },
-  { canonical: "weight_kg", aliases: ["weight_kg", "weight", "peso_kg", "peso"], labels: { "pt-BR": "Peso (kg)", en: "Weight (kg)" } },
-  { canonical: "data_peso", aliases: ["data_peso", "data_pesagem", "weight_date", "date"], labels: { "pt-BR": "Data da pesagem", en: "Weighing date" } },
+  { canonical: "value_chain", aliases: ["value_chain", "valuechain"] },
+  { canonical: "sisbov", aliases: ["sisbov"] },
+  { canonical: "chip", aliases: ["chip", "rfid"] },
+  { canonical: "inscricao_estadual", aliases: ["inscricao_estadual", "ie"] },
+  { canonical: "car", aliases: ["car"] },
+  { canonical: "weight_kg", aliases: ["weight_kg", "weight", "peso_kg", "peso"] },
+  { canonical: "data_peso", aliases: ["data_peso", "data_pesagem", "weight_date", "date"] },
   {
     canonical: "partner_internal_id",
     aliases: ["partner_internal_id", "partner_reference", "external_id", "animal_id"],
-    labels: { "pt-BR": "Referência do parceiro", en: "Partner reference" },
   },
 ];
 
@@ -53,8 +54,6 @@ const FIELD_ALIAS = (() => {
   return map;
 })();
 
-const FIELD_LABELS = new Map(FIELD_DEFS.map((d) => [d.canonical, d.labels] as const));
-
 function normalizeField(key: string): string {
   return key
     .normalize("NFD")
@@ -65,8 +64,8 @@ function normalizeField(key: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
-function canonicalLabel(key: string, locale: MetadataLocale): string {
-  return FIELD_LABELS.get(key)?.[locale] || key;
+function canonicalLabel(key: string, t: TFunction): string {
+  return t(`portal.logs.fields.${key}`, { defaultValue: key });
 }
 
 function parseCanonicalEntriesFromRequestBody(body: string | null | undefined): CanonicalEntry[] {
@@ -116,40 +115,31 @@ function prettyJson(value: unknown): string {
 // ingestion_raw_payloads.status (migration 20260223000006):
 // received | processing | completed | partial | failed (DEFAULT 'received').
 // Módulo-level pra ser reusado tanto pelo badge quanto pelo resumo (não vazar cru).
-function payloadStatusLabel(status: string | null | undefined, en: boolean): string {
-  switch (status) {
-    case "received":
-      return en ? "Received" : "Recebido";
-    case "processing":
-      return en ? "Processing" : "Processando";
-    case "completed":
-      return en ? "Completed" : "Concluído";
-    case "partial":
-      return en ? "Partial" : "Parcial";
-    case "failed":
-      return en ? "Failed" : "Falhou";
-    default:
-      // NOT NULL + DEFAULT 'received' → ~inatingível pra payload persistido.
-      return status ?? "—";
-  }
+// Enum alinhado ao CHECK real de ingestion_raw_payloads.status (migration
+// 20260223000006): received | processing | completed | partial | failed. defaultValue
+// devolve o cru (NOT NULL + DEFAULT 'received' → praticamente inatingível).
+function payloadStatusLabel(status: string | null | undefined, t: TFunction): string {
+  if (!status) return "—";
+  return t(`portal.enums.payloadStatus.${status}`, { defaultValue: status });
 }
 
-function buildRawPayloadSummary(row: RawPayloadSummary, en: boolean): string {
+function buildRawPayloadSummary(row: RawPayloadSummary, t: TFunction): string {
   const pieces = [
-    payloadStatusLabel(row.status, en),
+    payloadStatusLabel(row.status, t),
     `${row.payload_size_bytes.toLocaleString("pt-BR")} bytes`,
     row.file_name || "payload",
   ];
-  if (row.error_message) pieces.push(`${en ? "error" : "erro"}: ${row.error_message}`);
+  if (row.error_message) pieces.push(`${t("portal.logs.summaryError")}: ${row.error_message}`);
   return pieces.join(" · ");
 }
 
 export default function PartnerLogs() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { locale: metadataLocale, setLocale: setMetadataLocale } = usePartnerPortalLocale();
   // Delega ao helper module-level (mesmo enum usado no resumo do payload).
   const formatPayloadStatus = (status: string | null | undefined): string =>
-    payloadStatusLabel(status, metadataLocale === "en");
+    payloadStatusLabel(status, t);
   const [loading, setLoading] = useState(true);
   const [rawHistory, setRawHistory] = useState<RawPayloadSummary[]>([]);
   const [rawCursor, setRawCursor] = useState<string | null>(null);
@@ -177,14 +167,14 @@ export default function PartnerLogs() {
       const description =
         err instanceof ApiError
           ? `${err.message}${err.details ? ` · ${err.details}` : ""}`
-          : (metadataLocale === "en" ? "Could not load payload history." : "Não foi possível carregar histórico de payload.");
+          : t("portal.logs.toasts.loadErrorDesc");
       toast({
-        title: metadataLocale === "en" ? "Failed to load persisted logs" : "Falha ao carregar logs persistidos",
+        title: t("portal.logs.toasts.loadErrorTitle"),
         description,
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [t, toast]);
 
   useEffect(() => {
     let mounted = true;
@@ -282,12 +272,10 @@ export default function PartnerLogs() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="section-label mb-1">Parceiro</p>
-        <h1 className="text-foreground">{metadataLocale === "en" ? "Ingestion Logs" : "Logs de Ingestão"}</h1>
+        <p className="section-label mb-1">{t("portal.portal.section")}</p>
+        <h1 className="text-foreground">{t("portal.logs.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
-          {metadataLocale === "en"
-            ? "Consolidated timeline of send attempts and processed payloads. Open each event to inspect request, response, status, errors, and raw download."
-            : "Timeline consolidada de tentativas de envio e payloads processados. Abra cada evento para ver request, resposta, status, erro e baixar o bruto enviado."}
+          {t("portal.logs.subtitle")}
         </p>
         <div className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/30 p-1 mt-3">
           <Languages className="h-3.5 w-3.5 text-muted-foreground ml-1" />
@@ -314,7 +302,7 @@ export default function PartnerLogs() {
         <div className="flex flex-wrap items-center gap-3">
           <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} id="auto-refresh-logs" />
           <Label htmlFor="auto-refresh-logs">
-            {metadataLocale === "en" ? "Auto refresh (15s)" : "Atualizar automaticamente (15s)"}
+            {t("portal.logs.autoRefresh")}
           </Label>
           <Switch checked={liveTail} onCheckedChange={setLiveTail} id="live-tail-logs" />
           <Label htmlFor="live-tail-logs" className="inline-flex items-center gap-1">
@@ -322,11 +310,11 @@ export default function PartnerLogs() {
             Live Tail (3.5s)
           </Label>
           <Switch checked={onlyNew} onCheckedChange={setOnlyNew} id="only-new-logs" />
-          <Label htmlFor="only-new-logs">{metadataLocale === "en" ? "Only new" : "Somente novos"}</Label>
+          <Label htmlFor="only-new-logs">{t("portal.logs.onlyNew")}</Label>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => void loadRawHistory()}>
-            {metadataLocale === "en" ? "Refresh now" : "Atualizar agora"}
+            {t("portal.logs.refreshNow")}
           </Button>
           <Button
             variant="outline"
@@ -334,9 +322,7 @@ export default function PartnerLogs() {
             disabled={newIds.size === 0}
             onClick={() => setNewIds(new Set())}
           >
-            {metadataLocale === "en"
-              ? `Mark ${newIds.size} new as read`
-              : `Marcar ${newIds.size} nova(s) como lida(s)`}
+            {t("portal.logs.markRead", { count: newIds.size })}
           </Button>
           <Button
             variant="ghost"
@@ -351,12 +337,12 @@ export default function PartnerLogs() {
             }}
           >
             <Trash2 className="h-4 w-4 mr-1" />
-            {metadataLocale === "en" ? "Clear session logs" : "Limpar logs de sessão"}
+            {t("portal.logs.clearSession")}
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link to="/app/webhooks">
               <Webhook className="h-4 w-4 mr-1" />
-              {metadataLocale === "en" ? "Listen via Webhook" : "Escutar via Webhook"}
+              {t("portal.logs.listenWebhook")}
             </Link>
           </Button>
         </div>
@@ -367,18 +353,18 @@ export default function PartnerLogs() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={metadataLocale === "en" ? "Search endpoint, file, hash, error..." : "Buscar endpoint, arquivo, hash, erro..."}
+            placeholder={t("portal.logs.searchPlaceholder")}
           />
           <Select value={sourceFilter} onValueChange={(value: "all" | "api" | "payload") => setSourceFilter(value)}>
-            <SelectTrigger><SelectValue placeholder={metadataLocale === "en" ? "Source" : "Origem"} /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("portal.logs.source")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{metadataLocale === "en" ? "All" : "Tudo"}</SelectItem>
-              <SelectItem value="api">{metadataLocale === "en" ? "API attempts (current session)" : "Tentativas API (sessão atual)"}</SelectItem>
-              <SelectItem value="payload">{metadataLocale === "en" ? "Processed payloads (persisted)" : "Payloads processados (persistido)"}</SelectItem>
+              <SelectItem value="all">{t("portal.logs.sourceAll")}</SelectItem>
+              <SelectItem value="api">{t("portal.logs.sourceApi")}</SelectItem>
+              <SelectItem value="payload">{t("portal.logs.sourcePayload")}</SelectItem>
             </SelectContent>
           </Select>
           <div className="text-xs text-muted-foreground self-center">
-            {filteredTimeline.length} {metadataLocale === "en" ? "event(s) in timeline" : "evento(s) na timeline"}
+            {t("portal.logs.eventsCount", { count: filteredTimeline.length })}
           </div>
         </div>
       </Card>
@@ -386,12 +372,8 @@ export default function PartnerLogs() {
       {filteredTimeline.length === 0 ? (
         <EmptyState
           icon={ScrollText}
-          title={metadataLocale === "en" ? "No logs found" : "Nenhum log encontrado"}
-          description={
-            metadataLocale === "en"
-              ? "Send data in the partner portal or adjust filters to view events."
-              : "Envie um arquivo no portal parceiro ou ajuste os filtros para visualizar os eventos."
-          }
+          title={t("portal.logs.emptyTitle")}
+          description={t("portal.logs.emptyDesc")}
         />
       ) : (
         <div className="space-y-2">
@@ -409,21 +391,21 @@ export default function PartnerLogs() {
                   <p className="text-sm font-medium text-foreground truncate">
                     {entry.source === "api"
                       ? `${entry.item.method} ${entry.item.endpoint}`
-                      : (entry.item.file_name || "payload bruto")}
+                      : (entry.item.file_name || t("portal.logs.payloadFallback"))}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(entry.ts).toLocaleString("pt-BR")}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {entry.source === "api"
-                      ? entry.item.responseSummary || entry.item.errorMessage || "Sem resumo"
-                      : buildRawPayloadSummary(entry.item, metadataLocale === "en")}
+                      ? entry.item.responseSummary || entry.item.errorMessage || t("portal.logs.noSummary")
+                      : buildRawPayloadSummary(entry.item, t)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {newIds.has(entry.id) ? (
                     <span className="text-[11px] px-2 py-1 rounded-full border bg-primary/10 text-primary border-primary/20">
-                      novo
+                      {t("portal.logs.new")}
                     </span>
                   ) : null}
                   <span className={`text-[11px] px-2 py-1 rounded-full border ${
@@ -438,7 +420,7 @@ export default function PartnerLogs() {
                             : "bg-muted text-muted-foreground border-border")
                   }`}>
                     {entry.source === "api"
-                      ? (entry.item.status ?? (metadataLocale === "en" ? "network" : "rede"))
+                      ? (entry.item.status ?? t("portal.logs.network"))
                       : formatPayloadStatus(entry.item.status)}
                   </span>
                   <span className={`text-[11px] px-2 py-1 rounded-full border ${
@@ -446,7 +428,7 @@ export default function PartnerLogs() {
                       ? "bg-blue-50 text-blue-700 border-blue-200"
                       : "bg-violet-50 text-violet-700 border-violet-200"
                   }`}>
-                    {entry.source === "api" ? "API" : "Persistido"}
+                    {entry.source === "api" ? "API" : t("portal.logs.badgePersisted")}
                   </span>
                 </div>
               </div>
@@ -468,7 +450,7 @@ export default function PartnerLogs() {
             }}
           >
             {loadingMore ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            {metadataLocale === "en" ? "Load more received" : "Carregar mais recebimentos"}
+            {t("portal.logs.loadMore")}
           </Button>
         </div>
       ) : null}
@@ -476,15 +458,11 @@ export default function PartnerLogs() {
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-          <DialogTitle>{metadataLocale === "en" ? "Event details" : "Detalhes do evento"}</DialogTitle>
+          <DialogTitle>{t("portal.logs.detailsTitle")}</DialogTitle>
           <DialogDescription>
               {selected?.source === "api"
-                ? (metadataLocale === "en"
-                    ? "Request/response for current session attempt."
-                    : "Request/response da tentativa na sessão atual.")
-                : (metadataLocale === "en"
-                    ? "Persisted payload details and processing metadata."
-                    : "Detalhes do payload persistido e metadados de processamento.")}
+                ? t("portal.logs.detailsApiDesc")
+                : t("portal.logs.detailsPayloadDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -493,22 +471,22 @@ export default function PartnerLogs() {
               {selected.source === "api" ? (
                 <div className="space-y-3">
                   <p className="text-sm">
-                    <span className="font-medium">{metadataLocale === "en" ? "Endpoint:" : "Endpoint:"}</span>{" "}
+                    <span className="font-medium">Endpoint:</span>{" "}
                     <code className="text-xs bg-muted px-1 py-0.5 rounded">{selected.item.method} {selected.item.endpoint}</code>
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(selected.item.timestamp).toLocaleString("pt-BR")} · {selected.item.durationMs} ms · {metadataLocale === "en" ? "status" : "status"}{" "}
-                    {selected.item.status ?? (metadataLocale === "en" ? "network error" : "erro de rede")}
+                    {new Date(selected.item.timestamp).toLocaleString("pt-BR")} · {selected.item.durationMs} ms · status{" "}
+                    {selected.item.status ?? t("portal.logs.networkError")}
                   </p>
                   {selected.item.errorCode ? (
                     <p className="text-sm text-destructive">
-                      {selected.item.errorCode}: {selected.item.errorMessage || (metadataLocale === "en" ? "no message" : "sem mensagem")}
+                      {selected.item.errorCode}: {selected.item.errorMessage || t("portal.logs.noMessage")}
                     </p>
                   ) : null}
                   {selected.item.requestBody ? (
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">
-                        {metadataLocale === "en" ? "Sent request" : "Request enviado"}
+                        {t("portal.logs.sentRequest")}
                       </p>
                       <pre className="code-block max-h-64 overflow-auto">{selected.item.requestBody}</pre>
                     </div>
@@ -519,14 +497,14 @@ export default function PartnerLogs() {
                     return (
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">
-                          {metadataLocale === "en" ? "Canonical interpretation (first item)" : "Interpretação canônica (primeiro item)"}
+                          {t("portal.logs.canonicalInterp")}
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {entries.map((entry) => (
                             <div key={`${entry.canonicalKey}-${entry.rawKeys.join(",")}`} className="rounded border p-2 bg-muted/20">
                               <div className="flex items-center gap-1.5">
                                 <p className="text-[11px] font-medium text-foreground">
-                                  {canonicalLabel(entry.canonicalKey, metadataLocale)}
+                                  {canonicalLabel(entry.canonicalKey, t)}
                                 </p>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -535,10 +513,10 @@ export default function PartnerLogs() {
                                     </button>
                                   </TooltipTrigger>
                                   <TooltipContent className="text-xs max-w-xs">
-                                    {metadataLocale === "en" ? "Original field(s): " : "Campo(s) original(is): "}
+                                    {t("portal.logs.originalFields")}
                                     {entry.rawKeys.join(", ")}
                                     <br />
-                                    {metadataLocale === "en" ? "Official field: " : "Campo oficial: "}
+                                    {t("portal.logs.officialField")}
                                     <code>{entry.canonicalKey}</code>
                                   </TooltipContent>
                                 </Tooltip>
@@ -553,7 +531,7 @@ export default function PartnerLogs() {
                   {selected.item.responseBody ? (
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">
-                        {metadataLocale === "en" ? "Received response" : "Response recebido"}
+                        {t("portal.logs.receivedResponse")}
                       </p>
                       <pre className="code-block max-h-64 overflow-auto">{selected.item.responseBody}</pre>
                     </div>
@@ -562,7 +540,7 @@ export default function PartnerLogs() {
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm">
-                    <span className="font-medium">{metadataLocale === "en" ? "File:" : "Arquivo:"}</span> {selected.item.file_name || "payload"}
+                    <span className="font-medium">{t("portal.logs.file")}</span> {selected.item.file_name || "payload"}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {new Date(selected.item.created_at).toLocaleString("pt-BR")} · {selected.item.payload_size_bytes.toLocaleString("pt-BR")} bytes
@@ -571,7 +549,7 @@ export default function PartnerLogs() {
                     sha256: <code>{selected.item.payload_sha256}</code>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    content-type: {selected.item.content_type || "n/a"} · {metadataLocale === "en" ? "mode" : "modo"}: {selected.item.intake_mode}
+                    content-type: {selected.item.content_type || "n/a"} · {t("portal.logs.mode")}: {selected.item.intake_mode}
                   </p>
                   {selected.item.error_message ? (
                     <p className="text-sm text-destructive">{selected.item.error_message}</p>
@@ -594,25 +572,25 @@ export default function PartnerLogs() {
                           URL.revokeObjectURL(url);
                         } catch {
                           toast({
-                            title: metadataLocale === "en" ? "Failed to download raw payload" : "Falha ao baixar payload bruto",
-                            description: metadataLocale === "en" ? "Could not download this file." : "Não foi possível baixar este arquivo.",
+                            title: t("portal.logs.toasts.downloadErrorTitle"),
+                            description: t("portal.logs.toasts.downloadErrorDesc"),
                             variant: "destructive",
                           });
                         }
                       }}
                     >
                       <Download className="h-4 w-4 mr-1" />
-                      {metadataLocale === "en" ? "Download raw" : "Baixar bruto"}
+                      {t("portal.logs.downloadRaw")}
                     </Button>
                     <Button size="sm" variant="ghost" asChild>
                       <Link to="/app/parceiro">
-                        {metadataLocale === "en" ? "Partner Portal" : "Portal Parceiro"} <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                        {t("portal.logs.partnerPortal")} <ExternalLink className="h-3.5 w-3.5 ml-1" />
                       </Link>
                     </Button>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">
-                      {metadataLocale === "en" ? "Processing metadata" : "Metadata de processamento"}
+                      {t("portal.logs.processingMetadata")}
                     </p>
                     <pre className="code-block max-h-72 overflow-auto">{prettyJson(selected.item.metadata)}</pre>
                   </div>

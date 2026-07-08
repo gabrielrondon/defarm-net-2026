@@ -917,6 +917,13 @@
         "delivered": "Delivered",
         "failed": "Failed",
         "cancelled": "Cancelled"
+      },
+      "payloadStatus": {
+        "received": "Received",
+        "processing": "Processing",
+        "completed": "Completed",
+        "partial": "Partial",
+        "failed": "Failed"
       }
     },
     "ingestion": {
@@ -1870,6 +1877,62 @@
           "cta": "View routing",
           "hint": "Configure rules to route each item to the right circuit."
         }
+      }
+    },
+    "logs": {
+      "title": "Ingestion Logs",
+      "subtitle": "Consolidated timeline of send attempts and processed payloads. Open each event to inspect request, response, status, errors, and raw download.",
+      "autoRefresh": "Auto refresh (15s)",
+      "onlyNew": "Only new",
+      "refreshNow": "Refresh now",
+      "markRead": "Mark {{count}} new as read",
+      "clearSession": "Clear session logs",
+      "listenWebhook": "Listen via Webhook",
+      "searchPlaceholder": "Search endpoint, file, hash, error...",
+      "source": "Source",
+      "sourceAll": "All",
+      "sourceApi": "API attempts (current session)",
+      "sourcePayload": "Processed payloads (persisted)",
+      "eventsCount": "{{count}} event(s) in timeline",
+      "emptyTitle": "No logs found",
+      "emptyDesc": "Send data in the partner portal or adjust filters to view events.",
+      "payloadFallback": "raw payload",
+      "noSummary": "No summary",
+      "new": "new",
+      "network": "network",
+      "badgePersisted": "Persisted",
+      "loadMore": "Load more received",
+      "detailsTitle": "Event details",
+      "detailsApiDesc": "Request/response for current session attempt.",
+      "detailsPayloadDesc": "Persisted payload details and processing metadata.",
+      "networkError": "network error",
+      "noMessage": "no message",
+      "sentRequest": "Sent request",
+      "canonicalInterp": "Canonical interpretation (first item)",
+      "originalFields": "Original field(s): ",
+      "officialField": "Official field: ",
+      "receivedResponse": "Received response",
+      "file": "File:",
+      "mode": "mode",
+      "downloadRaw": "Download raw",
+      "partnerPortal": "Partner Portal",
+      "processingMetadata": "Processing metadata",
+      "summaryError": "error",
+      "fields": {
+        "value_chain": "Value chain",
+        "sisbov": "SISBOV",
+        "chip": "Chip",
+        "inscricao_estadual": "State registration",
+        "car": "CAR",
+        "weight_kg": "Weight (kg)",
+        "data_peso": "Weighing date",
+        "partner_internal_id": "Partner reference"
+      },
+      "toasts": {
+        "loadErrorTitle": "Failed to load persisted logs",
+        "loadErrorDesc": "Could not load payload history.",
+        "downloadErrorTitle": "Failed to download raw payload",
+        "downloadErrorDesc": "Could not download this file."
       }
     }
   }
