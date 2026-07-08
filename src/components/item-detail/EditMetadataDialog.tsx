@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
@@ -26,6 +27,7 @@ interface MetadataEntry {
 }
 
 export function EditMetadataDialog({ item, open, onOpenChange }: EditMetadataDialogProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [entries, setEntries] = useState<MetadataEntry[]>([]);
 
@@ -57,11 +59,11 @@ export function EditMetadataDialog({ item, open, onOpenChange }: EditMetadataDia
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["item", item.id] });
-      toast.success("Metadados atualizados com sucesso");
+      toast.success(t("portal.items.editMetadataDialog.toastSuccess"));
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(`Erro ao atualizar: ${error.message}`);
+      toast.error(t("portal.items.editMetadataDialog.toastError", { msg: error.message }));
     },
   });
 
@@ -79,29 +81,28 @@ export function EditMetadataDialog({ item, open, onOpenChange }: EditMetadataDia
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Editar Metadados</DialogTitle>
+          <DialogTitle>{t("portal.items.editMetadataDialog.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
           <p className="text-sm text-muted-foreground mb-3">
-            Campos imutáveis (DFID, cadeia de valor, país, ano) não podem ser alterados. 
-            Apenas metadados customizados são editáveis.
+            {t("portal.items.editMetadataDialog.desc")}
           </p>
 
           {entries.map((entry, index) => (
             <div key={index} className="flex items-end gap-2">
               <div className="flex-1">
-                {index === 0 && <Label className="text-xs">Chave</Label>}
+                {index === 0 && <Label className="text-xs">{t("portal.items.editMetadataDialog.keyLabel")}</Label>}
                 <Input
-                  placeholder="ex: weight_kg"
+                  placeholder={t("portal.items.editMetadataDialog.keyPlaceholder")}
                   value={entry.key}
                   onChange={(e) => updateEntry(index, "key", e.target.value)}
                 />
               </div>
               <div className="flex-1">
-                {index === 0 && <Label className="text-xs">Valor</Label>}
+                {index === 0 && <Label className="text-xs">{t("portal.items.editMetadataDialog.valueLabel")}</Label>}
                 <Input
-                  placeholder="ex: 475"
+                  placeholder={t("portal.items.editMetadataDialog.valuePlaceholder")}
                   value={entry.value}
                   onChange={(e) => updateEntry(index, "value", e.target.value)}
                 />
@@ -120,17 +121,17 @@ export function EditMetadataDialog({ item, open, onOpenChange }: EditMetadataDia
 
           <Button variant="outline" size="sm" onClick={addEntry} className="mt-2">
             <Plus className="h-4 w-4 mr-1" />
-            Adicionar campo
+            {t("portal.items.editMetadataDialog.addField")}
           </Button>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t("portal.common.cancel")}
           </Button>
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
             {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Salvar
+            {t("portal.common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
