@@ -1824,6 +1824,53 @@
         "removeError": "Failed to remove webhook",
         "urlCopied": "URL copied"
       }
+    },
+    "portal": {
+      "section": "Partner",
+      "title": "Partner Portal",
+      "subtitle": "Send data, monitor processing, and manage client routing."
+    },
+    "usage": {
+      "title": "Tokenizations & balance",
+      "balance": "Balance",
+      "today": "Today",
+      "month": "Month",
+      "total": "Total",
+      "queued": "Queued",
+      "queuedNote": "Received and queued for tokenization — not an error. They go on-chain as soon as credit is available.",
+      "requestBalance": "Request balance"
+    },
+    "overview": {
+      "metrics": {
+        "circuits": "Circuits",
+        "apiKeys": "API keys",
+        "req24h": "Req. 24h",
+        "errors24h": "Errors 24h"
+      },
+      "firstSteps": "First steps",
+      "nextStep": "Next step",
+      "steps": {
+        "apiKey": {
+          "label": "Create API key",
+          "cta": "Create key",
+          "hint": "A key authenticates your data submissions."
+        },
+        "template": {
+          "label": "Configure template",
+          "cta": "Configure",
+          "hint": "Optional: a template maps your file's columns automatically."
+        },
+        "upload": {
+          "label": "Send first file",
+          "cta": "Send data",
+          "hint": "Send a CSV or JSON — DeFarm shows what will happen before writing."
+        },
+        "routing": {
+          "label": "Resolve issues",
+          "cta": "View routing",
+          "hint": "Configure rules to route each item to the right circuit."
+        }
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle2, Circle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,38 +23,16 @@ interface OverviewMetrics {
 
 // Onda 3, Fatia 2: guided first steps. Each step is now actionable — the first
 // undone one is surfaced as the active step with a CTA that takes the partner there.
+// label/cta/hint vêm do catálogo (portal.overview.steps.<key>.*).
 const ONBOARDING_STEPS = [
-  {
-    key: "apiKey",
-    label: "Criar API key",
-    to: "/app/api-keys",
-    cta: "Criar chave",
-    hint: "Uma chave autentica seus envios de dados.",
-  },
-  {
-    key: "template",
-    label: "Configurar template",
-    to: "/app/parceiro/ingestao",
-    cta: "Configurar",
-    hint: "Opcional: um modelo mapeia as colunas do seu arquivo automaticamente.",
-  },
-  {
-    key: "upload",
-    label: "Enviar primeiro arquivo",
-    to: "/app/parceiro/ingestao",
-    cta: "Enviar dados",
-    hint: "Mande um CSV ou JSON — a DeFarm mostra o que vai acontecer antes de gravar.",
-  },
-  {
-    key: "routing",
-    label: "Resolver pendências",
-    to: "/app/parceiro/roteamento",
-    cta: "Ver roteamento",
-    hint: "Configure regras para rotear cada item ao circuito certo.",
-  },
+  { key: "apiKey", to: "/app/api-keys" },
+  { key: "template", to: "/app/parceiro/ingestao" },
+  { key: "upload", to: "/app/parceiro/ingestao" },
+  { key: "routing", to: "/app/parceiro/roteamento" },
 ] as const;
 
 export function PartnerOverview() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<OverviewMetrics>({
@@ -145,10 +124,10 @@ export function PartnerOverview() {
       {/* Metrics row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Circuitos", value: metrics.activeCircuits },
-          { label: "API keys", value: metrics.activeKeys },
-          { label: "Req. 24h", value: metrics.requestsLast24h },
-          { label: "Erros 24h", value: metrics.errorsLast24h, warn: metrics.errorsLast24h > 0 },
+          { label: t("portal.overview.metrics.circuits"), value: metrics.activeCircuits },
+          { label: t("portal.overview.metrics.apiKeys"), value: metrics.activeKeys },
+          { label: t("portal.overview.metrics.req24h"), value: metrics.requestsLast24h },
+          { label: t("portal.overview.metrics.errors24h"), value: metrics.errorsLast24h, warn: metrics.errorsLast24h > 0 },
         ].map((m) => (
           <div key={m.label} className="rounded-xl bg-muted/40 px-4 py-3">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{m.label}</p>
@@ -163,7 +142,7 @@ export function PartnerOverview() {
       {!allDone && (
         <div className="rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-foreground">Primeiros passos</p>
+            <p className="text-sm font-medium text-foreground">{t("portal.overview.firstSteps")}</p>
             <span className="text-xs text-muted-foreground">
               {completedSteps}/{ONBOARDING_STEPS.length}
             </span>
@@ -179,13 +158,13 @@ export function PartnerOverview() {
           {activeStep && (
             <div className="mb-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
               <p className="text-[11px] font-medium uppercase tracking-wider text-primary">
-                Próximo passo
+                {t("portal.overview.nextStep")}
               </p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">{activeStep.label}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{activeStep.hint}</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">{t(`portal.overview.steps.${activeStep.key}.label`)}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t(`portal.overview.steps.${activeStep.key}.hint`)}</p>
               <Button asChild size="sm" className="mt-2">
                 <Link to={activeStep.to}>
-                  {activeStep.cta}
+                  {t(`portal.overview.steps.${activeStep.key}.cta`)}
                   <ArrowRight className="ml-1 h-3.5 w-3.5" />
                 </Link>
               </Button>
@@ -205,7 +184,7 @@ export function PartnerOverview() {
                     <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                   )}
                   <span className={done ? "text-muted-foreground line-through" : "text-foreground"}>
-                    {step.label}
+                    {t(`portal.overview.steps.${step.key}.label`)}
                   </span>
                 </div>
               );
