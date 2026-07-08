@@ -1015,7 +1015,8 @@
       "tryAgain": "Tente novamente",
       "beta": "Beta",
       "betaNote": "Esta seção está em fase beta. Você já pode usar e validar os fluxos no seu workspace.",
-      "copy": "Copiar"
+      "copy": "Copiar",
+      "copied": "Copiado"
     },
     "routing": {
       "header": {
@@ -1570,6 +1571,51 @@
       "linkGenerated": "Link gerado",
       "expiresAt": "Expira em",
       "seeAsClient": "Ver como o cliente vê"
+    },
+    "kit": {
+      "title": "Kit Parceiro",
+      "intro": "Passo 1: envie dados com <code>value_chain</code> + identificador do ativo rastreável (BEEF: SISBOV preferencial ou CHIP) para <code>/v1/partner/ingestions</code>. Identificadores como CAR/EXPLORAÇÃO(MAPA)/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/LAND_DFID/IE/CNPJ/CPF são de roteamento e contexto. Passo 2: valide no preview e suba em produção com API key real. Passo 3: use template/avançados só se necessário.",
+      "cards": {
+        "templateCsv": "Template CSV",
+        "templateCsvDesc": "Baixar modelo oficial",
+        "download": "Baixar",
+        "openapiDesc": "Contrato parceiro",
+        "swaggerDesc": "Teste interativo",
+        "postmanDesc": "Coleção pronta",
+        "open": "Abrir"
+      },
+      "noTemplate": "Importante: o endpoint <code>/v1/partner/ingestions</code> já faz roteamento inteligente e não exige template.",
+      "refTitle": "Referência de integração",
+      "refNote": "O essencial é o Passo 1. Abra os blocos abaixo conforme precisar — nada além do envio é obrigatório.",
+      "step1": "Passo 1",
+      "step2": "Passo 2",
+      "step3": "Passo 3",
+      "accordion": {
+        "clientTitle": "Cliente oficial para parceiro (recomendado)",
+        "clientDesc": "Use <code>@defarm/partner-client</code> para enviar arquivos, interpretar resposta e reconciliar links por referência do parceiro.",
+        "clientAiKit": "Kit para IA/copilot disponível em <code>docs/partner/ai-skill-kit.md</code>.",
+        "jwtTitle": "Login JWT (setup)",
+        "jwtDesc": "Use JWT para configuração. API key para operação diária.",
+        "step1Title": "Upload via cURL (básico)",
+        "step1Alt": "Alternativa: também aceitamos JSON direto no body (sem multipart), útil para integração backend-to-backend.",
+        "step2Title": "Preview (dry-run) antes do envio real",
+        "step2Desc": "Use <code>/v1/partner/ingestions/preview</code> para simular roteamento sem tokenizar.",
+        "step3Title": "Template opcional (mapeamento)",
+        "step3Desc": "Se precisar mapear nomes de colunas diferentes, crie template e envie <code>template_id</code> no upload.",
+        "aiTitle": "Opcional — AI Skill + Client",
+        "aiDesc": "Se quiser acelerar com IA/copilot, use o cliente oficial e o kit de prompt.",
+        "responseTitle": "Resposta útil para navegação",
+        "responseDesc": "Após upload, use <code>items[].url</code> para abrir item por item (DFID + identificadores) e <code>errors[]</code> para saber exatamente o que corrigir."
+      },
+      "checklist": {
+        "title": "Checklist para produção",
+        "i1": "Gerar API Key <code>workspace_ingestion</code> (sem configuração adicional).",
+        "i2": "Opcional: rodar preview em <code>/v1/partner/ingestions/preview</code> para validar o lote.",
+        "i3": "Enviar em chunks (recomendado 50-150 linhas por request) para <code>/v1/partner/ingestions</code>.",
+        "i4": "Resolver pendências em Roteamento.",
+        "i5": "Consumir <code>items[].url</code> e reconciliar via <code>partner_reference</code>."
+      },
+      "goToApiKeys": "Ir para API Keys"
     }
   }
 }

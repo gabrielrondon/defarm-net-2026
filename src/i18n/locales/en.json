@@ -1015,7 +1015,8 @@
       "tryAgain": "Try again",
       "beta": "Beta",
       "betaNote": "This section is in beta. You can already use it and validate the flows in your workspace.",
-      "copy": "Copy"
+      "copy": "Copy",
+      "copied": "Copied"
     },
     "routing": {
       "header": {
@@ -1570,6 +1571,51 @@
       "linkGenerated": "Link generated",
       "expiresAt": "Expires at",
       "seeAsClient": "See what the client sees"
+    },
+    "kit": {
+      "title": "Partner Kit",
+      "intro": "Step 1: send data with <code>value_chain</code> + the trackable asset identifier (BEEF: SISBOV preferred or CHIP) to <code>/v1/partner/ingestions</code>. Identifiers like CAR/EXPLORAÇÃO(MAPA)/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/LAND_DFID/IE/CNPJ/CPF are for routing and context. Step 2: validate in the preview and go to production with a real API key. Step 3: use template/advanced only if needed.",
+      "cards": {
+        "templateCsv": "CSV Template",
+        "templateCsvDesc": "Download official template",
+        "download": "Download",
+        "openapiDesc": "Partner contract",
+        "swaggerDesc": "Interactive test",
+        "postmanDesc": "Ready collection",
+        "open": "Open"
+      },
+      "noTemplate": "Important: the <code>/v1/partner/ingestions</code> endpoint already does smart routing and doesn't require a template.",
+      "refTitle": "Integration reference",
+      "refNote": "The essential is Step 1. Open the blocks below as needed — nothing beyond the send is required.",
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3",
+      "accordion": {
+        "clientTitle": "Official partner client (recommended)",
+        "clientDesc": "Use <code>@defarm/partner-client</code> to send files, interpret the response and reconcile links by partner reference.",
+        "clientAiKit": "AI/copilot kit available at <code>docs/partner/ai-skill-kit.md</code>.",
+        "jwtTitle": "JWT login (setup)",
+        "jwtDesc": "Use JWT for setup. API key for daily operation.",
+        "step1Title": "Upload via cURL (basic)",
+        "step1Alt": "Alternative: we also accept JSON directly in the body (no multipart), useful for backend-to-backend integration.",
+        "step2Title": "Preview (dry-run) before the real send",
+        "step2Desc": "Use <code>/v1/partner/ingestions/preview</code> to simulate routing without tokenizing.",
+        "step3Title": "Optional template (mapping)",
+        "step3Desc": "If you need to map different column names, create a template and send <code>template_id</code> in the upload.",
+        "aiTitle": "Optional — AI Skill + Client",
+        "aiDesc": "If you want to speed up with AI/copilot, use the official client and the prompt kit.",
+        "responseTitle": "Response useful for navigation",
+        "responseDesc": "After upload, use <code>items[].url</code> to open item by item (DFID + identifiers) and <code>errors[]</code> to know exactly what to fix."
+      },
+      "checklist": {
+        "title": "Production checklist",
+        "i1": "Generate a <code>workspace_ingestion</code> API Key (no extra configuration).",
+        "i2": "Optional: run a preview at <code>/v1/partner/ingestions/preview</code> to validate the batch.",
+        "i3": "Send in chunks (recommended 50-150 rows per request) to <code>/v1/partner/ingestions</code>.",
+        "i4": "Resolve issues in Routing.",
+        "i5": "Consume <code>items[].url</code> and reconcile via <code>partner_reference</code>."
+      },
+      "goToApiKeys": "Go to API Keys"
     }
   }
 }
