@@ -917,6 +917,13 @@
         "delivered": "Entregue",
         "failed": "Falhou",
         "cancelled": "Cancelado"
+      },
+      "payloadStatus": {
+        "received": "Recebido",
+        "processing": "Processando",
+        "completed": "Concluído",
+        "partial": "Parcial",
+        "failed": "Falhou"
       }
     },
     "ingestion": {
@@ -1870,6 +1877,62 @@
           "cta": "Ver roteamento",
           "hint": "Configure regras para rotear cada item ao circuito certo."
         }
+      }
+    },
+    "logs": {
+      "title": "Logs de Ingestão",
+      "subtitle": "Timeline consolidada de tentativas de envio e payloads processados. Abra cada evento para ver request, resposta, status, erro e baixar o bruto enviado.",
+      "autoRefresh": "Atualizar automaticamente (15s)",
+      "onlyNew": "Somente novos",
+      "refreshNow": "Atualizar agora",
+      "markRead": "Marcar {{count}} nova(s) como lida(s)",
+      "clearSession": "Limpar logs de sessão",
+      "listenWebhook": "Escutar via Webhook",
+      "searchPlaceholder": "Buscar endpoint, arquivo, hash, erro...",
+      "source": "Origem",
+      "sourceAll": "Tudo",
+      "sourceApi": "Tentativas API (sessão atual)",
+      "sourcePayload": "Payloads processados (persistido)",
+      "eventsCount": "{{count}} evento(s) na timeline",
+      "emptyTitle": "Nenhum log encontrado",
+      "emptyDesc": "Envie um arquivo no portal parceiro ou ajuste os filtros para visualizar os eventos.",
+      "payloadFallback": "payload bruto",
+      "noSummary": "Sem resumo",
+      "new": "novo",
+      "network": "rede",
+      "badgePersisted": "Persistido",
+      "loadMore": "Carregar mais recebimentos",
+      "detailsTitle": "Detalhes do evento",
+      "detailsApiDesc": "Request/response da tentativa na sessão atual.",
+      "detailsPayloadDesc": "Detalhes do payload persistido e metadados de processamento.",
+      "networkError": "erro de rede",
+      "noMessage": "sem mensagem",
+      "sentRequest": "Request enviado",
+      "canonicalInterp": "Interpretação canônica (primeiro item)",
+      "originalFields": "Campo(s) original(is): ",
+      "officialField": "Campo oficial: ",
+      "receivedResponse": "Response recebido",
+      "file": "Arquivo:",
+      "mode": "modo",
+      "downloadRaw": "Baixar bruto",
+      "partnerPortal": "Portal Parceiro",
+      "processingMetadata": "Metadata de processamento",
+      "summaryError": "erro",
+      "fields": {
+        "value_chain": "Cadeia de valor",
+        "sisbov": "SISBOV",
+        "chip": "Chip",
+        "inscricao_estadual": "Inscrição estadual",
+        "car": "CAR",
+        "weight_kg": "Peso (kg)",
+        "data_peso": "Data da pesagem",
+        "partner_internal_id": "Referência do parceiro"
+      },
+      "toasts": {
+        "loadErrorTitle": "Falha ao carregar logs persistidos",
+        "loadErrorDesc": "Não foi possível carregar histórico de payload.",
+        "downloadErrorTitle": "Falha ao baixar payload bruto",
+        "downloadErrorDesc": "Não foi possível baixar este arquivo."
       }
     }
   }
