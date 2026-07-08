@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTranslation, type TFunction } from "react-i18next";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,26 +38,26 @@ function formatDateTime(value?: string | null): string {
   }).format(date);
 }
 
-function parseDeliveryError(delivery?: WebhookDelivery | null): { summary: string; details?: string } | null {
+function parseDeliveryError(delivery: WebhookDelivery | null | undefined, t: TFunction): { summary: string; details?: string } | null {
   if (!delivery) return null;
 
   if (delivery.status === "delivered") {
-    return { summary: "Entrega concluída com sucesso" };
+    return { summary: t("portal.webhooks.delivery.success") };
   }
 
   if (delivery.status === "pending") {
     if (delivery.next_retry_at) {
       return {
-        summary: "Entrega pendente, nova tentativa agendada",
-        details: `Próxima tentativa: ${formatDateTime(delivery.next_retry_at)}`,
+        summary: t("portal.webhooks.delivery.pendingRetry"),
+        details: t("portal.webhooks.delivery.nextRetry", { date: formatDateTime(delivery.next_retry_at) }),
       };
     }
-    return { summary: "Entrega pendente na fila" };
+    return { summary: t("portal.webhooks.delivery.pendingQueue") };
   }
 
   const message = (delivery.error_message || "").trim();
   if (!message) {
-    return { summary: "Falha de entrega", details: "Sem detalhes retornados pelo destino." };
+    return { summary: t("portal.webhooks.delivery.failure"), details: t("portal.webhooks.delivery.noTargetDetails") };
   }
 
   const match = message.match(/status\s+(\d{3}):\s*(.*)$/i);
@@ -71,24 +72,24 @@ function parseDeliveryError(delivery?: WebhookDelivery | null): { summary: strin
       };
       const targetMessage = parsed?.error?.message || parsed?.message || rawTail;
       return {
-        summary: `Falha HTTP ${statusCode}`,
+        summary: t("portal.webhooks.delivery.httpFailure", { code: statusCode }),
         details: targetMessage,
       };
     } catch {
       return {
-        summary: `Falha HTTP ${statusCode}`,
+        summary: t("portal.webhooks.delivery.httpFailure", { code: statusCode }),
         details: rawTail,
       };
     }
   }
 
-  return { summary: "Falha de entrega", details: message };
+  return { summary: t("portal.webhooks.delivery.failure"), details: message };
 }
 
-function resolveHealthBadge(health?: WebhookHealth): { label: string; variant: "default" | "secondary" | "destructive"; icon: ReactNode } {
+function resolveHealthBadge(health: WebhookHealth | undefined, t: TFunction): { label: string; variant: "default" | "secondary" | "destructive"; icon: ReactNode } {
   if (!health || health.loading) {
     return {
-      label: "Verificando",
+      label: t("portal.webhooks.badge.checking"),
       variant: "secondary",
       icon: <Clock3 className="h-3.5 w-3.5" />,
     };
@@ -96,7 +97,7 @@ function resolveHealthBadge(health?: WebhookHealth): { label: string; variant: "
 
   if (health.error) {
     return {
-      label: "Erro de diagnóstico",
+      label: t("portal.webhooks.badge.diagnosticError"),
       variant: "destructive",
       icon: <AlertTriangle className="h-3.5 w-3.5" />,
     };
@@ -105,27 +106,28 @@ function resolveHealthBadge(health?: WebhookHealth): { label: string; variant: "
   const status = health.lastDelivery?.status;
   if (status === "delivered") {
     return {
-      label: "Saudável",
+      label: t("portal.webhooks.badge.healthy"),
       variant: "default",
       icon: <CheckCircle2 className="h-3.5 w-3.5" />,
     };
   }
   if (status === "failed") {
     return {
-      label: "Falhando",
+      label: t("portal.webhooks.badge.failing"),
       variant: "destructive",
       icon: <XCircle className="h-3.5 w-3.5" />,
     };
   }
 
   return {
-    label: "Aguardando",
+    label: t("portal.webhooks.badge.waiting"),
     variant: "secondary",
     icon: <Clock3 className="h-3.5 w-3.5" />,
   };
 }
 
 export default function WebhooksPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -178,7 +180,7 @@ export default function WebhooksPage() {
             webhook.id,
             {
               loading: false,
-              error: error instanceof Error ? error.message : "Falha ao carregar diagnóstico",
+              error: error instanceof Error ? error.message : t("portal.webhooks.diagnosticError"),
             } satisfies WebhookHealth,
           ] as const;
         }
@@ -187,7 +189,7 @@ export default function WebhooksPage() {
 
     setHealthById(Object.fromEntries(healthEntries));
     setHealthLoading(false);
-  }, []);
+  }, [t]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -201,14 +203,14 @@ export default function WebhooksPage() {
       await loadHealth(webhooksData);
     } catch {
       toast({
-        title: "Erro ao carregar webhooks",
-        description: "Não foi possível buscar os webhooks.",
+        title: t("portal.webhooks.toasts.loadError"),
+        description: t("portal.webhooks.toasts.loadErrorDesc"),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [toast, loadHealth]);
+  }, [t, toast, loadHealth]);
 
   useEffect(() => {
     load();
@@ -221,7 +223,7 @@ export default function WebhooksPage() {
       .map((e) => e.trim())
       .filter(Boolean);
     if (events.length === 0) {
-      toast({ title: "Informe ao menos 1 evento", variant: "destructive" });
+      toast({ title: t("portal.webhooks.toasts.noEvent"), variant: "destructive" });
       return;
     }
 
@@ -239,12 +241,12 @@ export default function WebhooksPage() {
       setUrl("");
       setSecret("");
       setEventsText("item_created,event_created");
-      toast({ title: "Webhook criado", description: "Entrega automática ativada para este circuito." });
+      toast({ title: t("portal.webhooks.toasts.created"), description: t("portal.webhooks.toasts.createdDesc") });
       await load();
     } catch (error) {
       toast({
-        title: "Falha ao criar webhook",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("portal.webhooks.toasts.createError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -255,12 +257,12 @@ export default function WebhooksPage() {
   const handleToggle = async (webhook: Webhook) => {
     try {
       await updateWebhook(webhook.id, { is_active: !webhook.is_active });
-      toast({ title: webhook.is_active ? "Webhook pausado" : "Webhook ativado" });
+      toast({ title: webhook.is_active ? t("portal.webhooks.toasts.paused") : t("portal.webhooks.toasts.activated") });
       await load();
     } catch (error) {
       toast({
-        title: "Falha ao atualizar webhook",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("portal.webhooks.toasts.updateError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     }
@@ -269,12 +271,12 @@ export default function WebhooksPage() {
   const handleDelete = async (webhook: Webhook) => {
     try {
       await deleteWebhook(webhook.id);
-      toast({ title: "Webhook removido" });
+      toast({ title: t("portal.webhooks.toasts.removed") });
       await load();
     } catch (error) {
       toast({
-        title: "Falha ao remover webhook",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("portal.webhooks.toasts.removeError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     }
@@ -330,12 +332,12 @@ export default function WebhooksPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Webhooks</h1>
           <p className="text-sm text-muted-foreground">
-            Receba notificações automáticas no seu sistema quando houver atualizações relevantes.
+            {t("portal.webhooks.subtitle")}
           </p>
         </div>
         <Button variant="outline" onClick={load} disabled={healthLoading || loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${healthLoading ? "animate-spin" : ""}`} />
-          Atualizar saúde
+          {t("portal.webhooks.refreshHealth")}
         </Button>
       </div>
 
@@ -343,9 +345,9 @@ export default function WebhooksPage() {
         <div className="flex items-start gap-3">
           <FlaskConical className="h-4 w-4 mt-0.5 text-amber-700 dark:text-amber-300" />
           <div className="space-y-1">
-            <Badge variant="secondary" className="bg-amber-100 text-amber-800 border border-amber-300/60">Beta</Badge>
+            <Badge variant="secondary" className="bg-amber-100 text-amber-800 border border-amber-300/60">{t("portal.common.beta")}</Badge>
             <p className="text-sm text-foreground">
-              Esta seção está em fase beta. Você já pode usar e validar os fluxos de notificação no seu workspace.
+              {t("portal.webhooks.betaNote")}
             </p>
           </div>
         </div>
@@ -353,63 +355,63 @@ export default function WebhooksPage() {
 
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Saúde dos webhooks</h2>
-          <p className="text-xs text-muted-foreground">Diagnóstico por entrega real</p>
+          <h2 className="text-base font-semibold">{t("portal.webhooks.health.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("portal.webhooks.health.subtitle")}</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-sm">
           <div className="rounded border p-3">
-            <p className="text-muted-foreground">Total</p>
+            <p className="text-muted-foreground">{t("portal.webhooks.stats.total")}</p>
             <p className="text-xl font-semibold">{healthSummary.total}</p>
           </div>
           <div className="rounded border p-3">
-            <p className="text-muted-foreground">Ativos</p>
+            <p className="text-muted-foreground">{t("portal.webhooks.stats.active")}</p>
             <p className="text-xl font-semibold">{healthSummary.active}</p>
           </div>
           <div className="rounded border p-3">
-            <p className="text-muted-foreground">Entregas</p>
+            <p className="text-muted-foreground">{t("portal.webhooks.stats.deliveries")}</p>
             <p className="text-xl font-semibold">{healthSummary.totalDeliveries}</p>
           </div>
           <div className="rounded border p-3">
-            <p className="text-muted-foreground">Sucesso</p>
+            <p className="text-muted-foreground">{t("portal.webhooks.stats.success")}</p>
             <p className="text-xl font-semibold">{healthSummary.successRate}%</p>
           </div>
           <div className="rounded border p-3">
-            <p className="text-muted-foreground">Falhas</p>
+            <p className="text-muted-foreground">{t("portal.webhooks.stats.failures")}</p>
             <p className="text-xl font-semibold">{healthSummary.failed}</p>
           </div>
           <div className="rounded border p-3">
-            <p className="text-muted-foreground">Pendentes</p>
+            <p className="text-muted-foreground">{t("portal.webhooks.stats.pending")}</p>
             <p className="text-xl font-semibold">{healthSummary.pending}</p>
           </div>
         </div>
 
         {recentIssues.length > 0 ? (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Pendências recentes</p>
+            <p className="text-sm font-medium">{t("portal.webhooks.recentIssues")}</p>
             {recentIssues.map(({ webhook, health }) => {
-              const parsed = parseDeliveryError(health?.lastDelivery);
+              const parsed = parseDeliveryError(health?.lastDelivery, t);
               return (
                 <div key={`${webhook.id}-issue`} className="rounded border p-3 text-sm">
                   <p className="font-medium">{webhook.name}</p>
                   <p className="text-muted-foreground text-xs">{webhook.url}</p>
-                  <p className="mt-1">{parsed?.summary || "Sem detalhes"}</p>
+                  <p className="mt-1">{parsed?.summary || t("portal.webhooks.noDetails")}</p>
                   {parsed?.details ? <p className="text-muted-foreground">{parsed.details}</p> : null}
                 </div>
               );
             })}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Sem pendências críticas no momento.</p>
+          <p className="text-sm text-muted-foreground">{t("portal.webhooks.noCriticalIssues")}</p>
         )}
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-base font-semibold">Novo webhook</h2>
+        <h2 className="text-base font-semibold">{t("portal.webhooks.new")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label>Circuito</Label>
+            <Label>{t("portal.webhooks.form.circuit")}</Label>
             <Select value={circuitId} onValueChange={setCircuitId}>
-              <SelectTrigger><SelectValue placeholder="Selecione o circuito" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("portal.webhooks.form.selectCircuit")} /></SelectTrigger>
               <SelectContent>
                 {circuits.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
@@ -418,38 +420,38 @@ export default function WebhooksPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Nome</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Atualização de lote" />
+            <Label>{t("portal.webhooks.form.name")}</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("portal.webhooks.form.namePlaceholder")} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>URL de destino</Label>
-            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://seu-sistema.com/webhooks/defarm" />
+            <Label>{t("portal.webhooks.form.url")}</Label>
+            <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t("portal.webhooks.form.urlPlaceholder")} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Eventos (separados por vírgula)</Label>
+            <Label>{t("portal.webhooks.form.events")}</Label>
             <Input value={eventsText} onChange={(e) => setEventsText(e.target.value)} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Segredo (opcional)</Label>
-            <Input value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="Assinatura de segurança" />
+            <Label>{t("portal.webhooks.form.secret")}</Label>
+            <Input value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={t("portal.webhooks.form.secretPlaceholder")} />
           </div>
         </div>
         <Button onClick={handleCreate} disabled={saving || !circuitId || !name.trim() || !url.trim()}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Criar webhook
+          {t("portal.webhooks.form.submit")}
         </Button>
       </Card>
 
       <Card className="p-5 space-y-4">
-        <h2 className="text-base font-semibold">Webhooks cadastrados</h2>
+        <h2 className="text-base font-semibold">{t("portal.webhooks.registered")}</h2>
         {webhooks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum webhook cadastrado.</p>
+          <p className="text-sm text-muted-foreground">{t("portal.webhooks.empty")}</p>
         ) : (
           <div className="space-y-2">
             {webhooks.map((webhook) => {
               const health = healthById[webhook.id];
-              const badge = resolveHealthBadge(health);
-              const parsed = parseDeliveryError(health?.lastDelivery);
+              const badge = resolveHealthBadge(health, t);
+              const parsed = parseDeliveryError(health?.lastDelivery, t);
 
               return (
                 <div key={webhook.id} className="rounded-lg border p-3 flex flex-col gap-3">
@@ -459,7 +461,7 @@ export default function WebhooksPage() {
                         <WebhookIcon className="h-4 w-4 text-muted-foreground" />
                         <p className="font-medium text-sm">{webhook.name}</p>
                         <Badge variant={webhook.is_active ? "default" : "secondary"}>
-                          {webhook.is_active ? "Ativo" : "Pausado"}
+                          {webhook.is_active ? t("portal.webhooks.item.active") : t("portal.webhooks.item.paused")}
                         </Badge>
                         <Badge variant={badge.variant} className="gap-1">
                           {badge.icon}
@@ -468,10 +470,10 @@ export default function WebhooksPage() {
                       </div>
                       <p className="text-xs text-muted-foreground break-all">{webhook.url}</p>
                       <p className="text-xs text-muted-foreground">
-                        Circuito: {circuitNameMap.get(webhook.circuit_id) || webhook.circuit_id}
+                        {t("portal.webhooks.item.circuit", { name: circuitNameMap.get(webhook.circuit_id) || webhook.circuit_id })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Última entrega: {formatDateTime(health?.lastDelivery?.created_at || health?.stats?.last_delivery_at)}
+                        {t("portal.webhooks.item.lastDelivery", { date: formatDateTime(health?.lastDelivery?.created_at || health?.stats?.last_delivery_at) })}
                       </p>
                     </div>
 
@@ -481,38 +483,38 @@ export default function WebhooksPage() {
                         size="sm"
                         onClick={async () => {
                           await navigator.clipboard.writeText(webhook.url);
-                          toast({ title: "URL copiada" });
+                          toast({ title: t("portal.webhooks.toasts.urlCopied") });
                         }}
                       >
                         <Copy className="h-4 w-4 mr-1" />
-                        Copiar URL
+                        {t("portal.webhooks.item.copyUrl")}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleToggle(webhook)}>
-                        {webhook.is_active ? "Pausar" : "Ativar"}
+                        {webhook.is_active ? t("portal.webhooks.item.pause") : t("portal.webhooks.item.activate")}
                       </Button>
                       <Button variant="destructive" size="sm" onClick={() => handleDelete(webhook)}>
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Remover
+                        {t("portal.webhooks.item.remove")}
                       </Button>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                     <div className="rounded border p-2">
-                      <p className="text-muted-foreground">Total</p>
+                      <p className="text-muted-foreground">{t("portal.webhooks.itemStats.total")}</p>
                       <p className="font-semibold">{health?.stats?.total_deliveries ?? "-"}</p>
                     </div>
                     <div className="rounded border p-2">
-                      <p className="text-muted-foreground">Sucesso</p>
+                      <p className="text-muted-foreground">{t("portal.webhooks.itemStats.success")}</p>
                       <p className="font-semibold">{health?.stats?.successful_deliveries ?? "-"}</p>
                     </div>
                     <div className="rounded border p-2">
-                      <p className="text-muted-foreground">Falha</p>
+                      <p className="text-muted-foreground">{t("portal.webhooks.itemStats.failure")}</p>
                       <p className="font-semibold">{health?.stats?.failed_deliveries ?? "-"}</p>
                     </div>
                     <div className="rounded border p-2">
-                      <p className="text-muted-foreground">Status última</p>
-                      <p className="font-semibold">{health?.lastDelivery?.status || "-"}</p>
+                      <p className="text-muted-foreground">{t("portal.webhooks.itemStats.lastStatus")}</p>
+                      <p className="font-semibold">{health?.lastDelivery?.status ? t(`portal.enums.deliveryStatus.${health.lastDelivery.status}`, { defaultValue: health.lastDelivery.status }) : "-"}</p>
                     </div>
                   </div>
 

@@ -911,6 +911,12 @@
         "private": "Privado",
         "circuit_only": "Circuito",
         "selective": "Seletivo"
+      },
+      "deliveryStatus": {
+        "pending": "Pendente",
+        "delivered": "Entregue",
+        "failed": "Falhou",
+        "cancelled": "Cancelado"
       }
     },
     "ingestion": {
@@ -1735,6 +1741,88 @@
         "rateLimits": "Rate Limits",
         "perMin": "/min",
         "perDay": "/dia"
+      }
+    },
+    "webhooks": {
+      "subtitle": "Receba notificações automáticas no seu sistema quando houver atualizações relevantes.",
+      "refreshHealth": "Atualizar saúde",
+      "betaNote": "Esta seção está em fase beta. Você já pode usar e validar os fluxos de notificação no seu workspace.",
+      "health": {
+        "title": "Saúde dos webhooks",
+        "subtitle": "Diagnóstico por entrega real"
+      },
+      "stats": {
+        "total": "Total",
+        "active": "Ativos",
+        "deliveries": "Entregas",
+        "success": "Sucesso",
+        "failures": "Falhas",
+        "pending": "Pendentes"
+      },
+      "recentIssues": "Pendências recentes",
+      "noDetails": "Sem detalhes",
+      "noCriticalIssues": "Sem pendências críticas no momento.",
+      "new": "Novo webhook",
+      "form": {
+        "circuit": "Circuito",
+        "selectCircuit": "Selecione o circuito",
+        "name": "Nome",
+        "namePlaceholder": "Ex.: Atualização de lote",
+        "url": "URL de destino",
+        "urlPlaceholder": "https://seu-sistema.com/webhooks/defarm",
+        "events": "Eventos (separados por vírgula)",
+        "secret": "Segredo (opcional)",
+        "secretPlaceholder": "Assinatura de segurança",
+        "submit": "Criar webhook"
+      },
+      "registered": "Webhooks cadastrados",
+      "empty": "Nenhum webhook cadastrado.",
+      "item": {
+        "active": "Ativo",
+        "paused": "Pausado",
+        "circuit": "Circuito: {{name}}",
+        "lastDelivery": "Última entrega: {{date}}",
+        "copyUrl": "Copiar URL",
+        "pause": "Pausar",
+        "activate": "Ativar",
+        "remove": "Remover"
+      },
+      "itemStats": {
+        "total": "Total",
+        "success": "Sucesso",
+        "failure": "Falha",
+        "lastStatus": "Status última"
+      },
+      "delivery": {
+        "success": "Entrega concluída com sucesso",
+        "pendingRetry": "Entrega pendente, nova tentativa agendada",
+        "nextRetry": "Próxima tentativa: {{date}}",
+        "pendingQueue": "Entrega pendente na fila",
+        "failure": "Falha de entrega",
+        "noTargetDetails": "Sem detalhes retornados pelo destino.",
+        "httpFailure": "Falha HTTP {{code}}"
+      },
+      "badge": {
+        "checking": "Verificando",
+        "diagnosticError": "Erro de diagnóstico",
+        "healthy": "Saudável",
+        "failing": "Falhando",
+        "waiting": "Aguardando"
+      },
+      "diagnosticError": "Falha ao carregar diagnóstico",
+      "toasts": {
+        "loadError": "Erro ao carregar webhooks",
+        "loadErrorDesc": "Não foi possível buscar os webhooks.",
+        "noEvent": "Informe ao menos 1 evento",
+        "created": "Webhook criado",
+        "createdDesc": "Entrega automática ativada para este circuito.",
+        "createError": "Falha ao criar webhook",
+        "paused": "Webhook pausado",
+        "activated": "Webhook ativado",
+        "updateError": "Falha ao atualizar webhook",
+        "removed": "Webhook removido",
+        "removeError": "Falha ao remover webhook",
+        "urlCopied": "URL copiada"
       }
     }
   }
