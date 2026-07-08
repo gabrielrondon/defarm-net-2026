@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
+import { useTranslation, type TFunction } from "react-i18next";
 import { Activity, Clock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
-import { eventTypeLabels, eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
+import { eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getEventGovernance,
@@ -15,7 +16,7 @@ interface ItemTimelineProps {
   isLoading: boolean;
 }
 
-function eventSummary(event: Event): string | null {
+function eventSummary(event: Event, t: TFunction): string | null {
   const payload = event.payload || {};
   const property = payload.property_dfid;
   const gta = payload.gta_number;
@@ -23,55 +24,43 @@ function eventSummary(event: Event): string | null {
   const occurredAt = payload.occurred_at;
 
   if (event.event_type === "item_movement") {
-    const base = typeof property === "string" ? `Propriedade: ${property}` : "Movimentação registrada";
+    const base = typeof property === "string"
+      ? t("portal.items.timeline.summary.property", { property })
+      : t("portal.items.timeline.summary.movementRegistered");
     return typeof gta === "string" && gta.length > 0 ? `${base} · GTA ${gta}` : base;
   }
 
   if (event.event_type === "item_property_linked" || event.event_type === "item_property_unlinked") {
-    return typeof property === "string" ? `Propriedade: ${property}` : null;
+    return typeof property === "string" ? t("portal.items.timeline.summary.property", { property }) : null;
   }
 
   if (event.event_type === "item_weighed" && typeof weight === "number") {
-    return `${weight} kg${typeof occurredAt === "string" && occurredAt ? ` · ${occurredAt}` : ""}`;
+    return `${t("portal.items.timeline.summary.weightKg", { weight })}${typeof occurredAt === "string" && occurredAt ? ` · ${occurredAt}` : ""}`;
   }
 
   if (event.event_type === "item_born" && typeof occurredAt === "string" && occurredAt) {
-    return `Nascimento em ${occurredAt}`;
+    return t("portal.items.timeline.summary.bornOn", { date: occurredAt });
   }
 
   return null;
 }
 
-function visibilityLabel(visibility?: string): string {
-  switch (visibility) {
-    case "public":
-      return "Público";
-    case "private":
-      return "Privado";
-    case "circuit_only":
-      return "Circuito";
-    case "selective":
-      return "Seletivo";
-    default:
-      return "Circuito";
-  }
-}
-
-function trustLabel(level?: string, score?: number): { text: string; className: string } {
+function trustLabel(level: string | undefined, score: number | undefined, t: TFunction): { text: string; className: string } {
   if (!level && typeof score !== "number") {
-    return { text: "Confiança n/d", className: "bg-muted text-muted-foreground" };
+    return { text: t("portal.items.timeline.trust.na"), className: "bg-muted text-muted-foreground" };
   }
 
   const safeScore = typeof score === "number" ? Math.max(0, Math.min(100, score)) : undefined;
   const normalized = (level || (safeScore !== undefined && safeScore >= 80 ? "high" : safeScore !== undefined && safeScore >= 60 ? "medium" : "low")).toLowerCase();
+  const suffix = safeScore !== undefined ? ` · ${safeScore}` : "";
 
   if (normalized === "high") {
-    return { text: `Confiança alta${safeScore !== undefined ? ` · ${safeScore}` : ""}`, className: "bg-emerald-500/10 text-emerald-700" };
+    return { text: `${t("portal.items.timeline.trust.high")}${suffix}`, className: "bg-emerald-500/10 text-emerald-700" };
   }
   if (normalized === "medium") {
-    return { text: `Confiança média${safeScore !== undefined ? ` · ${safeScore}` : ""}`, className: "bg-amber-500/10 text-amber-700" };
+    return { text: `${t("portal.items.timeline.trust.medium")}${suffix}`, className: "bg-amber-500/10 text-amber-700" };
   }
-  return { text: `Confiança baixa${safeScore !== undefined ? ` · ${safeScore}` : ""}`, className: "bg-rose-500/10 text-rose-700" };
+  return { text: `${t("portal.items.timeline.trust.low")}${suffix}`, className: "bg-rose-500/10 text-rose-700" };
 }
 
 function compactDetails(event: Event): string[] {
@@ -107,6 +96,7 @@ function compactDetails(event: Event): string[] {
 }
 
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
+  const { t } = useTranslation();
   const [showOperational, setShowOperational] = useState(false);
   const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
   const [governanceByEvent, setGovernanceByEvent] = useState<Record<string, {
@@ -157,7 +147,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   };
 
   const delegateManagement = async (eventId: string) => {
-    const workspaceId = window.prompt("Informe o workspace_id que receberá delegação:");
+    const workspaceId = window.prompt(t("portal.items.timeline.delegatePrompt"));
     if (!workspaceId) return;
     setLoadingEventId(eventId);
     try {
@@ -167,7 +157,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
         can_manage_disclosure: true,
       });
       await loadGovernance(eventId);
-      window.alert("Delegação registrada.");
+      window.alert(t("portal.items.timeline.delegateDone"));
     } finally {
       setLoadingEventId(null);
     }
@@ -182,11 +172,11 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
               <Activity className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Histórico</h2>
+              <h2 className="text-lg font-semibold text-foreground">{t("portal.items.timeline.title")}</h2>
               <p className="text-sm text-muted-foreground">
-                {realEvents.length} evento{realEvents.length !== 1 ? "s" : ""} de manejo
+                {t("portal.items.timeline.eventsCount", { count: realEvents.length })}
                 {operationalCount > 0 && (
-                  <span className="text-muted-foreground/60"> · {operationalCount} operacional(is)</span>
+                  <span className="text-muted-foreground/60"> {t("portal.items.timeline.operationalCount", { count: operationalCount })}</span>
                 )}
               </p>
             </div>
@@ -200,12 +190,12 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
               {showOperational ? (
                 <>
                   <EyeOff className="h-3.5 w-3.5" />
-                  Ocultar técnicos
+                  {t("portal.items.timeline.hideOperational")}
                 </>
               ) : (
                 <>
                   <Eye className="h-3.5 w-3.5" />
-                  Mostrar blockchain/IPFS
+                  {t("portal.items.timeline.showBlockchain")}
                 </>
               )}
             </button>
@@ -221,12 +211,12 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
             {visibleEvents.map((event, index) => {
               const Icon = eventTypeIcons[event.event_type] || Activity;
               const isOperational = !REAL_LIFE_EVENT_TYPES.has(event.event_type);
-              const summary = eventSummary(event);
+              const summary = eventSummary(event, t);
               const details = compactDetails(event);
               const isOwner = !!event.event_owner_workspace_id && event.event_owner_workspace_id === user?.workspace_id;
               const governance = governanceByEvent[event.id];
               const canManage = governance?.canManageVisibility || isOwner;
-              const trust = trustLabel(event.trust_level, event.trust_score);
+              const trust = trustLabel(event.trust_level, event.trust_score, t);
               return (
               <div
                 key={event.id}
@@ -254,28 +244,28 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                           eventTypeColors[event.event_type] || "bg-muted text-muted-foreground"
                         )}
                       >
-                        {eventTypeLabels[event.event_type] || event.event_type}
+                        {t(`portal.enums.eventType.${event.event_type?.toLowerCase()}`, { defaultValue: event.event_type })}
                       </span>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-background border border-border text-muted-foreground">
-                          {visibilityLabel(event.visibility)}
+                          {t(`portal.enums.eventVisibility.${event.visibility ?? "circuit_only"}`, { defaultValue: t("portal.enums.eventVisibility.circuit_only") })}
                         </span>
                         {isOwner && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                            owner
+                            {t("portal.items.timeline.owner")}
                           </span>
                         )}
                         {event.is_duplicate && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700">
-                            duplicado
+                            {t("portal.items.timeline.duplicate")}
                           </span>
                         )}
                         <span
                           className={cn("text-[11px] px-2 py-0.5 rounded-full", trust.className)}
                           title={
                             event.trust_factors
-                              ? `Modelo ${event.trust_model_version || "v1"} · ${JSON.stringify(event.trust_factors)}`
-                              : `Modelo ${event.trust_model_version || "v1"}`
+                              ? `${t("portal.items.timeline.trust.model", { version: event.trust_model_version || "v1" })} · ${JSON.stringify(event.trust_factors)}`
+                              : t("portal.items.timeline.trust.model", { version: event.trust_model_version || "v1" })
                           }
                         >
                           {trust.text}
@@ -291,7 +281,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                               </p>
                             ))
                           ) : (
-                            <p className="text-xs text-muted-foreground">Sem detalhes adicionais neste evento.</p>
+                            <p className="text-xs text-muted-foreground">{t("portal.items.timeline.summary.noDetails")}</p>
                           )}
                         </div>
                       )}
@@ -309,7 +299,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                               className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
                               disabled={loadingEventId === event.id}
                             >
-                              {loadingEventId === event.id ? "..." : "Gerenciar"}
+                              {loadingEventId === event.id ? "..." : t("portal.items.timeline.manage")}
                             </button>
                           )}
                           {canManage && (
@@ -319,21 +309,21 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                                 className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
                                 disabled={loadingEventId === event.id}
                               >
-                                Público
+                                {t("portal.enums.eventVisibility.public")}
                               </button>
                               <button
                                 onClick={() => changeVisibility(event.id, "circuit_only")}
                                 className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
                                 disabled={loadingEventId === event.id}
                               >
-                                Circuito
+                                {t("portal.enums.eventVisibility.circuit_only")}
                               </button>
                               <button
                                 onClick={() => changeVisibility(event.id, "private")}
                                 className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
                                 disabled={loadingEventId === event.id}
                               >
-                                Privado
+                                {t("portal.enums.eventVisibility.private")}
                               </button>
                               {isOwner && (
                                 <button
@@ -341,7 +331,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                                   className="px-2 py-1 rounded border border-border hover:bg-muted/50 text-[11px]"
                                   disabled={loadingEventId === event.id}
                                 >
-                                  Delegar
+                                  {t("portal.items.timeline.delegate")}
                                 </button>
                               )}
                             </>
@@ -359,10 +349,10 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
           <div className="text-center py-12">
             <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">
-              Nenhum evento registrado
+              {t("portal.items.timeline.empty")}
             </h3>
             <p className="text-muted-foreground mb-4">
-              Eventos aparecerão aqui conforme o item é modificado
+              {t("portal.items.timeline.emptyDesc")}
             </p>
           </div>
         )}

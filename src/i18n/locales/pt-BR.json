@@ -864,6 +864,53 @@
         "warning": "Atenção",
         "blocked": "Bloqueado",
         "unknown": "Desconhecido"
+      },
+      "eventType": {
+        "item_created": "Item Criado",
+        "item_updated": "Item Atualizado",
+        "item_deleted": "Item Excluído",
+        "item_archived": "Item Arquivado",
+        "circuit_created": "Circuito Criado",
+        "circuit_updated": "Circuito Atualizado",
+        "circuit_deleted": "Circuito Excluído",
+        "member_added": "Membro Adicionado",
+        "member_removed": "Membro Removido",
+        "permission_changed": "Permissão Alterada",
+        "audit_logged": "Auditoria Registrada",
+        "custom": "Evento Personalizado",
+        "local_item_created": "Item Local Criado",
+        "local_item_pushed": "Item Local Enviado",
+        "item_merged": "Itens Mesclados",
+        "item_split": "Item Dividido",
+        "item_unmerged": "Itens Separados",
+        "blockchain_anchor_created": "Âncora Blockchain Criada",
+        "blockchain_anchor_confirmed": "Âncora Blockchain Confirmada",
+        "ipfs_upload_completed": "Upload IPFS Concluído",
+        "item_movement": "Movimentação",
+        "item_arrived": "Chegada",
+        "item_born": "Nascimento",
+        "item_weighed": "Pesagem",
+        "item_vaccinated": "Vacinação",
+        "item_treated": "Tratamento",
+        "item_slaughtered": "Abate",
+        "item_classified": "Classificação",
+        "property_registered": "Propriedade Registrada",
+        "property_audited": "Propriedade Auditada",
+        "property_area_updated": "Área da Propriedade Atualizada",
+        "item_enriched": "Item Enriquecido",
+        "circuit_push": "Push para Circuito",
+        "circuit_pull": "Pull de Circuito",
+        "item_status_changed": "Status Alterado",
+        "blockchain_anchor": "Âncora Blockchain",
+        "ipfs_upload": "Upload IPFS",
+        "item_property_linked": "Vinculado à Propriedade",
+        "item_property_unlinked": "Desvinculado da Propriedade"
+      },
+      "eventVisibility": {
+        "public": "Público",
+        "private": "Privado",
+        "circuit_only": "Circuito",
+        "selective": "Seletivo"
       }
     },
     "ingestion": {
@@ -1394,8 +1441,67 @@
           "provLegacy": "legado",
           "provBy": "por {{who}}",
           "provOtherOrigin": "outra origem",
-          "provShared": "compartilhado"
+          "provShared": "compartilhado",
+          "mergedInto": "Fundido em",
+          "splitFrom": "Separado de"
         }
+      },
+      "timeline": {
+        "title": "Histórico",
+        "eventsCount": "{{count}} evento(s) de manejo",
+        "operationalCount": "· {{count}} operacional(is)",
+        "hideOperational": "Ocultar técnicos",
+        "showBlockchain": "Mostrar blockchain/IPFS",
+        "summary": {
+          "property": "Propriedade: {{property}}",
+          "movementRegistered": "Movimentação registrada",
+          "weightKg": "{{weight}} kg",
+          "bornOn": "Nascimento em {{date}}",
+          "noDetails": "Sem detalhes adicionais neste evento."
+        },
+        "trust": {
+          "na": "Confiança n/d",
+          "high": "Confiança alta",
+          "medium": "Confiança média",
+          "low": "Confiança baixa",
+          "model": "Modelo {{version}}"
+        },
+        "owner": "dono",
+        "duplicate": "duplicado",
+        "manage": "Gerenciar",
+        "delegate": "Delegar",
+        "delegatePrompt": "Informe o workspace_id que receberá delegação:",
+        "delegateDone": "Delegação registrada.",
+        "empty": "Nenhum evento registrado",
+        "emptyDesc": "Eventos aparecerão aqui conforme o item é modificado"
+      },
+      "deprecateDialog": {
+        "toastSuccess": "Item depreciado com sucesso",
+        "toastError": "Erro ao depreciar: {{msg}}",
+        "title": "Depreciar Item",
+        "desc": "Tem certeza que deseja depreciar o item <dfid>{{dfid}}</dfid>? O item será arquivado mas seus dados serão preservados para auditoria.",
+        "confirm": "Depreciar"
+      },
+      "editMetadataDialog": {
+        "toastSuccess": "Metadados atualizados com sucesso",
+        "toastError": "Erro ao atualizar: {{msg}}",
+        "title": "Editar Metadados",
+        "desc": "Campos imutáveis (DFID, cadeia de valor, país, ano) não podem ser alterados. Apenas metadados customizados são editáveis.",
+        "keyLabel": "Chave",
+        "valueLabel": "Valor",
+        "keyPlaceholder": "ex: weight_kg",
+        "valuePlaceholder": "ex: 475",
+        "addField": "Adicionar campo"
+      },
+      "pushDialog": {
+        "toastSent": "Item enviado!",
+        "toastSentDesc": "O item foi associado ao circuito com sucesso.",
+        "toastError": "Erro ao enviar item",
+        "title": "Push para Circuito",
+        "desc": "Selecione o circuito para onde deseja enviar o item <dfid>{{dfid}}</dfid>",
+        "noActiveCircuits": "Nenhum circuito ativo disponível",
+        "sending": "Enviando...",
+        "send": "Enviar para Circuito"
       }
     }
   }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Trans, useTranslation } from "react-i18next";
 import { GitBranch, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ export function PushToCircuitDialog({
   open,
   onOpenChange,
 }: PushToCircuitDialogProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedCircuit, setSelectedCircuit] = useState<string>("");
@@ -46,16 +48,16 @@ export function PushToCircuitDialog({
       queryClient.invalidateQueries({ queryKey: ["allCircuitItems"] });
       queryClient.invalidateQueries({ queryKey: ["items"] });
       toast({
-        title: "Item enviado!",
-        description: "O item foi associado ao circuito com sucesso.",
+        title: t("portal.items.pushDialog.toastSent"),
+        description: t("portal.items.pushDialog.toastSentDesc"),
       });
       onOpenChange(false);
       setSelectedCircuit("");
     },
     onError: (error) => {
       toast({
-        title: "Erro ao enviar item",
-        description: error instanceof Error ? error.message : "Tente novamente",
+        title: t("portal.items.pushDialog.toastError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -76,11 +78,14 @@ export function PushToCircuitDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GitBranch className="h-5 w-5 text-primary" />
-            Push para Circuito
+            {t("portal.items.pushDialog.title")}
           </DialogTitle>
           <DialogDescription>
-            Selecione o circuito para onde deseja enviar o item{" "}
-            <span className="font-mono text-xs">{item.dfid}</span>
+            <Trans
+              i18nKey="portal.items.pushDialog.desc"
+              values={{ dfid: item.dfid }}
+              components={{ dfid: <span className="font-mono text-xs" /> }}
+            />
           </DialogDescription>
         </DialogHeader>
 
@@ -121,14 +126,14 @@ export function PushToCircuitDialog({
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <GitBranch className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Nenhum circuito ativo disponível</p>
+              <p className="text-sm">{t("portal.items.pushDialog.noActiveCircuits")}</p>
             </div>
           )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t("portal.common.cancel")}
           </Button>
           <Button
             onClick={handlePush}
@@ -137,12 +142,12 @@ export function PushToCircuitDialog({
             {pushMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Enviando...
+                {t("portal.items.pushDialog.sending")}
               </>
             ) : (
               <>
                 <GitBranch className="h-4 w-4 mr-2" />
-                Enviar para Circuito
+                {t("portal.items.pushDialog.send")}
               </>
             )}
           </Button>

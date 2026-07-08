@@ -348,13 +348,13 @@ export function ItemIdentifiers({ item, identifiers = [], canonicalIdentifier, b
           </div>
           {item?.merged_into && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Merged into</span>
+              <span className="text-muted-foreground">{t("portal.items.detail.identifiers.mergedInto")}</span>
               <span className="text-foreground font-mono text-xs">{item.merged_into}</span>
             </div>
           )}
           {item?.split_from && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Split from</span>
+              <span className="text-muted-foreground">{t("portal.items.detail.identifiers.splitFrom")}</span>
               <span className="text-foreground font-mono text-xs">{item.split_from}</span>
             </div>
           )}
