@@ -1012,7 +1012,10 @@
       "loading": "Loading…",
       "back": "Back",
       "cancel": "Cancel",
-      "tryAgain": "Try again"
+      "tryAgain": "Try again",
+      "beta": "Beta",
+      "betaNote": "This section is in beta. You can already use it and validate the flows in your workspace.",
+      "copy": "Copy"
     },
     "routing": {
       "header": {
@@ -1503,6 +1506,51 @@
         "sending": "Sending...",
         "send": "Send to Circuit"
       }
+    },
+    "docs": {
+      "section": "Development",
+      "title": "Documentation",
+      "subtitle": "Resources to integrate with the DeFarm platform.",
+      "integration": {
+        "title": "Integration Guide",
+        "desc": "Step by step to connect your app to the DeFarm API."
+      },
+      "apiRef": {
+        "title": "API Reference",
+        "desc": "Endpoints, authentication and request examples."
+      },
+      "formats": {
+        "title": "File Formats",
+        "desc": "Specification of the CSV and JSON formats accepted for ingestion."
+      },
+      "openFull": "Open full documentation"
+    },
+    "sdk": {
+      "title": "SDKs",
+      "subtitle": "Multi-language catalog to integrate DeFarm directly into the partner's software.",
+      "tools": {
+        "title": "DeFarm SDKs for Partners",
+        "desc": "Choose your stack's language and use the official package. All SDKs follow the same concepts of authentication (JWT and API key), ingestion and response reconciliation.",
+        "comingSoon": "Coming soon",
+        "comingSoonNote": "Package coming soon — for now use the TypeScript SDK or the API directly.",
+        "packageLabel": "Package:",
+        "copyInstall": "Copy install",
+        "openPackage": "Open package",
+        "catalog": {
+          "typescript": "Main SDK, used as the base for partner integrations.",
+          "python": "Client focused on ingestion and reconciliation automation.",
+          "go": "SDK with no external dependencies, ideal for backend services.",
+          "php": "Aimed at PHP web stacks with server-to-server flow.",
+          "ruby": "Job- and API-oriented integration in Ruby.",
+          "kotlin": "JVM SDK focused on enterprise systems.",
+          "java": "Beta version for the Java 11+ ecosystem.",
+          "dotnet": "Beta SDK for .NET 8+ integrations."
+        }
+      }
+    },
+    "cli": {
+      "title": "CLI",
+      "subtitle": "Ready-made commands to integrate the partner quickly via terminal."
     }
   }
 }
