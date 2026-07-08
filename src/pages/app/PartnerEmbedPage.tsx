@@ -1,14 +1,15 @@
+import { useTranslation } from "react-i18next";
 import { PartnerEmbed } from "@/components/partner";
 
 export default function PartnerEmbedPage() {
+  const { t } = useTranslation();
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">Integração</p>
-        <h1 className="text-foreground">Link de Visualização</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">{t("portal.embed.page.section")}</p>
+        <h1 className="text-foreground">{t("portal.embed.page.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Um link temporário e só-leitura pra alguém ver o portfólio verificado de um circuito
-          (itens + provas on-chain), sem precisar de conta. Expira no tempo que você definir.
+          {t("portal.embed.page.subtitle")}
         </p>
       </div>
       <PartnerEmbed />
