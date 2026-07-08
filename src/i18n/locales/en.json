@@ -1551,6 +1551,25 @@
     "cli": {
       "title": "CLI",
       "subtitle": "Ready-made commands to integrate the partner quickly via terminal."
+    },
+    "embed": {
+      "page": {
+        "section": "Integration",
+        "title": "View Link",
+        "subtitle": "A temporary, read-only link for someone to see a circuit's verified portfolio (items + on-chain proofs), without needing an account. Expires in the time you set."
+      },
+      "viewLinkLabel": "View link (share this)",
+      "iframeLabel": "Embed in your site (iframe · advanced)",
+      "tokenLabel": "Token (advanced)",
+      "circuit": "Circuit",
+      "selectCircuit": "Select a circuit",
+      "circuitIdPlaceholder": "Circuit ID",
+      "expiresMin": "Expires (min)",
+      "generating": "Generating…",
+      "generate": "Generate link",
+      "linkGenerated": "Link generated",
+      "expiresAt": "Expires at",
+      "seeAsClient": "See what the client sees"
     }
   }
 }
