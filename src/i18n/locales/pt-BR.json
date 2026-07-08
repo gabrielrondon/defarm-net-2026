@@ -1616,6 +1616,126 @@
         "i5": "Consumir <code>items[].url</code> e reconciliar via <code>partner_reference</code>."
       },
       "goToApiKeys": "Ir para API Keys"
+    },
+    "apikeys": {
+      "toasts": {
+        "loadError": "Erro ao carregar dados",
+        "loadErrorDesc": "Não foi possível buscar as API keys.",
+        "created": "API Key criada",
+        "createdDesc": "Chave criada com sucesso.",
+        "createdNoValue": "Chave criada, mas não foi possível exibi-la",
+        "createdNoValueDesc": "Recrie a chave para obter o valor de acesso — ele só aparece uma vez.",
+        "createError": "Erro ao criar API Key",
+        "revoked": "API Key revogada",
+        "revokedDesc": "\"{{name}}\" foi desativada.",
+        "revokeError": "Erro ao revogar",
+        "chooseCircuit": "Escolha um circuito",
+        "chooseCircuits": "Escolha ao menos um circuito",
+        "updated": "API Key atualizada",
+        "updatedDesc": "\"{{name}}\" foi salva.",
+        "saveError": "Erro ao salvar"
+      },
+      "header": {
+        "back": "Configurações",
+        "subtitle": "Gerencie suas chaves de acesso para integração",
+        "docsPrefix": "Documentação:",
+        "docsLink": "como usar API key no quickstart",
+        "newKey": "Nova API Key"
+      },
+      "empty": "Nenhuma API Key criada",
+      "emptyDesc": "Crie uma chave para integrar com a API do DeFarm",
+      "table": {
+        "name": "Nome",
+        "scope": "Escopo",
+        "status": "Status",
+        "createdAt": "Criada em",
+        "lastUsed": "Último uso",
+        "actions": "Ações"
+      },
+      "scopeBadge": {
+        "workspace_ingestion": "Recepção inteligente",
+        "circuit": "Circuito específico"
+      },
+      "receivesIn": "Recebe em: {{name}}",
+      "statusActive": "Ativa",
+      "statusRevoked": "Revogada",
+      "rowEdit": "Editar",
+      "rowMetrics": "Ver métricas",
+      "rowRevoke": "Revogar",
+      "create": {
+        "title": "Criar nova API Key",
+        "desc": "A chave será exibida apenas uma vez. Salve-a em um local seguro.",
+        "nameLabel": "Nome da chave *",
+        "namePlaceholder": "ex: Integração ERP",
+        "howLabel": "Como esta chave recebe seus dados",
+        "smartTitle": "Recepção inteligente",
+        "smartBodyWithDefault": "Você manda os dados sem apontar circuito. Eles sempre caem no seu <strong>circuito padrão</strong> (hoje <strong>{{name}}</strong>) e, em paralelo, a DeFarm roteia cada item por identificador (CAR, exploração, CNPJ…) pros circuitos certos — que você usa pra organizar e exibir dados aos seus clientes.",
+        "smartBodyAutoCreate": "Você manda os dados sem apontar circuito. Eles sempre caem no seu <strong>circuito padrão</strong> (criado automaticamente no seu primeiro envio) e, em paralelo, a DeFarm roteia cada item por identificador (CAR, exploração, CNPJ…) pros circuitos certos — que você usa pra organizar e exibir dados aos seus clientes.",
+        "viewCircuits": "Ver circuitos",
+        "configureRouting": "Configurar roteamento",
+        "scopePlaceholder": "Selecione o escopo",
+        "scopeOptions": {
+          "workspace_ingestion": "Recepção inteligente (padrão)",
+          "circuit": "Um circuito específico",
+          "circuits": "Vários circuitos",
+          "workspace": "Todo o workspace (acesso amplo)"
+        },
+        "hideAdvanced": "Ocultar opções avançadas",
+        "showAdvanced": "Opções avançadas — escolher circuito manualmente",
+        "circuitLabel": "Circuito *",
+        "circuitHelp": "Um circuito é onde seus dados caem — um destino rastreável no seu workspace.",
+        "selectCircuit": "Selecione um circuito",
+        "circuitsLabel": "Circuitos * (escolha um ou mais)",
+        "circuitsHelp": "A chave vale apenas para os circuitos marcados. Editável depois.",
+        "workspaceWarn": "<strong>Global:</strong> a chave vale para qualquer circuito do seu workspace (inclusive os criados no futuro). Use com cuidado — é o acesso mais amplo.",
+        "smartHint": "Sem configuração adicional: a DeFarm escolhe automaticamente o circuito de recepção dos seus dados.",
+        "descLabel": "Descrição (opcional)",
+        "descPlaceholder": "Para que será usada",
+        "expiryLabel": "Expiração em dias (opcional)",
+        "expiryPlaceholder": "365",
+        "submit": "Criar chave"
+      },
+      "edit": {
+        "title": "Editar API Key",
+        "desc": "Edite nome, descrição, limites, expiração e o escopo de acesso (circuito único, conjunto de circuitos ou workspace inteiro).",
+        "scopeLabel": "Escopo",
+        "scopeOptions": {
+          "workspace_ingestion": "Recepção inteligente",
+          "circuit": "Circuito específico",
+          "circuits": "Vários circuitos (conjunto)",
+          "workspace": "Todo o workspace (global)"
+        },
+        "circuitsHelp": "Marque os circuitos para (re)definir o conjunto desta chave.",
+        "workspaceHelp": "Global: a chave passa a valer para qualquer circuito do workspace.",
+        "rateMin": "Limite / minuto",
+        "rateDay": "Limite / dia",
+        "newExpiryLabel": "Nova expiração em dias (opcional)",
+        "newExpiryPlaceholder": "deixe vazio para manter",
+        "currentExpires": "Atual: expira em {{date}}",
+        "noExpiry": "Atual: sem expiração",
+        "descLabel": "Descrição"
+      },
+      "reveal": {
+        "title": "Salve sua API Key",
+        "desc": "Esta chave será exibida apenas uma vez. Copie e guarde em um local seguro.",
+        "gotIt": "Entendi, já copiei"
+      },
+      "revoke": {
+        "title": "Revogar API Key",
+        "desc": "Tem certeza que deseja revogar a chave \"{{name}}\"? Esta ação não pode ser desfeita.",
+        "confirm": "Revogar"
+      },
+      "metrics": {
+        "title": "Métricas — {{name}}",
+        "total": "Total de requests",
+        "last24h": "Últimas 24h",
+        "errors24h": "Erros (24h)",
+        "lastUse": "Último uso",
+        "never": "Nunca",
+        "rateLimits": "Rate Limits",
+        "perMin": "/min",
+        "perDay": "/dia"
+      }
     }
   }
 }

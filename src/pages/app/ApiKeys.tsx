@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,7 @@ import type {
 } from "@/lib/api/types";
 
 export default function ApiKeys() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -130,14 +132,14 @@ export default function ApiKeys() {
       setCircuits(circuitsData);
     } catch (err) {
       toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível buscar as API keys.",
+        title: t("portal.apikeys.toasts.loadError"),
+        description: t("portal.apikeys.toasts.loadErrorDesc"),
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [t, toast]);
 
   useEffect(() => {
     fetchData();
@@ -174,24 +176,23 @@ export default function ApiKeys() {
       if (apiKey) {
         setRevealedKey(apiKey);
         toast({
-          title: "API Key criada",
-          description: result?.message || "Chave criada com sucesso.",
+          title: t("portal.apikeys.toasts.created"),
+          description: result?.message || t("portal.apikeys.toasts.createdDesc"),
         });
       } else {
         // A chave foi criada mas o valor não veio na resposta — ele só aparece
         // uma vez, então avisamos em vez de dar um "sucesso" sem chave pra copiar.
         toast({
-          title: "Chave criada, mas não foi possível exibi-la",
-          description:
-            "Recrie a chave para obter o valor de acesso — ele só aparece uma vez.",
+          title: t("portal.apikeys.toasts.createdNoValue"),
+          description: t("portal.apikeys.toasts.createdNoValueDesc"),
           variant: "destructive",
         });
       }
       fetchData();
     } catch (err: any) {
       toast({
-        title: "Erro ao criar API Key",
-        description: err?.message || "Tente novamente.",
+        title: t("portal.apikeys.toasts.createError"),
+        description: err?.message || t("portal.common.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -204,14 +205,14 @@ export default function ApiKeys() {
     setRevoking(true);
     try {
       await revokePartnerApiKey(revokeTarget.id);
-      toast({ title: "API Key revogada", description: `"${revokeTarget.key_name}" foi desativada.` });
+      toast({ title: t("portal.apikeys.toasts.revoked"), description: t("portal.apikeys.toasts.revokedDesc", { name: revokeTarget.key_name }) });
       setRevokeOpen(false);
       setRevokeTarget(null);
       fetchData();
     } catch (err: any) {
       toast({
-        title: "Erro ao revogar",
-        description: err?.message || "Tente novamente.",
+        title: t("portal.apikeys.toasts.revokeError"),
+        description: err?.message || t("portal.common.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -243,11 +244,11 @@ export default function ApiKeys() {
     const touchScope = scopeChanged || circuitChanged || circuitsProvided;
     if (touchScope) {
       if (editScope === "circuit" && !editCircuit) {
-        toast({ title: "Escolha um circuito", variant: "destructive" });
+        toast({ title: t("portal.apikeys.toasts.chooseCircuit"), variant: "destructive" });
         return;
       }
       if (editScope === "circuits" && editCircuits.length === 0) {
-        toast({ title: "Escolha ao menos um circuito", variant: "destructive" });
+        toast({ title: t("portal.apikeys.toasts.chooseCircuits"), variant: "destructive" });
         return;
       }
     }
@@ -269,14 +270,14 @@ export default function ApiKeys() {
       }
 
       await editPartnerApiKey(editTarget.id, payload);
-      toast({ title: "API Key atualizada", description: `"${editName.trim()}" foi salva.` });
+      toast({ title: t("portal.apikeys.toasts.updated"), description: t("portal.apikeys.toasts.updatedDesc", { name: editName.trim() }) });
       setEditOpen(false);
       setEditTarget(null);
       fetchData();
     } catch (err: any) {
       toast({
-        title: "Erro ao salvar",
-        description: err?.message || "Tente novamente.",
+        title: t("portal.apikeys.toasts.saveError"),
+        description: err?.message || t("portal.common.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -348,7 +349,7 @@ export default function ApiKeys() {
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
-          Configurações
+          {t("portal.apikeys.header.back")}
         </button>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -357,16 +358,16 @@ export default function ApiKeys() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">API Keys</h1>
-              <p className="text-muted-foreground">Gerencie suas chaves de acesso para integração</p>
+              <p className="text-muted-foreground">{t("portal.apikeys.header.subtitle")}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Documentação:{" "}
+                {t("portal.apikeys.header.docsPrefix")}{" "}
                 <a
                   href="https://docs.defarm.net/docs/getting-started#api-key"
                   target="_blank"
                   rel="noreferrer"
                   className="text-primary underline underline-offset-2"
                 >
-                  como usar API key no quickstart
+                  {t("portal.apikeys.header.docsLink")}
                 </a>
               </p>
             </div>
@@ -384,7 +385,7 @@ export default function ApiKeys() {
             className="btn-offset"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Nova API Key
+            {t("portal.apikeys.header.newKey")}
           </Button>
         </div>
       </div>
@@ -398,21 +399,21 @@ export default function ApiKeys() {
         ) : keys.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Key className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground font-medium">Nenhuma API Key criada</p>
+            <p className="text-muted-foreground font-medium">{t("portal.apikeys.empty")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Crie uma chave para integrar com a API do DeFarm
+              {t("portal.apikeys.emptyDesc")}
             </p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Escopo</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Criada em</TableHead>
-                <TableHead>Último uso</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead>{t("portal.apikeys.table.name")}</TableHead>
+                <TableHead>{t("portal.apikeys.table.scope")}</TableHead>
+                <TableHead>{t("portal.apikeys.table.status")}</TableHead>
+                <TableHead>{t("portal.apikeys.table.createdAt")}</TableHead>
+                <TableHead>{t("portal.apikeys.table.lastUsed")}</TableHead>
+                <TableHead className="text-right">{t("portal.apikeys.table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -429,16 +430,16 @@ export default function ApiKeys() {
                   <TableCell>
                     {key.scope === "workspace_ingestion" ? (
                       <div className="space-y-1">
-                        <Badge variant="secondary" className="text-xs">Recepção inteligente</Badge>
+                        <Badge variant="secondary" className="text-xs">{t("portal.apikeys.scopeBadge.workspace_ingestion")}</Badge>
                         {key.staging_circuit_id ? (
                           <p className="text-xs text-muted-foreground">
-                            Recebe em: {getCircuitName(key.staging_circuit_id)}
+                            {t("portal.apikeys.receivesIn", { name: getCircuitName(key.staging_circuit_id) })}
                           </p>
                         ) : null}
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        <Badge variant="secondary" className="text-xs">Circuito específico</Badge>
+                        <Badge variant="secondary" className="text-xs">{t("portal.apikeys.scopeBadge.circuit")}</Badge>
                         {key.circuit_id ? (
                           <p className="text-xs text-muted-foreground">{getCircuitName(key.circuit_id)}</p>
                         ) : null}
@@ -448,11 +449,11 @@ export default function ApiKeys() {
                   <TableCell>
                     {key.is_active ? (
                       <Badge className="bg-primary/10 text-primary border-primary/20">
-                        Ativa
+                        {t("portal.apikeys.statusActive")}
                       </Badge>
                     ) : (
                       <Badge variant="secondary" className="opacity-60">
-                        Revogada
+                        {t("portal.apikeys.statusRevoked")}
                       </Badge>
                     )}
                   </TableCell>
@@ -471,7 +472,7 @@ export default function ApiKeys() {
                           variant="ghost"
                           size="sm"
                           onClick={() => openEdit(key)}
-                          title="Editar"
+                          title={t("portal.apikeys.rowEdit")}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -480,7 +481,7 @@ export default function ApiKeys() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewMetrics(key)}
-                        title="Ver métricas"
+                        title={t("portal.apikeys.rowMetrics")}
                       >
                         <BarChart3 className="h-4 w-4" />
                       </Button>
@@ -492,7 +493,7 @@ export default function ApiKeys() {
                             setRevokeTarget(key);
                             setRevokeOpen(true);
                           }}
-                          title="Revogar"
+                          title={t("portal.apikeys.rowRevoke")}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -511,37 +512,32 @@ export default function ApiKeys() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Criar nova API Key</DialogTitle>
+            <DialogTitle>{t("portal.apikeys.create.title")}</DialogTitle>
             <DialogDescription>
-              A chave será exibida apenas uma vez. Salve-a em um local seguro.
+              {t("portal.apikeys.create.desc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="keyName">Nome da chave *</Label>
+              <Label htmlFor="keyName">{t("portal.apikeys.create.nameLabel")}</Label>
               <Input
                 id="keyName"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                placeholder="ex: Integração ERP"
+                placeholder={t("portal.apikeys.create.namePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Como esta chave recebe seus dados</Label>
+              <Label>{t("portal.apikeys.create.howLabel")}</Label>
               {!showAdvancedScope ? (
                 <div className="rounded-md border bg-muted/20 p-3">
-                  <div className="text-sm font-medium">Recepção inteligente</div>
+                  <div className="text-sm font-medium">{t("portal.apikeys.create.smartTitle")}</div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Você manda os dados sem apontar circuito. Eles sempre caem no seu{" "}
-                    <strong>circuito padrão</strong>
                     {defaultStagingCircuitName ? (
-                      <> (hoje <strong>{defaultStagingCircuitName}</strong>)</>
+                      <Trans i18nKey="portal.apikeys.create.smartBodyWithDefault" values={{ name: defaultStagingCircuitName }} components={{ strong: <strong /> }} />
                     ) : (
-                      <> (criado automaticamente no seu primeiro envio)</>
-                    )}{" "}
-                    e, em paralelo, a DeFarm roteia cada item por identificador (CAR,
-                    exploração, CNPJ…) pros circuitos certos — que você usa pra organizar
-                    e exibir dados aos seus clientes.
+                      <Trans i18nKey="portal.apikeys.create.smartBodyAutoCreate" components={{ strong: <strong /> }} />
+                    )}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                     <button
@@ -549,27 +545,27 @@ export default function ApiKeys() {
                       onClick={() => navigate("/app/meus-circuitos")}
                       className="text-primary underline underline-offset-2"
                     >
-                      Ver circuitos
+                      {t("portal.apikeys.create.viewCircuits")}
                     </button>
                     <button
                       type="button"
                       onClick={() => navigate("/app/parceiro/roteamento")}
                       className="text-primary underline underline-offset-2"
                     >
-                      Configurar roteamento
+                      {t("portal.apikeys.create.configureRouting")}
                     </button>
                   </div>
                 </div>
               ) : (
                 <Select value={newKeyScope} onValueChange={(v: PartnerApiKeyScope) => setNewKeyScope(v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o escopo" />
+                    <SelectValue placeholder={t("portal.apikeys.create.scopePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="workspace_ingestion">Recepção inteligente (padrão)</SelectItem>
-                    <SelectItem value="circuit">Um circuito específico</SelectItem>
-                    <SelectItem value="circuits">Vários circuitos</SelectItem>
-                    <SelectItem value="workspace">Todo o workspace (acesso amplo)</SelectItem>
+                    <SelectItem value="workspace_ingestion">{t("portal.apikeys.create.scopeOptions.workspace_ingestion")}</SelectItem>
+                    <SelectItem value="circuit">{t("portal.apikeys.create.scopeOptions.circuit")}</SelectItem>
+                    <SelectItem value="circuits">{t("portal.apikeys.create.scopeOptions.circuits")}</SelectItem>
+                    <SelectItem value="workspace">{t("portal.apikeys.create.scopeOptions.workspace")}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -590,20 +586,20 @@ export default function ApiKeys() {
                   className="text-xs text-muted-foreground underline underline-offset-2"
                 >
                   {showAdvancedScope
-                    ? "Ocultar opções avançadas"
-                    : "Opções avançadas — escolher circuito manualmente"}
+                    ? t("portal.apikeys.create.hideAdvanced")
+                    : t("portal.apikeys.create.showAdvanced")}
                 </button>
               ) : null}
             </div>
             {newKeyScope === "circuit" ? (
               <div className="space-y-2">
-                <Label>Circuito *</Label>
+                <Label>{t("portal.apikeys.create.circuitLabel")}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Um circuito é onde seus dados caem — um destino rastreável no seu workspace.
+                  {t("portal.apikeys.create.circuitHelp")}
                 </p>
                 <Select value={newKeyCircuit} onValueChange={setNewKeyCircuit}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um circuito" />
+                    <SelectValue placeholder={t("portal.apikeys.create.selectCircuit")} />
                   </SelectTrigger>
                   <SelectContent>
                     {circuits.map((c) => (
@@ -617,7 +613,7 @@ export default function ApiKeys() {
             ) : null}
             {newKeyScope === "circuits" ? (
               <div className="space-y-2">
-                <Label>Circuitos * (escolha um ou mais)</Label>
+                <Label>{t("portal.apikeys.create.circuitsLabel")}</Label>
                 <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto rounded-md border p-2">
                   {circuits.map((c) => (
                     <label key={c.id} className="flex items-center gap-2 text-sm">
@@ -634,45 +630,43 @@ export default function ApiKeys() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  A chave vale apenas para os circuitos marcados. Editável depois.
+                  {t("portal.apikeys.create.circuitsHelp")}
                 </p>
               </div>
             ) : null}
             {newKeyScope === "workspace" ? (
               <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
-                <strong>Global:</strong> a chave vale para qualquer circuito do seu workspace
-                (inclusive os criados no futuro). Use com cuidado — é o acesso mais amplo.
+                <Trans i18nKey="portal.apikeys.create.workspaceWarn" components={{ strong: <strong /> }} />
               </div>
             ) : null}
             {showAdvancedScope && newKeyScope === "workspace_ingestion" ? (
               <div className="rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
-                Sem configuração adicional: a DeFarm escolhe automaticamente o circuito de
-                recepção dos seus dados.
+                {t("portal.apikeys.create.smartHint")}
               </div>
             ) : null}
             <div className="space-y-2">
-              <Label htmlFor="keyDesc">Descrição (opcional)</Label>
+              <Label htmlFor="keyDesc">{t("portal.apikeys.create.descLabel")}</Label>
               <Input
                 id="keyDesc"
                 value={newKeyDescription}
                 onChange={(e) => setNewKeyDescription(e.target.value)}
-                placeholder="Para que será usada"
+                placeholder={t("portal.apikeys.create.descPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="keyExpiry">Expiração em dias (opcional)</Label>
+              <Label htmlFor="keyExpiry">{t("portal.apikeys.create.expiryLabel")}</Label>
               <Input
                 id="keyExpiry"
                 type="number"
                 value={newKeyExpiry}
                 onChange={(e) => setNewKeyExpiry(e.target.value)}
-                placeholder="365"
+                placeholder={t("portal.apikeys.create.expiryPlaceholder")}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancelar
+              {t("portal.common.cancel")}
             </Button>
             <Button
               onClick={handleCreate}
@@ -684,7 +678,7 @@ export default function ApiKeys() {
               }
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Criar chave
+              {t("portal.apikeys.create.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -694,30 +688,29 @@ export default function ApiKeys() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar API Key</DialogTitle>
+            <DialogTitle>{t("portal.apikeys.edit.title")}</DialogTitle>
             <DialogDescription>
-              Edite nome, descrição, limites, expiração e o escopo de acesso (circuito único,
-              conjunto de circuitos ou workspace inteiro).
+              {t("portal.apikeys.edit.desc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Escopo</Label>
+              <Label>{t("portal.apikeys.edit.scopeLabel")}</Label>
               <Select value={editScope} onValueChange={(v: PartnerApiKeyScope) => setEditScope(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="workspace_ingestion">Recepção inteligente</SelectItem>
-                  <SelectItem value="circuit">Circuito específico</SelectItem>
-                  <SelectItem value="circuits">Vários circuitos (conjunto)</SelectItem>
-                  <SelectItem value="workspace">Todo o workspace (global)</SelectItem>
+                  <SelectItem value="workspace_ingestion">{t("portal.apikeys.edit.scopeOptions.workspace_ingestion")}</SelectItem>
+                  <SelectItem value="circuit">{t("portal.apikeys.edit.scopeOptions.circuit")}</SelectItem>
+                  <SelectItem value="circuits">{t("portal.apikeys.edit.scopeOptions.circuits")}</SelectItem>
+                  <SelectItem value="workspace">{t("portal.apikeys.edit.scopeOptions.workspace")}</SelectItem>
                 </SelectContent>
               </Select>
               {editScope === "circuit" ? (
                 <Select value={editCircuit} onValueChange={setEditCircuit}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um circuito" />
+                    <SelectValue placeholder={t("portal.apikeys.create.selectCircuit")} />
                   </SelectTrigger>
                   <SelectContent>
                     {circuits.map((c) => (
@@ -746,37 +739,37 @@ export default function ApiKeys() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Marque os circuitos para (re)definir o conjunto desta chave.
+                    {t("portal.apikeys.edit.circuitsHelp")}
                   </p>
                 </>
               ) : null}
               {editScope === "workspace" ? (
                 <p className="text-xs text-muted-foreground">
-                  Global: a chave passa a valer para qualquer circuito do workspace.
+                  {t("portal.apikeys.edit.workspaceHelp")}
                 </p>
               ) : null}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editName">Nome da chave *</Label>
+              <Label htmlFor="editName">{t("portal.apikeys.create.nameLabel")}</Label>
               <Input
                 id="editName"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder="ex: Integração ERP"
+                placeholder={t("portal.apikeys.create.namePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editDesc">Descrição</Label>
+              <Label htmlFor="editDesc">{t("portal.apikeys.edit.descLabel")}</Label>
               <Input
                 id="editDesc"
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Para que será usada"
+                placeholder={t("portal.apikeys.create.descPlaceholder")}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="editRateMin">Limite / minuto</Label>
+                <Label htmlFor="editRateMin">{t("portal.apikeys.edit.rateMin")}</Label>
                 <Input
                   id="editRateMin"
                   type="number"
@@ -786,7 +779,7 @@ export default function ApiKeys() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="editRateDay">Limite / dia</Label>
+                <Label htmlFor="editRateDay">{t("portal.apikeys.edit.rateDay")}</Label>
                 <Input
                   id="editRateDay"
                   type="number"
@@ -797,28 +790,28 @@ export default function ApiKeys() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editExpiry">Nova expiração em dias (opcional)</Label>
+              <Label htmlFor="editExpiry">{t("portal.apikeys.edit.newExpiryLabel")}</Label>
               <Input
                 id="editExpiry"
                 type="number"
                 value={editExpiry}
                 onChange={(e) => setEditExpiry(e.target.value)}
-                placeholder="deixe vazio para manter"
+                placeholder={t("portal.apikeys.edit.newExpiryPlaceholder")}
               />
               <p className="text-xs text-muted-foreground">
                 {editTarget?.expires_at
-                  ? `Atual: expira em ${new Date(editTarget.expires_at).toLocaleDateString("pt-BR")}`
-                  : "Atual: sem expiração"}
+                  ? t("portal.apikeys.edit.currentExpires", { date: new Date(editTarget.expires_at).toLocaleDateString("pt-BR") })
+                  : t("portal.apikeys.edit.noExpiry")}
               </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>
-              Cancelar
+              {t("portal.common.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={editing || !editName.trim()}>
               {editing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Salvar
+              {t("portal.common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -830,10 +823,10 @@ export default function ApiKeys() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-accent-foreground" />
-              Salve sua API Key
+              {t("portal.apikeys.reveal.title")}
             </DialogTitle>
             <DialogDescription>
-              Esta chave será exibida apenas uma vez. Copie e guarde em um local seguro.
+              {t("portal.apikeys.reveal.desc")}
             </DialogDescription>
           </DialogHeader>
           <div className="mt-2">
@@ -851,7 +844,7 @@ export default function ApiKeys() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setRevealedKey(null)}>Entendi, já copiei</Button>
+            <Button onClick={() => setRevealedKey(null)}>{t("portal.apikeys.reveal.gotIt")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -862,20 +855,19 @@ export default function ApiKeys() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-destructive" />
-              Revogar API Key
+              {t("portal.apikeys.revoke.title")}
             </DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja revogar a chave "{revokeTarget?.key_name}"?
-              Esta ação não pode ser desfeita.
+              {t("portal.apikeys.revoke.desc", { name: revokeTarget?.key_name ?? "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRevokeOpen(false)}>
-              Cancelar
+              {t("portal.common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleRevoke} disabled={revoking}>
               {revoking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Revogar
+              {t("portal.apikeys.revoke.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -887,7 +879,7 @@ export default function ApiKeys() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
-              Métricas — {metricsKeyName}
+              {t("portal.apikeys.metrics.title", { name: metricsKeyName })}
             </DialogTitle>
           </DialogHeader>
           {metricsLoading ? (
@@ -899,7 +891,7 @@ export default function ApiKeys() {
               <div className="bg-muted/50 rounded-xl p-4 space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Activity className="h-4 w-4" />
-                  <span className="text-xs font-medium">Total de requests</span>
+                  <span className="text-xs font-medium">{t("portal.apikeys.metrics.total")}</span>
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {metricsData.requests_total.toLocaleString("pt-BR")}
@@ -908,7 +900,7 @@ export default function ApiKeys() {
               <div className="bg-muted/50 rounded-xl p-4 space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Zap className="h-4 w-4" />
-                  <span className="text-xs font-medium">Últimas 24h</span>
+                  <span className="text-xs font-medium">{t("portal.apikeys.metrics.last24h")}</span>
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {metricsData.requests_last_24h.toLocaleString("pt-BR")}
@@ -917,7 +909,7 @@ export default function ApiKeys() {
               <div className="bg-muted/50 rounded-xl p-4 space-y-1">
                 <div className="flex items-center gap-2 text-destructive/70">
                   <ShieldAlert className="h-4 w-4" />
-                  <span className="text-xs font-medium">Erros (24h)</span>
+                  <span className="text-xs font-medium">{t("portal.apikeys.metrics.errors24h")}</span>
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {metricsData.errors_last_24h.toLocaleString("pt-BR")}
@@ -926,26 +918,26 @@ export default function ApiKeys() {
               <div className="bg-muted/50 rounded-xl p-4 space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="h-4 w-4" />
-                  <span className="text-xs font-medium">Último uso</span>
+                  <span className="text-xs font-medium">{t("portal.apikeys.metrics.lastUse")}</span>
                 </div>
                 <p className="text-sm font-medium text-foreground">
                   {metricsData.last_used_at
                     ? new Date(metricsData.last_used_at).toLocaleString("pt-BR")
-                    : "Nunca"}
+                    : t("portal.apikeys.metrics.never")}
                 </p>
               </div>
               {(metricsData.rate_limit_per_minute || metricsData.rate_limit_per_day) && (
                 <div className="col-span-2 bg-muted/30 rounded-xl p-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Rate Limits</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">{t("portal.apikeys.metrics.rateLimits")}</p>
                   <div className="flex gap-4 text-sm">
                     {metricsData.rate_limit_per_minute && (
                       <span className="text-foreground">
-                        <strong>{metricsData.rate_limit_per_minute}</strong>/min
+                        <strong>{metricsData.rate_limit_per_minute}</strong>{t("portal.apikeys.metrics.perMin")}
                       </span>
                     )}
                     {metricsData.rate_limit_per_day && (
                       <span className="text-foreground">
-                        <strong>{metricsData.rate_limit_per_day}</strong>/dia
+                        <strong>{metricsData.rate_limit_per_day}</strong>{t("portal.apikeys.metrics.perDay")}
                       </span>
                     )}
                   </div>

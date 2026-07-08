@@ -1616,6 +1616,126 @@
         "i5": "Consume <code>items[].url</code> and reconcile via <code>partner_reference</code>."
       },
       "goToApiKeys": "Go to API Keys"
+    },
+    "apikeys": {
+      "toasts": {
+        "loadError": "Failed to load data",
+        "loadErrorDesc": "Couldn't fetch the API keys.",
+        "created": "API Key created",
+        "createdDesc": "Key created successfully.",
+        "createdNoValue": "Key created, but couldn't be displayed",
+        "createdNoValueDesc": "Recreate the key to get the access value — it only appears once.",
+        "createError": "Failed to create API Key",
+        "revoked": "API Key revoked",
+        "revokedDesc": "\"{{name}}\" was deactivated.",
+        "revokeError": "Failed to revoke",
+        "chooseCircuit": "Choose a circuit",
+        "chooseCircuits": "Choose at least one circuit",
+        "updated": "API Key updated",
+        "updatedDesc": "\"{{name}}\" was saved.",
+        "saveError": "Failed to save"
+      },
+      "header": {
+        "back": "Settings",
+        "subtitle": "Manage your access keys for integration",
+        "docsPrefix": "Documentation:",
+        "docsLink": "how to use an API key in the quickstart",
+        "newKey": "New API Key"
+      },
+      "empty": "No API Key created",
+      "emptyDesc": "Create a key to integrate with the DeFarm API",
+      "table": {
+        "name": "Name",
+        "scope": "Scope",
+        "status": "Status",
+        "createdAt": "Created at",
+        "lastUsed": "Last used",
+        "actions": "Actions"
+      },
+      "scopeBadge": {
+        "workspace_ingestion": "Smart reception",
+        "circuit": "Specific circuit"
+      },
+      "receivesIn": "Receives in: {{name}}",
+      "statusActive": "Active",
+      "statusRevoked": "Revoked",
+      "rowEdit": "Edit",
+      "rowMetrics": "View metrics",
+      "rowRevoke": "Revoke",
+      "create": {
+        "title": "Create new API Key",
+        "desc": "The key will be shown only once. Save it in a safe place.",
+        "nameLabel": "Key name *",
+        "namePlaceholder": "e.g.: ERP Integration",
+        "howLabel": "How this key receives your data",
+        "smartTitle": "Smart reception",
+        "smartBodyWithDefault": "You send data without pointing to a circuit. It always lands in your <strong>default circuit</strong> (today <strong>{{name}}</strong>) and, in parallel, DeFarm routes each item by identifier (CAR, holding, CNPJ…) to the right circuits — which you use to organize and show data to your clients.",
+        "smartBodyAutoCreate": "You send data without pointing to a circuit. It always lands in your <strong>default circuit</strong> (created automatically on your first send) and, in parallel, DeFarm routes each item by identifier (CAR, holding, CNPJ…) to the right circuits — which you use to organize and show data to your clients.",
+        "viewCircuits": "View circuits",
+        "configureRouting": "Configure routing",
+        "scopePlaceholder": "Select the scope",
+        "scopeOptions": {
+          "workspace_ingestion": "Smart reception (default)",
+          "circuit": "A specific circuit",
+          "circuits": "Multiple circuits",
+          "workspace": "Whole workspace (broad access)"
+        },
+        "hideAdvanced": "Hide advanced options",
+        "showAdvanced": "Advanced options — choose circuit manually",
+        "circuitLabel": "Circuit *",
+        "circuitHelp": "A circuit is where your data lands — a trackable destination in your workspace.",
+        "selectCircuit": "Select a circuit",
+        "circuitsLabel": "Circuits * (choose one or more)",
+        "circuitsHelp": "The key only applies to the checked circuits. Editable later.",
+        "workspaceWarn": "<strong>Global:</strong> the key applies to any circuit in your workspace (including ones created in the future). Use with care — it's the broadest access.",
+        "smartHint": "No extra configuration: DeFarm automatically chooses the reception circuit for your data.",
+        "descLabel": "Description (optional)",
+        "descPlaceholder": "What it will be used for",
+        "expiryLabel": "Expiration in days (optional)",
+        "expiryPlaceholder": "365",
+        "submit": "Create key"
+      },
+      "edit": {
+        "title": "Edit API Key",
+        "desc": "Edit name, description, limits, expiration and the access scope (single circuit, set of circuits or the whole workspace).",
+        "scopeLabel": "Scope",
+        "scopeOptions": {
+          "workspace_ingestion": "Smart reception",
+          "circuit": "Specific circuit",
+          "circuits": "Multiple circuits (set)",
+          "workspace": "Whole workspace (global)"
+        },
+        "circuitsHelp": "Check the circuits to (re)define this key's set.",
+        "workspaceHelp": "Global: the key now applies to any circuit in the workspace.",
+        "rateMin": "Limit / minute",
+        "rateDay": "Limit / day",
+        "newExpiryLabel": "New expiration in days (optional)",
+        "newExpiryPlaceholder": "leave empty to keep",
+        "currentExpires": "Current: expires on {{date}}",
+        "noExpiry": "Current: no expiration",
+        "descLabel": "Description"
+      },
+      "reveal": {
+        "title": "Save your API Key",
+        "desc": "This key will be shown only once. Copy it and store it in a safe place.",
+        "gotIt": "Got it, already copied"
+      },
+      "revoke": {
+        "title": "Revoke API Key",
+        "desc": "Are you sure you want to revoke the key \"{{name}}\"? This action can't be undone.",
+        "confirm": "Revoke"
+      },
+      "metrics": {
+        "title": "Metrics — {{name}}",
+        "total": "Total requests",
+        "last24h": "Last 24h",
+        "errors24h": "Errors (24h)",
+        "lastUse": "Last use",
+        "never": "Never",
+        "rateLimits": "Rate Limits",
+        "perMin": "/min",
+        "perDay": "/day"
+      }
     }
   }
 }
