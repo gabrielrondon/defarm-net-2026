@@ -864,6 +864,53 @@
         "warning": "Warning",
         "blocked": "Blocked",
         "unknown": "Unknown"
+      },
+      "eventType": {
+        "item_created": "Item Created",
+        "item_updated": "Item Updated",
+        "item_deleted": "Item Deleted",
+        "item_archived": "Item Archived",
+        "circuit_created": "Circuit Created",
+        "circuit_updated": "Circuit Updated",
+        "circuit_deleted": "Circuit Deleted",
+        "member_added": "Member Added",
+        "member_removed": "Member Removed",
+        "permission_changed": "Permission Changed",
+        "audit_logged": "Audit Logged",
+        "custom": "Custom Event",
+        "local_item_created": "Local Item Created",
+        "local_item_pushed": "Local Item Pushed",
+        "item_merged": "Items Merged",
+        "item_split": "Item Split",
+        "item_unmerged": "Items Unmerged",
+        "blockchain_anchor_created": "Blockchain Anchor Created",
+        "blockchain_anchor_confirmed": "Blockchain Anchor Confirmed",
+        "ipfs_upload_completed": "IPFS Upload Completed",
+        "item_movement": "Movement",
+        "item_arrived": "Arrival",
+        "item_born": "Birth",
+        "item_weighed": "Weighing",
+        "item_vaccinated": "Vaccination",
+        "item_treated": "Treatment",
+        "item_slaughtered": "Slaughter",
+        "item_classified": "Classification",
+        "property_registered": "Property Registered",
+        "property_audited": "Property Audited",
+        "property_area_updated": "Property Area Updated",
+        "item_enriched": "Item Enriched",
+        "circuit_push": "Circuit Push",
+        "circuit_pull": "Circuit Pull",
+        "item_status_changed": "Status Changed",
+        "blockchain_anchor": "Blockchain Anchor",
+        "ipfs_upload": "IPFS Upload",
+        "item_property_linked": "Linked to Property",
+        "item_property_unlinked": "Unlinked from Property"
+      },
+      "eventVisibility": {
+        "public": "Public",
+        "private": "Private",
+        "circuit_only": "Circuit",
+        "selective": "Selective"
       }
     },
     "ingestion": {
@@ -1394,8 +1441,67 @@
           "provLegacy": "legacy",
           "provBy": "by {{who}}",
           "provOtherOrigin": "another source",
-          "provShared": "shared"
+          "provShared": "shared",
+          "mergedInto": "Merged into",
+          "splitFrom": "Split from"
         }
+      },
+      "timeline": {
+        "title": "History",
+        "eventsCount": "{{count}} management event(s)",
+        "operationalCount": "· {{count}} operational",
+        "hideOperational": "Hide technical",
+        "showBlockchain": "Show blockchain/IPFS",
+        "summary": {
+          "property": "Property: {{property}}",
+          "movementRegistered": "Movement registered",
+          "weightKg": "{{weight}} kg",
+          "bornOn": "Born on {{date}}",
+          "noDetails": "No additional details for this event."
+        },
+        "trust": {
+          "na": "Trust n/a",
+          "high": "High trust",
+          "medium": "Medium trust",
+          "low": "Low trust",
+          "model": "Model {{version}}"
+        },
+        "owner": "owner",
+        "duplicate": "duplicate",
+        "manage": "Manage",
+        "delegate": "Delegate",
+        "delegatePrompt": "Enter the workspace_id that will receive delegation:",
+        "delegateDone": "Delegation registered.",
+        "empty": "No events recorded",
+        "emptyDesc": "Events will appear here as the item is modified"
+      },
+      "deprecateDialog": {
+        "toastSuccess": "Item deprecated successfully",
+        "toastError": "Failed to deprecate: {{msg}}",
+        "title": "Deprecate Item",
+        "desc": "Are you sure you want to deprecate item <dfid>{{dfid}}</dfid>? The item will be archived but its data will be preserved for auditing.",
+        "confirm": "Deprecate"
+      },
+      "editMetadataDialog": {
+        "toastSuccess": "Metadata updated successfully",
+        "toastError": "Failed to update: {{msg}}",
+        "title": "Edit Metadata",
+        "desc": "Immutable fields (DFID, value chain, country, year) can't be changed. Only custom metadata is editable.",
+        "keyLabel": "Key",
+        "valueLabel": "Value",
+        "keyPlaceholder": "e.g.: weight_kg",
+        "valuePlaceholder": "e.g.: 475",
+        "addField": "Add field"
+      },
+      "pushDialog": {
+        "toastSent": "Item sent!",
+        "toastSentDesc": "The item was associated with the circuit successfully.",
+        "toastError": "Failed to send item",
+        "title": "Push to Circuit",
+        "desc": "Select the circuit you want to send item <dfid>{{dfid}}</dfid> to",
+        "noActiveCircuits": "No active circuit available",
+        "sending": "Sending...",
+        "send": "Send to Circuit"
       }
     }
   }
