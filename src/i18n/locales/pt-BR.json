@@ -1551,6 +1551,25 @@
     "cli": {
       "title": "CLI",
       "subtitle": "Comandos prontos para integrar o parceiro rapidamente via terminal."
+    },
+    "embed": {
+      "page": {
+        "section": "Integração",
+        "title": "Link de Visualização",
+        "subtitle": "Um link temporário e só-leitura pra alguém ver o portfólio verificado de um circuito (itens + provas on-chain), sem precisar de conta. Expira no tempo que você definir."
+      },
+      "viewLinkLabel": "Link de visualização (compartilhe este)",
+      "iframeLabel": "Embutir no seu site (iframe · avançado)",
+      "tokenLabel": "Token (avançado)",
+      "circuit": "Circuito",
+      "selectCircuit": "Selecione um circuito",
+      "circuitIdPlaceholder": "ID do circuito",
+      "expiresMin": "Expira (min)",
+      "generating": "Gerando…",
+      "generate": "Gerar link",
+      "linkGenerated": "Link gerado",
+      "expiresAt": "Expira em",
+      "seeAsClient": "Ver como o cliente vê"
     }
   }
 }

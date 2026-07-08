@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,8 @@ import { createEmbedToken, type CreateEmbedTokenResponse } from "@/lib/api/partn
  * alguém ver o portfólio verificado de um circuito (itens + provas on-chain).
  * O token expira em minutos. Embutir num site (iframe) fica como opção avançada.
  */
-export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) {
-  const t = (pt: string, en: string) => (locale === "en" ? en : pt);
+export function PartnerEmbed() {
+  const { t } = useTranslation();
   const circuitsQuery = useQuery({ queryKey: ["partner-circuits"], queryFn: () => getCircuits(), retry: false });
 
   const [circuitId, setCircuitId] = useState("");
@@ -54,15 +55,15 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
     ? [
         {
           key: "url",
-          label: t("Link de visualização (compartilhe este)", "View link (share this)"),
+          label: t("portal.embed.viewLinkLabel"),
           value: result.embed_url,
         },
         {
           key: "iframe",
-          label: t("Embutir no seu site (iframe · avançado)", "Embed in your site (iframe · advanced)"),
+          label: t("portal.embed.iframeLabel"),
           value: iframeSnippet,
         },
-        { key: "token", label: t("Token (avançado)", "Token (advanced)"), value: result.token },
+        { key: "token", label: t("portal.embed.tokenLabel"), value: result.token },
       ]
     : [];
 
@@ -71,14 +72,14 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
       <Card className="p-4 md:p-5 space-y-4">
         <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("Circuito", "Circuit")}</Label>
+            <Label className="text-xs">{t("portal.embed.circuit")}</Label>
             {circuits.length > 0 ? (
               <select
                 className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm"
                 value={circuitId}
                 onChange={(e) => setCircuitId(e.target.value)}
               >
-                <option value="">{t("Selecione um circuito", "Select a circuit")}</option>
+                <option value="">{t("portal.embed.selectCircuit")}</option>
                 {circuits.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -87,14 +88,14 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
               </select>
             ) : (
               <Input
-                placeholder={t("ID do circuito", "Circuit ID")}
+                placeholder={t("portal.embed.circuitIdPlaceholder")}
                 value={circuitId}
                 onChange={(e) => setCircuitId(e.target.value)}
               />
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("Expira (min)", "Expires (min)")}</Label>
+            <Label className="text-xs">{t("portal.embed.expiresMin")}</Label>
             <Input
               type="number"
               min={1}
@@ -104,7 +105,7 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
             />
           </div>
           <Button onClick={generate} disabled={!circuitId || loading}>
-            {loading ? t("Gerando…", "Generating…") : t("Gerar link", "Generate link")}
+            {loading ? t("portal.embed.generating") : t("portal.embed.generate")}
           </Button>
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
@@ -113,9 +114,9 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
       {result && (
         <Card className="p-4 md:p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">{t("Link gerado", "Link generated")}</p>
+            <p className="text-sm font-medium">{t("portal.embed.linkGenerated")}</p>
             <span className="text-xs text-muted-foreground">
-              {t("Expira em", "Expires at")}: {new Date(result.expires_at).toLocaleString()}
+              {t("portal.embed.expiresAt")}: {new Date(result.expires_at).toLocaleString()}
             </span>
           </div>
           {fields.map((f) => (
@@ -131,7 +132,7 @@ export function PartnerEmbed({ locale = "pt-BR" }: { locale?: "pt-BR" | "en" }) 
           ))}
           <Button asChild size="sm" variant="outline">
             <a href={result.embed_url} target="_blank" rel="noreferrer">
-              {t("Ver como o cliente vê", "See what the client sees")}
+              {t("portal.embed.seeAsClient")}
               <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
             </a>
           </Button>
