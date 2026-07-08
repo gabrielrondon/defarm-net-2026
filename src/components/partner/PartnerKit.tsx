@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -123,6 +124,7 @@ function downloadTemplate(content: string, filename: string) {
 }
 
 export function PartnerKit() {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState<"none" | "curl" | "jwt" | "template">("none");
 
   const copyCurl = async () => {
@@ -147,10 +149,9 @@ export function PartnerKit() {
     <div className="space-y-8">
       {/* Hero intro — flat, no card */}
       <div>
-        <h2 className="text-foreground">Kit Parceiro</h2>
+        <h2 className="text-foreground">{t("portal.kit.title")}</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          Passo 1: envie dados com <code className="text-xs bg-muted px-1.5 py-0.5 rounded">value_chain</code> + identificador do ativo rastreável (BEEF: SISBOV preferencial ou CHIP) para <code className="text-xs bg-muted px-1.5 py-0.5 rounded">/v1/partner/ingestions</code>. Identificadores como CAR/EXPLORAÇÃO(MAPA)/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/LAND_DFID/IE/CNPJ/CPF são de roteamento e contexto.
-          Passo 2: valide no preview e suba em produção com API key real. Passo 3: use template/avançados só se necessário.
+          <Trans i18nKey="portal.kit.intro" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
         </p>
       </div>
 
@@ -158,24 +159,24 @@ export function PartnerKit() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="card-accent-left p-4 flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-foreground">Template CSV</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Baixar modelo oficial</p>
+            <p className="text-sm font-medium text-foreground">{t("portal.kit.cards.templateCsv")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("portal.kit.cards.templateCsvDesc")}</p>
           </div>
           <Button size="sm" variant="outline" onClick={() => downloadTemplate(KIT_TEMPLATE, "partner-template.csv")}>
             <FileText className="h-4 w-4 mr-1.5" />
-            Baixar
+            {t("portal.kit.cards.download")}
           </Button>
         </Card>
 
         <Card className="p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">OpenAPI</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Contrato parceiro</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("portal.kit.cards.openapiDesc")}</p>
           </div>
           <Button size="sm" variant="outline" asChild>
             <a href="https://docs.defarm.net/openapi-partner-public.yaml" target="_blank" rel="noreferrer">
               <ExternalLink className="h-4 w-4 mr-1.5" />
-              Abrir
+              {t("portal.kit.cards.open")}
             </a>
           </Button>
         </Card>
@@ -183,12 +184,12 @@ export function PartnerKit() {
         <Card className="p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">Swagger</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Teste interativo</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("portal.kit.cards.swaggerDesc")}</p>
           </div>
           <Button size="sm" variant="outline" asChild>
             <a href="https://docs.defarm.net/swagger-partner.html" target="_blank" rel="noreferrer">
               <ExternalLink className="h-4 w-4 mr-1.5" />
-              Abrir
+              {t("portal.kit.cards.open")}
             </a>
           </Button>
         </Card>
@@ -196,50 +197,49 @@ export function PartnerKit() {
         <Card className="p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">Postman</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Coleção pronta</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("portal.kit.cards.postmanDesc")}</p>
           </div>
           <Button size="sm" variant="outline" asChild>
             <a href="https://docs.defarm.net/postman-partner-collection.json" target="_blank" rel="noreferrer">
               <ExternalLink className="h-4 w-4 mr-1.5" />
-              Abrir
+              {t("portal.kit.cards.open")}
             </a>
           </Button>
         </Card>
       </div>
 
       <p className="text-xs text-muted-foreground -mt-4">
-        Importante: o endpoint <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions</code> já faz roteamento inteligente e não exige template.
+        <Trans i18nKey="portal.kit.noTemplate" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
       </p>
 
       {/* Code examples — accordion enxuto (era 7 cards sempre abertos = parede de texto) */}
       <div className="space-y-3">
-        <p className="section-label">Referência de integração</p>
+        <p className="section-label">{t("portal.kit.refTitle")}</p>
         <p className="text-xs text-muted-foreground -mt-1">
-          O essencial é o Passo 1. Abra os blocos abaixo conforme precisar — nada além do envio é obrigatório.
+          {t("portal.kit.refNote")}
         </p>
         <Accordion type="single" collapsible defaultValue="step1" className="space-y-2">
           <AccordionItem value="client" className="border rounded-lg px-4">
-            <AccordionTrigger className="text-sm font-medium hover:no-underline">Cliente oficial para parceiro (recomendado)</AccordionTrigger>
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">{t("portal.kit.accordion.clientTitle")}</AccordionTrigger>
             <AccordionContent className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Use <code className="text-xs bg-muted px-1 py-0.5 rounded">@defarm/partner-client</code> para enviar arquivos,
-                interpretar resposta e reconciliar links por referência do parceiro.
+                <Trans i18nKey="portal.kit.accordion.clientDesc" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
               </p>
               <pre className="code-block">{PARTNER_CLIENT_EXAMPLE}</pre>
               <p className="text-xs text-muted-foreground">
-                Kit para IA/copilot disponível em <code className="text-xs bg-muted px-1 py-0.5 rounded">docs/partner/ai-skill-kit.md</code>.
+                <Trans i18nKey="portal.kit.accordion.clientAiKit" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
               </p>
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="jwt" className="border rounded-lg px-4">
-            <AccordionTrigger className="text-sm font-medium hover:no-underline">Login JWT (setup)</AccordionTrigger>
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">{t("portal.kit.accordion.jwtTitle")}</AccordionTrigger>
             <AccordionContent className="space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">Use JWT para configuração. API key para operação diária.</p>
+                <p className="text-xs text-muted-foreground">{t("portal.kit.accordion.jwtDesc")}</p>
                 <Button size="sm" variant="ghost" onClick={copyJwt} className="h-7 px-2 text-xs shrink-0">
                   {copied === "jwt" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-                  {copied === "jwt" ? "Copiado" : "Copiar"}
+                  {copied === "jwt" ? t("portal.common.copied") : t("portal.common.copy")}
                 </Button>
               </div>
               <pre className="code-block">{JWT_LOGIN_EXAMPLE}</pre>
@@ -249,20 +249,20 @@ export function PartnerKit() {
           <AccordionItem value="step1" className="border rounded-lg px-4">
             <AccordionTrigger className="text-sm font-medium hover:no-underline">
               <span className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">Passo 1</span>
-                Upload via cURL (básico)
+                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">{t("portal.kit.step1")}</span>
+                {t("portal.kit.accordion.step1Title")}
               </span>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" variant="ghost" onClick={copyCurl} className="h-7 px-2 text-xs">
                   {copied === "curl" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-                  {copied === "curl" ? "Copiado" : "Copiar"}
+                  {copied === "curl" ? t("portal.common.copied") : t("portal.common.copy")}
                 </Button>
               </div>
               <pre className="code-block">{CURL_EXAMPLE}</pre>
               <p className="text-xs text-muted-foreground">
-                Alternativa: também aceitamos JSON direto no body (sem multipart), útil para integração backend-to-backend.
+                {t("portal.kit.accordion.step1Alt")}
               </p>
               <pre className="code-block">{JSON_DIRECT_EXAMPLE}</pre>
             </AccordionContent>
@@ -271,13 +271,13 @@ export function PartnerKit() {
           <AccordionItem value="step2" className="border rounded-lg px-4">
             <AccordionTrigger className="text-sm font-medium hover:no-underline">
               <span className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">Passo 2</span>
-                Preview (dry-run) antes do envio real
+                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">{t("portal.kit.step2")}</span>
+                {t("portal.kit.accordion.step2Title")}
               </span>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Use <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions/preview</code> para simular roteamento sem tokenizar.
+                <Trans i18nKey="portal.kit.accordion.step2Desc" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
               </p>
               <pre className="code-block">{PREVIEW_EXAMPLE}</pre>
             </AccordionContent>
@@ -286,18 +286,18 @@ export function PartnerKit() {
           <AccordionItem value="step3" className="border rounded-lg px-4">
             <AccordionTrigger className="text-sm font-medium hover:no-underline">
               <span className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">Passo 3</span>
-                Template opcional (mapeamento)
+                <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">{t("portal.kit.step3")}</span>
+                {t("portal.kit.accordion.step3Title")}
               </span>
             </AccordionTrigger>
             <AccordionContent className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  Se precisar mapear nomes de colunas diferentes, crie template e envie <code className="text-xs bg-muted px-1 py-0.5 rounded">template_id</code> no upload.
+                  <Trans i18nKey="portal.kit.accordion.step3Desc" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
                 </p>
                 <Button size="sm" variant="ghost" onClick={copyTemplateApi} className="h-7 px-2 text-xs shrink-0">
                   {copied === "template" ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
-                  {copied === "template" ? "Copiado" : "Copiar"}
+                  {copied === "template" ? t("portal.common.copied") : t("portal.common.copy")}
                 </Button>
               </div>
               <pre className="code-block">{TEMPLATE_API_EXAMPLE}</pre>
@@ -305,19 +305,18 @@ export function PartnerKit() {
           </AccordionItem>
 
           <AccordionItem value="ai" className="border rounded-lg px-4">
-            <AccordionTrigger className="text-sm font-medium hover:no-underline">Opcional — AI Skill + Client</AccordionTrigger>
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">{t("portal.kit.accordion.aiTitle")}</AccordionTrigger>
             <AccordionContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">Se quiser acelerar com IA/copilot, use o cliente oficial e o kit de prompt.</p>
+              <p className="text-xs text-muted-foreground">{t("portal.kit.accordion.aiDesc")}</p>
               <pre className="code-block">{`npm install @defarm/partner-client\nhttps://docs.defarm.net/docs/partner-tooling`}</pre>
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="response" className="border rounded-lg px-4">
-            <AccordionTrigger className="text-sm font-medium hover:no-underline">Resposta útil para navegação</AccordionTrigger>
+            <AccordionTrigger className="text-sm font-medium hover:no-underline">{t("portal.kit.accordion.responseTitle")}</AccordionTrigger>
             <AccordionContent className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Após upload, use <code className="text-xs bg-muted px-1 py-0.5 rounded">items[].url</code> para abrir item por item (DFID + identificadores) e
-                <code className="text-xs bg-muted px-1 py-0.5 rounded ml-1">errors[]</code> para saber exatamente o que corrigir.
+                <Trans i18nKey="portal.kit.accordion.responseDesc" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
               </p>
               <pre className="code-block">{RESPONSE_EXAMPLE}</pre>
             </AccordionContent>
@@ -327,17 +326,17 @@ export function PartnerKit() {
 
       {/* Checklist — flat list, no card */}
       <div>
-        <p className="section-label mb-3">Checklist para produção</p>
+        <p className="section-label mb-3">{t("portal.kit.checklist.title")}</p>
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside marker:text-muted-foreground/40">
-          <li>Gerar API Key <code className="text-xs bg-muted px-1 py-0.5 rounded">workspace_ingestion</code> (sem configuração adicional).</li>
-          <li>Opcional: rodar preview em <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions/preview</code> para validar o lote.</li>
-          <li>Enviar em chunks (recomendado 50-150 linhas por request) para <code className="text-xs bg-muted px-1 py-0.5 rounded">/v1/partner/ingestions</code>.</li>
-          <li>Resolver pendências em Roteamento.</li>
-          <li>Consumir <code className="text-xs bg-muted px-1 py-0.5 rounded">items[].url</code> e reconciliar via <code className="text-xs bg-muted px-1 py-0.5 rounded">partner_reference</code>.</li>
+          <li><Trans i18nKey="portal.kit.checklist.i1" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} /></li>
+          <li><Trans i18nKey="portal.kit.checklist.i2" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} /></li>
+          <li><Trans i18nKey="portal.kit.checklist.i3" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} /></li>
+          <li>{t("portal.kit.checklist.i4")}</li>
+          <li><Trans i18nKey="portal.kit.checklist.i5" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} /></li>
         </ol>
         <a href="/app/api-keys" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-3">
           <Link2 className="h-3.5 w-3.5" />
-          Ir para API Keys
+          {t("portal.kit.goToApiKeys")}
         </a>
       </div>
     </div>
