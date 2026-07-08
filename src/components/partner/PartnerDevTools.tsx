@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -143,6 +144,7 @@ function LanguageLogo({ language, slug }: { language: string; slug: string }) {
 }
 
 export function PartnerCliTools() {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState<"none" | "cli">("none");
 
   const copy = async (target: "cli", content: string) => {
@@ -161,7 +163,7 @@ export function PartnerCliTools() {
           </h4>
           <Button size="sm" variant="outline" onClick={() => copy("cli", CLI_SNIPPET)}>
             {copied === "cli" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            Copiar
+            {t("portal.common.copy")}
           </Button>
         </div>
         <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{CLI_SNIPPET}</pre>
@@ -171,6 +173,7 @@ export function PartnerCliTools() {
 }
 
 export function PartnerSdkTools() {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState<string>("none");
 
   const copy = async (target: string, content: string) => {
@@ -182,10 +185,9 @@ export function PartnerSdkTools() {
   return (
     <div className="space-y-6">
       <Card className="p-5">
-        <h3 className="text-base font-semibold text-foreground">SDKs DeFarm para Parceiros</h3>
+        <h3 className="text-base font-semibold text-foreground">{t("portal.sdk.tools.title")}</h3>
         <p className="text-sm text-muted-foreground mt-1.5">
-          Escolha a linguagem do seu stack e use o pacote oficial. Todos os SDKs seguem os mesmos conceitos de autenticacao (JWT e API key),
-          ingestao e reconciliacao de resposta.
+          {t("portal.sdk.tools.desc")}
         </p>
       </Card>
 
@@ -197,7 +199,7 @@ export function PartnerSdkTools() {
           </h4>
           <Button size="sm" variant="outline" onClick={() => copy("sdk", SDK_SNIPPET)}>
             {copied === "sdk" ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            Copiar
+            {t("portal.common.copy")}
           </Button>
         </div>
         <pre className="bg-muted rounded-lg p-3 overflow-x-auto text-xs text-muted-foreground">{SDK_SNIPPET}</pre>
@@ -214,22 +216,22 @@ export function PartnerSdkTools() {
                   {sdk.language}
                 </h4>
                 {comingSoon ? (
-                  <Badge variant="outline">Em breve</Badge>
+                  <Badge variant="outline">{t("portal.sdk.tools.comingSoon")}</Badge>
                 ) : (
                   <Badge variant={sdk.status === "stable" ? "default" : "secondary"}>v{sdk.version}</Badge>
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground">{sdk.note}</p>
+              <p className="text-xs text-muted-foreground">{t(`portal.sdk.tools.catalog.${sdk.id}`, { defaultValue: sdk.note })}</p>
 
               {comingSoon ? (
                 <p className="text-xs italic text-muted-foreground">
-                  Pacote em breve — por enquanto use o SDK TypeScript ou a API direta.
+                  {t("portal.sdk.tools.comingSoonNote")}
                 </p>
               ) : (
                 <>
                   <div className="text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">Pacote:</span>{" "}
+                    <span className="font-medium text-foreground">{t("portal.sdk.tools.packageLabel")}</span>{" "}
                     <code>{sdk.packageName}</code>
                   </div>
 
@@ -244,7 +246,7 @@ export function PartnerSdkTools() {
                       ) : (
                         <Copy className="h-4 w-4 mr-2" />
                       )}
-                      Copiar install
+                      {t("portal.sdk.tools.copyInstall")}
                     </Button>
                     <a
                       href={sdk.repoUrl}
@@ -252,7 +254,7 @@ export function PartnerSdkTools() {
                       rel="noreferrer"
                       className="text-xs text-primary hover:underline"
                     >
-                      Abrir pacote
+                      {t("portal.sdk.tools.openPackage")}
                     </a>
                   </div>
                 </>

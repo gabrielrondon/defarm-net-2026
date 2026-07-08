@@ -1012,7 +1012,10 @@
       "loading": "Carregando…",
       "back": "Voltar",
       "cancel": "Cancelar",
-      "tryAgain": "Tente novamente"
+      "tryAgain": "Tente novamente",
+      "beta": "Beta",
+      "betaNote": "Esta seção está em fase beta. Você já pode usar e validar os fluxos no seu workspace.",
+      "copy": "Copiar"
     },
     "routing": {
       "header": {
@@ -1503,6 +1506,51 @@
         "sending": "Enviando...",
         "send": "Enviar para Circuito"
       }
+    },
+    "docs": {
+      "section": "Desenvolvimento",
+      "title": "Documentação",
+      "subtitle": "Recursos para integrar com a plataforma DeFarm.",
+      "integration": {
+        "title": "Guia de Integração",
+        "desc": "Passo a passo para conectar sua aplicação à API DeFarm."
+      },
+      "apiRef": {
+        "title": "Referência da API",
+        "desc": "Endpoints, autenticação e exemplos de requisição."
+      },
+      "formats": {
+        "title": "Formatos de Arquivo",
+        "desc": "Especificação dos formatos CSV e JSON aceitos na ingestão."
+      },
+      "openFull": "Abrir documentação completa"
+    },
+    "sdk": {
+      "title": "SDKs",
+      "subtitle": "Catálogo multi-linguagem para integrar a DeFarm direto no software do parceiro.",
+      "tools": {
+        "title": "SDKs DeFarm para Parceiros",
+        "desc": "Escolha a linguagem do seu stack e use o pacote oficial. Todos os SDKs seguem os mesmos conceitos de autenticação (JWT e API key), ingestão e reconciliação de resposta.",
+        "comingSoon": "Em breve",
+        "comingSoonNote": "Pacote em breve — por enquanto use o SDK TypeScript ou a API direta.",
+        "packageLabel": "Pacote:",
+        "copyInstall": "Copiar install",
+        "openPackage": "Abrir pacote",
+        "catalog": {
+          "typescript": "SDK principal, usado como base para integrações de parceiro.",
+          "python": "Cliente com foco em automações de ingestão e reconciliação.",
+          "go": "SDK sem dependências externas, ideal para serviços backend.",
+          "php": "Voltado para stacks web PHP com fluxo server-to-server.",
+          "ruby": "Integração orientada a jobs e APIs em Ruby.",
+          "kotlin": "SDK para JVM com foco em sistemas corporativos.",
+          "java": "Versão beta para ecossistema Java 11+.",
+          "dotnet": "SDK beta para integrações .NET 8+."
+        }
+      }
+    },
+    "cli": {
+      "title": "CLI",
+      "subtitle": "Comandos prontos para integrar o parceiro rapidamente via terminal."
     }
   }
 }
