@@ -1315,6 +1315,87 @@
           "deprecateError": "Erro ao depreciar",
           "noCircuitError": "Não foi possível determinar o circuito do item."
         }
+      },
+      "detail": {
+        "notFound": "Item não encontrado",
+        "notFoundDesc": "O item que você está procurando não existe ou você não tem permissão para acessá-lo.",
+        "backToItems": "Voltar para Itens",
+        "property": {
+          "title": "Rastro por propriedade (LAND)",
+          "desc": "Associações de custódia/proveniência do item por DFID de terra.",
+          "transferOption": "Transferência (GTA)",
+          "annotationOption": "Anotação estática",
+          "gtaPlaceholder": "GTA (obrigatório em transferência)",
+          "link": "Vincular",
+          "loading": "Carregando vínculos...",
+          "empty": "Nenhum vínculo de propriedade registrado para este item.",
+          "transfer": "Transferência",
+          "transferWithGta": "Transferência · GTA {{gta}}",
+          "annotation": "Anotação",
+          "ended": "Encerrado",
+          "active": "Ativo",
+          "period": "Período: {{period}}",
+          "periodOpen": "em aberto",
+          "endLink": "Encerrar vínculo"
+        },
+        "compliance": {
+          "title": "Compliance das propriedades LAND ativas",
+          "desc": "Resumo de verificação por propriedade vinculada e ativa.",
+          "loading": "Carregando compliance...",
+          "empty": "Sem propriedades LAND ativas para verificar.",
+          "noData": "Sem dados de compliance disponíveis.",
+          "carLine": "CAR: {{car}} · Última checagem: {{date}}",
+          "carNotInformed": "não informado",
+          "checkNA": "n/d",
+          "refresh": "Atualizar"
+        },
+        "toasts": {
+          "linkCreated": "Vínculo criado",
+          "linkCreatedDesc": "Item associado à propriedade.",
+          "linkError": "Falha ao vincular propriedade",
+          "linkRemoved": "Vínculo removido",
+          "linkRemovedDesc": "O vínculo foi encerrado (soft unlink).",
+          "unlinkError": "Falha ao remover vínculo",
+          "complianceRefreshed": "Compliance atualizado",
+          "complianceRefreshError": "Falha ao atualizar compliance"
+        },
+        "header": {
+          "statusAlive": "Vivo",
+          "tokenized": "Tokenizado",
+          "local": "Local",
+          "copyDfid": "Copiar DFID",
+          "pushToCircuit": "Push para Circuito",
+          "editMetadata": "Editar metadados",
+          "deprecateItem": "Depreciar item"
+        },
+        "identifiers": {
+          "stellarConfirming": "Em confirmação…",
+          "notAnchored": "Não ancorado",
+          "infoTitle": "Informações",
+          "infoDesc": "Dados do item",
+          "valueChain": "Cadeia de Valor",
+          "country": "País",
+          "yearSeason": "Ano / Safra",
+          "title": "Identificadores",
+          "registered": "{{count}} registrado(s)",
+          "canonical": "canônico",
+          "tokenization": "Tokenização",
+          "anchorsSubtitle": "Anchors blockchain & IPFS",
+          "stellarCount": "Stellar ({{count}})",
+          "asset": "Asset:",
+          "memo": "Memo:",
+          "cidHistory": "Histórico de CIDs ({{count}})",
+          "current": "atual",
+          "metadata": "Metadados",
+          "createdAt": "Criado em",
+          "lastUpdate": "Última atualização",
+          "idLabel": "ID",
+          "additionalData": "Dados Adicionais",
+          "provLegacy": "legado",
+          "provBy": "por {{who}}",
+          "provOtherOrigin": "outra origem",
+          "provShared": "compartilhado"
+        }
       }
     }
   }

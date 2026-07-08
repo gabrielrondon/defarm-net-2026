@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ClipboardCheck, Link2, Loader2, Package, RefreshCcw, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,13 +12,14 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getPropertyCompliance, refreshPropertyCompliance, type PropertyCompliance } from "@/lib/api";
 
-function formatAssociationPeriod(linkedAt: string, unlinkedAt?: string | null): string {
+function formatAssociationPeriod(linkedAt: string, unlinkedAt: string | null | undefined, openLabel: string): string {
   const start = new Date(linkedAt).toLocaleString("pt-BR");
-  const end = unlinkedAt ? new Date(unlinkedAt).toLocaleString("pt-BR") : "em aberto";
+  const end = unlinkedAt ? new Date(unlinkedAt).toLocaleString("pt-BR") : openLabel;
   return `${start} -> ${end}`;
 }
 
 export default function ItemDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -83,12 +85,12 @@ export default function ItemDetail() {
       queryClient.invalidateQueries({ queryKey: ["itemPropertyLinks", id] });
       queryClient.invalidateQueries({ queryKey: ["itemEvents", id] });
       queryClient.invalidateQueries({ queryKey: ["item", id] });
-      toast({ title: "Vínculo criado", description: "Item associado à propriedade." });
+      toast({ title: t("portal.items.detail.toasts.linkCreated"), description: t("portal.items.detail.toasts.linkCreatedDesc") });
     },
     onError: (err) => {
       toast({
-        title: "Falha ao vincular propriedade",
-        description: err instanceof Error ? err.message : "Tente novamente.",
+        title: t("portal.items.detail.toasts.linkError"),
+        description: err instanceof Error ? err.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -100,12 +102,12 @@ export default function ItemDetail() {
       queryClient.invalidateQueries({ queryKey: ["itemPropertyLinks", id] });
       queryClient.invalidateQueries({ queryKey: ["itemEvents", id] });
       queryClient.invalidateQueries({ queryKey: ["item", id] });
-      toast({ title: "Vínculo removido", description: "O vínculo foi encerrado (soft unlink)." });
+      toast({ title: t("portal.items.detail.toasts.linkRemoved"), description: t("portal.items.detail.toasts.linkRemovedDesc") });
     },
     onError: (err) => {
       toast({
-        title: "Falha ao remover vínculo",
-        description: err instanceof Error ? err.message : "Tente novamente.",
+        title: t("portal.items.detail.toasts.unlinkError"),
+        description: err instanceof Error ? err.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     },
@@ -138,7 +140,7 @@ export default function ItemDetail() {
                 property_dfid: dfid,
                 status: "unknown",
                 source: "defarm_compliance_api",
-                summary: "Sem dados de compliance disponíveis.",
+                summary: t("portal.items.detail.compliance.noData"),
               } satisfies PropertyCompliance,
             ] as const;
           }
@@ -162,11 +164,11 @@ export default function ItemDetail() {
       setRefreshingProperty(dfid);
       await refreshPropertyCompliance(dfid, true);
       await queryClient.invalidateQueries({ queryKey: ["itemPropertyComplianceMap", id] });
-      toast({ title: "Compliance atualizado", description: dfid });
+      toast({ title: t("portal.items.detail.toasts.complianceRefreshed"), description: dfid });
     } catch (error) {
       toast({
-        title: "Falha ao atualizar compliance",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("portal.items.detail.toasts.complianceRefreshError"),
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -187,15 +189,15 @@ export default function ItemDetail() {
       <div className="max-w-2xl mx-auto text-center py-12">
         <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          Item não encontrado
+          {t("portal.items.detail.notFound")}
         </h1>
         <p className="text-muted-foreground mb-6">
-          O item que você está procurando não existe ou você não tem permissão para acessá-lo.
+          {t("portal.items.detail.notFoundDesc")}
         </p>
         <Link to="/app/itens">
           <Button>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Itens
+            {t("portal.items.detail.backToItems")}
           </Button>
         </Link>
       </div>
@@ -221,8 +223,8 @@ export default function ItemDetail() {
 
       <section className="bg-background border border-border rounded-xl p-4 space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Rastro por propriedade (LAND)</h2>
-          <p className="text-sm text-muted-foreground">Associações de custódia/proveniência do item por DFID de terra.</p>
+          <h2 className="text-lg font-semibold text-foreground">{t("portal.items.detail.property.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("portal.items.detail.property.desc")}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
@@ -237,11 +239,11 @@ export default function ItemDetail() {
             value={isTransfer ? "transfer" : "annotation"}
             onChange={(e) => setIsTransfer(e.target.value === "transfer")}
           >
-            <option value="transfer">Transferência (GTA)</option>
-            <option value="annotation">Anotação estática</option>
+            <option value="transfer">{t("portal.items.detail.property.transferOption")}</option>
+            <option value="annotation">{t("portal.items.detail.property.annotationOption")}</option>
           </select>
           <Input
-            placeholder="GTA (obrigatório em transferência)"
+            placeholder={t("portal.items.detail.property.gtaPlaceholder")}
             value={gtaNumber}
             onChange={(e) => setGtaNumber(e.target.value)}
             disabled={!isTransfer}
@@ -251,16 +253,16 @@ export default function ItemDetail() {
             disabled={!propertyDfid.trim() || addLinkMutation.isPending || (isTransfer && !gtaNumber.trim())}
           >
             <Link2 className="h-4 w-4 mr-2" />
-            Vincular
+            {t("portal.items.detail.property.link")}
           </Button>
         </div>
 
         {isLoadingLinks ? (
           <div className="py-4 text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Carregando vínculos...
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("portal.items.detail.property.loading")}
           </div>
         ) : propertyLinks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum vínculo de propriedade registrado para este item.</p>
+          <p className="text-sm text-muted-foreground">{t("portal.items.detail.property.empty")}</p>
         ) : (
           <div className="space-y-2">
             {propertyLinks.map((link) => (
@@ -268,18 +270,20 @@ export default function ItemDetail() {
                 <div>
                   <p className="font-mono text-sm">{link.property_dfid}</p>
                   <p className="text-xs text-muted-foreground">
-                    {link.is_transfer ? `Transferência${link.gta_number ? ` · GTA ${link.gta_number}` : ""}` : "Anotação"}
+                    {link.is_transfer
+                      ? (link.gta_number ? t("portal.items.detail.property.transferWithGta", { gta: link.gta_number }) : t("portal.items.detail.property.transfer"))
+                      : t("portal.items.detail.property.annotation")}
                     {" · "}
-                    {link.unlinked_at ? "Encerrado" : "Ativo"}
+                    {link.unlinked_at ? t("portal.items.detail.property.ended") : t("portal.items.detail.property.active")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Período: {formatAssociationPeriod(link.linked_at, link.unlinked_at)}
+                    {t("portal.items.detail.property.period", { period: formatAssociationPeriod(link.linked_at, link.unlinked_at, t("portal.items.detail.property.periodOpen")) })}
                   </p>
                 </div>
                 {!link.unlinked_at && (
                   <Button size="sm" variant="outline" onClick={() => unlinkMutation.mutate(link.id)} disabled={unlinkMutation.isPending}>
                     <Unlink className="h-4 w-4 mr-2" />
-                    Encerrar vínculo
+                    {t("portal.items.detail.property.endLink")}
                   </Button>
                 )}
               </div>
@@ -292,17 +296,17 @@ export default function ItemDetail() {
         <div>
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4 text-primary" />
-            Compliance das propriedades LAND ativas
+            {t("portal.items.detail.compliance.title")}
           </h2>
-          <p className="text-sm text-muted-foreground">Resumo de verificação por propriedade vinculada e ativa.</p>
+          <p className="text-sm text-muted-foreground">{t("portal.items.detail.compliance.desc")}</p>
         </div>
 
         {isLoadingCompliance ? (
           <div className="py-4 text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Carregando compliance...
+            <Loader2 className="h-4 w-4 animate-spin" /> {t("portal.items.detail.compliance.loading")}
           </div>
         ) : activePropertyDfids.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sem propriedades LAND ativas para verificar.</p>
+          <p className="text-sm text-muted-foreground">{t("portal.items.detail.compliance.empty")}</p>
         ) : (
           <div className="space-y-2">
             {activePropertyDfids.map((dfid) => {
@@ -312,8 +316,10 @@ export default function ItemDetail() {
                   <div>
                     <p className="font-mono text-sm">{dfid}</p>
                     <p className="text-xs text-muted-foreground">
-                      CAR: {compliance?.car || "não informado"} ·
-                      {" "}Última checagem: {compliance?.checked_at ? new Date(compliance.checked_at).toLocaleString("pt-BR") : "n/d"}
+                      {t("portal.items.detail.compliance.carLine", {
+                        car: compliance?.car || t("portal.items.detail.compliance.carNotInformed"),
+                        date: compliance?.checked_at ? new Date(compliance.checked_at).toLocaleString("pt-BR") : t("portal.items.detail.compliance.checkNA"),
+                      })}
                     </p>
                     {compliance?.summary ? (
                       <p className="text-xs text-muted-foreground mt-1">{compliance.summary}</p>
@@ -321,7 +327,7 @@ export default function ItemDetail() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={cn("text-xs px-2 py-1 rounded-full font-medium", complianceBadge(compliance?.status))}>
-                      {(compliance?.status || "unknown").toUpperCase()}
+                      {t(`portal.enums.complianceStatus.${(compliance?.status || "unknown").toLowerCase()}`, { defaultValue: compliance?.status })}
                       {typeof compliance?.score === "number" ? ` · ${compliance.score}` : ""}
                     </span>
                     <Button
@@ -335,7 +341,7 @@ export default function ItemDetail() {
                       ) : (
                         <RefreshCcw className="h-3.5 w-3.5 mr-2" />
                       )}
-                      Atualizar
+                      {t("portal.items.detail.compliance.refresh")}
                     </Button>
                   </div>
                 </div>

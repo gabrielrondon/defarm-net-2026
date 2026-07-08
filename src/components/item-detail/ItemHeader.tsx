@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   Package,
@@ -31,6 +32,7 @@ interface ItemHeaderProps {
 }
 
 export function ItemHeader({ item }: ItemHeaderProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
@@ -57,7 +59,7 @@ export function ItemHeader({ item }: ItemHeaderProps) {
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground w-fit"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar para Itens
+          {t("portal.items.detail.backToItems")}
         </button>
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -99,9 +101,9 @@ export function ItemHeader({ item }: ItemHeaderProps) {
                     <XCircle className="h-3 w-3" />
                   )}
                   {item.status === "Active" || item.status === "active"
-                    ? "Vivo"
+                    ? t("portal.items.detail.header.statusAlive")
                     : item.status === "archived"
-                    ? "Arquivado"
+                    ? t("portal.enums.itemStatus.archived")
                     : item.status}
                 </span>
                 <span
@@ -115,12 +117,12 @@ export function ItemHeader({ item }: ItemHeaderProps) {
                   {isTokenized ? (
                     <>
                       <QrCode className="h-3 w-3" />
-                      Tokenizado
+                      {t("portal.items.detail.header.tokenized")}
                     </>
                   ) : (
                     <>
                       <Package className="h-3 w-3" />
-                      Local
+                      {t("portal.items.detail.header.local")}
                     </>
                   )}
                 </span>
@@ -145,7 +147,7 @@ export function ItemHeader({ item }: ItemHeaderProps) {
                 ) : (
                   <Copy className="h-3 w-3" />
                 )}
-                Copiar DFID
+                {t("portal.items.detail.header.copyDfid")}
               </button>
             </div>
           </div>
@@ -153,7 +155,7 @@ export function ItemHeader({ item }: ItemHeaderProps) {
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setIsPushDialogOpen(true)}>
               <GitBranch className="h-4 w-4 mr-2" />
-              Push para Circuito
+              {t("portal.items.detail.header.pushToCircuit")}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -164,14 +166,14 @@ export function ItemHeader({ item }: ItemHeaderProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setIsEditMetadataOpen(true)}>
                   <Tag className="h-4 w-4 mr-2" />
-                  Editar metadados
+                  {t("portal.items.detail.header.editMetadata")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive"
                   onClick={() => setIsDeprecateOpen(true)}
                 >
-                  Depreciar item
+                  {t("portal.items.detail.header.deprecateItem")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
