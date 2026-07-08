@@ -911,6 +911,12 @@
         "private": "Private",
         "circuit_only": "Circuit",
         "selective": "Selective"
+      },
+      "deliveryStatus": {
+        "pending": "Pending",
+        "delivered": "Delivered",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
       }
     },
     "ingestion": {
@@ -1735,6 +1741,88 @@
         "rateLimits": "Rate Limits",
         "perMin": "/min",
         "perDay": "/day"
+      }
+    },
+    "webhooks": {
+      "subtitle": "Receive automatic notifications in your system when there are relevant updates.",
+      "refreshHealth": "Refresh health",
+      "betaNote": "This section is in beta. You can already use it and validate the notification flows in your workspace.",
+      "health": {
+        "title": "Webhooks health",
+        "subtitle": "Diagnostics per real delivery"
+      },
+      "stats": {
+        "total": "Total",
+        "active": "Active",
+        "deliveries": "Deliveries",
+        "success": "Success",
+        "failures": "Failures",
+        "pending": "Pending"
+      },
+      "recentIssues": "Recent issues",
+      "noDetails": "No details",
+      "noCriticalIssues": "No critical issues at the moment.",
+      "new": "New webhook",
+      "form": {
+        "circuit": "Circuit",
+        "selectCircuit": "Select the circuit",
+        "name": "Name",
+        "namePlaceholder": "E.g.: Batch update",
+        "url": "Destination URL",
+        "urlPlaceholder": "https://your-system.com/webhooks/defarm",
+        "events": "Events (comma-separated)",
+        "secret": "Secret (optional)",
+        "secretPlaceholder": "Security signature",
+        "submit": "Create webhook"
+      },
+      "registered": "Registered webhooks",
+      "empty": "No webhook registered.",
+      "item": {
+        "active": "Active",
+        "paused": "Paused",
+        "circuit": "Circuit: {{name}}",
+        "lastDelivery": "Last delivery: {{date}}",
+        "copyUrl": "Copy URL",
+        "pause": "Pause",
+        "activate": "Activate",
+        "remove": "Remove"
+      },
+      "itemStats": {
+        "total": "Total",
+        "success": "Success",
+        "failure": "Failure",
+        "lastStatus": "Last status"
+      },
+      "delivery": {
+        "success": "Delivery completed successfully",
+        "pendingRetry": "Delivery pending, retry scheduled",
+        "nextRetry": "Next attempt: {{date}}",
+        "pendingQueue": "Delivery pending in queue",
+        "failure": "Delivery failure",
+        "noTargetDetails": "No details returned by the target.",
+        "httpFailure": "HTTP failure {{code}}"
+      },
+      "badge": {
+        "checking": "Checking",
+        "diagnosticError": "Diagnostic error",
+        "healthy": "Healthy",
+        "failing": "Failing",
+        "waiting": "Waiting"
+      },
+      "diagnosticError": "Failed to load diagnostics",
+      "toasts": {
+        "loadError": "Failed to load webhooks",
+        "loadErrorDesc": "Couldn't fetch the webhooks.",
+        "noEvent": "Enter at least 1 event",
+        "created": "Webhook created",
+        "createdDesc": "Automatic delivery activated for this circuit.",
+        "createError": "Failed to create webhook",
+        "paused": "Webhook paused",
+        "activated": "Webhook activated",
+        "updateError": "Failed to update webhook",
+        "removed": "Webhook removed",
+        "removeError": "Failed to remove webhook",
+        "urlCopied": "URL copied"
       }
     }
   }
