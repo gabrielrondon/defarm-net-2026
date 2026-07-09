@@ -27,6 +27,7 @@ import VerificarEmail from "./pages/VerificarEmail";
 import NotFound from "./pages/NotFound";
 import DemoAcessos from "./pages/DemoAcessos";
 import DemoNarrativa from "./pages/DemoNarrativa";
+import DemoDashboard from "./pages/DemoDashboard";
 import StellarOverview from "./pages/StellarOverview";
 import StellarTranche1 from "./pages/StellarTranche1";
 import StellarTranche2 from "./pages/StellarTranche2";
@@ -250,6 +251,9 @@ const App = () => (
             <Route path="/c/:id" element={<PublicCircuit />} />
             <Route path="/i/:identifierType/:identifierValue" element={<PublicItem />} />
             <Route path="/i/:dfid" element={<PublicItem />} />
+            {/* Demo institucional pública do CIR (sem login, dados sintéticos/LGPD).
+                URL opaca: /demo/<código>. Ver DemoDashboard.tsx. */}
+            <Route path="/demo/:code" element={<DemoDashboard />} />
             <Route path="/embed/item/:dfid" element={<PublicItem />} />
             <Route path="/compare" element={<CompareItems />} />
             <Route path="/embed/portfolio" element={<EmbedPortfolio />} />
