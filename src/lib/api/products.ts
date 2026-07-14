@@ -41,7 +41,10 @@ export interface EudrCompliance {
 export interface EudrOrigin {
   car: string;
   compliance: EudrCompliance | null;
-  polygon: { type?: string; coordinates?: number[][][] } | null;
+  polygon: {
+    type?: "Polygon" | "MultiPolygon" | string;
+    coordinates?: number[][][] | number[][][][];
+  } | null;
   polygon_source: string | null;
   area_ha: number | null;
 }

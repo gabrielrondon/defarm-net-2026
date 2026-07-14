@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
-import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
+import { carGeoJSONFromEudrOrigin, getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { emitEudr, listEudrEmissions, getEudrEmission, getEudrEmissionFull, getPartnerUsage, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
 import { downloadEudrPdf, type EudrPdfLabels } from "@/lib/eudr-pdf";
 import { EudrVerifyShare } from "@/components/EudrVerifyShare";
@@ -144,18 +144,27 @@ export default function EudrScreen() {
 
   // Mapa REAL do polígono (satélite + CAR via /car/:car/geojson), como em /i/:dfid.
   // Busca pro CAR de origem do statement; se não resolver, cai no placeholder.
-  const originCar = stmt.origin[0]?.car;
+  const origin = stmt.origin[0];
+  const originCar = origin?.car;
   useEffect(() => {
     setMapGeo(null);
     // Só busca o mapa real de uma DDS REAL (emitida/consultada). No demo/estado
     // vazio o CAR é fake/inexistente → evita 404 e chamada inútil à Check a cada load.
-    if (!originCar || (view !== "emitted" && view !== "consulted")) return;
+    if (!origin || (view !== "emitted" && view !== "consulted")) return;
+
+    const snapshotGeo = carGeoJSONFromEudrOrigin(origin);
+    if (snapshotGeo) {
+      setMapGeo(snapshotGeo);
+      return;
+    }
+
+    if (!originCar) return;
     let cancelled = false;
     getCarGeoJSON(originCar, { skipAuth: true })
       .then((g) => { if (!cancelled) setMapGeo(g); })
       .catch(() => { /* CAR sem geometria → placeholder */ });
     return () => { cancelled = true; };
-  }, [originCar, view]);
+  }, [origin, originCar, view]);
 
   const openGate = (reason: "demo" | "credits" = "demo") => {
     setGateReason(reason);

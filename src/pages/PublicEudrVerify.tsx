@@ -7,7 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnchorStatus, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
-import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
+import { carGeoJSONFromEudrOrigin, getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { verifyEudrPublic, type EudrStatement } from "@/lib/api/products";
 import { downloadEudrPdf } from "@/lib/eudr-pdf";
 import { EudrVerifyShare } from "@/components/EudrVerifyShare";
@@ -47,16 +47,25 @@ export default function PublicEudrVerify() {
     return () => { cancelled = true; };
   }, [dfid]);
 
-  const originCar = stmt?.origin?.[0]?.car;
+  const origin = stmt?.origin?.[0];
+  const originCar = origin?.car;
   useEffect(() => {
     setMapGeo(null);
+    if (!origin) return;
+
+    const snapshotGeo = carGeoJSONFromEudrOrigin(origin);
+    if (snapshotGeo) {
+      setMapGeo(snapshotGeo);
+      return;
+    }
+
     if (!originCar) return;
     let cancelled = false;
     getCarGeoJSON(originCar, { skipAuth: true })
       .then((g) => { if (!cancelled) setMapGeo(g); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [originCar]);
+  }, [origin, originCar]);
 
   const anchor = stmt ? anchorStateOf(stmt.immutability.anchor_status) : "pending";
   const emittedFmt = emittedAt ? emittedAt.replace("T", " ").slice(0, 16) + "Z" : "";

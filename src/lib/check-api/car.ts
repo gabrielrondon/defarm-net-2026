@@ -1,3 +1,4 @@
+import type { EudrOrigin } from "@/lib/api/products";
 import { checkRequest } from "./client";
 
 // Direct API base for public endpoints (bypasses gateway auth)
@@ -50,6 +51,23 @@ export interface CarGeoJSON {
   type: "Feature";
   properties: Record<string, any>;
   geometry: CarGeometry;
+}
+
+export function carGeoJSONFromEudrOrigin(origin: EudrOrigin | null | undefined): CarGeoJSON | null {
+  const polygon = origin?.polygon;
+  if (!polygon || (polygon.type !== "Polygon" && polygon.type !== "MultiPolygon") || !polygon.coordinates) {
+    return null;
+  }
+
+  return {
+    type: "Feature",
+    properties: {
+      carNumber: origin.car,
+      source: origin.polygon_source,
+      areaHa: origin.area_ha,
+    },
+    geometry: polygon as CarGeometry,
+  };
 }
 
 export async function getCarMetadata(carNumber: string, { skipAuth = false } = {}): Promise<CarMetadata> {
