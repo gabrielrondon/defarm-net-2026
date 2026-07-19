@@ -1544,7 +1544,7 @@ export default function PublicItem() {
       .sort((a, b) => b.version - a.version);
   }, [proofs?.content_versions, latestContentVersion]);
 
-  const visibleEvents = showOperational ? events : realEvents;
+  const visibleEvents = isAuthenticated && showOperational ? events : realEvents;
 
   const associatedCircuitIds = useMemo(() => {
     const ids = events
@@ -2817,22 +2817,7 @@ export default function PublicItem() {
             )}
           </div>
 
-          {!isAuthenticated ? (
-            <div className="rounded-xl border border-border bg-muted/30 py-8 px-5 text-center">
-              <Lock className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-sm text-foreground font-medium">
-                {metadataLocale === "en" ? "History visible for logged-in users" : "Histórico visível para usuários logados"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {metadataLocale === "en"
-                  ? "Sign in to DeFarm to view detailed timeline context."
-                  : "Entre na DeFarm para visualizar a timeline detalhada."}
-              </p>
-              <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`} className="inline-block mt-4">
-                <Button size="sm">{metadataLocale === "en" ? "Sign in to DeFarm" : "Entrar na DeFarm"}</Button>
-              </Link>
-            </div>
-          ) : isLoadingEvents ? (
+          {isLoadingEvents ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
@@ -2842,7 +2827,7 @@ export default function PublicItem() {
               <p className="text-sm text-foreground font-medium">
                 {metadataLocale === "en" ? "No public events for this item." : "Sem eventos públicos neste item."}
               </p>
-              {operationalEvents.length > 0 && !showOperational ? (
+              {isAuthenticated && operationalEvents.length > 0 && !showOperational ? (
                 <>
                   <p className="text-xs text-muted-foreground mt-1">
                     {metadataLocale === "en"
@@ -2930,7 +2915,23 @@ export default function PublicItem() {
                                     <div className="flex items-baseline gap-2">
                                       <span className="text-xs font-medium text-foreground">{label}</span>
                                       <span className="text-[10px] text-muted-foreground tabular-nums">{date}</span>
-                                      {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
+                                        {event.signature_verified === true && (
+                                          <span
+                                            className="inline-flex items-center gap-0.5 font-medium text-emerald-600"
+                                            title={`Assinatura verificada criptograficamente${event.signature_key_id ? ` — chave ${event.signature_key_id}` : ""}`}
+                                          >
+                                            · <BadgeCheck className="h-3 w-3" /> assinado
+                                          </span>
+                                        )}
+                                        {event.signature_verified === false && (
+                                          <span
+                                            className="inline-flex items-center gap-0.5 text-amber-600"
+                                            title="Este evento traz uma assinatura que NÃO foi verificada contra a chave do emissor"
+                                          >
+                                            · <BadgeCheck className="h-3 w-3" /> assinatura inválida
+                                          </span>
+                                        )}
+                                        {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
                                     </div>
                                     {summary && <p className="text-xs text-muted-foreground mt-0.5">{summary}</p>}
                                     {isExp && hasPayload && (
@@ -2972,6 +2973,8 @@ export default function PublicItem() {
                               const color = EVENT_ICON_COLORS[group.type] || "#8b5cf6";
                               const groupKey = `group-${gi}-${year}`;
                               const isGroupExp = expandedEvents.has(groupKey);
+                              const groupHasVerifiedSignature = group.events.some((event) => event.signature_verified === true);
+                              const groupHasInvalidSignature = !groupHasVerifiedSignature && group.events.some((event) => event.signature_verified === false);
                               // Range sempre antigo -> recente (independe da ordem de exibição dos eventos)
                               const groupMonths = group.events
                                 .map((ev) => {
@@ -2996,6 +2999,16 @@ export default function PublicItem() {
                                       <div className="flex items-baseline gap-2">
                                         <span className="text-xs font-medium text-foreground">{group.events.length} {label}</span>
                                         <span className="text-[10px] text-muted-foreground tabular-nums">{dateRange}</span>
+                                        {groupHasVerifiedSignature && (
+                                          <span className="inline-flex items-center gap-0.5 font-medium text-emerald-600 text-[10px]">
+                                            · <BadgeCheck className="h-3 w-3" /> assinado
+                                          </span>
+                                        )}
+                                        {groupHasInvalidSignature && (
+                                          <span className="inline-flex items-center gap-0.5 text-amber-600 text-[10px]">
+                                            · <BadgeCheck className="h-3 w-3" /> assinatura inválida
+                                          </span>
+                                        )}
                                         <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isGroupExp ? "rotate-180" : ""}`} />
                                       </div>
                                     </div>
