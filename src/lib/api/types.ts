@@ -1141,6 +1141,11 @@ export interface PublicItemEvent {
   // getPublicWorkspace). source_type mirrors the issuer's workspace_type.
   event_owner_workspace_id?: string | null;
   source_type?: string | null;
+  // Cryptographic attribution, re-verified at read time on the backend (same check as
+  // /api/verify). null/undefined = unsigned; true = signature verified against the
+  // issuer's key valid at signing time; false = a signature was present but did not verify.
+  signature_verified?: boolean | null;
+  signature_key_id?: string | null;
 }
 
 /// Minimal public workspace fields for provenance resolution (the moat).
