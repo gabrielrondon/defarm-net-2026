@@ -10,7 +10,6 @@ import {
   CalendarDays,
   Globe,
   Fingerprint,
-  BadgeCheck,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -33,6 +32,7 @@ import {
   Printer,
   Share2,
 } from "lucide-react";
+import { SignedBadge } from "@/components/item-detail/SignedBadge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -2915,22 +2915,7 @@ export default function PublicItem() {
                                     <div className="flex items-baseline gap-2">
                                       <span className="text-xs font-medium text-foreground">{label}</span>
                                       <span className="text-[10px] text-muted-foreground tabular-nums">{date}</span>
-                                        {event.signature_verified === true && (
-                                          <span
-                                            className="inline-flex items-center gap-0.5 font-medium text-emerald-600"
-                                            title={`Assinatura verificada criptograficamente${event.signature_key_id ? ` — chave ${event.signature_key_id}` : ""}`}
-                                          >
-                                            · <BadgeCheck className="h-3 w-3" /> assinado
-                                          </span>
-                                        )}
-                                        {event.signature_verified === false && (
-                                          <span
-                                            className="inline-flex items-center gap-0.5 text-amber-600"
-                                            title="Este evento traz uma assinatura que NÃO foi verificada contra a chave do emissor"
-                                          >
-                                            · <BadgeCheck className="h-3 w-3" /> assinatura inválida
-                                          </span>
-                                        )}
+                                        <SignedBadge signatureVerified={event.signature_verified} signatureKeyId={event.signature_key_id} />
                                         {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
                                     </div>
                                     {summary && <p className="text-xs text-muted-foreground mt-0.5">{summary}</p>}
@@ -2999,16 +2984,10 @@ export default function PublicItem() {
                                       <div className="flex items-baseline gap-2">
                                         <span className="text-xs font-medium text-foreground">{group.events.length} {label}</span>
                                         <span className="text-[10px] text-muted-foreground tabular-nums">{dateRange}</span>
-                                        {groupHasVerifiedSignature && (
-                                          <span className="inline-flex items-center gap-0.5 font-medium text-emerald-600 text-[10px]">
-                                            · <BadgeCheck className="h-3 w-3" /> assinado
-                                          </span>
-                                        )}
-                                        {groupHasInvalidSignature && (
-                                          <span className="inline-flex items-center gap-0.5 text-amber-600 text-[10px]">
-                                            · <BadgeCheck className="h-3 w-3" /> assinatura inválida
-                                          </span>
-                                        )}
+                                        <SignedBadge
+                                          signatureVerified={groupHasVerifiedSignature ? true : groupHasInvalidSignature ? false : null}
+                                          size="xs"
+                                        />
                                         <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isGroupExp ? "rotate-180" : ""}`} />
                                       </div>
                                     </div>
@@ -3033,22 +3012,7 @@ export default function PublicItem() {
                                                 <span className="text-muted-foreground/70"> ({workspaceTypeLabel(issuerMap[event.event_owner_workspace_id].workspace_type)})</span>
                                               </span>
                                             )}
-                                            {event.signature_verified === true && (
-                                              <span
-                                                className="inline-flex items-center gap-0.5 font-medium text-emerald-600"
-                                                title={`Assinatura verificada criptograficamente${event.signature_key_id ? ` — chave ${event.signature_key_id}` : ""}`}
-                                              >
-                                                · <BadgeCheck className="h-3 w-3" /> assinado
-                                              </span>
-                                            )}
-                                            {event.signature_verified === false && (
-                                              <span
-                                                className="inline-flex items-center gap-0.5 text-amber-600"
-                                                title="Este evento traz uma assinatura que NÃO foi verificada contra a chave do emissor"
-                                              >
-                                                · <BadgeCheck className="h-3 w-3" /> assinatura inválida
-                                              </span>
-                                            )}
+                                            <SignedBadge signatureVerified={event.signature_verified} signatureKeyId={event.signature_key_id} />
                                             {event.payload && Object.keys(event.payload).length > 0 && (
                                               <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${expandedEvents.has(event.id) ? "rotate-180" : ""}`} />
                                             )}
