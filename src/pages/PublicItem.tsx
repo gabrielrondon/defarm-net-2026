@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Globe,
   Fingerprint,
+  BadgeCheck,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -3017,6 +3018,22 @@ export default function PublicItem() {
                                               <span className="text-muted-foreground">
                                                 · por {issuerMap[event.event_owner_workspace_id].name}
                                                 <span className="text-muted-foreground/70"> ({workspaceTypeLabel(issuerMap[event.event_owner_workspace_id].workspace_type)})</span>
+                                              </span>
+                                            )}
+                                            {event.signature_verified === true && (
+                                              <span
+                                                className="inline-flex items-center gap-0.5 font-medium text-emerald-600"
+                                                title={`Assinatura verificada criptograficamente${event.signature_key_id ? ` — chave ${event.signature_key_id}` : ""}`}
+                                              >
+                                                · <BadgeCheck className="h-3 w-3" /> assinado
+                                              </span>
+                                            )}
+                                            {event.signature_verified === false && (
+                                              <span
+                                                className="inline-flex items-center gap-0.5 text-amber-600"
+                                                title="Este evento traz uma assinatura que NÃO foi verificada contra a chave do emissor"
+                                              >
+                                                · <BadgeCheck className="h-3 w-3" /> assinatura inválida
                                               </span>
                                             )}
                                             {event.payload && Object.keys(event.payload).length > 0 && (
