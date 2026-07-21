@@ -89,6 +89,7 @@ import {
   refreshPropertyCompliance,
   type PropertyCompliance,
 } from "@/lib/api";
+import { getCircuitMembers } from "@/lib/api/circuits";
 import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import { CircuitFeeds } from "@/components/circuit/CircuitFeeds";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
@@ -126,6 +127,12 @@ export default function CircuitoDetail() {
   const { data: circuit, isLoading: isLoadingCircuit, error: circuitError } = useQuery({
     queryKey: ["circuit", id],
     queryFn: () => getCircuit(id!),
+    enabled: !!id,
+  });
+
+  const membersQuery = useQuery({
+    queryKey: ["circuitMembers", id],
+    queryFn: () => getCircuitMembers(id!),
     enabled: !!id,
   });
 
@@ -398,6 +405,8 @@ export default function CircuitoDetail() {
   const typeLabel = t(`portal.enums.circuitType.${circuit.circuit_type?.toLowerCase()}`, { defaultValue: circuit.circuit_type });
   const memberCount = Array.isArray((circuit as any).members)
     ? (circuit as any).members.length
+    : typeof membersQuery.data?.count === "number"
+    ? membersQuery.data.count
     : typeof (circuit as any).member_count === "number"
     ? (circuit as any).member_count
     : 1;
