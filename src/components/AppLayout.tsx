@@ -69,7 +69,7 @@ const navCatalog: NavItem[] = [
   { icon: Upload, label: "Enviar dados", href: "/app/parceiro/ingestao" },
   { icon: Route, label: "Roteamento", href: "/app/parceiro/roteamento" },
   { icon: BookOpen, label: "Docs", href: "https://docs.defarm.net/docs/getting-started", external: true },
-  { icon: ScrollText, label: "Logs", href: "/app/parceiro/logs" },
+  { icon: ScrollText, label: "Central de Envios", href: "/app/parceiro/logs" },
   { icon: Key, label: "API Keys", href: "/app/api-keys" },
   { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
   { icon: TerminalSquare, label: "CLI", href: "/app/cli" },

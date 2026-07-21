@@ -38,6 +38,7 @@ export interface RawPayloadSummary {
   id: string;
   workspace_id: string;
   source_circuit_id?: string | null;
+  created_by?: string | null;
   intake_mode: string;
   content_type?: string | null;
   file_name?: string | null;
@@ -388,7 +389,7 @@ export async function downloadRawPayload(
   const response = await registryFileRequest(`/partner/ingestions/raw/${id}/download`);
   const blob = await response.blob();
   const contentDisposition = response.headers.get("content-disposition") || "";
-  const fileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+  const fileNameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
   const fallbackExt = inferExtension(options?.contentType || undefined, blob.type);
   const fallbackName =
     options?.suggestedFileName && options.suggestedFileName.trim().length > 0

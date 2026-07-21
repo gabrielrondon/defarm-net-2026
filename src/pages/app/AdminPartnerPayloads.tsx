@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, ExternalLink, FileJson, FileSpreadsheet, Radio, RefreshCw, ScrollText, Webhook } from "lucide-react";
+import { Clipboard, Download, ExternalLink, FileJson, FileSpreadsheet, FileText, Radio, RefreshCw, ScrollText, Webhook } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,36 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { listRawPayloads, downloadRawPayload, type RawPayloadSummary } from "@/lib/api/partner-routing";
-import { listWorkspaces, reprocessIngestion, type AdminWorkspace } from "@/lib/api/admin-users";
+import { listAdminUsers, listWorkspaces, reprocessIngestion, type AdminUser, type AdminWorkspace } from "@/lib/api/admin-users";
 import { Link } from "react-router-dom";
+
+type ResponseSnapshot = {
+  summary?: {
+    status?: string;
+    total_rows?: number;
+    processed_rows?: number;
+    unresolved_rows?: number;
+    items?: number;
+    items_created?: number;
+    items_enriched?: number;
+    routes?: number;
+    impacted_circuits?: number;
+    created_circuits?: number;
+    partner_reference?: unknown;
+  };
+  items_count?: number;
+  items_preview?: Array<{
+    dfid?: string;
+    url?: string;
+    public_url?: string;
+    resolution_result?: string;
+    matched_existing_item?: boolean;
+    partner_reference?: string | null;
+    routes?: Array<{ route_type?: string; route_value?: string; circuit_id?: string | null }>;
+  }>;
+  errors?: Array<{ reason_code?: string; message?: string }>;
+  routes?: Array<{ route_type?: string; route_value?: string; status?: string; rows?: number; items?: number; circuit_id?: string | null }>;
+};
 
 function csvEscape(value: string): string {
   if (value.includes(",") || value.includes('"') || value.includes("\n")) {
@@ -71,6 +99,25 @@ function downloadTextFile(content: string, filename: string, contentType: string
   URL.revokeObjectURL(url);
 }
 
+function asResponseSnapshot(metadata: Record<string, unknown> | undefined): ResponseSnapshot | null {
+  const snapshot = metadata?.response_snapshot;
+  return snapshot && typeof snapshot === "object" ? (snapshot as ResponseSnapshot) : null;
+}
+
+function shortHash(hash: string): string {
+  return hash.length > 16 ? `${hash.slice(0, 16)}...` : hash;
+}
+
+function userLabel(user?: AdminUser | null): string {
+  if (!user) return "n/a";
+  const name = user.full_name?.trim();
+  return name ? `${name} <${user.email}>` : user.email;
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export default function AdminPartnerPayloads() {
   const { toast } = useToast();
   const [workspaceId, setWorkspaceId] = useState<string>("all");
@@ -89,6 +136,11 @@ export default function AdminPartnerPayloads() {
   const workspacesQuery = useQuery({
     queryKey: ["admin-workspaces-all"],
     queryFn: listWorkspaces,
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ["admin-users-all-for-payloads"],
+    queryFn: listAdminUsers,
   });
 
   const payloadsQuery = useQuery({
@@ -114,10 +166,10 @@ export default function AdminPartnerPayloads() {
         description: `status: ${r.status} · itens: ${r.items_found} (enriquecidos ${r.items_enriched}) · eventos: ${r.events_created} (dup ignorados ${r.events_skipped_duplicate})`,
       });
       if (!dryRun) payloadsQuery.refetch();
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: dryRun ? "Falha na simulação" : "Falha no reprocessamento",
-        description: e?.message || "Não foi possível reprocessar o payload.",
+        description: errorMessage(e, "Não foi possível reprocessar o payload."),
         variant: "destructive",
       });
     } finally {
@@ -125,8 +177,28 @@ export default function AdminPartnerPayloads() {
     }
   };
 
-  const rows = payloadsQuery.data?.rows || [];
-  const filteredRows = rows.filter((row: RawPayloadSummary) => {
+  const workspaceLabel = useCallback((id: string) => {
+    const ws = (workspacesQuery.data || []).find((w) => w.id === id);
+    return ws ? `${ws.name} (${ws.slug})` : id;
+  }, [workspacesQuery.data]);
+
+  const workspaceById = useCallback(
+    (id: string) => (workspacesQuery.data || []).find((w) => w.id === id) || null,
+    [workspacesQuery.data]
+  );
+  const userById = useCallback(
+    (id?: string | null) => (id ? (usersQuery.data || []).find((u) => u.id === id) || null : null),
+    [usersQuery.data]
+  );
+  const submitterLabel = useCallback((row: RawPayloadSummary) => {
+    const user = userById(row.created_by);
+    if (user) return userLabel(user);
+    if (row.intake_mode === "api_key") return "API key da workspace";
+    return row.created_by || "n/a";
+  }, [userById]);
+
+  const rows = useMemo(() => payloadsQuery.data?.rows || [], [payloadsQuery.data?.rows]);
+  const filteredRows = useMemo(() => rows.filter((row: RawPayloadSummary) => {
     if (status !== "all" && row.status !== status) return false;
     if (onlyNew && !newIds.has(row.id)) return false;
     const q = search.trim().toLowerCase();
@@ -135,13 +207,58 @@ export default function AdminPartnerPayloads() {
       (row.file_name || "").toLowerCase().includes(q) ||
       row.payload_sha256.toLowerCase().includes(q) ||
       row.workspace_id.toLowerCase().includes(q) ||
+      workspaceLabel(row.workspace_id).toLowerCase().includes(q) ||
+      (row.created_by || "").toLowerCase().includes(q) ||
       (row.error_message || "").toLowerCase().includes(q)
     );
-  });
+  }), [newIds, onlyNew, rows, search, status, workspaceLabel]);
 
-  const workspaceLabel = (id: string) => {
-    const ws = partnerWorkspaces.find((w) => w.id === id);
-    return ws ? `${ws.name} (${ws.slug})` : id;
+  const buildReceipt = (row: RawPayloadSummary): string => {
+    const snapshot = asResponseSnapshot(row.metadata);
+    const summary = snapshot?.summary;
+    const ws = workspaceById(row.workspace_id);
+    const owner = userById(ws?.owner_id) || null;
+    const items = snapshot?.items_preview || [];
+    const errors = snapshot?.errors || [];
+    const lines = [
+      "Recibo de envio DeFarm",
+      "",
+      `Payload: ${row.id}`,
+      `Workspace: ${workspaceLabel(row.workspace_id)}`,
+      `Responsável pela workspace: ${ws?.owner_email || userLabel(owner)}`,
+      `Enviado por: ${submitterLabel(row)}`,
+      `Arquivo: ${row.file_name || "payload"}`,
+      `Status: ${row.status}`,
+      `Recebido em: ${new Date(row.created_at).toLocaleString("pt-BR")}`,
+      `Processado em: ${row.processed_at ? new Date(row.processed_at).toLocaleString("pt-BR") : "n/a"}`,
+      `SHA256: ${row.payload_sha256}`,
+      "",
+      "Resultado",
+      `Linhas totais: ${summary?.total_rows ?? "n/a"}`,
+      `Linhas processadas: ${summary?.processed_rows ?? "n/a"}`,
+      `Itens retornados: ${snapshot?.items_count ?? summary?.items ?? items.length}`,
+      `Itens criados: ${summary?.items_created ?? "n/a"}`,
+      `Itens enriquecidos: ${summary?.items_enriched ?? "n/a"}`,
+      `Rotas: ${summary?.routes ?? "n/a"}`,
+      `Erros: ${errors.length}`,
+    ];
+
+    if (items.length > 0) {
+      lines.push("", "Itens");
+      for (const item of items) {
+        lines.push(`- ${item.dfid || "DFID n/a"} · ${item.resolution_result || "resultado n/a"} · ${item.url || item.public_url || "sem URL"}`);
+      }
+    }
+
+    if (errors.length > 0) {
+      lines.push("", "Erros");
+      for (const error of errors) {
+        lines.push(`- ${error.reason_code || "erro"}: ${error.message || "sem mensagem"}`);
+      }
+    }
+
+    lines.push("", "Observação: este recibo confirma o processamento técnico do envio e não inclui identificadores sensíveis do payload bruto.");
+    return lines.join("\n");
   };
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
@@ -434,7 +551,7 @@ export default function AdminPartnerPayloads() {
                   {new Date(row.created_at).toLocaleString("pt-BR")} · {workspaceLabel(row.workspace_id)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {row.payload_size_bytes.toLocaleString("pt-BR")} bytes · sha256 {row.payload_sha256.slice(0, 16)}...
+                  {row.payload_size_bytes.toLocaleString("pt-BR")} bytes · sha256 {shortHash(row.payload_sha256)}
                 </p>
                 {row.error_message ? (
                   <p className="text-xs text-destructive mt-1">{row.error_message}</p>
@@ -461,6 +578,22 @@ export default function AdminPartnerPayloads() {
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Workspace</p>
                   <p className="text-sm">{workspaceLabel(selected.workspace_id)}</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Enviado por</p>
+                    <p className="text-sm">{submitterLabel(selected)}</p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Responsável pela workspace</p>
+                    <p className="text-sm">
+                      {(() => {
+                        const ws = workspaceById(selected.workspace_id);
+                        const owner = userById(ws?.owner_id);
+                        return ws?.owner_email || userLabel(owner);
+                      })()}
+                    </p>
+                  </div>
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Arquivo</p>
@@ -496,10 +629,84 @@ export default function AdminPartnerPayloads() {
                     <p className="text-sm text-destructive">{selected.error_message}</p>
                   </div>
                 ) : null}
+                {(() => {
+                  const snapshot = asResponseSnapshot(selected.metadata);
+                  const summary = snapshot?.summary;
+                  const items = snapshot?.items_preview || [];
+                  const errors = snapshot?.errors || [];
+                  if (!snapshot) return null;
+                  return (
+                    <div className="rounded-lg border p-3 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Resultado do processamento</p>
+                          <p className="text-sm font-medium">
+                            {summary?.items_created ?? 0} criado(s), {summary?.items_enriched ?? 0} enriquecido(s), {errors.length} erro(s)
+                          </p>
+                        </div>
+                        <span className={`text-[11px] px-2 py-1 rounded-full border ${
+                          summary?.status === "completed" || selected.status === "completed"
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-muted text-muted-foreground border-border"
+                        }`}>
+                          {summary?.status || selected.status}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="rounded-md bg-muted/40 p-2">
+                          <p className="text-[11px] text-muted-foreground">Linhas</p>
+                          <p className="text-sm font-medium">{summary?.processed_rows ?? "n/a"}/{summary?.total_rows ?? "n/a"}</p>
+                        </div>
+                        <div className="rounded-md bg-muted/40 p-2">
+                          <p className="text-[11px] text-muted-foreground">Itens</p>
+                          <p className="text-sm font-medium">{snapshot.items_count ?? summary?.items ?? items.length}</p>
+                        </div>
+                        <div className="rounded-md bg-muted/40 p-2">
+                          <p className="text-[11px] text-muted-foreground">Rotas</p>
+                          <p className="text-sm font-medium">{summary?.routes ?? "n/a"}</p>
+                        </div>
+                        <div className="rounded-md bg-muted/40 p-2">
+                          <p className="text-[11px] text-muted-foreground">Circuitos</p>
+                          <p className="text-sm font-medium">{summary?.impacted_circuits ?? "n/a"}</p>
+                        </div>
+                      </div>
+                      {items.length > 0 ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">Links retornados ao parceiro</p>
+                          {items.map((item, index) => (
+                            <div key={`${item.dfid || "item"}-${index}`} className="rounded-md border bg-background p-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{item.dfid || "DFID não retornado"}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.resolution_result || "resultado n/a"}
+                                    {typeof item.matched_existing_item === "boolean"
+                                      ? item.matched_existing_item ? " · item existente" : " · item novo"
+                                      : ""}
+                                  </p>
+                                </div>
+                                {(item.url || item.public_url) ? (
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <a href={item.url || item.public_url} target="_blank" rel="noreferrer">
+                                      Abrir <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                                    </a>
+                                  </Button>
+                                ) : null}
+                              </div>
+                              {(item.url || item.public_url) ? (
+                                <p className="text-xs font-mono break-all text-muted-foreground mt-1">{item.url || item.public_url}</p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
                 <details className="rounded-lg border p-3" open>
                   <summary className="text-xs text-muted-foreground cursor-pointer select-none">Resposta snapshot (quando disponível)</summary>
                   <pre className="mt-2 max-h-64 overflow-auto text-[11px] leading-relaxed bg-muted/40 rounded p-2">
-                    {JSON.stringify((selected.metadata as any)?.response_snapshot || {
+                    {JSON.stringify(asResponseSnapshot(selected.metadata) || {
                       note: "Sem response_snapshot neste registro (payload antigo ou anterior ao patch).",
                     }, null, 2)}
                   </pre>
@@ -526,10 +733,10 @@ export default function AdminPartnerPayloads() {
                         a.download = fileName;
                         a.click();
                         URL.revokeObjectURL(url);
-                      } catch (e: any) {
+                      } catch (e: unknown) {
                         toast({
                           title: "Falha ao baixar payload",
-                          description: e?.message || "Não foi possível baixar o payload bruto.",
+                          description: errorMessage(e, "Não foi possível baixar o payload bruto."),
                           variant: "destructive",
                         });
                       }
@@ -537,6 +744,42 @@ export default function AdminPartnerPayloads() {
                   >
                     <Download className="h-4 w-4 mr-1" />
                     Baixar payload bruto
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(buildReceipt(selected));
+                        toast({
+                          title: "Recibo copiado",
+                          description: "O recibo do envio está pronto para compartilhar.",
+                        });
+                      } catch (e: unknown) {
+                        toast({
+                          title: "Falha ao copiar recibo",
+                          description: errorMessage(e, "Não foi possível copiar para a área de transferência."),
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    <Clipboard className="h-4 w-4 mr-1" />
+                    Copiar recibo
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      downloadTextFile(
+                        buildReceipt(selected),
+                        `recibo-defarm-${selected.id}.txt`,
+                        "text/plain;charset=utf-8"
+                      );
+                    }}
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    Baixar recibo
                   </Button>
                   <Button
                     variant="outline"

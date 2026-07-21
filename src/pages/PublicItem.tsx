@@ -422,6 +422,19 @@ function compactJson(value: unknown): string {
   }
 }
 
+function readCommitment(value: unknown): { alg?: string; domain?: string; version?: string; value?: string } | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const commitmentValue = typeof record.value === "string" ? record.value : undefined;
+  if (!commitmentValue) return null;
+  return {
+    alg: typeof record.alg === "string" ? record.alg : undefined,
+    domain: typeof record.domain === "string" ? record.domain : undefined,
+    version: typeof record.version === "string" ? record.version : undefined,
+    value: commitmentValue,
+  };
+}
+
 function weightSourceLabel(source: WeightPoint["source"], locale: MetadataLocale): string {
   if (locale === "en") {
     if (source === "event") return "public event";
@@ -2569,9 +2582,9 @@ export default function PublicItem() {
                         );
                       }
 
-                      if (normalized === "weight_kg" && (typeof value === "number" || typeof value === "string")) {
-                        const weight = Number(value);
-                        return (
+	                      if (normalized === "weight_kg" && (typeof value === "number" || typeof value === "string")) {
+	                        const weight = Number(value);
+	                        return (
                           <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
                             <button
@@ -2591,11 +2604,50 @@ export default function PublicItem() {
                               </p>
                             )}
                           </div>
-                        );
-                      }
+	                        );
+	                      }
 
-                      return (
-                        <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5">
+	                      if (normalized === "sisbov_commitment") {
+	                        const commitment = readCommitment(value);
+	                        return (
+	                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-emerald-50/70 border border-emerald-100 rounded-lg p-3.5 space-y-2">
+	                            <div className="flex items-center gap-1.5">
+	                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+	                              <p className="text-[11px] text-emerald-700 uppercase tracking-wider">
+	                                {metadataLocale === "en" ? "Protected SISBOV" : "SISBOV protegido"}
+	                              </p>
+	                            </div>
+	                            <p className="text-sm font-medium text-stone-900">
+	                              {metadataLocale === "en" ? "Identifier verified by cryptographic commitment" : "Identificador verificado por compromisso criptográfico"}
+	                            </p>
+	                            <p className="text-xs text-stone-600">
+	                              {metadataLocale === "en"
+	                                ? "The raw SISBOV number is not shown on the public page."
+	                                : "O número SISBOV bruto não é exibido na página pública."}
+	                            </p>
+	                            {commitment ? (
+	                              <div className="flex flex-wrap gap-1.5 pt-1">
+	                                {commitment.alg ? (
+	                                  <span className="rounded-full bg-white border border-emerald-100 px-2 py-0.5 text-[11px] text-emerald-800">
+	                                    {commitment.alg}
+	                                  </span>
+	                                ) : null}
+	                                {commitment.version ? (
+	                                  <span className="rounded-full bg-white border border-emerald-100 px-2 py-0.5 text-[11px] text-emerald-800">
+	                                    {commitment.version}
+	                                  </span>
+	                                ) : null}
+	                                <span className="rounded-full bg-white border border-emerald-100 px-2 py-0.5 text-[11px] font-mono text-emerald-800">
+	                                  {shortHash(commitment.value || "")}
+	                                </span>
+	                              </div>
+	                            ) : null}
+	                          </div>
+	                        );
+	                      }
+
+	                      return (
+	                        <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5">
                           <div className="flex items-center gap-1.5">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
                             <Tooltip>
