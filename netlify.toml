@@ -1,10 +1,16 @@
 [build]
   command = "npm install --legacy-peer-deps && npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "22"
   NPM_FLAGS = "--legacy-peer-deps"
+
+[[redirects]]
+  from = "/api/check/*"
+  to = "/.netlify/functions/check-api-proxy/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"
