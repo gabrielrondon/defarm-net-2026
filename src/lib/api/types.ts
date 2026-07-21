@@ -202,6 +202,13 @@ export interface CircuitTermAcceptance {
   join_request_id?: string | null;
 }
 
+export interface CircuitTermStatusResponse {
+  requires_terms_acceptance: boolean;
+  term?: CircuitTerm | null;
+  accepted: boolean;
+  acceptance?: CircuitTermAcceptance | null;
+}
+
 export interface UpdateCircuitRequest {
   name?: string | null;
   description?: string | null;

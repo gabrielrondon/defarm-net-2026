@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -79,7 +79,7 @@ import {
   getItem,
   getItemAnchors,
   updateCircuit,
-  getCircuitTerm,
+  getCircuitTermStatus,
   publishCircuitTerm,
   acceptCircuitTerm,
   Item, 
@@ -120,6 +120,7 @@ export default function CircuitoDetail() {
   const [termPolicyVersion, setTermPolicyVersion] = useState("cir-v1");
   const [termBody, setTermBody] = useState(CIR_DEFAULT_TERM_BODY);
   const [termMaterial, setTermMaterial] = useState(true);
+  const [isEditingTerm, setIsEditingTerm] = useState(false);
 
   // Fetch circuit details
   const { data: circuit, isLoading: isLoadingCircuit, error: circuitError } = useQuery({
@@ -129,11 +130,20 @@ export default function CircuitoDetail() {
   });
 
   const termQuery = useQuery({
-    queryKey: ["circuitTerm", id],
-    queryFn: () => getCircuitTerm(id!),
+    queryKey: ["circuitTermStatus", id],
+    queryFn: () => getCircuitTermStatus(id!),
     enabled: !!id,
     retry: false,
   });
+
+  useEffect(() => {
+    const term = termQuery.data?.term;
+    if (!term || isEditingTerm) return;
+    setTermTitle(term.title);
+    setTermPolicyVersion(term.policy_version ?? "");
+    setTermBody(term.body);
+    setTermMaterial(term.material);
+  }, [isEditingTerm, termQuery.data?.term]);
 
   // Admin: conceder/remover o selo "Verificado pela DeFarm".
   const verifyMutation = useMutation({
@@ -185,7 +195,8 @@ export default function CircuitoDetail() {
         title: "Termo publicado",
         description: `Versão ${term.version} registrada para este circuito.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["circuitTerm", id] });
+      setIsEditingTerm(false);
+      queryClient.invalidateQueries({ queryKey: ["circuitTermStatus", id] });
     },
     onError: (error) =>
       toast({
@@ -202,7 +213,7 @@ export default function CircuitoDetail() {
         title: "Aceite registrado",
         description: `Termo v${acceptance.term_version} aceito em ${new Date(acceptance.accepted_at).toLocaleString("pt-BR")}.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["circuitTerm", id] });
+      queryClient.invalidateQueries({ queryKey: ["circuitTermStatus", id] });
       queryClient.invalidateQueries({ queryKey: ["circuit", id] });
     },
     onError: (error) =>
@@ -315,6 +326,14 @@ export default function CircuitoDetail() {
   const safePendingJoinRequests = Array.isArray(pendingJoinRequests) ? pendingJoinRequests : [];
   const safeCircuitItems = Array.isArray(circuitItems) ? circuitItems : [];
   const safeAllItems = Array.isArray(allItems) ? allItems : [];
+  const currentTerm = termQuery.data?.term ?? null;
+  const hasPublishedCurrentDraft =
+    Boolean(currentTerm) &&
+    termTitle.trim() === currentTerm?.title &&
+    termBody.trim() === currentTerm?.body &&
+    (termPolicyVersion.trim() || null) === (currentTerm?.policy_version ?? null) &&
+    termMaterial === Boolean(currentTerm?.material);
+  const shouldShowTermEditor = isEditingTerm || !currentTerm;
   const safeFilteredItems = safeCircuitItems.filter((item) => {
     const searchLower = searchQuery.toLowerCase();
     return (
@@ -740,48 +759,78 @@ export default function CircuitoDetail() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="term-title">Título</Label>
-            <Input id="term-title" value={termTitle} onChange={(e) => setTermTitle(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="term-policy">Versão de política</Label>
-            <Input
-              id="term-policy"
-              value={termPolicyVersion}
-              onChange={(e) => setTermPolicyVersion(e.target.value)}
-              placeholder="cir-v1"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="term-body">Texto do termo</Label>
-            <Textarea
-              id="term-body"
-              className="min-h-[260px] leading-relaxed"
-              value={termBody}
-              onChange={(e) => setTermBody(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={termMaterial}
-                onCheckedChange={setTermMaterial}
-                aria-label="Marcar como mudança material"
-              />
+          {!shouldShowTermEditor && currentTerm ? (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Mudança material</p>
-                <p className="text-xs text-muted-foreground">Força reaceite dos membros quando uma nova versão muda a política.</p>
+                <p className="text-sm font-medium text-primary flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Termo publicado
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Versão {currentTerm.version}
+                  {currentTerm.policy_version ? ` · ${currentTerm.policy_version}` : ""}
+                  {" · "}
+                  {currentTerm.material ? "mudança material" : "mudança editorial"}
+                </p>
               </div>
+              <Button variant="outline" onClick={() => setIsEditingTerm(true)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Nova versão
+              </Button>
             </div>
-            <Button
-              onClick={() => publishTermMutation.mutate()}
-              disabled={publishTermMutation.isPending || !termTitle.trim() || !termBody.trim()}
-            >
-              {publishTermMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ScrollText className="h-4 w-4 mr-2" />}
-              Publicar termo
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="term-title">Título</Label>
+                <Input id="term-title" value={termTitle} onChange={(e) => setTermTitle(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="term-policy">Versão de política</Label>
+                <Input
+                  id="term-policy"
+                  value={termPolicyVersion}
+                  onChange={(e) => setTermPolicyVersion(e.target.value)}
+                  placeholder="cir-v1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="term-body">Texto do termo</Label>
+                <Textarea
+                  id="term-body"
+                  className="min-h-[260px] leading-relaxed"
+                  value={termBody}
+                  onChange={(e) => setTermBody(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={termMaterial}
+                    onCheckedChange={setTermMaterial}
+                    aria-label="Marcar como mudança material"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Mudança material</p>
+                    <p className="text-xs text-muted-foreground">Força reaceite dos membros quando uma nova versão muda a política.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {currentTerm && (
+                    <Button variant="outline" onClick={() => setIsEditingTerm(false)} disabled={publishTermMutation.isPending}>
+                      Cancelar
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => publishTermMutation.mutate()}
+                    disabled={publishTermMutation.isPending || hasPublishedCurrentDraft || !termTitle.trim() || !termBody.trim()}
+                  >
+                    {publishTermMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : hasPublishedCurrentDraft ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <ScrollText className="h-4 w-4 mr-2" />}
+                    {hasPublishedCurrentDraft ? "Publicado" : currentTerm ? "Publicar nova versão" : "Publicar termo"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="bg-background border border-border rounded-xl p-4 space-y-4">
@@ -796,30 +845,44 @@ export default function CircuitoDetail() {
               <Loader2 className="h-4 w-4 animate-spin" />
               Carregando termo...
             </div>
-          ) : termQuery.data ? (
+          ) : currentTerm ? (
             <div className="space-y-3">
               <div className="rounded-lg border border-border p-3 space-y-1">
-                <p className="text-sm font-medium text-foreground">{termQuery.data.title}</p>
+                <p className="text-sm font-medium text-foreground">{currentTerm.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  Versão {termQuery.data.version}
-                  {termQuery.data.policy_version ? ` · ${termQuery.data.policy_version}` : ""}
+                  Versão {currentTerm.version}
+                  {currentTerm.policy_version ? ` · ${currentTerm.policy_version}` : ""}
                   {" · "}
-                  {termQuery.data.material ? "material" : "editorial"}
+                  {currentTerm.material ? "material" : "editorial"}
                 </p>
-                <p className="text-xs font-mono text-muted-foreground break-all">hash {termQuery.data.body_hash}</p>
+                <p className="text-xs font-mono text-muted-foreground break-all">hash {currentTerm.body_hash}</p>
               </div>
               <div className="max-h-[320px] overflow-auto rounded-lg bg-muted/40 p-3 text-sm whitespace-pre-wrap leading-relaxed">
-                {termQuery.data.body}
+                {currentTerm.body}
               </div>
-              <Button
-                variant="outline"
-                onClick={() => acceptTermMutation.mutate(termQuery.data!.id)}
-                disabled={acceptTermMutation.isPending}
-                className="w-full"
-              >
-                {acceptTermMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                Registrar meu aceite
-              </Button>
+              {termQuery.data?.accepted ? (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-primary">
+                  <p className="font-medium flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Aceite registrado
+                  </p>
+                  {termQuery.data.acceptance?.accepted_at && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Registrado em {new Date(termQuery.data.acceptance.accepted_at).toLocaleString("pt-BR")}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => acceptTermMutation.mutate(currentTerm.id)}
+                  disabled={acceptTermMutation.isPending}
+                  className="w-full"
+                >
+                  {acceptTermMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                  Registrar meu aceite
+                </Button>
+              )}
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">

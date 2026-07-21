@@ -13,6 +13,7 @@ import type {
   CircuitFilters,
   CircuitTerm,
   CircuitTermAcceptance,
+  CircuitTermStatusResponse,
   PublishCircuitTermRequest,
 } from "./types";
 
@@ -48,6 +49,10 @@ export async function deleteCircuit(id: string): Promise<void> {
 
 export async function getCircuitTerm(id: string): Promise<CircuitTerm> {
   return registryRequest<CircuitTerm>(`/circuits/${id}/terms`);
+}
+
+export async function getCircuitTermStatus(id: string): Promise<CircuitTermStatusResponse> {
+  return registryRequest<CircuitTermStatusResponse>(`/circuits/${id}/terms/status`);
 }
 
 export async function publishCircuitTerm(
