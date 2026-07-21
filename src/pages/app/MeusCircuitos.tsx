@@ -11,13 +11,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { getCircuits } from "@/lib/api/circuits";
+import {
+  acceptCircuitInvitation,
+  declineCircuitInvitation,
+  getCircuits,
+  getMyCircuitInvitations,
+} from "@/lib/api/circuits";
 import {
   getPartnerDefaultCircuit,
   updatePartnerDefaultCircuit,
 } from "@/lib/api/partner-routing";
-import type { Circuit } from "@/lib/api/types";
-import { Star, Info, Copy, Plus, ArrowRight, Circle } from "lucide-react";
+import type { Circuit, MyCircuitInvitation } from "@/lib/api/types";
+import { Star, Info, Copy, Plus, ArrowRight, Circle, CheckCircle2, XCircle, Mail } from "lucide-react";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +51,10 @@ export default function MeusCircuitos() {
   const qc = useQueryClient();
 
   const circuitsQuery = useQuery({ queryKey: ["circuits"], queryFn: () => getCircuits() });
+  const invitationsQuery = useQuery({
+    queryKey: ["my-circuit-invitations"],
+    queryFn: getMyCircuitInvitations,
+  });
   const defaultQuery = useQuery({
     queryKey: ["partner-default-circuit"],
     queryFn: getPartnerDefaultCircuit,
@@ -62,6 +71,44 @@ export default function MeusCircuitos() {
     },
     onError: () =>
       toast({ title: t("portal.circuits.mine.defaultUpdateError"), variant: "destructive" }),
+  });
+
+  const acceptInvitation = useMutation({
+    mutationFn: (item: MyCircuitInvitation) =>
+      acceptCircuitInvitation(item.invitation.id, {
+        accept_term_id: item.requires_terms ? item.term?.id : undefined,
+      }),
+    onSuccess: () => {
+      toast({
+        title: "Convite aceito",
+        description: "Você já pode acessar o circuito.",
+      });
+      qc.invalidateQueries({ queryKey: ["my-circuit-invitations"] });
+      qc.invalidateQueries({ queryKey: ["circuits"] });
+    },
+    onError: (error) =>
+      toast({
+        title: "Erro ao aceitar convite",
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+        variant: "destructive",
+      }),
+  });
+
+  const declineInvitation = useMutation({
+    mutationFn: (invitationId: string) => declineCircuitInvitation(invitationId),
+    onSuccess: () => {
+      toast({
+        title: "Convite recusado",
+        description: "O convite saiu da sua lista de pendências.",
+      });
+      qc.invalidateQueries({ queryKey: ["my-circuit-invitations"] });
+    },
+    onError: (error) =>
+      toast({
+        title: "Erro ao recusar convite",
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+        variant: "destructive",
+      }),
   });
 
   const copy = (text: string, what: string) => {
@@ -116,6 +163,7 @@ export default function MeusCircuitos() {
   }, [circuitsQuery.data, defaultId]);
 
   const total = mine.length + properties.length + clients.length;
+  const invitations = invitationsQuery.data ?? [];
 
   const renderCard = (c: Circuit) => {
     const isDefault = c.id === defaultId;
@@ -254,6 +302,77 @@ export default function MeusCircuitos() {
       </div>
     );
 
+  const renderInvitation = (item: MyCircuitInvitation) => {
+    const termMissing = item.requires_terms && !item.term;
+    return (
+      <Card key={item.invitation.id} className="border-amber-200 bg-amber-50/60">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
+            <div className="space-y-1 min-w-0">
+              <Badge variant="outline" className="bg-white text-amber-700 border-amber-200 gap-1">
+                <Mail className="h-3 w-3" /> Convite pendente
+              </Badge>
+              <h2 className="font-semibold text-foreground">
+                Você foi convidado para participar de um circuito
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Papel proposto: {item.invitation.role}. Expira em{" "}
+                {new Date(item.invitation.expires_at).toLocaleString("pt-BR", {
+                  timeZone: "America/Sao_Paulo",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => declineInvitation.mutate(item.invitation.id)}
+                disabled={declineInvitation.isPending || acceptInvitation.isPending}
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                Recusar
+              </Button>
+              <Button
+                onClick={() => acceptInvitation.mutate(item)}
+                disabled={acceptInvitation.isPending || declineInvitation.isPending || termMissing}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+                {item.requires_terms ? "Aceitar termo e entrar" : "Aceitar e entrar"}
+              </Button>
+            </div>
+          </div>
+
+          {item.requires_terms ? (
+            item.term ? (
+              <div className="rounded-lg border border-amber-200 bg-white p-3 space-y-2">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Termo vigente v{item.term.version}
+                  </p>
+                  <p className="font-medium text-foreground">{item.term.title}</p>
+                </div>
+                <div className="max-h-48 overflow-y-auto whitespace-pre-wrap text-sm text-muted-foreground">
+                  {item.term.body}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ao aceitar, fica registrado que seu usuário leu e concordou com esta versão do termo.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                Este circuito exige termo, mas nenhum termo vigente foi retornado. Peça ao dono do circuito para publicar uma versão antes de aceitar.
+              </div>
+            )
+          ) : null}
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -272,6 +391,20 @@ export default function MeusCircuitos() {
           </Link>
         </Button>
       </div>
+
+      {invitations.length > 0 ? (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Convites recebidos · {invitations.length}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Leia o termo, aceite para entrar no circuito ou recuse quando não fizer sentido participar.
+            </p>
+          </div>
+          <div className="space-y-3">{invitations.map(renderInvitation)}</div>
+        </div>
+      ) : null}
 
       {circuitsQuery.isLoading ? (
         <p className="text-sm text-muted-foreground">{t("portal.common.loading")}</p>

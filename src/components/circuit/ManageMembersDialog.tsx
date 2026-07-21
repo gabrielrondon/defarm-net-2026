@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Users,
   Crown,
@@ -10,6 +11,8 @@ import {
   MoreHorizontal,
   UserPlus,
   Loader2,
+  Clock,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +33,13 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Circuit } from "@/lib/defarm-api";
+import {
+  cancelCircuitInvitation,
+  createCircuitInvitation,
+  getCircuitInvitations,
+} from "@/lib/api/circuits";
+import type { CircuitInvitation } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/client";
 
 interface ManageMembersDialogProps {
   circuit: Circuit;
@@ -65,13 +75,71 @@ export function ManageMembersDialog({
   onOpenChange,
 }: ManageMembersDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [isInviting, setIsInviting] = useState(false);
   const [showInviteForm, setShowInviteForm] = useState(false);
 
   // Get members from circuit data - the API returns them with the circuit
   const members: MemberData[] = (circuit as any).members || [];
+  const invitationsQuery = useQuery({
+    queryKey: ["circuit-invitations", circuit.id],
+    queryFn: () => getCircuitInvitations(circuit.id),
+    enabled: open && Boolean(circuit.id),
+  });
+
+  const pendingInvitations = (invitationsQuery.data ?? []).filter(
+    (invitation) => invitation.status === "pending"
+  );
+
+  const inviteMutation = useMutation({
+    mutationFn: (email: string) =>
+      createCircuitInvitation(circuit.id, {
+        invited_email: email,
+        role: "Member",
+        expires_in_days: 14,
+      }),
+    onSuccess: (_invitation, email) => {
+      toast({
+        title: "Convite registrado",
+        description: `Convite pendente para ${email}.`,
+      });
+      setInviteEmail("");
+      setShowInviteForm(false);
+      queryClient.invalidateQueries({ queryKey: ["circuit-invitations", circuit.id] });
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError && error.status === 409
+          ? "Já existe um convite pendente para este destinatário."
+          : error instanceof Error
+            ? error.message
+            : "Tente novamente mais tarde";
+      toast({
+        title: "Erro ao enviar convite",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (invitationId: string) => cancelCircuitInvitation(invitationId),
+    onSuccess: () => {
+      toast({
+        title: "Convite cancelado",
+        description: "O convite pendente foi cancelado.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["circuit-invitations", circuit.id] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao cancelar convite",
+        description: error instanceof Error ? error.message : "Tente novamente mais tarde",
+        variant: "destructive",
+      });
+    },
+  });
 
   const filteredMembers = members.filter((member) =>
     member.member_id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -79,26 +147,7 @@ export function ManageMembersDialog({
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
-
-    setIsInviting(true);
-    try {
-      // TODO: Implement actual invite API call when available
-      // For now, show a toast that the feature is coming
-      toast({
-        title: "Convite enviado!",
-        description: `Convite enviado para ${inviteEmail}`,
-      });
-      setInviteEmail("");
-      setShowInviteForm(false);
-    } catch (error) {
-      toast({
-        title: "Erro ao enviar convite",
-        description: "Tente novamente mais tarde",
-        variant: "destructive",
-      });
-    } finally {
-      setIsInviting(false);
-    }
+    inviteMutation.mutate(inviteEmail.trim());
   };
 
   const handleRemoveMember = (memberId: string) => {
@@ -124,6 +173,20 @@ export function ManageMembersDialog({
       year: "numeric",
     });
   };
+
+  const formatDateTime = (value: string) => {
+    return new Date(value).toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const invitationTarget = (invitation: CircuitInvitation) =>
+    invitation.invited_email || invitation.invited_user_id || "destinatário";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -167,8 +230,8 @@ export function ManageMembersDialog({
               onChange={(e) => setInviteEmail(e.target.value)}
               className="flex-1"
             />
-            <Button onClick={handleInvite} disabled={isInviting || !inviteEmail.trim()}>
-              {isInviting ? (
+            <Button onClick={handleInvite} disabled={inviteMutation.isPending || !inviteEmail.trim()}>
+              {inviteMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 "Enviar"
@@ -178,6 +241,45 @@ export function ManageMembersDialog({
         )}
 
         <div className="flex-1 overflow-y-auto min-h-0 space-y-2 py-2">
+          {invitationsQuery.isError ? (
+            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
+              Não foi possível carregar os convites pendentes.
+            </div>
+          ) : null}
+
+          {pendingInvitations.length > 0 ? (
+            <div className="space-y-2 pb-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Convites pendentes
+              </p>
+              {pendingInvitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50/70"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground truncate">
+                      {invitationTarget(invitation)}
+                    </p>
+                    <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Expira em {formatDateTime(invitation.expires_at)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => cancelMutation.mutate(invitation.id)}
+                    disabled={cancelMutation.isPending}
+                  >
+                    <XCircle className="h-3.5 w-3.5 mr-1" />
+                    Cancelar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {filteredMembers.length > 0 ? (
             filteredMembers.map((member) => {
               const RoleIcon = roleIcons[member.role] || User;
