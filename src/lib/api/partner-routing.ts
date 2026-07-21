@@ -58,6 +58,40 @@ export interface ListRawPayloadsResponse {
   next_cursor?: string | null;
 }
 
+export interface PublicRawPayloadReceiptResponse {
+  verified: boolean;
+  verification_method: string;
+  payload: {
+    id: string;
+    workspace_id: string;
+    file_name?: string | null;
+    status: string;
+    payload_size_bytes: number;
+    payload_sha256: string;
+    created_at: string;
+    processed_at?: string | null;
+  };
+  result: {
+    total_rows?: number | null;
+    processed_rows?: number | null;
+    items_returned: number;
+    items_created?: number | null;
+    items_enriched?: number | null;
+    routes?: number | null;
+    errors: number;
+  };
+  items: Array<{
+    dfid?: string | null;
+    url?: string | null;
+    resolution_result?: string | null;
+    matched_existing_item?: boolean | null;
+  }>;
+  errors: Array<{
+    reason_code?: string | null;
+    message?: string | null;
+  }>;
+}
+
 export interface IntakeBatchResult {
   identifier_type: string;
   identifier_value: string;
@@ -400,6 +434,15 @@ export async function downloadRawPayload(
     blob,
     fileName: fileNameMatch?.[1] || fallbackName,
   };
+}
+
+export async function getPublicRawPayloadReceipt(
+  id: string,
+  sha256: string
+): Promise<PublicRawPayloadReceiptResponse> {
+  return registryPublicRequest<PublicRawPayloadReceiptResponse>(
+    `/partner/ingestions/raw/${encodeURIComponent(id)}/receipt/public${buildQueryString({ sha256 })}`
+  );
 }
 
 export async function listRoutingIssues(): Promise<RoutingIssuesResponse> {
