@@ -53,8 +53,7 @@ export interface CarGeoJSON {
 
 export async function getCarMetadata(carNumber: string, { skipAuth = false } = {}): Promise<CarMetadata> {
   if (skipAuth) {
-    // Use direct Check API URL (with timeout) to mirror getCarGeoJSON and avoid
-    // gateway CORS/routing issues on public pages.
+    // Use the same-origin server-side proxy with timeout for public pages.
     return publicFetch<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`);
   }
   return checkRequest<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`, {}, { skipAuth });
@@ -64,7 +63,7 @@ export async function getCarGeoJSON(carNumber: string, { skipAuth = false } = {}
   let geometry: CarGeometry;
 
   if (skipAuth) {
-    // Use direct Check API URL to avoid gateway CORS/routing issues
+    // Use the same-origin server-side proxy to avoid exposing Check API credentials.
     geometry = await publicFetch<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`);
   } else {
     geometry = await checkRequest<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`, {}, { skipAuth });
