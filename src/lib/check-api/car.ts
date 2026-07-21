@@ -2,7 +2,7 @@ import type { EudrOrigin } from "@/lib/api/products";
 import { checkRequest } from "./client";
 
 // Direct API base for public endpoints (bypasses gateway auth)
-const CHECK_API_DIRECT = "https://defarm-check-api-production.up.railway.app";
+const CHECK_API_DIRECT = "https://check.89.167.96.182.sslip.io";
 
 // Timeout for public CAR lookups. Without it, a slow/down backend leaves the
 // request pending until the browser default (minutes), freezing the UI spinner.

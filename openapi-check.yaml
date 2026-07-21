@@ -27,7 +27,7 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://defarm-check-api-production.up.railway.app
+  - url: https://check.89.167.96.182.sslip.io
     description: Production server
   - url: http://localhost:3000
     description: Local development server

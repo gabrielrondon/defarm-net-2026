@@ -54,7 +54,7 @@ railway service status -s PostGIS --json
 railway service status -s Redis --json
 railway service status -s defarm-check-api --json
 railway service status -s check-api-worker --json
-curl -i https://defarm-check-api-production.up.railway.app/
+curl -i https://check.89.167.96.182.sslip.io/
 ```
 
 Expected status after activation for each service:
