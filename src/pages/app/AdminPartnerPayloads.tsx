@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clipboard, Download, ExternalLink, FileJson, FileSpreadsheet, FileText, Radio, RefreshCw, ScrollText, Webhook } from "lucide-react";
+import { Clipboard, Download, ExternalLink, FileJson, FileSpreadsheet, FileText, Radio, RefreshCw, ScrollText, Share2, Webhook } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +97,10 @@ function downloadTextFile(content: string, filename: string, contentType: string
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function receiptShareUrl(row: RawPayloadSummary): string {
+  return `${window.location.origin}/r/payload/${encodeURIComponent(row.id)}?sha256=${encodeURIComponent(row.payload_sha256)}`;
 }
 
 function asResponseSnapshot(metadata: Record<string, unknown> | undefined): ResponseSnapshot | null {
@@ -789,6 +793,34 @@ export default function AdminPartnerPayloads() {
                   >
                     <Clipboard className="h-4 w-4 mr-1" />
                     Copiar recibo
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(receiptShareUrl(selected));
+                        toast({
+                          title: "Link do recibo copiado",
+                          description: "O link publico verifica payload e SHA256 sem expor o payload bruto.",
+                        });
+                      } catch (e: unknown) {
+                        toast({
+                          title: "Falha ao copiar link",
+                          description: errorMessage(e, "Abra o recibo e copie a URL pelo navegador."),
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    <Share2 className="h-4 w-4 mr-1" />
+                    Compartilhar recibo
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={receiptShareUrl(selected)} target="_blank" rel="noreferrer">
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Abrir recibo
+                    </a>
                   </Button>
                   <Button
                     variant="outline"

@@ -68,6 +68,7 @@ import CircuitDiscovery from "./pages/app/CircuitDiscovery";
 import JoinRequestsAdmin from "./pages/app/JoinRequestsAdmin";
 import PublicCircuit from "./pages/PublicCircuit";
 import PublicItem from "./pages/PublicItem";
+import PublicPayloadReceipt from "./pages/PublicPayloadReceipt";
 import PublicEudrVerify from "./pages/PublicEudrVerify";
 import CompareItems from "./pages/CompareItems";
 import EmbedPortfolio from "./pages/EmbedPortfolio";
@@ -251,6 +252,7 @@ const App = () => (
             <Route path="/c/:id" element={<PublicCircuit />} />
             <Route path="/i/:identifierType/:identifierValue" element={<PublicItem />} />
             <Route path="/i/:dfid" element={<PublicItem />} />
+            <Route path="/r/payload/:id" element={<PublicPayloadReceipt />} />
             {/* Demo institucional pública do CIR (sem login, dados sintéticos/LGPD).
                 URL opaca: /demo/<código>. Ver DemoDashboard.tsx. */}
             <Route path="/demo/:code" element={<DemoDashboard />} />

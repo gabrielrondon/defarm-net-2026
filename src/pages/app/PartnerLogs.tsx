@@ -10,6 +10,7 @@ import {
   Loader2,
   RefreshCw,
   Search,
+  Share2,
   ShieldCheck,
   UploadCloud,
 } from "lucide-react";
@@ -107,6 +108,10 @@ function downloadTextFile(content: string, filename: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function receiptShareUrl(row: RawPayloadSummary): string {
+  return `${window.location.origin}/r/payload/${encodeURIComponent(row.id)}?sha256=${encodeURIComponent(row.payload_sha256)}`;
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -250,6 +255,22 @@ export default function PartnerLogs() {
       toast({
         title: "Nao foi possivel copiar o recibo",
         description: errorMessage(error, "Baixe o recibo em arquivo texto."),
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const handleCopyReceiptLink = useCallback(async (row: RawPayloadSummary) => {
+    try {
+      await navigator.clipboard.writeText(receiptShareUrl(row));
+      toast({
+        title: "Link do recibo copiado",
+        description: "Este link abre um recibo verificavel sem mostrar o payload bruto.",
+      });
+    } catch (error: unknown) {
+      toast({
+        title: "Nao foi possivel copiar o link",
+        description: errorMessage(error, "Abra o recibo e copie a URL pelo navegador."),
         variant: "destructive",
       });
     }
@@ -405,6 +426,16 @@ export default function PartnerLogs() {
                   <Button variant="outline" size="sm" onClick={() => handleCopyReceipt(selected)}>
                     <Clipboard className="h-4 w-4 mr-1" />
                     Copiar recibo
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleCopyReceiptLink(selected)}>
+                    <Share2 className="h-4 w-4 mr-1" />
+                    Compartilhar recibo
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={receiptShareUrl(selected)} target="_blank" rel="noreferrer">
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Abrir recibo
+                    </a>
                   </Button>
                   <Button
                     variant="outline"
