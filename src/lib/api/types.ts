@@ -137,6 +137,7 @@ export interface Circuit {
   public_slug?: string | null;
   public_website?: string | null;
   allow_join_requests?: boolean | null;
+  requires_terms_acceptance?: boolean;
 }
 
 export interface ListCircuitsResponse {
@@ -166,6 +167,41 @@ export interface CreateCircuitRequest {
   ip_address?: string | null;
 }
 
+export interface CircuitTerm {
+  id: string;
+  circuit_id?: string | null;
+  version: number;
+  title: string;
+  body: string;
+  body_hash: string;
+  policy_version?: string | null;
+  material: boolean;
+  is_current: boolean;
+  created_by?: string | null;
+  created_at: string;
+  superseded_at?: string | null;
+}
+
+export interface PublishCircuitTermRequest {
+  title: string;
+  body: string;
+  policy_version?: string | null;
+  material: boolean;
+}
+
+export interface CircuitTermAcceptance {
+  id: string;
+  circuit_id: string;
+  user_id: string;
+  term_id: string;
+  term_version: number;
+  term_hash: string;
+  accepted_at: string;
+  accepted_via: string;
+  invitation_id?: string | null;
+  join_request_id?: string | null;
+}
+
 export interface UpdateCircuitRequest {
   name?: string | null;
   description?: string | null;
@@ -182,6 +218,7 @@ export interface UpdateCircuitRequest {
   public_website?: string | null;
   public_logo_url?: string | null;
   public_banner_url?: string | null;
+  requires_terms_acceptance?: boolean | null;
   user_id?: string | null;
   ip_address?: string | null;
 }
