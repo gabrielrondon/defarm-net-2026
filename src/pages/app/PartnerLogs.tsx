@@ -76,6 +76,29 @@ function formatDate(value?: string | null): string {
   return value ? new Date(value).toLocaleString("pt-BR") : "n/a";
 }
 
+function formatDateInTimeZone(value: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
+}
+
+function receiptTimestampLines(label: string, value?: string | null): string[] {
+  if (!value) {
+    return [`${label}: n/a`];
+  }
+  return [
+    `${label} (Brasília): ${formatDateInTimeZone(value, "America/Sao_Paulo")} BRT (UTC-03:00)`,
+    `${label} (UTC): ${formatDateInTimeZone(value, "UTC")} UTC`,
+  ];
+}
+
 function downloadTextFile(content: string, filename: string) {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -101,8 +124,8 @@ function buildReceipt(row: RawPayloadSummary): string {
     `Payload: ${row.id}`,
     `Arquivo: ${row.file_name || "payload"}`,
     `Status: ${statusLabel(row.status)}`,
-    `Recebido em: ${formatDate(row.created_at)}`,
-    `Processado em: ${formatDate(row.processed_at)}`,
+    ...receiptTimestampLines("Recebido em", row.created_at),
+    ...receiptTimestampLines("Processado em", row.processed_at),
     `Tamanho: ${row.payload_size_bytes.toLocaleString("pt-BR")} bytes`,
     `SHA256: ${row.payload_sha256}`,
     "",
