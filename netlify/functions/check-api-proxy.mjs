@@ -53,6 +53,7 @@ export default async (request) => {
     return Response.json({ error: "Proxy not configured" }, { status: 500 });
   }
 
+  const apiKey = process.env.CHECK_API_KEY;
   const target = buildTargetUrl(request);
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
@@ -63,6 +64,7 @@ export default async (request) => {
   if (accept) headers.set("accept", accept);
   if (authorization) headers.set("authorization", authorization);
   headers.set("x-check-proxy-token", proxyToken);
+  if (apiKey) headers.set("x-api-key", apiKey);
 
   const init = {
     method: request.method,
