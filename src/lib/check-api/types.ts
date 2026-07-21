@@ -55,6 +55,14 @@ export interface CheckResponse {
     cacheHitRate: number;
     apiVersion: string;
     timestamp: string;
+    dataQuality?: {
+      status: "fresh" | "warning" | "degraded" | "unknown";
+      staleSources: string[];
+      warningSources: string[];
+      neverUpdatedSources: string[];
+      unknownFreshnessSources: string[];
+      generatedAt: string;
+    };
   };
 }
 
@@ -64,4 +72,14 @@ export interface SourceInfo {
   enabled: boolean;
   status: string;
   description: string;
+  freshness?: {
+    name: string;
+    category: string | null;
+    lastUpdated: string | null;
+    hoursSinceUpdate: number | null;
+    freshnessStatus: "fresh" | "warning" | "stale" | "never_updated" | "unknown";
+    totalRecords: number | null;
+    recordCountSource: "table" | "metadata" | "unknown";
+    dataSourceUrl: string | null;
+  } | null;
 }

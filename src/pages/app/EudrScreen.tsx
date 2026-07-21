@@ -54,10 +54,9 @@ const DEMO: EudrStatement = {
       queried_at: "2026-06-15T14:02:00Z",
       error: null,
       checks: [
-        { source: "SICAR", category: "Cadastro Ambiental", status: "PASS", severity: "LOW", message: "Polígono georreferenciado válido", data_source: "SICAR", url: null, last_update: "2026-05" },
-        { source: "PRODES / DETER", category: "Desmatamento", status: "PASS", severity: "LOW", message: "Sem alerta de desmate pós 31/12/2020", data_source: "INPE", url: null, last_update: "2026-05" },
-        { source: "IBAMA Embargos", category: "Embargo ambiental", status: "PASS", severity: "LOW", message: "Sem ocorrência de embargo", data_source: "IBAMA", url: null, last_update: "2026-06" },
-        { source: "FUNAI + ICMBio", category: "Sobreposição TI / UC", status: "PASS", severity: "LOW", message: "Sem sobreposição com terra indígena ou unidade de conservação", data_source: "FUNAI/ICMBio", url: null, last_update: "2026-04" },
+        { source: "Trilho ambiental demonstrativo", category: "Cadastro e geografia", status: "PASS", severity: "LOW", message: "Exemplo de linha de evidência ambiental para demonstração", data_source: "DeFarm Check Demo", url: null, last_update: null },
+        { source: "Trilho de desmatamento demonstrativo", category: "Desmatamento", status: "PASS", severity: "LOW", message: "Exemplo de resultado sem ocorrência relevante no trilho demonstrativo", data_source: "DeFarm Check Demo", url: null, last_update: null },
+        { source: "Trilho de restrições demonstrativo", category: "Restrições", status: "PASS", severity: "LOW", message: "Exemplo de resultado sem restrição no trilho demonstrativo", data_source: "DeFarm Check Demo", url: null, last_update: null },
       ],
     },
     {
@@ -68,7 +67,7 @@ const DEMO: EudrStatement = {
       queried_at: "2026-06-15T14:02:00Z",
       error: null,
       checks: [
-        { source: "Lista Suja MTE", category: "Trabalho análogo a escravo", status: "PASS", severity: "LOW", message: "Operador sem ocorrência na Lista Suja", data_source: "MTE", url: null, last_update: "2026-04" },
+        { source: "Trilho social demonstrativo", category: "Social", status: "PASS", severity: "LOW", message: "Exemplo de resultado social sem ocorrência no trilho demonstrativo", data_source: "DeFarm Check Demo", url: null, last_update: null },
       ],
     },
   ],

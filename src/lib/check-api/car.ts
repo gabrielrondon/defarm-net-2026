@@ -1,15 +1,14 @@
 import { checkRequest } from "./client";
 
-// Direct API base for public endpoints (bypasses gateway auth)
-const CHECK_API_DIRECT = "https://defarm-check-api-production.up.railway.app";
+const CHECK_API_PUBLIC_PROXY = "/api/check";
 
 // Timeout for public CAR lookups. Without it, a slow/down backend leaves the
 // request pending until the browser default (minutes), freezing the UI spinner.
 const PUBLIC_FETCH_TIMEOUT_MS = 12_000;
 
 async function publicFetch<T>(endpoint: string): Promise<T> {
-  const url = `${CHECK_API_DIRECT}${endpoint}`;
-  console.log(`[DeFarm Check Direct] GET ${url}`);
+  const url = `${CHECK_API_PUBLIC_PROXY}${endpoint}`;
+  console.log(`[DeFarm Check Proxy] GET ${url}`);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PUBLIC_FETCH_TIMEOUT_MS);
   try {

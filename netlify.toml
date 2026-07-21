@@ -7,6 +7,11 @@
   NPM_FLAGS = "--legacy-peer-deps"
 
 [[redirects]]
+  from = "/api/check/*"
+  to = "/.netlify/functions/check-api/:splat"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
