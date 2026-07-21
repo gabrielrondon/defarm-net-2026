@@ -96,7 +96,7 @@ export function ManageMembersDialog({
     mutationFn: (email: string) =>
       createCircuitInvitation(circuit.id, {
         invited_email: email,
-        role: "Member",
+        role: "member",
         expires_in_days: 14,
       }),
     onSuccess: (_invitation, email) => {
