@@ -1,15 +1,16 @@
 import { checkRequest } from "./client";
 
-// Direct API base for public endpoints (bypasses gateway auth)
-const CHECK_API_DIRECT = "https://defarm-check-api-production.up.railway.app";
+// Same-origin Netlify Function. It injects the private Hetzner proxy token
+// server-side, so the browser never receives Check API credentials.
+const CHECK_API_PUBLIC_PROXY = "/api/check";
 
 // Timeout for public CAR lookups. Without it, a slow/down backend leaves the
 // request pending until the browser default (minutes), freezing the UI spinner.
 const PUBLIC_FETCH_TIMEOUT_MS = 12_000;
 
 async function publicFetch<T>(endpoint: string): Promise<T> {
-  const url = `${CHECK_API_DIRECT}${endpoint}`;
-  console.log(`[DeFarm Check Direct] GET ${url}`);
+  const url = `${CHECK_API_PUBLIC_PROXY}${endpoint}`;
+  console.log(`[DeFarm Check Proxy] GET ${url}`);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PUBLIC_FETCH_TIMEOUT_MS);
   try {
@@ -54,8 +55,7 @@ export interface CarGeoJSON {
 
 export async function getCarMetadata(carNumber: string, { skipAuth = false } = {}): Promise<CarMetadata> {
   if (skipAuth) {
-    // Use direct Check API URL (with timeout) to mirror getCarGeoJSON and avoid
-    // gateway CORS/routing issues on public pages.
+    // Use the same-origin server-side proxy with timeout for public pages.
     return publicFetch<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`);
   }
   return checkRequest<CarMetadata>(`/car/${encodeURIComponent(carNumber)}`, {}, { skipAuth });
@@ -65,7 +65,7 @@ export async function getCarGeoJSON(carNumber: string, { skipAuth = false } = {}
   let geometry: CarGeometry;
 
   if (skipAuth) {
-    // Use direct Check API URL to avoid gateway CORS/routing issues
+    // Use the same-origin server-side proxy to avoid exposing Check API credentials.
     geometry = await publicFetch<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`);
   } else {
     geometry = await checkRequest<CarGeometry>(`/car/${encodeURIComponent(carNumber)}/geojson`, {}, { skipAuth });
