@@ -118,6 +118,29 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+function formatDateInTimeZone(value: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(new Date(value));
+}
+
+function receiptTimestampLines(label: string, value?: string | null): string[] {
+  if (!value) {
+    return [`${label}: n/a`];
+  }
+  return [
+    `${label} (Brasília): ${formatDateInTimeZone(value, "America/Sao_Paulo")} BRT (UTC-03:00)`,
+    `${label} (UTC): ${formatDateInTimeZone(value, "UTC")} UTC`,
+  ];
+}
+
 export default function AdminPartnerPayloads() {
   const { toast } = useToast();
   const [workspaceId, setWorkspaceId] = useState<string>("all");
@@ -229,8 +252,8 @@ export default function AdminPartnerPayloads() {
       `Enviado por: ${submitterLabel(row)}`,
       `Arquivo: ${row.file_name || "payload"}`,
       `Status: ${row.status}`,
-      `Recebido em: ${new Date(row.created_at).toLocaleString("pt-BR")}`,
-      `Processado em: ${row.processed_at ? new Date(row.processed_at).toLocaleString("pt-BR") : "n/a"}`,
+      ...receiptTimestampLines("Recebido em", row.created_at),
+      ...receiptTimestampLines("Processado em", row.processed_at),
       `SHA256: ${row.payload_sha256}`,
       "",
       "Resultado",
