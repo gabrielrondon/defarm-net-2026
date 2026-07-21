@@ -209,6 +209,39 @@ export interface CircuitTermStatusResponse {
   acceptance?: CircuitTermAcceptance | null;
 }
 
+export interface CircuitInvitation {
+  id: string;
+  circuit_id: string;
+  invited_by: string;
+  invited_user_id?: string | null;
+  invited_email?: string | null;
+  role: string;
+  message?: string | null;
+  status: "pending" | "accepted" | "declined" | "expired" | "cancelled" | string;
+  expires_at: string;
+  accepted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCircuitInvitationRequest {
+  invited_user_id?: string | null;
+  invited_email?: string | null;
+  role: string;
+  message?: string | null;
+  expires_in_days?: number | null;
+}
+
+export interface AcceptCircuitInvitationRequest {
+  accept_term_id?: string | null;
+}
+
+export interface MyCircuitInvitation {
+  invitation: CircuitInvitation;
+  term?: CircuitTerm | null;
+  requires_terms: boolean;
+}
+
 export interface UpdateCircuitRequest {
   name?: string | null;
   description?: string | null;

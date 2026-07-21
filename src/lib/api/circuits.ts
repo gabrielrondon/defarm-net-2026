@@ -15,6 +15,10 @@ import type {
   CircuitTermAcceptance,
   CircuitTermStatusResponse,
   PublishCircuitTermRequest,
+  CircuitInvitation,
+  CreateCircuitInvitationRequest,
+  AcceptCircuitInvitationRequest,
+  MyCircuitInvitation,
 } from "./types";
 
 // Circuit CRUD
@@ -72,6 +76,46 @@ export async function acceptCircuitTerm(
   return registryRequest<CircuitTermAcceptance>(`/circuits/${id}/terms/accept`, {
     method: "POST",
     body: JSON.stringify({ term_id: termId }),
+  });
+}
+
+export async function createCircuitInvitation(
+  circuitId: string,
+  data: CreateCircuitInvitationRequest
+): Promise<CircuitInvitation> {
+  return registryRequest<CircuitInvitation>(`/circuits/${circuitId}/invitations`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getCircuitInvitations(circuitId: string): Promise<CircuitInvitation[]> {
+  return registryRequest<CircuitInvitation[]>(`/circuits/${circuitId}/invitations`);
+}
+
+export async function getMyCircuitInvitations(): Promise<MyCircuitInvitation[]> {
+  return registryRequest<MyCircuitInvitation[]>("/invitations/mine");
+}
+
+export async function acceptCircuitInvitation(
+  invitationId: string,
+  data: AcceptCircuitInvitationRequest = {}
+): Promise<CircuitInvitation> {
+  return registryRequest<CircuitInvitation>(`/invitations/${invitationId}/accept`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function declineCircuitInvitation(invitationId: string): Promise<CircuitInvitation> {
+  return registryRequest<CircuitInvitation>(`/invitations/${invitationId}/decline`, {
+    method: "POST",
+  });
+}
+
+export async function cancelCircuitInvitation(invitationId: string): Promise<void> {
+  await registryRequest(`/invitations/${invitationId}/cancel`, {
+    method: "POST",
   });
 }
 
