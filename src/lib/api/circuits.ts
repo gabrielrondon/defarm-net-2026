@@ -11,6 +11,9 @@ import type {
   AddItemToCircuitRequest,
   AddItemsToCircuitBulkRequest,
   CircuitFilters,
+  CircuitTerm,
+  CircuitTermAcceptance,
+  PublishCircuitTermRequest,
 } from "./types";
 
 // Circuit CRUD
@@ -41,6 +44,30 @@ export async function updateCircuit(id: string, data: UpdateCircuitRequest): Pro
 
 export async function deleteCircuit(id: string): Promise<void> {
   await registryRequest(`/circuits/${id}`, { method: "DELETE" });
+}
+
+export async function getCircuitTerm(id: string): Promise<CircuitTerm> {
+  return registryRequest<CircuitTerm>(`/circuits/${id}/terms`);
+}
+
+export async function publishCircuitTerm(
+  id: string,
+  data: PublishCircuitTermRequest
+): Promise<CircuitTerm> {
+  return registryRequest<CircuitTerm>(`/circuits/${id}/terms`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function acceptCircuitTerm(
+  id: string,
+  termId: string
+): Promise<CircuitTermAcceptance> {
+  return registryRequest<CircuitTermAcceptance>(`/circuits/${id}/terms/accept`, {
+    method: "POST",
+    body: JSON.stringify({ term_id: termId }),
+  });
 }
 
 /** Admin: lista TODOS os circuitos (pra encontrar e conceder o selo). Busca por nome no client. */

@@ -27,9 +27,13 @@ import {
   Database,
   ClipboardCheck,
   RefreshCcw,
+  ScrollText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +78,10 @@ import {
   getItems,
   getItem,
   getItemAnchors,
+  updateCircuit,
+  getCircuitTerm,
+  publishCircuitTerm,
+  acceptCircuitTerm,
   Item, 
 } from "@/lib/defarm-api";
 import {
@@ -86,6 +94,13 @@ import { CircuitFeeds } from "@/components/circuit/CircuitFeeds";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
+
+const CIR_DEFAULT_TERM_BODY = `Ao participar do Circuito Independente de Rastreabilidade, o participante autoriza o uso operacional dos dados enviados ou compartilhados no circuito para fins de rastreabilidade, verificação, auditoria e emissão de evidências associadas aos itens agropecuários vinculados.
+
+O compartilhamento entre participantes respeita as políticas de acesso do circuito, os consentimentos registrados e a minimização de dados. Dados pessoais, identificadores sensíveis e informações protegidas não são expostos publicamente, salvo autorização específica ou obrigação legal aplicável.
+
+O participante declara ter legitimidade para enviar os dados sob sua responsabilidade e reconhece que registros técnicos, recibos, assinaturas e evidências públicas podem permanecer verificáveis para preservar a integridade da rastreabilidade.`;
+
 export default function CircuitoDetail() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -101,12 +116,23 @@ export default function CircuitoDetail() {
   const [copied, setCopied] = useState(false);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [refreshingProperty, setRefreshingProperty] = useState<string | null>(null);
+  const [termTitle, setTermTitle] = useState("Termo de Participação e Compartilhamento de Dados do CIR");
+  const [termPolicyVersion, setTermPolicyVersion] = useState("cir-v1");
+  const [termBody, setTermBody] = useState(CIR_DEFAULT_TERM_BODY);
+  const [termMaterial, setTermMaterial] = useState(true);
 
   // Fetch circuit details
   const { data: circuit, isLoading: isLoadingCircuit, error: circuitError } = useQuery({
     queryKey: ["circuit", id],
     queryFn: () => getCircuit(id!),
     enabled: !!id,
+  });
+
+  const termQuery = useQuery({
+    queryKey: ["circuitTerm", id],
+    queryFn: () => getCircuitTerm(id!),
+    enabled: !!id,
+    retry: false,
   });
 
   // Admin: conceder/remover o selo "Verificado pela DeFarm".
@@ -123,6 +149,68 @@ export default function CircuitoDetail() {
       queryClient.invalidateQueries({ queryKey: ["circuits"] });
     },
     onError: () => toast({ title: t("portal.circuits.detail.toasts.sealError"), variant: "destructive" }),
+  });
+
+  const termsRequiredMutation = useMutation({
+    mutationFn: (requiresTerms: boolean) =>
+      updateCircuit(id!, { requires_terms_acceptance: requiresTerms }),
+    onSuccess: (_data, requiresTerms) => {
+      toast({
+        title: requiresTerms ? "Termo obrigatório ativado" : "Termo obrigatório desativado",
+        description: requiresTerms
+          ? "Novas leituras e ações sensíveis passam a exigir aceite registrado."
+          : "O circuito voltou a permitir leitura sem aceite de termo.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["circuit", id] });
+      queryClient.invalidateQueries({ queryKey: ["circuits"] });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível alterar a exigência de termo",
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
+        variant: "destructive",
+      }),
+  });
+
+  const publishTermMutation = useMutation({
+    mutationFn: () =>
+      publishCircuitTerm(id!, {
+        title: termTitle.trim(),
+        body: termBody.trim(),
+        policy_version: termPolicyVersion.trim() || null,
+        material: termMaterial,
+      }),
+    onSuccess: (term) => {
+      toast({
+        title: "Termo publicado",
+        description: `Versão ${term.version} registrada para este circuito.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["circuitTerm", id] });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível publicar o termo",
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
+        variant: "destructive",
+      }),
+  });
+
+  const acceptTermMutation = useMutation({
+    mutationFn: (termId: string) => acceptCircuitTerm(id!, termId),
+    onSuccess: (acceptance) => {
+      toast({
+        title: "Aceite registrado",
+        description: `Termo v${acceptance.term_version} aceito em ${new Date(acceptance.accepted_at).toLocaleString("pt-BR")}.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["circuitTerm", id] });
+      queryClient.invalidateQueries({ queryKey: ["circuit", id] });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível registrar o aceite",
+        description: error instanceof Error ? error.message : t("portal.common.tryAgain"),
+        variant: "destructive",
+      }),
   });
 
   // Fetch circuit items
@@ -617,9 +705,130 @@ export default function CircuitoDetail() {
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="itens">{t("portal.circuits.detail.tabs.items")}</TabsTrigger>
           <TabsTrigger value="feeds">{t("portal.circuits.detail.tabs.feeds")}</TabsTrigger>
+          <TabsTrigger value="termo">Termo</TabsTrigger>
           <TabsTrigger value="compartilhamento">{t("portal.circuits.detail.tabs.sharing")}</TabsTrigger>
           <TabsTrigger value="propriedades">{t("portal.circuits.detail.tabs.properties")}</TabsTrigger>
         </TabsList>
+
+      <TabsContent value="termo">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
+        <div className="bg-background border border-border rounded-xl p-4 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <ScrollText className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground">Termo de consentimento do circuito</h2>
+              <p className="text-sm text-muted-foreground">
+                Defina o texto que participantes precisam ler e aceitar antes de acessar dados ou executar ações sensíveis neste circuito.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Exigir aceite para leitura e operação</p>
+              <p className="text-xs text-muted-foreground">
+                Quando ativo, membros sem aceite ficam bloqueados até registrar consentimento no termo vigente.
+              </p>
+            </div>
+            <Switch
+              checked={Boolean(circuit.requires_terms_acceptance)}
+              disabled={termsRequiredMutation.isPending}
+              onCheckedChange={(checked) => termsRequiredMutation.mutate(checked)}
+              aria-label="Exigir aceite de termo"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="term-title">Título</Label>
+            <Input id="term-title" value={termTitle} onChange={(e) => setTermTitle(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="term-policy">Versão de política</Label>
+            <Input
+              id="term-policy"
+              value={termPolicyVersion}
+              onChange={(e) => setTermPolicyVersion(e.target.value)}
+              placeholder="cir-v1"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="term-body">Texto do termo</Label>
+            <Textarea
+              id="term-body"
+              className="min-h-[260px] leading-relaxed"
+              value={termBody}
+              onChange={(e) => setTermBody(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={termMaterial}
+                onCheckedChange={setTermMaterial}
+                aria-label="Marcar como mudança material"
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">Mudança material</p>
+                <p className="text-xs text-muted-foreground">Força reaceite dos membros quando uma nova versão muda a política.</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => publishTermMutation.mutate()}
+              disabled={publishTermMutation.isPending || !termTitle.trim() || !termBody.trim()}
+            >
+              {publishTermMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ScrollText className="h-4 w-4 mr-2" />}
+              Publicar termo
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-background border border-border rounded-xl p-4 space-y-4">
+          <div>
+            <h2 className="font-semibold text-foreground">Termo vigente</h2>
+            <p className="text-sm text-muted-foreground">
+              Esta é a versão usada pelo backend para validar aceite e reconsentimento.
+            </p>
+          </div>
+          {termQuery.isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando termo...
+            </div>
+          ) : termQuery.data ? (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-border p-3 space-y-1">
+                <p className="text-sm font-medium text-foreground">{termQuery.data.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  Versão {termQuery.data.version}
+                  {termQuery.data.policy_version ? ` · ${termQuery.data.policy_version}` : ""}
+                  {" · "}
+                  {termQuery.data.material ? "material" : "editorial"}
+                </p>
+                <p className="text-xs font-mono text-muted-foreground break-all">hash {termQuery.data.body_hash}</p>
+              </div>
+              <div className="max-h-[320px] overflow-auto rounded-lg bg-muted/40 p-3 text-sm whitespace-pre-wrap leading-relaxed">
+                {termQuery.data.body}
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => acceptTermMutation.mutate(termQuery.data!.id)}
+                disabled={acceptTermMutation.isPending}
+                className="w-full"
+              >
+                {acceptTermMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                Registrar meu aceite
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+              Nenhum termo vigente foi encontrado. Publique uma versão antes de convidar participantes.
+            </div>
+          )}
+        </div>
+      </div>
+      </TabsContent>
 
       <TabsContent value="compartilhamento">
       <div className="bg-background border border-border rounded-xl p-4 space-y-3">
