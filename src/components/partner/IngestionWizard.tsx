@@ -68,17 +68,6 @@ export function IngestionWizard() {
     [circuits]
   );
 
-  const prodCircuit = useMemo(
-    () =>
-      circuits.find(
-        (c) =>
-          c?.metadata?.partner_staging !== true &&
-          c?.metadata?.partner_staging !== "true" &&
-          c?.metadata?.value_chain !== "DEFARM"
-      ),
-    [circuits]
-  );
-
   useEffect(() => {
     async function init() {
       try {
@@ -150,7 +139,7 @@ export function IngestionWizard() {
     setProcessing(true);
     setErrorMsg("");
 
-    const circuitId = isTest ? testCircuit?.id : prodCircuit?.id || defaultCircuitId;
+    const circuitId = isTest ? testCircuit?.id || defaultCircuitId : defaultCircuitId;
 
     try {
       const res = await partnerIntake(file, circuitId, true);
