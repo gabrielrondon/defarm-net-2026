@@ -2899,8 +2899,8 @@ export default function PublicItem() {
               ) : (
                 <p className="text-xs text-muted-foreground mt-1">
                   {metadataLocale === "en"
-                    ? "Events may exist with private visibility (circuit_only/selective)."
-                    : "Eventos podem existir com visibilidade privada (circuit_only/selective)."}
+                    ? "This item has no public timeline yet. Private circuit history is visible only to authorized participants."
+                    : "Este item ainda não tem linha do tempo pública. O histórico privado do circuito fica visível apenas para participantes autorizados."}
                 </p>
               )}
             </div>
