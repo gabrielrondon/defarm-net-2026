@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 import {
   Loader2,
   AlertTriangle,
@@ -50,6 +51,7 @@ import {
   getPublicItemEvents,
   getPublicItemProofs,
   resolvePublicItemByIdentifier,
+  verifyPublicItem,
 } from "@/lib/defarm-api";
 import {
   eventTypeColors,
@@ -62,6 +64,7 @@ import logoIcon from "@/assets/logo-icon.png";
 import cowproLogo from "@/assets/partners/cowpro.png";
 import { AssetQRCode } from "@/components/AssetQRCode";
 import { getPublicWorkspace } from "@/lib/api/workspaces";
+import { GATEWAY_BASE } from "@/lib/api/client";
 import type { PublicItemEvent, PublicWorkspace } from "@/lib/api/types";
 import type { CheckResponse } from "@/lib/check-api/types";
 import { executeCheck } from "@/lib/check-api";
@@ -1247,6 +1250,18 @@ export default function PublicItem() {
     retry: 1,
   });
 
+  const { data: verifyResponse } = useQuery({
+    queryKey: ["public-item-verify", resolvedDfid],
+    queryFn: () => verifyPublicItem(resolvedDfid!),
+    enabled: !!resolvedDfid,
+    retry: 1,
+  });
+
+  const sanitaryAttestation =
+    verifyResponse?.sanitary_attestation?.signature_verified === true
+      ? verifyResponse.sanitary_attestation
+      : null;
+
   // Provenance (the moat): resolve each public event's issuer workspace to a
   // name/type, so the timeline shows WHO issued it, not just a trust score.
   const issuerIds = useMemo(
@@ -1275,6 +1290,13 @@ export default function PublicItem() {
       }
       return map;
     },
+  });
+
+  const { data: sanitaryIssuer } = useQuery({
+    queryKey: ["public-sanitary-issuer", sanitaryAttestation?.issuer_workspace_id],
+    enabled: !!sanitaryAttestation?.issuer_workspace_id,
+    staleTime: 300_000,
+    queryFn: () => getPublicWorkspace(sanitaryAttestation!.issuer_workspace_id),
   });
 
   const { data: proofs, isLoading: isLoadingProofs } = useQuery({
@@ -1401,6 +1423,14 @@ export default function PublicItem() {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [resolvedDfid]);
+  const sanitaryVerifyUrl = useMemo(() => {
+    const raw = sanitaryAttestation?.verify_url;
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return `${GATEWAY_BASE}${raw.startsWith("/") ? raw : `/${raw}`}`;
+  }, [sanitaryAttestation?.verify_url]);
+  const sanitaryAnimalStatus = toTitle(sanitaryAttestation?.animal_status || "");
+  const sanitaryStatus = toTitle(sanitaryAttestation?.sanitary_status || "");
 
   const weightMeta = useMemo(() => {
     const weightRaw = readAliasValue(metadata, WEIGHT_KEYS);
@@ -2404,6 +2434,52 @@ export default function PublicItem() {
                   Ver localizações
                 </Button>
               </div>
+            </div>
+          </section>
+        )}
+
+        {sanitaryAttestation && sanitaryVerifyUrl && (
+          <section className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white p-5 shadow-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-xl bg-emerald-600 p-2 text-white">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-sm font-semibold text-emerald-950">
+                      IAGRO atesta: {sanitaryAnimalStatus || "ativo"} / {sanitaryStatus || "regular"} ✓
+                    </h2>
+                    <span className="rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
+                      assinado
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-emerald-800">
+                    {sanitaryIssuer?.name || "Órgão sanitário"} confirmou esta atestação com assinatura verificável.
+                    O QR aponta para o recibo público da credencial.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-emerald-700">
+                    {sanitaryAttestation.issued_at ? (
+                      <span>Emitido em {formatDateShort(sanitaryAttestation.issued_at)}</span>
+                    ) : null}
+                    {sanitaryAttestation.valid_until ? (
+                      <span>Válido até {formatDateShort(sanitaryAttestation.valid_until)}</span>
+                    ) : null}
+                    <span className="font-mono">recibo {sanitaryAttestation.receipt_id.slice(0, 8)}...</span>
+                  </div>
+                </div>
+              </div>
+              <a
+                href={sanitaryVerifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex shrink-0 items-center gap-3 rounded-xl border border-emerald-200 bg-white p-2 transition-colors hover:border-emerald-300"
+              >
+                <QRCodeSVG value={sanitaryVerifyUrl} size={72} level="M" fgColor="#047857" bgColor="#ffffff" />
+                <span className="max-w-[90px] text-[10px] font-medium leading-tight text-emerald-800">
+                  verificar recibo
+                </span>
+              </a>
             </div>
           </section>
         )}
