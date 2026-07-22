@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trans, useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -54,6 +55,7 @@ export function DefaultCircuitCard() {
 
   const current = defaultQuery.data;
   const circuits = circuitsQuery.data ?? [];
+  const needsMaterialization = Boolean(current?.circuit_id && !current?.is_staging);
 
   return (
     <Card>
@@ -95,6 +97,20 @@ export function DefaultCircuitCard() {
             {t("portal.routing.defaultCircuit.currentLabel")} <span className="font-medium text-foreground">{current.name}</span>
             {current.source ? ` · ${t(`portal.routing.defaultCircuit.source.${current.source}`, { defaultValue: current.source })}` : ""}
           </p>
+        )}
+        {current && needsMaterialization && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <p>{t("portal.routing.defaultCircuit.materializeHint")}</p>
+            <Button
+              type="button"
+              size="sm"
+              className="mt-3"
+              onClick={() => mutation.mutate(current.circuit_id)}
+              disabled={mutation.isPending}
+            >
+              {t("portal.routing.defaultCircuit.materializeAction")}
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>
