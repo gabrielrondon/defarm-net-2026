@@ -1058,6 +1058,8 @@
         "targetLabel": "Default destination",
         "choosePlaceholder": "Choose a circuit",
         "currentLabel": "Current:",
+        "materializeHint": "This circuit was selected automatically, but it still needs to be activated as the technical intake circuit before receiving submissions.",
+        "materializeAction": "Activate as default",
         "toasts": {
           "updatedTitle": "Default circuit updated",
           "updatedDesc": "Your data goes to \"{{name}}\" when you don't specify a circuit.",

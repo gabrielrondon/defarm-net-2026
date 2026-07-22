@@ -1058,6 +1058,8 @@
         "targetLabel": "Destino padrão",
         "choosePlaceholder": "Escolha um circuito",
         "currentLabel": "Atual:",
+        "materializeHint": "Este circuito foi escolhido automaticamente, mas ainda precisa ser ativado como caixa de entrada técnica antes de receber envios.",
+        "materializeAction": "Ativar como padrão",
         "toasts": {
           "updatedTitle": "Circuito padrão atualizado",
           "updatedDesc": "Seus dados vão para \"{{name}}\" quando você não especificar um circuito.",
