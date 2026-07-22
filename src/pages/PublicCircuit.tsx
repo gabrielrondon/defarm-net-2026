@@ -12,6 +12,9 @@ import {
   Layers,
   Activity,
   ClipboardCheck,
+  ShieldCheck,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -159,13 +162,13 @@ export default function PublicCircuit() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">{circuit.name}</h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 max-w-2xl">
                 {circuit.public_description || circuit.description || "Sem descrição"}
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-3">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                  <Globe className="h-3 w-3" />
-                  Público
+                  <ShieldCheck className="h-3 w-3" />
+                  Perfil público verificável
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   <Package className="h-3 w-3" />
@@ -175,6 +178,24 @@ export default function PublicCircuit() {
                   <Users className="h-3 w-3" />
                   {circuit.member_count} membros
                 </span>
+                {circuit.public_contact_email ? (
+                  <a
+                    href={`mailto:${circuit.public_contact_email}`}
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                  >
+                    Contato
+                  </a>
+                ) : null}
+                {circuit.public_website ? (
+                  <a
+                    href={circuit.public_website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                  >
+                    Site <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : null}
               </div>
             </div>
           </div>
@@ -214,17 +235,41 @@ export default function PublicCircuit() {
           </div>
         </div>
 
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-background p-5">
+            <ShieldCheck className="h-5 w-5 text-primary mb-3" />
+            <h2 className="font-semibold text-foreground">Governança do circuito</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Este perfil mostra apenas o que o dono tornou público. Dados internos e histórico privado ficam restritos aos participantes autorizados.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-background p-5">
+            <FileText className="h-5 w-5 text-primary mb-3" />
+            <h2 className="font-semibold text-foreground">Entrada com consentimento</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Quando o circuito exige termo, o participante precisa aceitar a versão vigente antes de ler dados ou operar no circuito.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-background p-5">
+            <Activity className="h-5 w-5 text-primary mb-3" />
+            <h2 className="font-semibold text-foreground">Provas verificáveis</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Itens publicados podem carregar DFID, compromissos criptográficos, âncoras Stellar/IPFS e atestações assinadas.
+            </p>
+          </div>
+        </div>
+
         {/* Stats cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-background border border-border rounded-xl p-4 text-center">
             <Package className="h-5 w-5 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold text-foreground">{stats.total_items}</p>
-            <p className="text-xs text-muted-foreground">Itens totais</p>
+            <p className="text-xs text-muted-foreground">Itens publicados</p>
           </div>
           <div className="bg-background border border-border rounded-xl p-4 text-center">
             <CheckCircle2 className="h-5 w-5 text-primary mx-auto mb-2" />
             <p className="text-2xl font-bold text-foreground">{stats.active_items}</p>
-            <p className="text-xs text-muted-foreground">Itens ativos</p>
+            <p className="text-xs text-muted-foreground">Publicados ativos</p>
           </div>
           <div className="bg-background border border-border rounded-xl p-4 text-center">
             <Layers className="h-5 w-5 text-primary mx-auto mb-2" />
@@ -316,7 +361,7 @@ export default function PublicCircuit() {
               Itens Recentes
             </h2>
             <p className="text-xs text-muted-foreground mb-3">
-              Abra um item para ver timeline completa, hashes Stellar e histórico de CIDs no IPFS.
+              Abra um item para ver a superfície pública disponível. Histórico privado do circuito não aparece sem autorização.
             </p>
             <div className="space-y-2">
               {recentItems.map((item: ItemSummary) => (

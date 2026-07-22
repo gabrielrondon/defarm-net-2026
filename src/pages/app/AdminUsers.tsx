@@ -33,6 +33,7 @@ import {
   type WorkspaceSourceType,
   type WorkspaceTrustProfile,
 } from "@/lib/api/workspace-trust-profiles";
+import { upsertEntitlement } from "@/lib/api/partner-entitlements";
 
 const WORKSPACE_TYPES = ["producer", "partner", "certifier", "processor", "government"] as const;
 const WORKSPACE_TIERS = ["free", "basic", "pro", "enterprise"] as const;
@@ -49,6 +50,9 @@ const TRUST_SOURCE_TYPES: WorkspaceSourceType[] = [
   "manual",
   "system",
 ];
+const INITIAL_PARTNER_BALANCE_CREDITS = 10_000;
+const INITIAL_PARTNER_TOKENIZATIONS = 100;
+const INITIAL_PARTNER_VALUE_CHAINS = ["DEFARM", "BEEF", "DAIRY", "LAND"];
 
 function defaultTrustSourceByWorkspaceType(type: AdminWorkspace["workspace_type"]): WorkspaceSourceType {
   if (type === "government") return "government";
@@ -56,6 +60,20 @@ function defaultTrustSourceByWorkspaceType(type: AdminWorkspace["workspace_type"
   if (type === "partner") return "partner";
   if (type === "processor") return "processor";
   return "producer";
+}
+
+async function provisionInitialPartnerEntitlement(workspaceId: string) {
+  return upsertEntitlement(workspaceId, {
+    allowed_value_chains: INITIAL_PARTNER_VALUE_CHAINS,
+    quota_daily: 50,
+    quota_monthly: null,
+    quota_total: 500,
+    balance_remaining: INITIAL_PARTNER_BALANCE_CREDITS,
+    credit_costs: { creation: 100, enrichment: 1 },
+    auto_release: false,
+    is_active: true,
+    notes: `Saldo inicial automático: ${INITIAL_PARTNER_TOKENIZATIONS} tokenizações novas (${INITIAL_PARTNER_BALANCE_CREDITS} créditos).`,
+  });
 }
 
 export default function AdminUsers() {
@@ -255,6 +273,24 @@ export default function AdminUsers() {
           newUser.trust_notes.trim() || undefined
         );
       }
+      if (createMode === "new" && (res.workspace_type === "partner" || newUser.workspace_type === "partner")) {
+        try {
+          await provisionInitialPartnerEntitlement(res.workspace_id);
+          toast({
+            title: "Saldo inicial provisionado",
+            description: `${INITIAL_PARTNER_TOKENIZATIONS} tokenizações novas para o workspace parceiro.`,
+          });
+        } catch (entitlementErr) {
+          toast({
+            title: "Usuário criado, saldo pendente",
+            description:
+              entitlementErr instanceof Error
+                ? entitlementErr.message
+                : "Abra Entitlements para provisionar o saldo inicial.",
+            variant: "destructive",
+          });
+        }
+      }
       setNewUser({
         full_name: "",
         email: "",
@@ -295,6 +331,24 @@ export default function AdminUsers() {
           newWorkspace.trust_source_type,
           newWorkspace.trust_notes.trim() || undefined
         );
+      }
+      if (created.workspace_type === "partner") {
+        try {
+          await provisionInitialPartnerEntitlement(created.id);
+          toast({
+            title: "Saldo inicial provisionado",
+            description: `${INITIAL_PARTNER_TOKENIZATIONS} tokenizações novas para o workspace parceiro.`,
+          });
+        } catch (entitlementErr) {
+          toast({
+            title: "Workspace criado, saldo pendente",
+            description:
+              entitlementErr instanceof Error
+                ? entitlementErr.message
+                : "Abra Entitlements para provisionar o saldo inicial.",
+            variant: "destructive",
+          });
+        }
       }
       toast({ title: "Workspace criado com sucesso" });
       setNewWorkspace({
@@ -554,6 +608,11 @@ export default function AdminUsers() {
                     ))}
                   </SelectContent>
                 </Select>
+                {newUser.workspace_type === "partner" ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Parceiros novos recebem saldo inicial para {INITIAL_PARTNER_TOKENIZATIONS} tokenizações.
+                  </p>
+                ) : null}
               </div>
               <div>
                 <Label>Fonte de Confiança (opcional)</Label>
@@ -797,6 +856,11 @@ export default function AdminUsers() {
                 ))}
               </SelectContent>
             </Select>
+            {newWorkspace.workspace_type === "partner" ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                Cria entitlement inicial com {INITIAL_PARTNER_TOKENIZATIONS} tokenizações.
+              </p>
+            ) : null}
           </div>
           <div>
             <Label>Tier</Label>
