@@ -352,6 +352,19 @@ export default function CircuitoDetail() {
   const safeAvailableForPush = safeAllItems.filter(
     (item) => !safeCircuitItems.some((ci) => ci?.id === item?.id)
   );
+  const hasPropertyCompliance = Boolean(circuitCompliance?.properties?.length);
+  const ingestionExample = `[
+  {
+    "sisbov": "105705000000120",
+    "value_chain": "BEEF",
+    "country": "BR",
+    "weight_kg": 482.5,
+    "movement_reason": "entrada_no_circuito",
+    "geo": { "lat": -20.4697, "lon": -54.6201, "precision": "municipality" },
+    "car": "MS-5002704-000000",
+    "mapa_code": "BR-MAPA-REGULAR-001"
+  }
+]`;
 
   const handleCopyId = () => {
     if (circuit?.id) {
@@ -729,13 +742,63 @@ export default function CircuitoDetail() {
         </div>
       </div>
 
+      <div className="bg-background border border-border rounded-2xl p-4 space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="space-y-2">
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <Database className="h-4 w-4 text-primary" />
+              Como enviar dados para este circuito
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-3xl">
+              Para um CIR com vários participantes, o caminho recomendado é enviar pelo seu circuito de recebimento padrão
+              e deixar o feed consentido trazer o item para cá. Se este circuito for seu destino operacional, você também
+              pode torná-lo padrão em Meus Circuitos. Envio direto com <span className="font-mono">circuit_id</span> só funciona
+              quando o circuito aceita ingestão/staging para o seu workspace.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/app/meus-circuitos">
+                Tornar padrão / ver rotas
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/app/parceiro/ingestao">
+                Enviar dados
+              </Link>
+            </Button>
+          </div>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <pre className="bg-muted/50 border border-border rounded-lg p-3 text-xs font-mono overflow-x-auto text-foreground">
+            {ingestionExample}
+          </pre>
+          <div className="rounded-lg border border-border p-3 text-xs text-muted-foreground space-y-2">
+            <p className="font-medium text-foreground">Campos úteis</p>
+            <p><span className="font-mono">sisbov</span>: identificador do animal, protegido publicamente por commitment.</p>
+            <p><span className="font-mono">weight_kg</span>, <span className="font-mono">geo</span>, <span className="font-mono">car</span> e <span className="font-mono">mapa_code</span>: enriquecem a rastreabilidade e auditoria.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => navigator.clipboard.writeText(ingestionExample)}
+            >
+              <Copy className="h-3.5 w-3.5 mr-2" />
+              Copiar exemplo
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <Tabs defaultValue="itens" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="itens">{t("portal.circuits.detail.tabs.items")}</TabsTrigger>
           <TabsTrigger value="feeds">{t("portal.circuits.detail.tabs.feeds")}</TabsTrigger>
           <TabsTrigger value="termo">Termo</TabsTrigger>
           <TabsTrigger value="compartilhamento">{t("portal.circuits.detail.tabs.sharing")}</TabsTrigger>
-          <TabsTrigger value="propriedades">{t("portal.circuits.detail.tabs.properties")}</TabsTrigger>
+          {hasPropertyCompliance ? (
+            <TabsTrigger value="propriedades">{t("portal.circuits.detail.tabs.properties")}</TabsTrigger>
+          ) : null}
         </TabsList>
 
       <TabsContent value="termo">
@@ -983,6 +1046,7 @@ export default function CircuitoDetail() {
 
       </TabsContent>
 
+      {hasPropertyCompliance ? (
       <TabsContent value="propriedades">
       <div className="bg-background border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
@@ -1040,6 +1104,7 @@ export default function CircuitoDetail() {
       </div>
 
       </TabsContent>
+      ) : null}
 
       <TabsContent value="feeds">
       {/* Feeds entre circuitos (artifact-model Track B / A1) */}

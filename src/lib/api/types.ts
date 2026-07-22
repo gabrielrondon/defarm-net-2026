@@ -290,6 +290,10 @@ export interface CircuitMember {
   permissions?: Record<string, unknown> | null;
   custom_permissions?: Record<string, unknown> | null;
   removed_at?: string | null;
+  accepted_terms_id?: string | null;
+  accepted_terms_version?: number | null;
+  accepted_terms_at?: string | null;
+  terms_status?: string | null;
 }
 
 export interface AddMemberRequest {

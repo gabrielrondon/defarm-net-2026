@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Compass,
   Star,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,8 +37,8 @@ export default function CircuitDiscovery() {
           <Compass className="h-7 w-7 text-primary" />
           <h1 className="text-3xl font-bold text-foreground">Descobrir Circuitos</h1>
         </div>
-        <p className="text-muted-foreground mt-1">
-          Explore circuitos públicos e solicite participação
+        <p className="text-muted-foreground mt-1 max-w-2xl">
+          Encontre circuitos com perfil público, leia a governança e solicite participação quando o dono aceitar pedidos de entrada.
         </p>
       </div>
 
@@ -114,8 +115,8 @@ export default function CircuitDiscovery() {
                   {circuit.member_count} membros
                 </span>
                 <span className="flex items-center gap-1">
-                  <Package className="h-4 w-4" />
-                  {circuit.item_count} itens
+                  <ShieldCheck className="h-4 w-4" />
+                  Governança pública
                 </span>
               </div>
 

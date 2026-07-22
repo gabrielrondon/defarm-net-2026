@@ -33,11 +33,11 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   workspace_id: "",
-  allowed_value_chains: "DEFARM",
+  allowed_value_chains: "DEFARM, BEEF, DAIRY, LAND",
   quota_daily: "50",
   quota_monthly: "",
   quota_total: "500",
-  balance_remaining: "200",
+  balance_remaining: "10000",
   cost_creation: "100",
   cost_enrichment: "1",
   auto_release: false,

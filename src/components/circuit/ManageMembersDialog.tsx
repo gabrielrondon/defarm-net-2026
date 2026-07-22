@@ -36,9 +36,10 @@ import { Circuit } from "@/lib/defarm-api";
 import {
   cancelCircuitInvitation,
   createCircuitInvitation,
+  getCircuitMembers,
   getCircuitInvitations,
 } from "@/lib/api/circuits";
-import type { CircuitInvitation } from "@/lib/api/types";
+import type { CircuitInvitation, CircuitMember } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 
 interface ManageMembersDialogProps {
@@ -47,26 +48,18 @@ interface ManageMembersDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface MemberData {
-  member_id: string;
-  role: string;
-  custom_role_name?: string | null;
-  permissions: string[];
-  joined_timestamp: number;
-}
-
 const roleIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  Owner: Crown,
-  Admin: Shield,
-  Member: User,
-  Viewer: Eye,
+  owner: Crown,
+  admin: Shield,
+  member: User,
+  viewer: Eye,
 };
 
 const roleColors: Record<string, string> = {
-  Owner: "bg-amber-500/10 text-amber-600",
-  Admin: "bg-blue-500/10 text-blue-600",
-  Member: "bg-primary/10 text-primary",
-  Viewer: "bg-muted text-muted-foreground",
+  owner: "bg-amber-500/10 text-amber-600",
+  admin: "bg-blue-500/10 text-blue-600",
+  member: "bg-primary/10 text-primary",
+  viewer: "bg-muted text-muted-foreground",
 };
 
 export function ManageMembersDialog({
@@ -80,8 +73,12 @@ export function ManageMembersDialog({
   const [inviteEmail, setInviteEmail] = useState("");
   const [showInviteForm, setShowInviteForm] = useState(false);
 
-  // Get members from circuit data - the API returns them with the circuit
-  const members: MemberData[] = (circuit as any).members || [];
+  const membersQuery = useQuery({
+    queryKey: ["circuitMembers", circuit.id],
+    queryFn: () => getCircuitMembers(circuit.id),
+    enabled: open && Boolean(circuit.id),
+  });
+  const members: CircuitMember[] = membersQuery.data?.members ?? [];
   const invitationsQuery = useQuery({
     queryKey: ["circuit-invitations", circuit.id],
     queryFn: () => getCircuitInvitations(circuit.id),
@@ -107,6 +104,7 @@ export function ManageMembersDialog({
       setInviteEmail("");
       setShowInviteForm(false);
       queryClient.invalidateQueries({ queryKey: ["circuit-invitations", circuit.id] });
+      queryClient.invalidateQueries({ queryKey: ["circuitMembers", circuit.id] });
     },
     onError: (error) => {
       const message =
@@ -141,33 +139,23 @@ export function ManageMembersDialog({
     },
   });
 
-  const filteredMembers = members.filter((member) =>
-    member.member_id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = members.filter((member) => {
+    const needle = searchQuery.toLowerCase();
+    return (
+      member.user_id.toLowerCase().includes(needle) ||
+      member.role.toLowerCase().includes(needle) ||
+      (member.status || "").toLowerCase().includes(needle) ||
+      (member.terms_status || "").toLowerCase().includes(needle)
+    );
+  });
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     inviteMutation.mutate(inviteEmail.trim());
   };
 
-  const handleRemoveMember = (memberId: string) => {
-    // TODO: Implement actual remove member API
-    toast({
-      title: "Membro removido",
-      description: `${memberId} foi removido do circuito`,
-    });
-  };
-
-  const handleChangeRole = (memberId: string, newRole: string) => {
-    // TODO: Implement actual change role API
-    toast({
-      title: "Cargo alterado",
-      description: `Cargo de ${memberId} alterado para ${newRole}`,
-    });
-  };
-
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString("pt-BR", {
+  const formatDate = (value: string) => {
+    return new Date(value).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -187,6 +175,14 @@ export function ManageMembersDialog({
 
   const invitationTarget = (invitation: CircuitInvitation) =>
     invitation.invited_email || invitation.invited_user_id || "destinatário";
+
+  const roleLabel = (role: string) => {
+    const normalized = role.toLowerCase();
+    if (normalized === "owner") return "owner";
+    if (normalized === "admin") return "admin";
+    if (normalized === "viewer") return "viewer";
+    return "member";
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -280,24 +276,38 @@ export function ManageMembersDialog({
             </div>
           ) : null}
 
-          {filteredMembers.length > 0 ? (
+          {membersQuery.isLoading ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              Carregando membros...
+            </div>
+          ) : membersQuery.isError ? (
+            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
+              Não foi possível carregar os membros do circuito.
+            </div>
+          ) : filteredMembers.length > 0 ? (
             filteredMembers.map((member) => {
-              const RoleIcon = roleIcons[member.role] || User;
-              const isOwner = member.role === "Owner";
+              const normalizedRole = roleLabel(member.role);
+              const RoleIcon = roleIcons[normalizedRole] || User;
+              const isOwner = normalizedRole === "owner";
 
               return (
                 <div
-                  key={member.member_id}
+                  key={member.user_id}
                   className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <User className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{member.member_id}</p>
+                    <div className="min-w-0">
+                      <p className="font-mono text-xs font-medium text-foreground truncate">
+                        {member.user_id}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        Desde {formatDate(member.joined_timestamp)}
+                        Desde {formatDate(member.joined_at)}
+                        {member.terms_status ? ` · termo ${member.terms_status}` : ""}
+                        {member.accepted_terms_version ? ` v${member.accepted_terms_version}` : ""}
                       </p>
                     </div>
                   </div>
@@ -306,11 +316,11 @@ export function ManageMembersDialog({
                     <span
                       className={cn(
                         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-                        roleColors[member.role] || roleColors.Member
+                        roleColors[normalizedRole] || roleColors.member
                       )}
                     >
                       <RoleIcon className="h-3 w-3" />
-                      {member.custom_role_name || member.role}
+                      {normalizedRole}
                     </span>
 
                     {!isOwner && (
@@ -321,24 +331,13 @@ export function ManageMembersDialog({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleChangeRole(member.member_id, "Admin")}>
+                          <DropdownMenuItem disabled>
                             <Shield className="h-4 w-4 mr-2" />
-                            Promover a Admin
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleChangeRole(member.member_id, "Member")}>
-                            <User className="h-4 w-4 mr-2" />
-                            Definir como Membro
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleChangeRole(member.member_id, "Viewer")}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Definir como Visualizador
+                            Alteração de papel em breve
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleRemoveMember(member.member_id)}
-                          >
-                            Remover do circuito
+                          <DropdownMenuItem disabled className="text-muted-foreground">
+                            Remoção via endpoint dedicado
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -358,7 +357,7 @@ export function ManageMembersDialog({
         </div>
 
         <div className="pt-4 border-t border-border text-sm text-muted-foreground">
-          {members.length} membro(s) no circuito
+          {membersQuery.isLoading ? "Carregando membros..." : `${members.length} membro(s) no circuito`}
         </div>
       </DialogContent>
     </Dialog>

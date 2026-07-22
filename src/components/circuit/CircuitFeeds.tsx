@@ -93,7 +93,7 @@ export function CircuitFeeds({ circuitId }: { circuitId: string }) {
 
   const nameOf = useMemo(() => {
     const map = new Map((circuitsQuery.data ?? []).map((c) => [c.id, c.name]));
-    return (id: string) => map.get(id) ?? "Outro circuito";
+    return (id: string) => map.get(id) ?? `Circuito ${id.slice(0, 8)}...`;
   }, [circuitsQuery.data]);
 
   const all = feedsQuery.data ?? [];

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   Search,
   Shield,
@@ -14,6 +15,9 @@ import {
   FileText,
   CheckCircle,
   XCircle,
+  KeyRound,
+  ClipboardCheck,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,7 +156,7 @@ export default function AuditTrail() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Trilha de Auditoria</h1>
           <p className="text-muted-foreground mt-1">
-            Registros imutáveis com verificação de cadeia de hash
+            Registros imutáveis, eventos assinados e verificação pública de evidências.
           </p>
         </div>
         <Button
@@ -167,6 +171,57 @@ export default function AuditTrail() {
           )}
           Verificar Integridade
         </Button>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="rounded-xl border border-border bg-background p-4">
+          <KeyRound className="h-5 w-5 text-primary mb-3" />
+          <h2 className="font-semibold text-foreground">1. Órgão registra sua chave</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            A IAGRO ou outro órgão mantém a chave privada sob controle próprio e registra a chave pública no workspace.
+            Essa chave identifica quem assinou cada GTA, atestado ou evento oficial.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-background p-4">
+          <ClipboardCheck className="h-5 w-5 text-primary mb-3" />
+          <h2 className="font-semibold text-foreground">2. Evento oficial é assinado</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            O órgão emite a movimentação, GTA ou atestação sanitária dentro de um circuito autorizado. O backend preserva
+            o dono do evento e publica o selo quando a assinatura confere.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-background p-4">
+          <ShieldCheck className="h-5 w-5 text-primary mb-3" />
+          <h2 className="font-semibold text-foreground">3. Auditor verifica fora do portal</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            A página pública do DFID e o endpoint de verificação mostram se a assinatura continua válida, quem emitiu e
+            se há atestação sanitária ativa.
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-muted/30 p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="font-semibold text-foreground">Fluxo IAGRO/GTA na prática</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Use o Studio OESA para registrar uma movimentação, confira a linha do tempo no item e entregue ao auditor um
+            link público de verificação quando o item estiver publicado.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/app/studios/oesa">Abrir OESA Studio</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/app/verificar">Verificar DFID</Link>
+          </Button>
+          <Button asChild size="sm">
+            <a href="https://docs.defarm.net/docs/api" target="_blank" rel="noreferrer">
+              Contrato técnico
+              <ExternalLink className="h-3.5 w-3.5 ml-2" />
+            </a>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
