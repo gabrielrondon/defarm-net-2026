@@ -1,4 +1,4 @@
-import { registryRequest, buildQueryString } from "./client";
+import { registryRequest, registryPublicRequest, buildQueryString } from "./client";
 import type {
   JoinRequest,
   CreateJoinRequestRequest,
@@ -73,6 +73,26 @@ export async function getPublicItemEvents(
   return registryRequest<PublicItemEvent[]>(
     `/items/${dfid}/events/public${buildQueryString(params as Record<string, unknown>)}`
   );
+}
+
+export interface PublicSanitaryAttestation {
+  receipt_id: string;
+  sanitary_status?: string | null;
+  animal_status?: string | null;
+  issuer_workspace_id: string;
+  issued_at?: string | null;
+  valid_until?: string | null;
+  signature_verified?: boolean | null;
+  verify_url: string;
+}
+
+export interface PublicVerifyResponse {
+  dfid: string;
+  sanitary_attestation?: PublicSanitaryAttestation | null;
+}
+
+export async function verifyPublicItem(dfid: string): Promise<PublicVerifyResponse> {
+  return registryPublicRequest<PublicVerifyResponse>(`/verify/${encodeURIComponent(dfid)}`);
 }
 
 // Join Requests (JWT required)
