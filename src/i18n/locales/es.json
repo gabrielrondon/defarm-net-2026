@@ -1,0 +1,2080 @@
+{
+  "nav": {
+    "solutions": "Soluciones",
+    "about": "Acerca de",
+    "contact": "Contacto",
+    "getStarted": "Empezar",
+    "back": "Volver"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "The proof layer for agriculture",
+      "h_a": "Every farm item, an ",
+      "h_em": "identity",
+      "h_b": ". Every link, a ",
+      "h_em2": "proof",
+      "h_c": ".",
+      "desc": "Every agricultural item gets a permanent identifier (DFID). Producer, tracker, certifier, industry and authority sign events on top of it — and any buyer verifies, in a public, immutable proof.",
+      "ctaPrimary": "Enter through your door",
+      "ctaSecondary": "Verify a DFID",
+      "note": "Starting with the beef chain — SISBOV · GTA · processor · EUDR.",
+      "chains_label": "One surface, many chains",
+      "chain_beef": "Beef",
+      "chain_soy": "Soy",
+      "chain_coffee": "Coffee",
+      "chain_cotton": "Cotton",
+      "chains_live": "live",
+      "chains_more": "+8 chains"
+    },
+    "specimen": {
+      "label": "Proof specimen",
+      "network": "Network",
+      "cattle": "Cattle",
+      "active": "Active",
+      "verified": "Verified on-chain",
+      "anchor": "stellar · confirmed"
+    },
+    "personas": {
+      "eyebrow": "Enter through your door",
+      "headline": "Every link enters directly",
+      "desc": "Each one issues its proof on top of the same item. Pick your profile.",
+      "produtor": {
+        "name": "Producer",
+        "desc": "Tokenize your herd and watch the proof grow."
+      },
+      "rastreador": {
+        "name": "SISBOV tracker",
+        "desc": "Issue ear tags as on-chain identity."
+      },
+      "certificadora": {
+        "name": "Certifier",
+        "desc": "From signed PDF to verifiable attestation."
+      },
+      "frigorifico": {
+        "name": "Processor",
+        "desc": "Create your premium seal with public proof."
+      },
+      "oesa": {
+        "name": "Authority (OESA)",
+        "desc": "The GTA you issue, with public proof."
+      },
+      "parceiro": {
+        "name": "Partner / Bank",
+        "desc": "Read the score, decide credit and purchase."
+      }
+    },
+    "prim": {
+      "eyebrow": "How it works",
+      "headline": "Three primitives, one surface",
+      "desc": "The whole chain runs on the same event backend. No data islands, no PDF nobody checks.",
+      "tag": "primitive",
+      "1t": "Identity",
+      "1d": "Each item gets a DFID — a permanent, unique identifier written as an immutable record.",
+      "2t": "Signed event",
+      "2d": "Each link signs an event — attestation, seal, movement — with its own identity.",
+      "3t": "Public verification",
+      "3d": "Any buyer, bank or auditor checks the proof in the verifier — no login."
+    },
+    "verif": {
+      "eyebrow": "The verifier",
+      "headline": "Proof is public and verifiable",
+      "desc": "Paste a DFID and see the identity, the history signed by each link and the immutable record. It's what the importer scans in the QR.",
+      "placeholder": "Paste a DFID (e.g. DFID-BEEF-BR-2026-…)",
+      "cta": "Verify",
+      "note": "No sign-up. Public verification."
+    },
+    "prod": {
+      "eyebrow": "Proof becomes product",
+      "headline": "Whoever needs to trust, reads the proof",
+      "desc": "Bank, auditor and importer consume the same layer — via a legible screen or via API.",
+      "score_t": "Credit score",
+      "score_d": "For the bank: a 0–100 score over the asset's public data — herd, attestations, seals, movements and network trust.",
+      "score_cta": "View screen",
+      "eudr_t": "EUDR due diligence",
+      "eudr_d": "For the auditor and importer: a self-contained origin statement — CAR, polygon, deforestation-free compliance and immutability.",
+      "eudr_cta": "View screen"
+    },
+    "cta": {
+      "headline": "Give your supply chain an identity",
+      "desc": "Enter, bring your data, and the network becomes the mandatory proof surface for Brazilian agricultural data.",
+      "primary": "Enter through your door",
+      "secondary": "Talk to us"
+    }
+  },
+  "score": {
+    "eyebrow": "Product · bank / partner",
+    "title": "Asset credit score",
+    "sub": "Look up the public score of an asset or producer. Model over network-verifiable data.",
+    "tab_dfid": "DFID",
+    "tab_cpf": "CPF",
+    "tab_ccir": "CCIR",
+    "placeholder_dfid": "DFID-BEEF-BR-2026-001106-b0e4d7",
+    "placeholder_cpf": "000.000.000-00",
+    "placeholder_ccir": "000.000.000.000-0",
+    "consult": "Look up score",
+    "empty_t": "Look up an asset",
+    "empty_d": "Enter a DFID, CPF or CCIR to see the credit score and the factors behind it.",
+    "loading": "Reading the network…",
+    "error_t": "We couldn't find that identifier",
+    "error_d": "Check the DFID, CPF or CCIR and try again.",
+    "of": "of 100",
+    "band": "Band",
+    "band_a_label": "Low risk",
+    "band_b_label": "Moderate risk",
+    "band_c_label": "High risk",
+    "band_none_label": "No data",
+    "factors_t": "How the score is built",
+    "f_items": "Items in herd",
+    "f_attestations": "Attestations",
+    "f_seals": "Seals",
+    "f_movements": "Movements",
+    "f_trust": "Avg. network trust",
+    "note": "Score over public data. Model v1.",
+    "query": "Query",
+    "try": "Examples:"
+  },
+  "eudr": {
+    "eyebrow": "Product · auditor / importer",
+    "title": "Due Diligence Statement (EUDR)",
+    "sub": "Self-contained due-diligence document. Georeferenced origin, verifiable evidence trail and immutability.",
+    "demo_tag": "Demonstration",
+    "operator_label": "Operator",
+    "pdf": "Download PDF",
+    "pdf_full": "Full PDF (formal)",
+    "pdf_full_denied": "No permission for the full PDF. The document with complete identity is restricted to whoever registered the operator, an authority or admin. Downloaded the standard (masked) PDF.",
+    "dd_t": "Due diligence trail",
+    "dd_sources": "PRODES/DETER · SICAR · IBAMA · FUNAI · ICMBio · MTE",
+    "dd_desc": "Each row is a source verified by DeFarm Check: environmental per CAR (deforestation after 31 Dec 2020, embargoes, indigenous land, conservation units) and the MTE slave-labor list per operator.",
+    "gate_card_t": "Generate the full Statement",
+    "gate_card_desc": "The signed DDS, with an audit QR code and a hash anchored on-chain, is generated by DeFarm Check for your CAR or batch of farms.",
+    "gate_card_cta": "I want the DeFarm check",
+    "gate_title": "DeFarm checks in your system",
+    "gate_desc": "This is a demonstration. To run the Due Diligence Statement (EUDR) on your own data — via API or on the platform, with evidence and on-chain anchoring — talk to us.",
+    "gate_cta": "Talk to DeFarm",
+    "gate_close": "Back to demo",
+    "emit_cta": "Emit DDS",
+    "emit_ok": "DDS emitted · −{{credits}} credits",
+    "emit_balance": "balance: {{balance}}",
+    "emit_error": "Failed to emit the DDS. Please try again shortly.",
+    "emit_incomplete": "emitted with incomplete data — origin and/or operator not resolved at source.",
+    "consult_ok": "Viewing DDS emitted on {{at}} (no charge).",
+    "consult_error": "Couldn't open this emission.",
+    "my_dds": "My emitted DDS",
+    "incomplete_tag": "incomplete",
+    "empty_t": "Emit a Due Diligence Statement",
+    "empty_d": "Enter an asset's DFID above and click 'Emit DDS'. The checks (PRODES/DETER, SICAR, IBAMA, FUNAI, ICMBio, slave-labor list) run on the spot and consume credits.",
+    "export_soon": "PDF export coming soon.",
+    "balance_label": "Balance",
+    "cost_hint": "each emission costs 50 credits",
+    "credits_title": "You need credits",
+    "credits_desc": "Your account doesn't have enough credits to emit this Statement. Talk to us to provision credits for your workspace.",
+    "ready": "EUDR ready",
+    "notready": "Incomplete origin",
+    "load": "Load",
+    "id_t": "Identity",
+    "id_chain": "Chain",
+    "id_country": "Country",
+    "id_year": "Year",
+    "id_status": "Status",
+    "id_active": "Active",
+    "origin_t": "Origin",
+    "origin_car": "CAR",
+    "origin_source": "Polygon source",
+    "origin_area": "Area",
+    "origin_compliance": "Deforestation-free compliance",
+    "compliance_ok": "Compliant",
+    "compliance_score": "Confidence",
+    "map_hint": "SICAR polygon · WGS84",
+    "imut_t": "Immutability",
+    "imut_cid": "CID (IPFS)",
+    "imut_tx": "Anchor (tx)",
+    "imut_chain": "Network",
+    "anchor_confirmed": "Verified on-chain",
+    "anchor_confirmed_d": "Anchor confirmed on Stellar. Immutable document.",
+    "anchor_pending": "Pinned on IPFS · anchoring pending",
+    "anchor_pending_d": "Content pinned on IPFS. On-chain anchor not yet confirmed.",
+    "anchor_failed": "Pinned on IPFS · anchoring failed",
+    "anchor_failed_d": "Content pinned on IPFS. The on-chain anchor failed — we claim no confirmation.",
+    "honesty": "Honesty rule: we only claim “verified on-chain” when the anchor is confirmed.",
+    "demo_state": "Anchor state (demo)",
+    "generated": "Generated at",
+    "export": "Export PDF",
+    "embed": "Embeddable in public verifier /i/:dfid"
+  },
+  "pgate": {
+    "title": "Welcome to DeFarm",
+    "desc": "We're rolling out dashboard access gradually. To join the queue, enter your property's CAR — our team will validate and reach out.",
+    "car_label": "Property CAR",
+    "car_ph": "e.g. MS-5002704-XXXXXXXX…",
+    "submit": "Request access",
+    "logout": "Sign out",
+    "car_required": "Enter the property CAR.",
+    "err": "Couldn't submit. Please try again.",
+    "ok_title": "Request received",
+    "ok_desc": "We received your property's CAR. Our team will validate and get in touch. Thank you!"
+  },
+  "eudrv": {
+    "sub": "Public verification of an already-emitted Statement. Check the evidence trail, the verdict and the on-chain anchor — no login.",
+    "loading": "Loading the statement…",
+    "notfound_t": "No DDS emitted for this DFID",
+    "notfound_d": "We couldn't find a Due Diligence Statement emitted for this identifier. Check the DFID.",
+    "ready": "EUDR compliant",
+    "partial": "Attention — see trail",
+    "dd_desc": "Each row is a source verified by DeFarm Check at emission time. The operator (CNPJ/CPF) is masked for privacy.",
+    "no_trail": "This emission was issued without a due diligence trail (origin/operator not resolved at source).",
+    "note": "Public verification, no login. The statement shows the trail as of that date, anchored on-chain (tamper-proof). The operator's CNPJ/CPF stays protected — only the slave-labor list result is shown.",
+    "share_t": "Public verification",
+    "share_d": "Scan the QR or share the link — any buyer verifies this DDS by DFID, no login.",
+    "copy_link": "Copy link",
+    "link_copied": "Link copied",
+    "proof_t": "On-chain proof",
+    "proof_d": "Check it yourself: the statement was anchored on the Stellar blockchain and the content versioned on IPFS. The references below are public and immutable.",
+    "proof_tx": "Stellar transaction",
+    "proof_cid": "IPFS content (CID)",
+    "proof_pending": "On-chain anchoring pending — the transaction shows up here once confirmed.",
+    "pdf": "Download PDF",
+    "pdf_gen": "Generating PDF…"
+  },
+  "integ": {
+    "label": "Plugged into the systems agriculture already uses"
+  },
+  "trust": {
+    "eyebrow": "Trust model",
+    "headline": "How the proof holds up",
+    "desc": "No central authority deciding what's true. Trust comes from each link's signature and a record nobody rewrites afterward.",
+    "s1_t": "Signed",
+    "s1_d": "Each link signs the event with its own identity — producer, tracker, certifier, authority.",
+    "s2_t": "Chained",
+    "s2_d": "The event joins the DFID's permanent history, tied to everything before it.",
+    "s3_t": "Immutable",
+    "s3_d": "The record is sealed. Nobody — not even DeFarm — rewrites what's been signed.",
+    "s4_t": "Public",
+    "s4_d": "Any buyer, bank or auditor checks the proof. No login, no permission needed.",
+    "m1_v": "8,405",
+    "m1_l": "DFIDs issued",
+    "m2_v": "50,076",
+    "m2_l": "Signed events",
+    "metrics_note": "Network records"
+  },
+  "spec": {
+    "live": "On the network",
+    "phrase": "A bovine registered and verifiable in {{local}}.",
+    "verify": "Scan to verify",
+    "label": "Proof specimen",
+    "country": "BR",
+    "status": "Active",
+    "issued": "Issued",
+    "scan": "Scan to trace",
+    "eudr": "EUDR ready",
+    "signers": "signatures",
+    "signers_hint": "Links that have already signed events on this item",
+    "c_beef": "Beef",
+    "c_cocoa": "Cocoa",
+    "c_coffee": "Coffee",
+    "c_soy": "Soy"
+  },
+  "pg": {
+    "back": "Back"
+  },
+  "signup": {
+    "title": "Create account",
+    "sub": "Fill in your details to start using the platform.",
+    "panel_title": "Join DeFarm",
+    "panel_sub": "Create your account and start giving your herd an identity — each animal becomes a DFID with public proof.",
+    "f_name": "Full name",
+    "ph_name": "John Silva",
+    "f_email": "Email",
+    "ph_email": "you@email.com",
+    "f_farm": "Farm/company name (optional)",
+    "ph_farm": "São João Farm",
+    "f_pass": "Password",
+    "workspace_a": "This sign-up creates a ",
+    "workspace_em": "Producer",
+    "workspace_b": " workspace. If you're an ERP, aggregator, partner, certifier or processor, ",
+    "workspace_link": "contact DeFarm",
+    "submit": "Create account",
+    "has_account": "Already have an account?",
+    "signin": "Sign in"
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title_a": "Get in ",
+    "title_em": "touch",
+    "sub": "We're ready to help you transform your supply chain.",
+    "info_title": "Contact information",
+    "info_sub": "Reach us through the channels below — we reply within 24 hours.",
+    "email_label": "Email",
+    "addr_label": "Address",
+    "addr_value": "Av. Afonso Pena, 4785, Suite 701 · Campo Grande, MS · Brazil",
+    "form_title": "Talk to DeFarm",
+    "form_sub": "For partner onboarding, ERP/aggregator integrations and commercial questions.",
+    "prefill": "Preselected profile",
+    "f_name": "Name",
+    "ph_name": "Your full name",
+    "f_email": "Email",
+    "ph_email": "you@company.com",
+    "f_company": "Company",
+    "ph_company": "Company name",
+    "f_profile": "Profile",
+    "f_message": "Message",
+    "ph_message": "Describe your need and integration context.",
+    "submit": "Send message",
+    "success_t": "Message sent.",
+    "success_d": "We'll reply within 24 business hours.",
+    "profile": {
+      "produtores": "Producer",
+      "rastreadores": "SISBOV tracker",
+      "certificadoras": "Certifier",
+      "frigorificos": "Processor",
+      "oesas": "Authority (OESA)",
+      "parceiros": "Partner / Bank",
+      "outro": "Other"
+    }
+  },
+  "about": {
+    "eyebrow": "About DeFarm",
+    "title_a": "The proof ",
+    "title_em": "layer",
+    "title_b": " for agriculture",
+    "sub": "Turning agricultural data into verifiable proof — starting with beef.",
+    "p1": "DeFarm started from a simple observation: field data exists, but it lives trapped on islands — SISBOV here, GTA there, a certificate PDF nobody can verify. At the end of the chain, the animal becomes a commodity and the story is lost.",
+    "p2": "Our thesis is to give every agricultural item a permanent identity (DFID) and let each link — producer, tracker, certifier, industry and authority — sign proof on top of it. The proof is public, on-chain, and it's what opens the premium market.",
+    "stat1_l": "Founded",
+    "stat2_l": "Animals tracked",
+    "stat3_l": "Partner producers",
+    "stat4_l": "States covered",
+    "win_eyebrow": "Why now",
+    "win_title": "The windows are already open",
+    "win_sub": "Regulation and premium markets now demand proof of origin. Those with identity get in; those without stay out.",
+    "win3_name": "Seals & credit",
+    "win1_d": "The EU importer needs georeferenced, deforestation-free origin — per item, not per declaration.",
+    "win2_d": "High-value markets buy verifiable history, not a brand promise.",
+    "win3_d": "Premiums and rural credit start reading the asset's public proof.",
+    "values_eyebrow": "Principles",
+    "values_title": "What guides us",
+    "v1_t": "Mission",
+    "v1_d": "To be the mandatory proof surface for agricultural data — starting with Brazilian beef.",
+    "v2_t": "Purpose",
+    "v2_d": "Pull the producer away from the commodity: give every animal a name, a history and a premium.",
+    "v3_t": "Integrity",
+    "v3_d": "Immutable, verifiable data. We only claim what the anchor confirms — never proof that wasn't made.",
+    "v4_t": "Sovereignty",
+    "v4_d": "Each link owns its identity and what it signs. DeFarm is the layer, not the judge.",
+    "cta_title": "Be part of the proof layer",
+    "cta_sub": "Enter, bring your data, and the network becomes the mandatory passage for Brazilian agricultural data.",
+    "cta_primary": "Create account",
+    "cta_secondary": "Talk to us"
+  },
+  "platform": {
+    "rastreio": {
+      "label": "#1 Traceability Platform",
+      "shortLabel": "Trace",
+      "headline": "Turn your traceability data into",
+      "highlight": "liquidity",
+      "description": "Tokenize traceable assets, unlock financing with better rates, and prove compliance across your entire supply chain.",
+      "cta": "Get Started",
+      "secondaryCta": "See how it works",
+      "stats": {
+        "0": {
+          "value": "<1 min",
+          "label": "Tokenization per asset"
+        },
+        "1": {
+          "value": "99.9%",
+          "label": "API uptime"
+        },
+        "2": {
+          "value": "2",
+          "label": "Blockchains supported"
+        }
+      },
+      "features": {
+        "0": "Immutable blockchain",
+        "1": "EUDR Compliance"
+      },
+      "rotate0headline": "Organize your assets in a",
+      "rotate0highlight": "digital passbook",
+      "rotate1headline": "Share your certificates with",
+      "rotate1highlight": "anyone you want",
+      "rotate2headline": "Turn your passbook into",
+      "rotate2highlight": "credit opportunities"
+    },
+    "financeiro": {
+      "label": "Finance",
+      "shortLabel": "Finance",
+      "headline": "Digital CPR with",
+      "highlight": "real guarantees",
+      "description": "Issue financial CPRs online and link traceable assets as collateral. Access better rates with partner banks.",
+      "cta": "Issue CPR",
+      "secondaryCta": "Simulate rates",
+      "stats": {
+        "0": {
+          "value": "$10M+",
+          "label": "CPRs issued"
+        },
+        "1": {
+          "value": "-2.5%",
+          "label": "Avg rate vs market"
+        },
+        "2": {
+          "value": "24h",
+          "label": "Fast approval"
+        }
+      },
+      "features": {
+        "0": "Better rates",
+        "1": "Tokenized guarantees"
+      }
+    },
+    "developers": {
+      "label": "Developers",
+      "shortLabel": "Devs",
+      "headline": "Powerful APIs to",
+      "highlight": "integrate everything",
+      "description": "Complete documentation, SDKs in multiple languages and dedicated support. Build on DeFarm infrastructure.",
+      "cta": "Access Docs",
+      "stats": {
+        "0": {
+          "value": "REST",
+          "label": "Modern API"
+        },
+        "1": {
+          "value": "99.9%",
+          "label": "Guaranteed uptime"
+        },
+        "2": {
+          "value": "5 min",
+          "label": "To integrate"
+        }
+      },
+      "features": {
+        "0": "Ready SDKs",
+        "1": "Complete docs"
+      }
+    }
+  },
+  "cta": {
+    "headline": "Ready to transform your supply chain?",
+    "description": "Join hundreds of producers already using DeFarm to ensure traceability and compliance.",
+    "primary": "Get Started"
+  },
+  "howItWorks": {
+    "title": "How it",
+    "titleHighlight": "works",
+    "subtitle": "Simple and efficient process to trace your entire production",
+    "steps": {
+      "0": {
+        "title": "Animal Registration",
+        "description": "Register each animal with complete origin, health and management data."
+      },
+      "1": {
+        "title": "Real-Time Tracking",
+        "description": "Track all movement and animal history on the blockchain."
+      },
+      "2": {
+        "title": "Automatic Compliance",
+        "description": "Generate EUDR compliance reports automatically and securely."
+      },
+      "3": {
+        "title": "QR Code Verification",
+        "description": "Consumers access the full product origin with a simple scan."
+      }
+    }
+  },
+  "benefits": {
+    "title": "Solutions for the entire",
+    "titleHighlight": "supply chain",
+    "subtitle": "Specific benefits for each ecosystem participant",
+    "producers": {
+      "title": "For Producers",
+      "description": "Value your production with origin certification. Access premium markets and better pricing.",
+      "benefits": [
+        "Complete digital record",
+        "Management history",
+        "Automatic certificates",
+        "Access to new markets"
+      ]
+    },
+    "processors": {
+      "title": "For Processors",
+      "description": "Ensure full compliance with regulations and end-to-end traceability.",
+      "benefits": [
+        "EUDR Compliance",
+        "Simplified due diligence",
+        "Automatic reports",
+        "System integration"
+      ]
+    },
+    "retailers": {
+      "title": "For Retailers",
+      "description": "Offer full transparency to consumers and differentiate your brand in the market.",
+      "benefits": [
+        "QR Code for customers",
+        "Origin seal",
+        "Sustainable marketing",
+        "Customer loyalty"
+      ]
+    },
+    "learnMore": "Learn more"
+  },
+  "footer": {
+    "description": "Leading platform in agricultural traceability. Connecting producers, processors and retailers with transparency and technology.",
+    "product": "Product",
+    "traceability": "Traceability",
+    "compliance": "EUDR Compliance",
+    "tokenization": "Tokenization",
+    "company": "Company",
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "logoPack": "Branding",
+    "rights": "© 2026 DeFarm. All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use"
+  },
+  "branding": {
+    "title": "Branding",
+    "description": "Complete visual guide for the DeFarm brand — logos, color palette, typography and usage guidelines.",
+    "logosTitle": "Logos",
+    "icon": "Icon",
+    "lockup": "Full lockup",
+    "download": "Download PNG",
+    "colorsTitle": "Color Palette",
+    "colorsDescription": "Click any color to copy its HEX value.",
+    "coreColors": "Core Colors",
+    "greenScale": "Green Scale",
+    "typographyTitle": "Typography",
+    "typographyDescription": "We use DM Sans for headings and Inter for body text.",
+    "headings": "Headings",
+    "body": "Body",
+    "guidelinesTitle": "Usage Guidelines",
+    "rule1": "Do not alter logo colors or proportions.",
+    "rule2": "Keep a minimum clear space around the logo.",
+    "rule3": "Do not place the logo on low-contrast backgrounds.",
+    "rule4": "Always use the official files provided here."
+  },
+  "privacy": {
+    "lastUpdated": "Last updated: February 2026",
+    "sections": {
+      "intro": {
+        "title": "Introduction",
+        "content": "DeFarm (\"we\", \"our\", or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our agricultural traceability platform and related services."
+      },
+      "dataCollected": {
+        "title": "Data We Collect",
+        "content": "We collect information you provide directly, such as name, email address, company/farm name, and animal identification data. We also automatically collect usage data, device information, IP address, and cookies to improve our services."
+      },
+      "usage": {
+        "title": "How We Use Your Data",
+        "content": "We use your data to provide and maintain our traceability services, process transactions, send communications about your account, improve our platform, comply with legal obligations, and generate compliance reports (such as EUDR). We do not sell your personal data to third parties."
+      },
+      "sharing": {
+        "title": "Data Sharing",
+        "content": "We may share your data with supply chain participants within your circuits (with your consent), technology partners who assist in operating our platform, regulatory authorities when legally required, and financial partners for CPR issuance and credit analysis. All partners are bound by confidentiality agreements."
+      },
+      "security": {
+        "title": "Data Security",
+        "content": "We implement industry-standard security measures including encryption, secure servers, and blockchain-based immutable records. While no system is 100% secure, we continuously work to protect your information against unauthorized access, alteration, or destruction."
+      },
+      "rights": {
+        "title": "Your Rights",
+        "content": "Under the Brazilian General Data Protection Law (LGPD) and other applicable regulations, you have the right to access, correct, delete, or port your personal data. You may also revoke consent at any time. To exercise these rights, contact us at contact@defarm.net."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions about this Privacy Policy, contact us at contact@defarm.net or at our address: Av. Afonso Pena, 4785, Sala 701, Santa Fé, 79.031-010 Campo Grande, Mato Grosso do Sul, Brazil."
+      }
+    }
+  },
+  "terms": {
+    "lastUpdated": "Last updated: February 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "content": "By accessing or using DeFarm's platform and services, you agree to be bound by these Terms of Use. If you do not agree, you should not use our services. These terms apply to all users, including producers, processors, retailers, and developers."
+      },
+      "services": {
+        "title": "Services Description",
+        "content": "DeFarm provides an agricultural traceability platform that includes animal tracking and registration, EUDR compliance reporting, asset tokenization, digital CPR issuance, and APIs for system integration. Services may be updated or modified at any time with prior notice."
+      },
+      "accounts": {
+        "title": "User Accounts",
+        "content": "You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account. You must provide accurate and complete information during registration. DeFarm reserves the right to suspend accounts that violate these terms."
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "content": "All content, software, algorithms, and technology on the DeFarm platform are protected by intellectual property laws. You are granted a limited, non-exclusive license to use our services. You may not copy, modify, distribute, or reverse-engineer any part of our platform without written consent."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "content": "DeFarm provides services \"as is\" and makes no warranties regarding accuracy or completeness of traceability data entered by users. We are not liable for indirect, incidental, or consequential damages. Our total liability is limited to the amount paid for services in the 12 months preceding the claim."
+      },
+      "termination": {
+        "title": "Termination",
+        "content": "Either party may terminate the agreement at any time with 30 days' written notice. DeFarm may immediately terminate access in case of terms violation. Upon termination, you may request export of your data within 90 days."
+      },
+      "law": {
+        "title": "Governing Law",
+        "content": "These terms are governed by the laws of the Federative Republic of Brazil. Any disputes shall be submitted to the courts of Campo Grande, Mato Grosso do Sul, Brazil."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "For questions about these Terms of Use, contact us at contact@defarm.net or at our address: Av. Afonso Pena, 4785, Sala 701, Santa Fé, 79.031-010 Campo Grande, Mato Grosso do Sul, Brazil."
+      }
+    }
+  },
+  "solutions": {
+    "title": "Our",
+    "titleHighlight": "Solutions",
+    "subtitle": "Cutting-edge technology for complete agricultural traceability",
+    "learnMore": "Learn more",
+    "items": {
+      "0": {
+        "title": "Cattle Traceability",
+        "description": "Complete individual animal tracking system. From birth to slaughter, every stage is recorded securely and immutably on the blockchain.",
+        "features": [
+          "Individual animal registration",
+          "Complete movement history",
+          "Health and vaccination data",
+          "Integration with existing systems"
+        ]
+      },
+      "1": {
+        "title": "EUDR Compliance",
+        "description": "Meet EU Deforestation Regulation requirements automatically. Reports and documentation ready for export.",
+        "features": [
+          "Automated due diligence",
+          "Property geolocation",
+          "Reports for importers",
+          "Origin certification"
+        ]
+      },
+      "2": {
+        "title": "Tokenization",
+        "description": "Transform your agricultural assets into digital tokens. Access new markets and financing opportunities through blockchain technology.",
+        "features": [
+          "Tokens per batch",
+          "Integrated marketplace",
+          "Liquidity for producers",
+          "Full transparency"
+        ]
+      },
+      "3": {
+        "title": "QR Code Verification",
+        "description": "Allow end consumers to verify the full origin of the product with a simple QR Code scan at the point of sale.",
+        "features": [
+          "QR Code per product",
+          "Verification page",
+          "Complete history",
+          "Social media sharing"
+        ]
+      }
+    }
+  },
+  "login": {
+    "welcome": "Bienvenido de nuevo",
+    "subtitle": "Accede a la plataforma DeFarm",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "Olvidé mi contraseña",
+    "signIn": "Entrar",
+    "or": "o",
+    "demoAccess": "Acceso demo",
+    "noAccount": "¿No tienes cuenta?",
+    "createAccount": "Crear cuenta",
+    "sideTitle": "Trazabilidad agropecuaria confiable",
+    "sideDescription": "Gestiona circuitos, evidencias y datos de socios con seguridad.",
+    "errorTitle": "Login error",
+    "errorDescription": "Invalid credentials",
+    "demoErrorTitle": "Demo access error",
+    "gov": {
+      "badge": "Government Portal",
+      "title": "Public infrastructure for inter-agency traceability",
+      "subtitle": "Operational PNIB integration, continuous data enrichment, context-based privacy controls, and secure sharing across state and federal institutions.",
+      "kpiOneTitle": "Immediate outcomes",
+      "kpiOneDesc": "Reduced rework, digital audit readiness, and real-time operational visibility.",
+      "kpiTwoTitle": "Trusted governance",
+      "kpiTwoDesc": "Traceable data origin by government workspace with verifiable technical evidence.",
+      "accessTitle": "Government access",
+      "accessDesc": "Sign in with your agency account for operational reading and official contribution.",
+      "contactPrompt": "Need government access?",
+      "contactCta": "Contact DeFarm",
+      "cards": {
+        "pnibTitle": "PNIB and regulatory execution",
+        "pnibDesc": "Integrate official flows with already tokenized field data while preserving end-to-end traceability.",
+        "enrichmentTitle": "Continuous enrichment",
+        "enrichmentDesc": "Agencies add information layers without losing item history or operational integrity.",
+        "privacyTitle": "Privacy with control",
+        "privacyDesc": "Event and context-based visibility balancing public transparency and institutional confidentiality.",
+        "sharingTitle": "Federative sharing",
+        "sharingDesc": "Collaborate across state secretariats, sector agencies, and other public entities with auditable trails.",
+        "complianceTitle": "Verifiable compliance",
+        "complianceDesc": "Technical evidence of origin and updates supports inspections, audits, and risk analysis.",
+        "whyTitle": "Why DeFarm",
+        "whyDesc": "Platform already operating with data partners, stable public contracts, and governance ready to scale."
+      }
+    }
+  },
+  "register": {
+    "title": "Crear cuenta",
+    "subtitle": "Configura tu acceso a DeFarm",
+    "fullName": "Nombre completo",
+    "fullNamePlaceholder": "Tu nombre",
+    "email": "Correo electrónico",
+    "emailPlaceholder": "tu@email.com",
+    "workspace": "Organización",
+    "workspacePlaceholder": "Nombre de la organización",
+    "password": "Contraseña",
+    "createAccount": "Crear cuenta",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "signIn": "Entrar",
+    "sideTitle": "Join DeFarm",
+    "sideDescription": "Create your account and start tracing your supply chain with transparency and blockchain technology.",
+    "passwordReqs": {
+      "length": "At least 8 characters",
+      "uppercase": "One uppercase letter",
+      "lowercase": "One lowercase letter",
+      "number": "One number",
+      "special": "One special character"
+    },
+    "invalidPassword": "Invalid password",
+    "invalidPasswordDesc": "Password does not meet all requirements",
+    "errorTitle": "Account creation error",
+    "errorDescription": "Please try again later"
+  },
+  "comoFunciona": {
+    "steps": {
+      "0": {
+        "title": "Register your Property",
+        "subtitle": "Precise georeferencing",
+        "description": "Delimit your rural property polygon with GPS coordinates."
+      },
+      "1": {
+        "title": "Tokenize your Items",
+        "subtitle": "Unique blockchain identifier",
+        "description": "Each animal or batch receives a DFID registered on immutable blockchain."
+      },
+      "2": {
+        "title": "Create Circuits",
+        "subtitle": "Connect the supply chain",
+        "description": "Circuits connect participants with controlled permissions."
+      },
+      "3": {
+        "title": "Share Verifications",
+        "subtitle": "Full transparency",
+        "description": "Generate verifiable links for buyers, auditors and consumers."
+      },
+      "4": {
+        "title": "Verifiable Checks",
+        "subtitle": "Automatic compliance",
+        "description": "All socio-environmental checks in one place."
+      }
+    },
+    "stepOf": "Step {{current}} of {{total}}",
+    "back": "Back",
+    "next": "Next",
+    "accessPlatform": "Access Platform",
+    "polygonVerified": "Polygon verified",
+    "checks": {
+      "0": "Environmental Compliance",
+      "1": "Deforestation-Free",
+      "2": "Health Documentation",
+      "3": "EUDR Compliance"
+    }
+  },
+  "taxas": {
+    "title": "CPR Market Rates",
+    "description": "Updated CPR (Rural Product Certificate) market rates (January 2026)",
+    "types": {
+      "0": "Physical CPR - Grains",
+      "1": "Financial CPR - Soybean",
+      "2": "Financial CPR - Corn",
+      "3": "CPR Livestock - Fat Cattle"
+    },
+    "perYear": "p.a.",
+    "promo": "With DeFarm, you can issue CPRs with tokenized guarantees and get rates up to <strong>2.5% lower</strong> than market average.",
+    "accessSpace": "Access my Space",
+    "source": "Source: Secondary market and partner banks. Updated Jan/2026."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "message": "No encontramos la página solicitada.",
+    "backHome": "Volver al inicio"
+  },
+  "languageToggle": {
+    "en": "EN",
+    "pt": "PT"
+  },
+  "onboarding": {
+    "steps": {
+      "property": "Property",
+      "identify": "Identify",
+      "register": "Register",
+      "portfolio": "Portfolio",
+      "caderneta": "Passbook",
+      "compliance": "Compliance",
+      "opportunities": "Opportunities"
+    },
+    "loginPrompt": "Already have an account?",
+    "loginPromptMobile": "Sign in",
+    "stepProperty": {
+      "title": "What's your rural property?",
+      "subtitle": "Enter your CAR number (Rural Environmental Registry) to locate your property",
+      "placeholder": "UF-0000000-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "fakeGenerated": "Example number generated",
+      "generateFake": "Generate example CAR",
+      "tryAnother": "Generate another example",
+      "orGenerate": "Don't have a CAR? No problem!",
+      "searchMap": "Search on map",
+      "searchError": "Could not find this property. Check the CAR number and try again.",
+      "noGeometry": "This CAR does not have georeferenced polygon data available. Try another number.",
+      "formatHint": "CAR format: UF-0000000-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "searching": "Locating property...",
+      "mapCaption": "Property boundaries identified via CAR",
+      "continue": "Continue"
+    },
+    "footer": "Your data is safe and will only be saved when you create an account",
+    "step1": {
+      "title": "What's your animal's number?",
+      "subtitle": "SISBOV, ear tag, batch, GTA... any identifier you already use",
+      "placeholder": "Type here...",
+      "detected": "Looks like a {{type}}",
+      "fakeGenerated": "Example number generated",
+      "generateFake": "Don't have a number? Generate example",
+      "continue": "Continue",
+      "propertyContext": "Now, register your animals to create the digital passport for your property"
+    },
+    "step2": {
+      "registering": "Registering your animal...",
+      "registered": "Animal registered successfully!",
+      "secureRecord": "Secure Digital Record",
+      "dfidDescription": "This is the unique and immutable identifier of your animal on the DeFarm network",
+      "traceable": "Traceable",
+      "immutable": "Immutable",
+      "verifiable": "Verifiable",
+      "viewPortfolio": "View my portfolio"
+    },
+    "step3": {
+      "title": "Your asset portfolio",
+      "subtitle": "Add more animals or batches to create a complete portfolio",
+      "addPlaceholder": "Type the identifier...",
+      "addButton": "Add",
+      "generateExample": "Generate example",
+      "cancel": "Cancel",
+      "addMore": "Add another animal or batch",
+      "assetsSingular": "registered asset",
+      "assetsPlural": "registered assets",
+      "checkCompliance": "Create Passbook"
+    },
+    "stepCaderneta": {
+      "title": "Your Digital Passbook",
+      "subtitle": "Everything about your operation in one place — ready for compliance, credit, and traceability",
+      "cardLabel": "Digital Agro Passbook",
+      "ownerLabel": "Title Owner",
+      "ownerPlaceholder": "Will be filled when you create an account",
+      "landLabel": "Associated Lands",
+      "verified": "Verified",
+      "assetsLabel": "Connected Assets",
+      "moreAssets": "additional assets",
+      "syncLabel": "Synced with Blockchain Network",
+      "unlockedLabel": "Unlocked Features",
+      "featureCompliance": "Compliance",
+      "featureFinance": "Rural Credit",
+      "featureNetwork": "Stellar Network",
+      "continue": "Check compliance"
+    },
+    "step4": {
+      "title": "Verifying your assets",
+      "subtitle": "Checking {{count}} item in real time",
+      "subtitlePlural": "Checking {{count}} items in real time",
+      "environmental": "Environmental Verification",
+      "environmentalDesc": "Area free of illegal deforestation",
+      "eudr": "EUDR Compliance",
+      "eudrDesc": "Eligible for European market",
+      "documentation": "Documentation",
+      "documentationDesc": "Basic records verified",
+      "allVerified": "All verified!",
+      "allVerifiedDesc": "Your assets are ready to access premium financial opportunities",
+      "viewOpportunities": "View opportunities"
+    },
+    "step5": {
+      "unlocked": "Unlocked",
+      "title": "Your opportunities",
+      "subtitle": "With {{count}} verified asset, you can access:",
+      "subtitlePlural": "With {{count}} verified assets, you can access:",
+      "cprTitle": "Digital CPR",
+      "cprDesc": "Issue a Rural Product Certificate with your assets as collateral",
+      "cprHighlight": "Rate from 1.2% p.m.",
+      "financeTitle": "Rural Financing",
+      "financeDesc": "Access credit with preferential rates using your portfolio",
+      "financeHighlight": "Up to $500k",
+      "premiumTitle": "Premium Market",
+      "premiumDesc": "Direct sales to premium slaughterhouses and exporters",
+      "premiumHighlight": "+15% on price",
+      "reqAssets": "Registered assets",
+      "reqCompliance": "Compliance verified",
+      "reqProperty": "Property data",
+      "reqHistory": "Production history",
+      "reqEudr": "EUDR compliant",
+      "reqCerts": "Extra certifications",
+      "readyTitle": "Ready to start?",
+      "readyDesc": "",
+      "savePortfolio": "Create account"
+    }
+  },
+  "partners": {
+    "esalqtec": "Associate member",
+    "stellar": "Support grant",
+    "rbb": "Observer node",
+    "cowpro": "Data Partner: Proof of Life",
+    "gerbov": "Data Partner: ERP"
+  },
+  "portal": {
+    "enums": {
+      "routeType": {
+        "car": "CAR",
+        "exploracao": "Holding (MAPA)",
+        "land_dfid": "LAND DFID",
+        "cnpj": "CNPJ",
+        "cpf": "CPF",
+        "ccir": "CCIR",
+        "nirf": "NIRF",
+        "incra": "INCRA",
+        "cib": "CIB",
+        "matricula": "Registration",
+        "georef": "GEOREF",
+        "ie": "State registration",
+        "inscricao_estadual": "State registration"
+      },
+      "routeStatus": {
+        "routed_existing": "goes to the rule's circuit",
+        "would_auto_create": "would create a new circuit",
+        "routed_source_fallback": "goes to the default circuit",
+        "completed": "completed",
+        "partial": "partially completed",
+        "failed": "failed"
+      },
+      "circuitSource": {
+        "api_key_metadata": "via API key",
+        "partner_staging_flag": "staging",
+        "fallback": "fallback",
+        "workspace_setting": "setting"
+      },
+      "issueStatus": {
+        "open": "Open",
+        "in_review": "In review",
+        "resolved": "Resolved",
+        "rejected": "Rejected"
+      },
+      "issueReason": {
+        "missing_identifier": "missing identifier",
+        "missing_value_chain": "missing value_chain",
+        "missing_trackable_identifier": "missing trackable identifier",
+        "empty_after_normalization": "invalid identifier after normalization",
+        "no_routing_rule": "no routing rule",
+        "invalid_value_chain": "invalid value_chain",
+        "canonical_conflict": "identity conflict between DFIDs"
+      },
+      "circuitVisibility": {
+        "private": "Private",
+        "restricted": "Restricted",
+        "public": "Public"
+      },
+      "circuitStatus": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "archived": "Archived"
+      },
+      "circuitType": {
+        "private": "Private",
+        "shared": "Shared",
+        "public": "Public",
+        "enterprise": "Enterprise"
+      },
+      "itemStatus": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "archived": "Archived",
+        "pending": "Pending"
+      },
+      "complianceStatus": {
+        "ok": "Compliant",
+        "warning": "Warning",
+        "blocked": "Blocked",
+        "unknown": "Unknown"
+      },
+      "eventType": {
+        "item_created": "Item Created",
+        "item_updated": "Item Updated",
+        "item_deleted": "Item Deleted",
+        "item_archived": "Item Archived",
+        "circuit_created": "Circuit Created",
+        "circuit_updated": "Circuit Updated",
+        "circuit_deleted": "Circuit Deleted",
+        "member_added": "Member Added",
+        "member_removed": "Member Removed",
+        "permission_changed": "Permission Changed",
+        "audit_logged": "Audit Logged",
+        "custom": "Custom Event",
+        "local_item_created": "Local Item Created",
+        "local_item_pushed": "Local Item Pushed",
+        "item_merged": "Items Merged",
+        "item_split": "Item Split",
+        "item_unmerged": "Items Unmerged",
+        "blockchain_anchor_created": "Blockchain Anchor Created",
+        "blockchain_anchor_confirmed": "Blockchain Anchor Confirmed",
+        "ipfs_upload_completed": "IPFS Upload Completed",
+        "item_movement": "Movement",
+        "item_arrived": "Arrival",
+        "item_born": "Birth",
+        "item_weighed": "Weighing",
+        "item_vaccinated": "Vaccination",
+        "item_treated": "Treatment",
+        "item_slaughtered": "Slaughter",
+        "item_classified": "Classification",
+        "property_registered": "Property Registered",
+        "property_audited": "Property Audited",
+        "property_area_updated": "Property Area Updated",
+        "item_enriched": "Item Enriched",
+        "circuit_push": "Circuit Push",
+        "circuit_pull": "Circuit Pull",
+        "item_status_changed": "Status Changed",
+        "blockchain_anchor": "Blockchain Anchor",
+        "ipfs_upload": "IPFS Upload",
+        "item_property_linked": "Linked to Property",
+        "item_property_unlinked": "Unlinked from Property"
+      },
+      "eventVisibility": {
+        "public": "Public",
+        "private": "Private",
+        "circuit_only": "Circuit",
+        "selective": "Selective"
+      },
+      "deliveryStatus": {
+        "pending": "Pending",
+        "delivered": "Delivered",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      },
+      "payloadStatus": {
+        "received": "Received",
+        "processing": "Processing",
+        "completed": "Completed",
+        "partial": "Partial",
+        "failed": "Failed"
+      }
+    },
+    "ingestion": {
+      "authError": {
+        "title": "Authentication error",
+        "desc": "No permission to access the default circuit."
+      },
+      "errors": {
+        "previewFailed": "Failed to generate preview.",
+        "ingestionFailed": "Ingestion failed."
+      },
+      "noCircuit": {
+        "title": "No eligible circuit found",
+        "desc": "Couldn't identify a default circuit for this workspace. Contact support or create a circuit first.",
+        "create": "Create circuit"
+      },
+      "circuitBadge": {
+        "label": "Circuit:",
+        "staging": "staging"
+      },
+      "steps": {
+        "upload": "Upload",
+        "preview": "Preview",
+        "test": "Test",
+        "done": "Production"
+      },
+      "upload": {
+        "title": "Try it — drag a file or click to select",
+        "hint": "CSV or JSON · We show what will happen before writing anything — no risk"
+      },
+      "preview": {
+        "analyzing": "Analyzing file structure...",
+        "sendToTest": "Send to test",
+        "publishDirect": "Publish directly",
+        "process": "Process",
+        "simulationTitle": "Simulation — nothing was saved",
+        "simulationDesc": "Safe preview, no risk. See what would happen if you send for real.",
+        "whatWillHappen": "What will happen",
+        "routeLine": "{{rows}} row(s) · {{items}} item(s) · {{status}}",
+        "moreDestinations": "+ {{count}} more destination(s)",
+        "howItWorksLabel": "How does it work?",
+        "howItWorksBody": "Each row always lands in your default circuit and, in parallel, is routed by identifier (CAR, holding, CNPJ…) to the right circuit. Nothing was saved — this is the preview."
+      },
+      "stats": {
+        "rows": "Rows",
+        "processable": "Processable",
+        "pending": "Pending"
+      },
+      "test": {
+        "publishReal": "Publish to the real chain",
+        "successTitle": "Test completed successfully",
+        "rowsProcessed": "Rows processed",
+        "itemsCreated": "Items created",
+        "routesProcessed": "Routes processed",
+        "routeCount": "{{rows}} rows · {{items}} items",
+        "itemsSampleTitle": "Sample of created items",
+        "moreItems": "+ {{count}} more item(s)",
+        "nextStepLabel": "Next step:",
+        "nextStepBody": "The data is in a test circuit. Review the items created above. When you're satisfied, publish to the real value chain."
+      },
+      "done": {
+        "sendAnother": "Send another file",
+        "title": "Ingestion complete!",
+        "items": "Items",
+        "batches": "Batches",
+        "itemsPublished": "Published items",
+        "moreGeneric": "+ {{count}} more"
+      },
+      "error": {
+        "title": "Ingestion failed",
+        "retry": "Try again"
+      },
+      "errorCard": {
+        "title": "Analysis error"
+      },
+      "skip": "Skip these steps",
+      "apiBanner": {
+        "title": "This action can also be done via API.",
+        "desc": "Use the <code>POST /partner/ingestions</code> endpoint with your API key."
+      },
+      "common": {
+        "restart": "Restart",
+        "change": "Change",
+        "ref": "ref: {{value}}",
+        "viewCircuit": "View circuit",
+        "apiKeys": "API Keys"
+      }
+    },
+    "reception": {
+      "title": "Your reception",
+      "landsIn": "Your data lands in <strong>{{name}}</strong> by default.",
+      "changeCircuits": "change / view circuits",
+      "recentReceived": "{{count}} recent submission(s) received — everything flowing.",
+      "noneYet": "No submissions yet — start by sending your data.",
+      "sendData": "Send data"
+    },
+    "common": {
+      "save": "Guardar",
+      "loading": "Cargando...",
+      "back": "Back",
+      "cancel": "Cancelar",
+      "tryAgain": "Try again",
+      "beta": "Beta",
+      "betaNote": "This section is in beta. You can already use it and validate the flows in your workspace.",
+      "copy": "Copiar",
+      "copied": "Copiado"
+    },
+    "routing": {
+      "header": {
+        "section": "Operation",
+        "title": "Routing",
+        "desc": "Define which circuit each identifier goes to — and resolve what arrived without a rule."
+      },
+      "newRule": "New rule",
+      "valuePlaceholder": "Value",
+      "circuitPlaceholder": "Circuit",
+      "activeRules": "Active rules · {{count}}",
+      "empty": {
+        "title": "No rules",
+        "desc": "Create the first rule above."
+      },
+      "toasts": {
+        "loadError": "Failed to load routing",
+        "ruleSaved": "Rule saved",
+        "ruleSaveError": "Failed to save rule",
+        "ruleRemoved": "Rule removed",
+        "ruleRemoveError": "Failed to remove"
+      },
+      "defaultCircuit": {
+        "title": "Default circuit",
+        "desc": "It's where your data goes when you <strong>don't</strong> specify a circuit on submission. Pointing to a circuit is always optional — at minimum, just the identifier and the value chain are enough.",
+        "targetLabel": "Default destination",
+        "choosePlaceholder": "Choose a circuit",
+        "currentLabel": "Current:",
+        "materializeHint": "This circuit was selected automatically, but it still needs to be activated as the technical intake circuit before receiving submissions.",
+        "materializeAction": "Activate as default",
+        "toasts": {
+          "updatedTitle": "Default circuit updated",
+          "updatedDesc": "Your data goes to \"{{name}}\" when you don't specify a circuit.",
+          "updateError": "Couldn't update the default circuit"
+        },
+        "source": {
+          "api_key_metadata": "set in your API key",
+          "workspace_setting": "set by you",
+          "partner_staging_flag": "workspace automatic default",
+          "fallback": "automatic (oldest circuit)"
+        }
+      },
+      "issues": {
+        "title": "Routing issues",
+        "desc": "Items that arrived without a resolvable rule/identifier. Claim and resolve with a rule to avoid recurrence.",
+        "totalListed": "Total listed",
+        "open": "Open",
+        "inReview": "In review",
+        "targetCircuitPlaceholder": "Target circuit for quick resolution",
+        "quickAction": "Quick action: create a rule linked to selected circuit.",
+        "statusFilterPlaceholder": "Issue status",
+        "filter": {
+          "openInReview": "Open + in review",
+          "openOnly": "Open only",
+          "inReviewOnly": "In review only",
+          "resolved": "Resolved",
+          "rejected": "Rejected"
+        },
+        "assignedToMe": "Show only assigned to me",
+        "refresh": "Refresh issues",
+        "none": "No issues at the moment.",
+        "emptyValue": "(empty)",
+        "typeReasonLine": "type: {{type}} · reason: {{reason}}",
+        "lastEvent": "last event: {{date}}",
+        "occurrences": "{{count}} occurrence(s)",
+        "assigned": "assigned",
+        "claim": "Claim",
+        "resolveWithRule": "Resolve with rule",
+        "resolveManually": "Resolve manually",
+        "typeMissingFull": "Missing routing identifier (LAND_DFID/CAR/EXPLORACAO/CCIR/INCRA/NIRF/CIB/MATRICULA/GEOREF/IE)",
+        "notesRuleResolved": "Resolved in Partner Portal",
+        "notesManualResolved": "Manually resolved in Partner Portal",
+        "toasts": {
+          "loadErrorTitle": "Failed to load routing issues",
+          "loadErrorDesc": "Could not load routing issues.",
+          "claimedTitle": "Issue claimed",
+          "claimedDesc": "Issue is now in review for your user.",
+          "claimErrorTitle": "Failed to claim issue",
+          "claimErrorDesc": "Could not assign issue.",
+          "resolvedTitle": "Issue resolved",
+          "resolvedDesc": "Rule created and issue closed.",
+          "resolveErrorTitle": "Failed to resolve issue",
+          "resolveErrorDesc": "Could not create rule and resolve automatically.",
+          "closedTitle": "Issue closed",
+          "closedDesc": "Marked as manually resolved.",
+          "closeErrorTitle": "Failed to close issue",
+          "closeErrorDesc": "Could not mark as resolved."
+        }
+      }
+    },
+    "circuits": {
+      "form": {
+        "basicInfo": "Basic info",
+        "basicInfoDesc": "Circuit name and description",
+        "nameLabel": "Circuit name *",
+        "namePlaceholder": "E.g.: Organic Beef Chain",
+        "descLabel": "Description",
+        "descPlaceholder": "Describe the purpose of this circuit...",
+        "visibilitySection": "Visibility",
+        "visibilitySectionDesc": "Who can see the circuit's data",
+        "visibilityLabel": "Visibility",
+        "visibilityHint": "Public circuits can be seen by anyone with the link"
+      },
+      "new": {
+        "title": "New Circuit",
+        "subtitle": "Create a new circuit to share traceable data",
+        "typeLabel": "Circuit type",
+        "typeOptions": {
+          "private": "Private",
+          "shared": "Shared",
+          "public": "Public"
+        },
+        "visibilityOptions": {
+          "private": "Private",
+          "public": "Public"
+        },
+        "submit": "Create Circuit",
+        "toasts": {
+          "createdTitle": "Circuit created!",
+          "createdDesc": "The circuit \"{{name}}\" was created successfully.",
+          "createError": "Failed to create circuit",
+          "sessionInvalidTitle": "Invalid session",
+          "sessionInvalidDesc": "Log in again to create a circuit."
+        }
+      },
+      "edit": {
+        "title": "Edit Circuit",
+        "subtitle": "Update the circuit \"{{name}}\" information",
+        "notFound": "Circuit not found",
+        "backToCircuits": "Back to Circuits",
+        "visibilityOptions": {
+          "private": "Private",
+          "restricted": "Restricted (members only)",
+          "public": "Public"
+        },
+        "statusLabel": "Operational status",
+        "statusOptions": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "statusHint": {
+          "active": "Active: the circuit appears as operational and enters the default flows.",
+          "inactive": "Inactive: keeps history, but leaves the main operational flows."
+        },
+        "discoveryTitle": "Discovery & Public Profile",
+        "discoveryDesc": "Configure how your circuit appears to the public",
+        "enableDiscovery": "Enable discovery",
+        "enableDiscoveryHint": "Lets others find your circuit",
+        "searchable": "Searchable",
+        "searchableHint": "Appears in public circuit searches",
+        "allowJoin": "Accept join requests",
+        "allowJoinHint": "Lets visitors request to join",
+        "showCompliance": "Show Compliance publicly",
+        "showComplianceHint": "When on, the public page shows the compliance status of the circuit's LAND properties.",
+        "slugLabel": "Public URL (slug)",
+        "slugPlaceholder": "my-circuit",
+        "publicLink": "Public link: {{url}}",
+        "publicDescLabel": "Public description",
+        "publicDescPlaceholder": "Description shown on the public page...",
+        "contactEmailLabel": "Public contact email",
+        "contactEmailPlaceholder": "contact@farm.com",
+        "websiteLabel": "Website",
+        "websitePlaceholder": "https://yourfarm.com",
+        "bannerLabel": "Background image (banner)",
+        "bannerPlaceholder": "https://.../banner.jpg",
+        "bannerHint": "Appears as the card background (My Circuits) and as the banner on the public page. Paste the URL of a hosted PNG/JPEG.",
+        "logoLabel": "Logo",
+        "logoPlaceholder": "https://.../logo.png",
+        "logoHint": "Appears on the circuit's public page.",
+        "submit": "Save Changes",
+        "toasts": {
+          "updatedTitle": "Circuit updated!",
+          "updatedDesc": "The changes were saved successfully.",
+          "updateError": "Failed to update"
+        }
+      },
+      "delete": {
+        "title": "Delete Circuit",
+        "desc": "This action is <strong>irreversible</strong>. All circuit data will be permanently removed.",
+        "aboutTo": "You're about to delete:",
+        "confirmPrompt": "Type <name>{{name}}</name> to confirm:",
+        "namePlaceholder": "Circuit name",
+        "deleting": "Deleting...",
+        "confirm": "Delete Permanently",
+        "toasts": {
+          "deletedTitle": "Circuit deleted",
+          "deletedDesc": "The circuit \"{{name}}\" was deleted successfully.",
+          "deleteError": "Failed to delete"
+        }
+      },
+      "mine": {
+        "title": "My Circuits",
+        "subtitle": "Each circuit is a destination for your data. The <strong>default</strong> receives what you send without pointing — hover the <icon></icon> on each one to see how to send.",
+        "newCircuit": "New circuit",
+        "empty": "You don't have any circuits yet. Create the first one to start receiving data.",
+        "createFirst": "Create circuit",
+        "defaultBadge": "Default",
+        "defaultCardHint": "The data you send <strong>without pointing to a circuit</strong> lands here automatically.",
+        "pointHere": "To send here, point to this circuit:",
+        "receivingDefault": "receiving by default",
+        "makeDefault": "Make default",
+        "howToSendAria": "How to send",
+        "howToSendTitle": "How to send to \"{{name}}\"",
+        "howDefault": "With your smart Reception key, just send — it lands here by default.",
+        "howNonDefault": "For circuits in your workspace, you can point circuit_id directly. For shared cross-organization CIRs, prefer sending to your default circuit and using the consented feed.",
+        "minDefault": "The minimum for each item is just identifier + chain:",
+        "minNonDefault": "Direct-send example when the circuit accepts ingestion for your workspace:",
+        "copyExample": "Copy example",
+        "copyCircuitIdentifier": "Circuit identifier",
+        "copyExampleLabel": "Example",
+        "copied": "{{what}} copied",
+        "defaultUpdatedTitle": "Default circuit updated",
+        "defaultUpdatedDesc": "Your data without a destination now lands in \"{{name}}\".",
+        "defaultUpdateError": "Couldn't change the default",
+        "sections": {
+          "mineTitle": "My circuits",
+          "mineHint": "Created by you or that you take part in — not tied to a specific property.",
+          "propertiesTitle": "Property circuits",
+          "propertiesHint": "Created automatically when receiving data from a property (CAR/land).",
+          "clientsTitle": "Client circuits",
+          "clientsHint": "Created automatically when receiving data from a client (CNPJ/CPF)."
+        },
+        "payload": {
+          "identifierComment": "your canonical identifier",
+          "valueChainComment": "the value chain",
+          "circuitIdComment": "points to this circuit"
+        }
+      },
+      "detail": {
+        "notFoundDesc": "The circuit you're looking for doesn't exist or you don't have permission to access it.",
+        "toasts": {
+          "sealGranted": "Seal granted",
+          "sealRemoved": "Seal removed",
+          "sealGrantedDesc": "This circuit now appears as Verified by DeFarm.",
+          "sealRemovedDesc": "The verified seal was removed.",
+          "sealError": "Couldn't change the seal",
+          "itemPushed": "Item sent!",
+          "itemPushedDesc": "The item was added to the circuit successfully.",
+          "itemPushError": "Failed to send item",
+          "complianceRefreshed": "Compliance refreshed",
+          "complianceRefreshError": "Failed to refresh compliance"
+        },
+        "removeSeal": "Remove seal",
+        "grantSeal": "Grant seal",
+        "noDescription": "No description",
+        "copyCircuitId": "Copy circuit ID",
+        "publicUrlLabel": "Public page",
+        "statusHelp": "Operational status: Active appears in lists and operation flows; Inactive keeps history but leaves the main flows.",
+        "govGuide": "Gov guide: shared circuit",
+        "pushItem": "Push Item",
+        "pushDialogTitle": "Send Item to Circuit",
+        "pushDialogDesc": "Select an item to send to the circuit \"{{name}}\"",
+        "noItemsToPush": "No items available to send",
+        "createNewItem": "Create new item",
+        "sendItem": "Send Item",
+        "edit": "Edit",
+        "manageMembers": "Manage members",
+        "joinRequests": "Join requests",
+        "deleteCircuit": "Delete circuit",
+        "stats": {
+          "items": "Items",
+          "members": "Members",
+          "visibility": "Visibility",
+          "category": "Category"
+        },
+        "tabs": {
+          "items": "Items",
+          "feeds": "Feeds",
+          "sharing": "Sharing",
+          "properties": "Properties"
+        },
+        "sharing": {
+          "title": "Public sharing",
+          "descPublic": "Use this link to share the circuit's public page.",
+          "descPrivate": "This circuit is private. Make it public in Edit to generate a shareable page.",
+          "currentState": "Current state:",
+          "slug": "slug:",
+          "urlPlaceholder": "Available when visibility is Public",
+          "copyUrl": "Copy URL",
+          "share": "Share",
+          "openPublic": "Open public page",
+          "makePublic": "Make public"
+        },
+        "properties": {
+          "title": "Compliance by property (LAND)",
+          "desc": "Simple checks per LAND/CAR linked to this circuit's items.",
+          "none": "No LAND properties linked to the circuit.",
+          "carLine": "CAR: {{car}} · Last check: {{date}}",
+          "carNotInformed": "not informed",
+          "checkNA": "n/a",
+          "refresh": "Refresh"
+        },
+        "items": {
+          "title": "Items in the Circuit",
+          "searchPlaceholder": "Search items...",
+          "thDfid": "DFID",
+          "thIdentifiers": "Identifiers",
+          "thChainCountry": "Chain / Country",
+          "thAnchors": "Anchors",
+          "thStatus": "Status",
+          "thUpdate": "Updated",
+          "moreIdentifiers": "+{{count}} more",
+          "emptySearch": "No items found",
+          "emptyNone": "No items in the circuit",
+          "emptySearchDesc": "Try a different search",
+          "emptyNoneDesc": "Send items to start tracking in this circuit"
+        },
+        "shareText": "See the circuit \"{{name}}\" on DeFarm",
+        "shareSubject": "Circuit {{name}} - DeFarm",
+        "shareMessage": "See the circuit \"{{name}}\" on DeFarm: {{url}}"
+      }
+    },
+    "items": {
+      "list": {
+        "loading": "Loading items...",
+        "errorTitle": "Failed to load items",
+        "errorFallback": "Try again later",
+        "title": "Items",
+        "subtitle": "All items tracked in your workspace's circuits",
+        "importCsv": "Import CSV/JSON",
+        "newItem": "New Item",
+        "searchPlaceholder": "Search by DFID, chain, country...",
+        "statusPrefix": "Status:",
+        "filterAll": "All",
+        "filterActive": "Active",
+        "filterDeprecated": "Deprecated",
+        "statsTotal": "Total items",
+        "statsTokenized": "Tokenized",
+        "statsActive": "Active",
+        "statsCircuits": "Circuits",
+        "loadNote": "Identifiers and on-chain proofs loaded for the first 30 items (of {{total}}). The rest appear in the list, with details on each item.",
+        "thDfid": "DFID",
+        "thIdentifiers": "Identifiers",
+        "thChainCountry": "Chain / Country",
+        "thCircuits": "Circuit(s)",
+        "thAnchors": "Anchors",
+        "thStatus": "Status",
+        "thUpdate": "Updated",
+        "moreIdentifiers": "+{{count}} more",
+        "localStatus": "Local",
+        "viewDetails": "View details",
+        "sendToCircuit": "Send to circuit",
+        "deprecate": "Deprecate",
+        "empty": "No items found",
+        "emptySearchDesc": "Try a different search",
+        "emptyNoneDesc": "Register your first item",
+        "createItem": "Create Item",
+        "toasts": {
+          "deprecated": "Item deprecated",
+          "deprecatedDesc": "The status was updated.",
+          "deprecateError": "Failed to deprecate",
+          "noCircuitError": "Couldn't determine the item's circuit."
+        }
+      },
+      "detail": {
+        "notFound": "Item not found",
+        "notFoundDesc": "The item you're looking for doesn't exist or you don't have permission to access it.",
+        "backToItems": "Back to Items",
+        "property": {
+          "title": "Property trail (LAND)",
+          "desc": "Custody/provenance associations of the item by land DFID.",
+          "transferOption": "Transfer (GTA)",
+          "annotationOption": "Static annotation",
+          "gtaPlaceholder": "GTA (required for transfer)",
+          "link": "Link",
+          "loading": "Loading links...",
+          "empty": "No property links registered for this item.",
+          "transfer": "Transfer",
+          "transferWithGta": "Transfer · GTA {{gta}}",
+          "annotation": "Annotation",
+          "ended": "Ended",
+          "active": "Active",
+          "period": "Period: {{period}}",
+          "periodOpen": "open",
+          "endLink": "End link"
+        },
+        "compliance": {
+          "title": "Compliance of active LAND properties",
+          "desc": "Verification summary per linked and active property.",
+          "loading": "Loading compliance...",
+          "empty": "No active LAND properties to check.",
+          "noData": "No compliance data available.",
+          "carLine": "CAR: {{car}} · Last check: {{date}}",
+          "carNotInformed": "not informed",
+          "checkNA": "n/a",
+          "refresh": "Refresh"
+        },
+        "toasts": {
+          "linkCreated": "Link created",
+          "linkCreatedDesc": "Item associated with the property.",
+          "linkError": "Failed to link property",
+          "linkRemoved": "Link removed",
+          "linkRemovedDesc": "The link was ended (soft unlink).",
+          "unlinkError": "Failed to remove link",
+          "complianceRefreshed": "Compliance refreshed",
+          "complianceRefreshError": "Failed to refresh compliance"
+        },
+        "header": {
+          "statusAlive": "Alive",
+          "tokenized": "Tokenized",
+          "local": "Local",
+          "copyDfid": "Copy DFID",
+          "pushToCircuit": "Push to Circuit",
+          "editMetadata": "Edit metadata",
+          "deprecateItem": "Deprecate item"
+        },
+        "identifiers": {
+          "stellarConfirming": "Confirming…",
+          "notAnchored": "Not anchored",
+          "infoTitle": "Information",
+          "infoDesc": "Item data",
+          "valueChain": "Value Chain",
+          "country": "Country",
+          "yearSeason": "Year / Season",
+          "title": "Identifiers",
+          "registered": "{{count}} registered",
+          "canonical": "canonical",
+          "tokenization": "Tokenization",
+          "anchorsSubtitle": "Blockchain & IPFS anchors",
+          "stellarCount": "Stellar ({{count}})",
+          "asset": "Asset:",
+          "memo": "Memo:",
+          "cidHistory": "CID history ({{count}})",
+          "current": "current",
+          "metadata": "Metadata",
+          "createdAt": "Created at",
+          "lastUpdate": "Last update",
+          "idLabel": "ID",
+          "additionalData": "Additional Data",
+          "provLegacy": "legacy",
+          "provBy": "by {{who}}",
+          "provOtherOrigin": "another source",
+          "provShared": "shared",
+          "mergedInto": "Merged into",
+          "splitFrom": "Split from"
+        }
+      },
+      "timeline": {
+        "title": "History",
+        "eventsCount": "{{count}} management event(s)",
+        "operationalCount": "· {{count}} operational",
+        "hideOperational": "Hide technical",
+        "showBlockchain": "Show blockchain/IPFS",
+        "summary": {
+          "property": "Property: {{property}}",
+          "movementRegistered": "Movement registered",
+          "weightKg": "{{weight}} kg",
+          "bornOn": "Born on {{date}}",
+          "noDetails": "No additional details for this event."
+        },
+        "trust": {
+          "na": "Trust n/a",
+          "high": "High trust",
+          "medium": "Medium trust",
+          "low": "Low trust",
+          "model": "Model {{version}}"
+        },
+        "owner": "owner",
+        "duplicate": "duplicate",
+        "manage": "Manage",
+        "delegate": "Delegate",
+        "delegatePrompt": "Enter the workspace_id that will receive delegation:",
+        "delegateDone": "Delegation registered.",
+        "empty": "No events recorded",
+        "emptyDesc": "Events will appear here as the item is modified"
+      },
+      "deprecateDialog": {
+        "toastSuccess": "Item deprecated successfully",
+        "toastError": "Failed to deprecate: {{msg}}",
+        "title": "Deprecate Item",
+        "desc": "Are you sure you want to deprecate item <dfid>{{dfid}}</dfid>? The item will be archived but its data will be preserved for auditing.",
+        "confirm": "Deprecate"
+      },
+      "editMetadataDialog": {
+        "toastSuccess": "Metadata updated successfully",
+        "toastError": "Failed to update: {{msg}}",
+        "title": "Edit Metadata",
+        "desc": "Immutable fields (DFID, value chain, country, year) can't be changed. Only custom metadata is editable.",
+        "keyLabel": "Key",
+        "valueLabel": "Value",
+        "keyPlaceholder": "e.g.: weight_kg",
+        "valuePlaceholder": "e.g.: 475",
+        "addField": "Add field"
+      },
+      "pushDialog": {
+        "toastSent": "Item sent!",
+        "toastSentDesc": "The item was associated with the circuit successfully.",
+        "toastError": "Failed to send item",
+        "title": "Push to Circuit",
+        "desc": "Select the circuit you want to send item <dfid>{{dfid}}</dfid> to",
+        "noActiveCircuits": "No active circuit available",
+        "sending": "Sending...",
+        "send": "Send to Circuit"
+      }
+    },
+    "docs": {
+      "section": "Development",
+      "title": "Documentation",
+      "subtitle": "Resources to integrate with the DeFarm platform.",
+      "integration": {
+        "title": "Integration Guide",
+        "desc": "Step by step to connect your app to the DeFarm API."
+      },
+      "apiRef": {
+        "title": "API Reference",
+        "desc": "Endpoints, authentication and request examples."
+      },
+      "formats": {
+        "title": "File Formats",
+        "desc": "Specification of the CSV and JSON formats accepted for ingestion."
+      },
+      "openFull": "Open full documentation"
+    },
+    "sdk": {
+      "title": "SDKs",
+      "subtitle": "Multi-language catalog to integrate DeFarm directly into the partner's software.",
+      "tools": {
+        "title": "DeFarm SDKs for Partners",
+        "desc": "Choose your stack's language and use the official package. All SDKs follow the same concepts of authentication (JWT and API key), ingestion and response reconciliation.",
+        "comingSoon": "Coming soon",
+        "comingSoonNote": "Package coming soon — for now use the TypeScript SDK or the API directly.",
+        "packageLabel": "Package:",
+        "copyInstall": "Copy install",
+        "openPackage": "Open package",
+        "catalog": {
+          "typescript": "Main SDK, used as the base for partner integrations.",
+          "python": "Client focused on ingestion and reconciliation automation.",
+          "go": "SDK with no external dependencies, ideal for backend services.",
+          "php": "Aimed at PHP web stacks with server-to-server flow.",
+          "ruby": "Job- and API-oriented integration in Ruby.",
+          "kotlin": "JVM SDK focused on enterprise systems.",
+          "java": "Beta version for the Java 11+ ecosystem.",
+          "dotnet": "Beta SDK for .NET 8+ integrations."
+        }
+      }
+    },
+    "cli": {
+      "title": "CLI",
+      "subtitle": "Ready-made commands to integrate the partner quickly via terminal."
+    },
+    "embed": {
+      "page": {
+        "section": "Integration",
+        "title": "View Link",
+        "subtitle": "A temporary, read-only link for someone to see a circuit's verified portfolio (items + on-chain proofs), without needing an account. Expires in the time you set."
+      },
+      "viewLinkLabel": "View link (share this)",
+      "iframeLabel": "Embed in your site (iframe · advanced)",
+      "tokenLabel": "Token (advanced)",
+      "circuit": "Circuit",
+      "selectCircuit": "Select a circuit",
+      "circuitIdPlaceholder": "Circuit ID",
+      "expiresMin": "Expires (min)",
+      "generating": "Generating…",
+      "generate": "Generate link",
+      "linkGenerated": "Link generated",
+      "expiresAt": "Expires at",
+      "seeAsClient": "See what the client sees"
+    },
+    "kit": {
+      "title": "Partner Kit",
+      "intro": "Step 1: send data with <code>value_chain</code> + the trackable asset identifier (BEEF: SISBOV preferred or CHIP) to <code>/v1/partner/ingestions</code>. Identifiers like CAR/EXPLORAÇÃO(MAPA)/CCIR/INCRA/NIRF/CIB/MATRÍCULA/GEOREF/LAND_DFID/IE/CNPJ/CPF are for routing and context. Step 2: validate in the preview and go to production with a real API key. Step 3: use template/advanced only if needed.",
+      "cards": {
+        "templateCsv": "CSV Template",
+        "templateCsvDesc": "Download official template",
+        "download": "Download",
+        "openapiDesc": "Partner contract",
+        "swaggerDesc": "Interactive test",
+        "postmanDesc": "Ready collection",
+        "open": "Open"
+      },
+      "noTemplate": "Important: the <code>/v1/partner/ingestions</code> endpoint already does smart routing and doesn't require a template.",
+      "refTitle": "Integration reference",
+      "refNote": "The essential is Step 1. Open the blocks below as needed — nothing beyond the send is required.",
+      "step1": "Step 1",
+      "step2": "Step 2",
+      "step3": "Step 3",
+      "accordion": {
+        "clientTitle": "Official partner client (recommended)",
+        "clientDesc": "Use <code>@defarm/partner-client</code> to send files, interpret the response and reconcile links by partner reference.",
+        "clientAiKit": "AI/copilot kit available at <code>docs/partner/ai-skill-kit.md</code>.",
+        "jwtTitle": "JWT login (setup)",
+        "jwtDesc": "Use JWT for setup. API key for daily operation.",
+        "step1Title": "Upload via cURL (basic)",
+        "step1Alt": "Alternative: we also accept JSON directly in the body (no multipart), useful for backend-to-backend integration.",
+        "step2Title": "Preview (dry-run) before the real send",
+        "step2Desc": "Use <code>/v1/partner/ingestions/preview</code> to simulate routing without tokenizing.",
+        "step3Title": "Optional template (mapping)",
+        "step3Desc": "If you need to map different column names, create a template and send <code>template_id</code> in the upload.",
+        "aiTitle": "Optional — AI Skill + Client",
+        "aiDesc": "If you want to speed up with AI/copilot, use the official client and the prompt kit.",
+        "responseTitle": "Response useful for navigation",
+        "responseDesc": "After upload, use <code>items[].url</code> to open item by item (DFID + identifiers) and <code>errors[]</code> to know exactly what to fix."
+      },
+      "checklist": {
+        "title": "Production checklist",
+        "i1": "Generate a <code>workspace_ingestion</code> API Key (no extra configuration).",
+        "i2": "Optional: run a preview at <code>/v1/partner/ingestions/preview</code> to validate the batch.",
+        "i3": "Send in chunks (recommended 50-150 rows per request) to <code>/v1/partner/ingestions</code>.",
+        "i4": "Resolve issues in Routing.",
+        "i5": "Consume <code>items[].url</code> and reconcile via <code>partner_reference</code>."
+      },
+      "goToApiKeys": "Go to API Keys"
+    },
+    "apikeys": {
+      "toasts": {
+        "loadError": "Failed to load data",
+        "loadErrorDesc": "Couldn't fetch the API keys.",
+        "created": "API Key created",
+        "createdDesc": "Key created successfully.",
+        "createdNoValue": "Key created, but couldn't be displayed",
+        "createdNoValueDesc": "Recreate the key to get the access value — it only appears once.",
+        "createError": "Failed to create API Key",
+        "revoked": "API Key revoked",
+        "revokedDesc": "\"{{name}}\" was deactivated.",
+        "revokeError": "Failed to revoke",
+        "chooseCircuit": "Choose a circuit",
+        "chooseCircuits": "Choose at least one circuit",
+        "updated": "API Key updated",
+        "updatedDesc": "\"{{name}}\" was saved.",
+        "saveError": "Failed to save"
+      },
+      "header": {
+        "back": "Settings",
+        "subtitle": "Manage your access keys for integration",
+        "docsPrefix": "Documentation:",
+        "docsLink": "how to use an API key in the quickstart",
+        "newKey": "New API Key"
+      },
+      "empty": "No API Key created",
+      "emptyDesc": "Create a key to integrate with the DeFarm API",
+      "table": {
+        "name": "Name",
+        "scope": "Scope",
+        "status": "Status",
+        "createdAt": "Created at",
+        "lastUsed": "Last used",
+        "actions": "Actions"
+      },
+      "scopeBadge": {
+        "workspace_ingestion": "Smart reception",
+        "circuit": "Specific circuit"
+      },
+      "receivesIn": "Receives in: {{name}}",
+      "statusActive": "Active",
+      "statusRevoked": "Revoked",
+      "rowEdit": "Edit",
+      "rowMetrics": "View metrics",
+      "rowRevoke": "Revoke",
+      "create": {
+        "title": "Create new API Key",
+        "desc": "The key will be shown only once. Save it in a safe place.",
+        "nameLabel": "Key name *",
+        "namePlaceholder": "e.g.: ERP Integration",
+        "howLabel": "How this key receives your data",
+        "smartTitle": "Smart reception",
+        "smartBodyWithDefault": "You send data without pointing to a circuit. It always lands in your <strong>default circuit</strong> (today <strong>{{name}}</strong>) and, in parallel, DeFarm routes each item by identifier (CAR, holding, CNPJ…) to the right circuits — which you use to organize and show data to your clients.",
+        "smartBodyAutoCreate": "You send data without pointing to a circuit. It always lands in your <strong>default circuit</strong> (created automatically on your first send) and, in parallel, DeFarm routes each item by identifier (CAR, holding, CNPJ…) to the right circuits — which you use to organize and show data to your clients.",
+        "viewCircuits": "View circuits",
+        "configureRouting": "Configure routing",
+        "scopePlaceholder": "Select the scope",
+        "scopeOptions": {
+          "workspace_ingestion": "Smart reception (default)",
+          "circuit": "A specific circuit",
+          "circuits": "Multiple circuits",
+          "workspace": "Whole workspace (broad access)"
+        },
+        "hideAdvanced": "Hide advanced options",
+        "showAdvanced": "Advanced options — choose circuit manually",
+        "circuitLabel": "Circuit *",
+        "circuitHelp": "A circuit is where your data lands — a trackable destination in your workspace.",
+        "selectCircuit": "Select a circuit",
+        "circuitsLabel": "Circuits * (choose one or more)",
+        "circuitsHelp": "The key only applies to the checked circuits. Editable later.",
+        "workspaceWarn": "<strong>Global:</strong> the key applies to any circuit in your workspace (including ones created in the future). Use with care — it's the broadest access.",
+        "smartHint": "No extra configuration: DeFarm automatically chooses the reception circuit for your data.",
+        "descLabel": "Description (optional)",
+        "descPlaceholder": "What it will be used for",
+        "expiryLabel": "Expiration in days (optional)",
+        "expiryPlaceholder": "365",
+        "submit": "Create key"
+      },
+      "edit": {
+        "title": "Edit API Key",
+        "desc": "Edit name, description, limits, expiration and the access scope (single circuit, set of circuits or the whole workspace).",
+        "scopeLabel": "Scope",
+        "scopeOptions": {
+          "workspace_ingestion": "Smart reception",
+          "circuit": "Specific circuit",
+          "circuits": "Multiple circuits (set)",
+          "workspace": "Whole workspace (global)"
+        },
+        "circuitsHelp": "Check the circuits to (re)define this key's set.",
+        "workspaceHelp": "Global: the key now applies to any circuit in the workspace.",
+        "rateMin": "Limit / minute",
+        "rateDay": "Limit / day",
+        "newExpiryLabel": "New expiration in days (optional)",
+        "newExpiryPlaceholder": "leave empty to keep",
+        "currentExpires": "Current: expires on {{date}}",
+        "noExpiry": "Current: no expiration",
+        "descLabel": "Description"
+      },
+      "reveal": {
+        "title": "Save your API Key",
+        "desc": "This key will be shown only once. Copy it and store it in a safe place.",
+        "gotIt": "Got it, already copied"
+      },
+      "revoke": {
+        "title": "Revoke API Key",
+        "desc": "Are you sure you want to revoke the key \"{{name}}\"? This action can't be undone.",
+        "confirm": "Revoke"
+      },
+      "metrics": {
+        "title": "Metrics — {{name}}",
+        "total": "Total requests",
+        "last24h": "Last 24h",
+        "errors24h": "Errors (24h)",
+        "lastUse": "Last use",
+        "never": "Never",
+        "rateLimits": "Rate Limits",
+        "perMin": "/min",
+        "perDay": "/day"
+      }
+    },
+    "webhooks": {
+      "subtitle": "Receive automatic notifications in your system when there are relevant updates.",
+      "refreshHealth": "Refresh health",
+      "betaNote": "This section is in beta. You can already use it and validate the notification flows in your workspace.",
+      "health": {
+        "title": "Webhooks health",
+        "subtitle": "Diagnostics per real delivery"
+      },
+      "stats": {
+        "total": "Total",
+        "active": "Active",
+        "deliveries": "Deliveries",
+        "success": "Success",
+        "failures": "Failures",
+        "pending": "Pending"
+      },
+      "recentIssues": "Recent issues",
+      "noDetails": "No details",
+      "noCriticalIssues": "No critical issues at the moment.",
+      "new": "New webhook",
+      "form": {
+        "circuit": "Circuit",
+        "selectCircuit": "Select the circuit",
+        "name": "Name",
+        "namePlaceholder": "E.g.: Batch update",
+        "url": "Destination URL",
+        "urlPlaceholder": "https://your-system.com/webhooks/defarm",
+        "events": "Events (comma-separated)",
+        "secret": "Secret (optional)",
+        "secretPlaceholder": "Security signature",
+        "submit": "Create webhook"
+      },
+      "registered": "Registered webhooks",
+      "empty": "No webhook registered.",
+      "item": {
+        "active": "Active",
+        "paused": "Paused",
+        "circuit": "Circuit: {{name}}",
+        "lastDelivery": "Last delivery: {{date}}",
+        "copyUrl": "Copy URL",
+        "pause": "Pause",
+        "activate": "Activate",
+        "remove": "Remove"
+      },
+      "itemStats": {
+        "total": "Total",
+        "success": "Success",
+        "failure": "Failure",
+        "lastStatus": "Last status"
+      },
+      "delivery": {
+        "success": "Delivery completed successfully",
+        "pendingRetry": "Delivery pending, retry scheduled",
+        "nextRetry": "Next attempt: {{date}}",
+        "pendingQueue": "Delivery pending in queue",
+        "failure": "Delivery failure",
+        "noTargetDetails": "No details returned by the target.",
+        "httpFailure": "HTTP failure {{code}}"
+      },
+      "badge": {
+        "checking": "Checking",
+        "diagnosticError": "Diagnostic error",
+        "healthy": "Healthy",
+        "failing": "Failing",
+        "waiting": "Waiting"
+      },
+      "diagnosticError": "Failed to load diagnostics",
+      "toasts": {
+        "loadError": "Failed to load webhooks",
+        "loadErrorDesc": "Couldn't fetch the webhooks.",
+        "noEvent": "Enter at least 1 event",
+        "created": "Webhook created",
+        "createdDesc": "Automatic delivery activated for this circuit.",
+        "createError": "Failed to create webhook",
+        "paused": "Webhook paused",
+        "activated": "Webhook activated",
+        "updateError": "Failed to update webhook",
+        "removed": "Webhook removed",
+        "removeError": "Failed to remove webhook",
+        "urlCopied": "URL copied"
+      }
+    },
+    "portal": {
+      "section": "Partner",
+      "title": "Partner Portal",
+      "subtitle": "Send data, monitor processing, and manage client routing."
+    },
+    "usage": {
+      "title": "Tokenizations & balance",
+      "balance": "Balance",
+      "today": "Today",
+      "month": "Month",
+      "total": "Total",
+      "queued": "Queued",
+      "queuedNote": "Received and queued for tokenization — not an error. They go on-chain as soon as credit is available.",
+      "requestBalance": "Request balance"
+    },
+    "overview": {
+      "metrics": {
+        "circuits": "Circuits",
+        "apiKeys": "API keys",
+        "req24h": "Req. 24h",
+        "errors24h": "Errors 24h"
+      },
+      "firstSteps": "First steps",
+      "nextStep": "Next step",
+      "steps": {
+        "apiKey": {
+          "label": "Create API key",
+          "cta": "Create key",
+          "hint": "A key authenticates your data submissions."
+        },
+        "template": {
+          "label": "Configure template",
+          "cta": "Configure",
+          "hint": "Optional: a template maps your file's columns automatically."
+        },
+        "upload": {
+          "label": "Send first file",
+          "cta": "Send data",
+          "hint": "Send a CSV or JSON — DeFarm shows what will happen before writing."
+        },
+        "routing": {
+          "label": "Resolve issues",
+          "cta": "View routing",
+          "hint": "Configure rules to route each item to the right circuit."
+        }
+      }
+    },
+    "logs": {
+      "title": "Ingestion Logs",
+      "subtitle": "Consolidated timeline of send attempts and processed payloads. Open each event to inspect request, response, status, errors, and raw download.",
+      "autoRefresh": "Auto refresh (15s)",
+      "onlyNew": "Only new",
+      "refreshNow": "Refresh now",
+      "markRead": "Mark {{count}} new as read",
+      "clearSession": "Clear session logs",
+      "listenWebhook": "Listen via Webhook",
+      "searchPlaceholder": "Search endpoint, file, hash, error...",
+      "source": "Source",
+      "sourceAll": "All",
+      "sourceApi": "API attempts (current session)",
+      "sourcePayload": "Processed payloads (persisted)",
+      "eventsCount": "{{count}} event(s) in timeline",
+      "emptyTitle": "No logs found",
+      "emptyDesc": "Send data in the partner portal or adjust filters to view events.",
+      "payloadFallback": "raw payload",
+      "noSummary": "No summary",
+      "new": "new",
+      "network": "network",
+      "badgePersisted": "Persisted",
+      "loadMore": "Load more received",
+      "detailsTitle": "Event details",
+      "detailsApiDesc": "Request/response for current session attempt.",
+      "detailsPayloadDesc": "Persisted payload details and processing metadata.",
+      "networkError": "network error",
+      "noMessage": "no message",
+      "sentRequest": "Sent request",
+      "canonicalInterp": "Canonical interpretation (first item)",
+      "originalFields": "Original field(s): ",
+      "officialField": "Official field: ",
+      "receivedResponse": "Received response",
+      "file": "File:",
+      "mode": "mode",
+      "downloadRaw": "Download raw",
+      "partnerPortal": "Partner Portal",
+      "processingMetadata": "Processing metadata",
+      "summaryError": "error",
+      "fields": {
+        "value_chain": "Value chain",
+        "sisbov": "SISBOV",
+        "chip": "Chip",
+        "inscricao_estadual": "State registration",
+        "car": "CAR",
+        "weight_kg": "Weight (kg)",
+        "data_peso": "Weighing date",
+        "partner_internal_id": "Partner reference"
+      },
+      "toasts": {
+        "loadErrorTitle": "Failed to load persisted logs",
+        "loadErrorDesc": "Could not load payload history.",
+        "downloadErrorTitle": "Failed to download raw payload",
+        "downloadErrorDesc": "Could not download this file."
+      }
+    }
+  }
+}

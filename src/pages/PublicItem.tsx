@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Loader2,
@@ -117,7 +118,7 @@ type WeightPoint = {
   inferredDate?: boolean;
 };
 
-type MetadataLocale = "pt-BR" | "en";
+type MetadataLocale = "pt-BR" | "en" | "es";
 
 type MetadataFieldDefinition = {
   canonical: string;
@@ -194,6 +195,13 @@ function metadataGroupTitle(group: MetadataGroupKey, locale: MetadataLocale): st
     if (group === "documents") return "Documents";
     return "Additional data";
   }
+  if (locale === "es") {
+    if (group === "identification") return "Identificación";
+    if (group === "movement") return "Movimiento";
+    if (group === "weighing") return "Pesaje";
+    if (group === "documents") return "Documentos";
+    return "Datos adicionales";
+  }
   if (group === "identification") return "Identificação";
   if (group === "movement") return "Movimentação";
   if (group === "weighing") return "Pesagem";
@@ -202,19 +210,19 @@ function metadataGroupTitle(group: MetadataGroupKey, locale: MetadataLocale): st
 }
 
 const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
-  { canonical: "value_chain", aliases: ["value_chain", "valuechain"], label: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
-  { canonical: "sisbov", aliases: ["sisbov"], label: { "pt-BR": "SISBOV", en: "SISBOV" } },
+  { canonical: "value_chain", aliases: ["value_chain", "valuechain"], label: { "pt-BR": "Cadeia de valor", en: "Value chain", es: "Cadena de valor" } },
+  { canonical: "sisbov", aliases: ["sisbov"], label: { "pt-BR": "SISBOV", en: "SISBOV", es: "SISBOV" } },
   {
     canonical: "sisbov_commitment",
     aliases: ["sisbov_commitment"],
-    label: { "pt-BR": "SISBOV protegido", en: "Protected SISBOV" },
+    label: { "pt-BR": "SISBOV protegido", en: "Protected SISBOV", es: "SISBOV protegido" },
   },
-  { canonical: "chip", aliases: ["chip", "rfid"], label: { "pt-BR": "Chip", en: "Chip" } },
-  { canonical: "car", aliases: ["car"], label: { "pt-BR": "CAR", en: "CAR" } },
+  { canonical: "chip", aliases: ["chip", "rfid"], label: { "pt-BR": "Chip", en: "Chip", es: "Chip" } },
+  { canonical: "car", aliases: ["car"], label: { "pt-BR": "CAR", en: "CAR", es: "CAR" } },
   {
     canonical: "inscricao_estadual",
     aliases: ["inscricao_estadual", "ie", "state_registration"],
-    label: { "pt-BR": "Inscrição estadual", en: "State registration" },
+    label: { "pt-BR": "Inscrição estadual", en: "State registration", es: "Registro estatal" },
   },
   {
     canonical: "inscricao_estadual_centro_custo",
@@ -225,36 +233,36 @@ const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
       "state_registration_cost_center",
       "inscricaeo_estadual_do_centro_de_custo",
     ],
-    label: { "pt-BR": "Inscrição estadual (centro de custo)", en: "State registration (cost center)" },
+    label: { "pt-BR": "Inscrição estadual (centro de custo)", en: "State registration (cost center)", es: "Registro estatal (centro de costo)" },
   },
   {
     canonical: "partner_internal_id",
     aliases: ["partner_internal_id", "partner_reference", "external_id"],
-    label: { "pt-BR": "Referência do parceiro", en: "Partner reference" },
+    label: { "pt-BR": "Referência do parceiro", en: "Partner reference", es: "Referencia del socio" },
   },
   {
     canonical: "animal_id",
     aliases: ["animal_id", "animalid", "id_animal"],
-    label: { "pt-BR": "ID do animal", en: "Animal ID" },
+    label: { "pt-BR": "ID do animal", en: "Animal ID", es: "ID del animal" },
   },
-  { canonical: "country", aliases: ["country", "pais", "país"], label: { "pt-BR": "País", en: "Country" } },
-  { canonical: "weight_kg", aliases: ["weight_kg", "peso_kg", "weight", "peso"], label: { "pt-BR": "Peso (kg)", en: "Weight (kg)" } },
+  { canonical: "country", aliases: ["country", "pais", "país"], label: { "pt-BR": "País", en: "Country", es: "País" } },
+  { canonical: "weight_kg", aliases: ["weight_kg", "peso_kg", "weight", "peso"], label: { "pt-BR": "Peso (kg)", en: "Weight (kg)", es: "Peso (kg)" } },
   {
     canonical: "data_peso",
     aliases: ["data_peso", "weight_date", "data_pesagem", "date"],
-    label: { "pt-BR": "Data da pesagem", en: "Weighing date" },
+    label: { "pt-BR": "Data da pesagem", en: "Weighing date", es: "Fecha de pesaje" },
   },
-  { canonical: "document_type", aliases: ["document_type", "tipo_documento"], label: { "pt-BR": "Tipo de documento", en: "Document type" } },
-  { canonical: "document_number", aliases: ["document_number", "numero_documento"], label: { "pt-BR": "Número do documento", en: "Document number" } },
-  { canonical: "document_date", aliases: ["document_date", "data_documento"], label: { "pt-BR": "Data do documento", en: "Document date" } },
-  { canonical: "movement_type", aliases: ["movement_type", "tipo_movimento"], label: { "pt-BR": "Tipo de movimento", en: "Movement type" } },
-  { canonical: "stock_motive", aliases: ["stock_motive", "motivo_estoque"], label: { "pt-BR": "Motivo", en: "Motive" } },
-  { canonical: "supplier", aliases: ["supplier", "fornecedor"], label: { "pt-BR": "Fornecedor", en: "Supplier" } },
-  { canonical: "description", aliases: ["description", "descricao"], label: { "pt-BR": "Descrição", en: "Description" } },
-  { canonical: "stock_location", aliases: ["stock_location", "location", "fazenda", "farm"], label: { "pt-BR": "Local do estoque", en: "Stock location" } },
-  { canonical: "batch", aliases: ["batch", "lote"], label: { "pt-BR": "Lote", en: "Batch" } },
-  { canonical: "category", aliases: ["category", "categoria"], label: { "pt-BR": "Categoria", en: "Category" } },
-  { canonical: "breed", aliases: ["breed", "raca"], label: { "pt-BR": "Raça", en: "Breed" } },
+  { canonical: "document_type", aliases: ["document_type", "tipo_documento"], label: { "pt-BR": "Tipo de documento", en: "Document type", es: "Tipo de documento" } },
+  { canonical: "document_number", aliases: ["document_number", "numero_documento"], label: { "pt-BR": "Número do documento", en: "Document number", es: "Número de documento" } },
+  { canonical: "document_date", aliases: ["document_date", "data_documento"], label: { "pt-BR": "Data do documento", en: "Document date", es: "Fecha del documento" } },
+  { canonical: "movement_type", aliases: ["movement_type", "tipo_movimento"], label: { "pt-BR": "Tipo de movimento", en: "Movement type", es: "Tipo de movimiento" } },
+  { canonical: "stock_motive", aliases: ["stock_motive", "motivo_estoque"], label: { "pt-BR": "Motivo", en: "Motive", es: "Motivo" } },
+  { canonical: "supplier", aliases: ["supplier", "fornecedor"], label: { "pt-BR": "Fornecedor", en: "Supplier", es: "Proveedor" } },
+  { canonical: "description", aliases: ["description", "descricao"], label: { "pt-BR": "Descrição", en: "Description", es: "Descripción" } },
+  { canonical: "stock_location", aliases: ["stock_location", "location", "fazenda", "farm"], label: { "pt-BR": "Local do estoque", en: "Stock location", es: "Ubicación del inventario" } },
+  { canonical: "batch", aliases: ["batch", "lote"], label: { "pt-BR": "Lote", en: "Batch", es: "Lote" } },
+  { canonical: "category", aliases: ["category", "categoria"], label: { "pt-BR": "Categoria", en: "Category", es: "Categoría" } },
+  { canonical: "breed", aliases: ["breed", "raca"], label: { "pt-BR": "Raça", en: "Breed", es: "Raza" } },
 ];
 
 const METADATA_ALIAS_TO_CANONICAL = (() => {
@@ -371,6 +379,18 @@ function getMetadataLabel(canonicalKey: string, locale: MetadataLocale): string 
   return METADATA_LABELS.get(canonicalKey)?.[locale] || formatFallbackMetadataLabel(canonicalKey);
 }
 
+function normalizeMetadataLocale(language?: string): MetadataLocale {
+  if (language?.startsWith("en")) return "en";
+  if (language?.startsWith("es")) return "es";
+  return "pt-BR";
+}
+
+function localized(locale: MetadataLocale, ptBR: string, en: string, es: string): string {
+  if (locale === "en") return en;
+  if (locale === "es") return es;
+  return ptBR;
+}
+
 const PAYLOAD_KEY_LABELS: Record<string, string> = {
   occurred_at: "Data",
   weight_kg: "Peso (kg)",
@@ -465,6 +485,15 @@ function commitmentSubject(canonicalKey: string, domain: string | undefined, loc
     if (subject === "cnpj") return "CNPJ";
     return formatFallbackMetadataLabel(subject || "identifier");
   }
+  if (locale === "es") {
+    if (subject === "sisbov") return "identificador SISBOV";
+    if (subject === "car") return "registro CAR de la propiedad";
+    if (subject === "chip" || subject === "rfid") return "identificador chip/RFID";
+    if (subject === "ear_tag" || subject === "eartag") return "identificador de arete";
+    if (subject === "cpf") return "CPF";
+    if (subject === "cnpj") return "CNPJ";
+    return formatFallbackMetadataLabel(subject || "identificador");
+  }
   if (subject === "sisbov") return "Identificador SISBOV";
   if (subject === "car") return "CAR da propriedade";
   if (subject === "chip" || subject === "rfid") return "Identificador chip/RFID";
@@ -475,13 +504,19 @@ function commitmentSubject(canonicalKey: string, domain: string | undefined, loc
 }
 
 function protectedCommitmentTitle(subject: string, locale: MetadataLocale): string {
-  return locale === "en" ? `Protected ${subject}` : `${subject} protegido`;
+  if (locale === "en") return `Protected ${subject}`;
+  if (locale === "es") return `${subject} protegido`;
+  return `${subject} protegido`;
 }
 
 function protectedCommitmentDescription(subject: string, locale: MetadataLocale): string {
-  return locale === "en"
-    ? `The original ${subject} value is not public. This proof lets DeFarm confirm the same record later without exposing the original value.`
-    : `O valor original de ${subject} não é público. Esta prova permite confirmar o mesmo registro depois sem expor o dado bruto.`;
+  if (locale === "en") {
+    return `The original ${subject} value is not public. This proof lets DeFarm confirm the same record later without exposing the original value.`;
+  }
+  if (locale === "es") {
+    return `El valor original de ${subject} no es público. Esta prueba permite que DeFarm confirme el mismo registro más adelante sin exponer el dato original.`;
+  }
+  return `O valor original de ${subject} não é público. Esta prova permite confirmar o mesmo registro depois sem expor o dado bruto.`;
 }
 
 function weightSourceLabel(source: WeightPoint["source"], locale: MetadataLocale): string {
@@ -489,6 +524,11 @@ function weightSourceLabel(source: WeightPoint["source"], locale: MetadataLocale
     if (source === "event") return "public event";
     if (source === "cid") return "versioned content";
     return "metadata";
+  }
+  if (locale === "es") {
+    if (source === "event") return "evento público";
+    if (source === "cid") return "contenido versionado";
+    return "metadatos";
   }
   if (source === "event") return "evento público";
   if (source === "cid") return "conteúdo versionado";
@@ -746,11 +786,12 @@ function ComplianceBadge({ car }: { car: string | null }) {
 }
 
 function TourOverlay({
-  step, steps, refs, onNext, onPrev, onClose,
+  step, steps, refs, locale, onNext, onPrev, onClose,
 }: {
   step: number | null;
   steps: { title: string; description: string }[];
   refs: React.MutableRefObject<(HTMLElement | null)[]>;
+  locale: MetadataLocale;
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
@@ -815,21 +856,21 @@ function TourOverlay({
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{steps[step].description}</p>
         <div className="flex items-center justify-between mt-4">
           <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="text-xs text-muted-foreground hover:text-foreground">
-            Fechar
+            {localized(locale, "Fechar", "Close", "Cerrar")}
           </button>
           <div className="flex gap-2">
             {step > 0 && (
               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onPrev(); }}>
-                Anterior
+                {localized(locale, "Anterior", "Previous", "Anterior")}
               </Button>
             )}
             {step < steps.length - 1 ? (
               <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onNext(); }}>
-                Próximo
+                {localized(locale, "Próximo", "Next", "Siguiente")}
               </Button>
             ) : (
               <Button size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-                Concluir
+                {localized(locale, "Concluir", "Finish", "Finalizar")}
               </Button>
             )}
           </div>
@@ -883,7 +924,7 @@ const EVENT_ICON_EMOJI: Record<string, string> = {
   item_property_unlinked: "D",
 };
 
-function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
+function JourneyMapInline({ points, locale }: { points: JourneyPointDef[]; locale: MetadataLocale }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<Map<number, any>>(new Map());
@@ -1183,13 +1224,13 @@ function JourneyMapInline({ points }: { points: JourneyPointDef[] }) {
 
       {/* Legend */}
       <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm" /> Propriedade</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-cyan-500 border border-white shadow-sm" /> Pesagem</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 border border-white shadow-sm" /> Vacinação</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-teal-500 border border-white shadow-sm" /> Tratamento</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 border border-white shadow-sm" /> Classificação</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 border border-white shadow-sm" /> Movimentação</span>
-        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-6 h-3 rounded border border-green-500/40" style={{ background: "rgba(34,197,94,0.15)" }} /> Polígono CAR</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-full bg-blue-500 border-2 border-white shadow-sm" /> {localized(locale, "Propriedade", "Property", "Propiedad")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-cyan-500 border border-white shadow-sm" /> {localized(locale, "Pesagem", "Weighing", "Pesaje")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 border border-white shadow-sm" /> {localized(locale, "Vacinação", "Vaccination", "Vacunación")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-teal-500 border border-white shadow-sm" /> {localized(locale, "Tratamento", "Treatment", "Tratamiento")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 border border-white shadow-sm" /> {localized(locale, "Classificação", "Classification", "Clasificación")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 border border-white shadow-sm" /> {localized(locale, "Movimentação", "Movement", "Movimiento")}</span>
+        <span className="inline-flex items-center gap-1.5"><span className="inline-block w-6 h-3 rounded border border-green-500/40" style={{ background: "rgba(34,197,94,0.15)" }} /> {localized(locale, "Polígono CAR", "CAR polygon", "Polígono CAR")}</span>
       </div>
     </div>
   );
@@ -1203,6 +1244,7 @@ export default function PublicItem() {
   }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
 
   const [showOperational, setShowOperational] = useState(false);
@@ -1233,15 +1275,20 @@ export default function PublicItem() {
   const [showProofOfLifeDialog, setShowProofOfLifeDialog] = useState(false);
   const [showJourneyDialog, setShowJourneyDialog] = useState(false);
   const [showEmbedPreview, setShowEmbedPreview] = useState(false);
-  const [metadataLocale, setMetadataLocale] = useState<MetadataLocale>(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem("public_item_locale") : null;
-    return stored === "en" ? "en" : "pt-BR";
-  });
+  const metadataLocale = normalizeMetadataLocale(i18n.language);
+  const setMetadataLocale = (next: MetadataLocale) => {
+    void i18n.changeLanguage(next);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("public_item_locale", metadataLocale);
-  }, [metadataLocale]);
+    const legacy = window.localStorage.getItem("public_item_locale");
+    const alreadyChosen = window.localStorage.getItem("i18nextLng");
+    if (!alreadyChosen && (legacy === "en" || legacy === "pt-BR" || legacy === "es")) {
+      void i18n.changeLanguage(legacy);
+    }
+    if (legacy) window.localStorage.removeItem("public_item_locale");
+  }, [i18n]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1984,16 +2031,28 @@ export default function PublicItem() {
 
   const tourSteps = useMemo(() => {
     const steps: { title: string; description: string }[] = [];
-    if (currentProperty?.car) steps.push({ title: "Propriedade atual", description: "Visualize a fazenda onde o animal se encontra, com mapa satellite e polígono do CAR extraído do SICAR." });
-    if (hasHealthData) steps.push({ title: "Resumo sanitário", description: "Panorama de vacinações e tratamentos registrados para o animal." });
-    if (hasWeightData) steps.push({ title: "Evolução de peso", description: "Peso atual, quantidade de pesagens e curva de crescimento quando há histórico suficiente." });
-    if (upcomingEvents.length > 0) steps.push({ title: "Previsões", description: "O sistema analisa o histórico e infere quais procedimentos estão próximos do vencimento ou atrasados — reforço vacinal, vermifugação, pesagem periódica." });
-    steps.push({ title: "Jornada do Animal", description: "Mapa interativo com todas as propriedades por onde o animal passou, rotas de transporte e eventos geolocalizados com timeline sincronizada." });
-    steps.push({ title: "Timeline", description: "Histórico completo agrupado por ano. Cada evento tem ícone, tipo, data e resumo — pesagens, vacinas, movimentações, tudo em ordem cronológica." });
-    steps.push({ title: "Certificado QR", description: "QR code escaneável com hash blockchain e CID do IPFS. Pode ser baixado como PDF ou PNG." });
-    steps.push({ title: "Registro verificável", description: "Identidade ancorada na blockchain Stellar e conteúdo versionado no IPFS (Pinata). Cada versão tem um CID único e imutável." });
+    if (currentProperty?.car) steps.push({
+      title: localized(metadataLocale, "Propriedade atual", "Current property", "Propiedad actual"),
+      description: localized(metadataLocale, "Visualize a fazenda onde o animal se encontra, com mapa satélite e polígono do CAR extraído do SICAR.", "View the farm where the animal is located, with satellite map and CAR polygon from SICAR.", "Visualiza la finca donde está el animal, con mapa satelital y polígono CAR extraído de SICAR."),
+    });
+    if (hasHealthData) steps.push({
+      title: localized(metadataLocale, "Resumo sanitário", "Health summary", "Resumen sanitario"),
+      description: localized(metadataLocale, "Panorama de vacinações e tratamentos registrados para o animal.", "Overview of vaccinations and treatments recorded for the animal.", "Panorama de vacunaciones y tratamientos registrados para el animal."),
+    });
+    if (hasWeightData) steps.push({
+      title: localized(metadataLocale, "Evolução de peso", "Weight progression", "Evolución de peso"),
+      description: localized(metadataLocale, "Peso atual, quantidade de pesagens e curva de crescimento quando há histórico suficiente.", "Current weight, number of weighings and growth curve when enough history exists.", "Peso actual, cantidad de pesajes y curva de crecimiento cuando hay historial suficiente."),
+    });
+    if (upcomingEvents.length > 0) steps.push({
+      title: localized(metadataLocale, "Previsões", "Upcoming", "Próximos"),
+      description: localized(metadataLocale, "O sistema analisa o histórico e infere quais procedimentos estão próximos do vencimento ou atrasados: reforço vacinal, vermifugação, pesagem periódica.", "The system analyzes history and infers which procedures are due soon or overdue: boosters, deworming, periodic weighing.", "El sistema analiza el historial e infiere qué procedimientos están próximos o atrasados: refuerzo vacunal, desparasitación, pesaje periódico."),
+    });
+    steps.push({ title: localized(metadataLocale, "Jornada do Animal", "Animal Journey", "Recorrido del animal"), description: localized(metadataLocale, "Mapa interativo com todas as propriedades por onde o animal passou, rotas de transporte e eventos geolocalizados com timeline sincronizada.", "Interactive map with all properties the animal passed through, transport routes and geolocated events with a synchronized timeline.", "Mapa interactivo con todas las propiedades por donde pasó el animal, rutas de transporte y eventos geolocalizados con línea de tiempo sincronizada.") });
+    steps.push({ title: "Timeline", description: localized(metadataLocale, "Histórico completo agrupado por ano. Cada evento tem ícone, tipo, data e resumo: pesagens, vacinas, movimentações, tudo em ordem cronológica.", "Complete history grouped by year. Each event has icon, type, date and summary: weighings, vaccines, movements, all in chronological order.", "Historial completo agrupado por año. Cada evento tiene icono, tipo, fecha y resumen: pesajes, vacunas, movimientos, todo en orden cronológico.") });
+    steps.push({ title: localized(metadataLocale, "Certificado QR", "QR certificate", "Certificado QR"), description: localized(metadataLocale, "QR code escaneável com hash blockchain e CID do IPFS. Pode ser baixado como PDF ou PNG.", "Scannable QR code with blockchain hash and IPFS CID. It can be downloaded as PDF or PNG.", "Código QR escaneable con hash blockchain y CID de IPFS. Puede descargarse como PDF o PNG.") });
+    steps.push({ title: localized(metadataLocale, "Registro verificável", "Verifiable record", "Registro verificable"), description: localized(metadataLocale, "Identidade ancorada na blockchain Stellar e conteúdo versionado no IPFS (Pinata). Cada versão tem um CID único e imutável.", "Identity anchored on Stellar blockchain and versioned content on IPFS (Pinata). Each version has a unique, immutable CID.", "Identidad anclada en la blockchain Stellar y contenido versionado en IPFS (Pinata). Cada versión tiene un CID único e inmutable.") });
     return steps;
-  }, [currentProperty, hasHealthData, hasWeightData, weightHistory, upcomingEvents]);
+  }, [currentProperty, hasHealthData, hasWeightData, metadataLocale, upcomingEvents]);
 
   useEffect(() => {
     if (tourStep === null) return;
@@ -2146,27 +2205,31 @@ export default function PublicItem() {
                 <button
                   onClick={() => setMetadataLocale("pt-BR")}
                   className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "pt-BR" ? "bg-emerald-600 text-white" : "text-muted-foreground hover:text-foreground"}`}
-                >PT-BR</button>
+                >PT</button>
                 <button
                   onClick={() => setMetadataLocale("en")}
                   className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "en" ? "bg-emerald-600 text-white" : "text-muted-foreground hover:text-foreground"}`}
                 >EN</button>
+                <button
+                  onClick={() => setMetadataLocale("es")}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${metadataLocale === "es" ? "bg-emerald-600 text-white" : "text-muted-foreground hover:text-foreground"}`}
+                >ES</button>
               </div>
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => void shareOrCopyLink(`https://defarm.net/i/${item.dfid}`, `DeFarm: ${item.dfid}`)}
                   className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
-                  title={metadataLocale === "en" ? "Share" : "Compartilhar"}
+                  title={localized(metadataLocale, "Compartilhar", "Share", "Compartir")}
                 >
                   <Share2 className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={() => window.print()} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Imprimir">
+                <button onClick={() => window.print()} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title={localized(metadataLocale, "Imprimir", "Print", "Imprimir")}>
                   <Printer className="h-3.5 w-3.5" />
                 </button>
                 <button onClick={() => setShowEmbedPreview(true)} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Embed">
                   <ExternalLink className="h-3.5 w-3.5" />
                 </button>
-                <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Selo de origem">
+                <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title={localized(metadataLocale, "Selo de origem", "Origin seal", "Sello de origen")}>
                   <Tag className="h-3.5 w-3.5" />
                 </a>
                 <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Comparar">
@@ -2256,7 +2319,7 @@ export default function PublicItem() {
             <div className="relative z-[1]">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-4 rounded-full bg-emerald-400" />
-                <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Current property" : "Propriedade atual"}</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{localized(metadataLocale, "Propriedade atual", "Current property", "Propiedad actual")}</p>
               </div>
               <p className="text-sm font-semibold text-foreground">{currentProperty.name || "—"}</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -2292,9 +2355,9 @@ export default function PublicItem() {
                 <MapPinned className="h-7 w-7 text-emerald-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-stone-900">{metadataLocale === "en" ? "Animal Journey" : "Jornada do Animal"}</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-stone-900">{localized(metadataLocale, "Jornada do Animal", "Animal Journey", "Recorrido del animal")}</h2>
                 <p className="text-sm text-stone-500 mt-1">
-                  {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} {metadataLocale === "en" ? "properties" : "propriedades"} · {journeyPoints.length} {metadataLocale === "en" ? "geolocated events" : "eventos geolocalizados"} · {metadataLocale === "en" ? "interactive map with timeline" : "mapa interativo com timeline"}
+                  {(() => { const u = new Set(journeyPoints.map((p) => `${p.lat.toFixed(2)},${p.lon.toFixed(2)}`)); return u.size; })()} {localized(metadataLocale, "propriedades", "properties", "propiedades")} · {journeyPoints.length} {localized(metadataLocale, "eventos geolocalizados", "geolocated events", "eventos geolocalizados")} · {localized(metadataLocale, "mapa interativo com timeline", "interactive map with timeline", "mapa interactivo con línea de tiempo")}
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {Array.from(
@@ -2308,7 +2371,7 @@ export default function PublicItem() {
               </div>
               <Button size="sm" variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 self-start sm:self-center">
                 <MapPinned className="h-4 w-4 mr-1.5" />
-                {metadataLocale === "en" ? "View map" : "Ver mapa"}
+                {localized(metadataLocale, "Ver mapa", "View map", "Ver mapa")}
               </Button>
             </div>
           </section>
@@ -2320,16 +2383,16 @@ export default function PublicItem() {
               <div ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1 h-4 rounded-full bg-emerald-400" />
-                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Health" : "Sanidade"}</p>
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{localized(metadataLocale, "Sanidade", "Health", "Sanidad")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
                     <p className="text-2xl font-bold text-emerald-700">{sanitySummary.vaccines.length}</p>
-                    <p className="text-[11px] text-emerald-600 mt-0.5">{metadataLocale === "en" ? "Vaccinations" : "Vacinações"}</p>
+                    <p className="text-[11px] text-emerald-600 mt-0.5">{localized(metadataLocale, "Vacinações", "Vaccinations", "Vacunaciones")}</p>
                   </div>
                   <div className="rounded-lg bg-teal-50 border border-teal-200/50 p-3 text-center">
                     <p className="text-2xl font-bold text-teal-700">{sanitySummary.treatments.length}</p>
-                    <p className="text-[11px] text-teal-600 mt-0.5">{metadataLocale === "en" ? "Treatments" : "Tratamentos"}</p>
+                    <p className="text-[11px] text-teal-600 mt-0.5">{localized(metadataLocale, "Tratamentos", "Treatments", "Tratamientos")}</p>
                   </div>
                 </div>
                 {sanitySummary.vaccines.length > 0 && (
@@ -2351,7 +2414,7 @@ export default function PublicItem() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="w-1 h-4 rounded-full bg-cyan-400" />
-                    <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</p>
+                    <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{localized(metadataLocale, "Evolução de peso", "Weight progression", "Evolución de peso")}</p>
                   </div>
                   {latestWeightPoint && (
                     <span className="text-sm font-semibold text-foreground">{latestWeightPoint.weight.toFixed(1)} kg</span>
@@ -2360,16 +2423,16 @@ export default function PublicItem() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                   <div className="rounded-lg bg-cyan-50 border border-cyan-200/50 p-3 text-center">
                     <p className="text-2xl font-bold text-cyan-700">{weightHistory.length}</p>
-                    <p className="text-[11px] text-cyan-600 mt-0.5">{metadataLocale === "en" ? "Weighings" : "Pesagens"}</p>
+                    <p className="text-[11px] text-cyan-600 mt-0.5">{localized(metadataLocale, "Pesagens", "Weighings", "Pesajes")}</p>
                   </div>
                   <div className="rounded-lg bg-sky-50 border border-sky-200/50 p-3 text-center">
                     <p className="text-2xl font-bold text-sky-700">{latestWeightPoint ? latestWeightPoint.weight.toFixed(1) : "-"}</p>
-                    <p className="text-[11px] text-sky-600 mt-0.5">{metadataLocale === "en" ? "Latest kg" : "Último kg"}</p>
+                    <p className="text-[11px] text-sky-600 mt-0.5">{localized(metadataLocale, "Último kg", "Latest kg", "Último kg")}</p>
                   </div>
                   {sanitySummary?.gmd !== null && sanitySummary?.gmd !== undefined && (
                     <div className="rounded-lg bg-amber-50 border border-amber-200/50 p-3 text-center col-span-2 sm:col-span-1">
                       <p className="text-2xl font-bold text-amber-700">{sanitySummary.gmd.toFixed(2)}</p>
-                      <p className="text-[11px] text-amber-600 mt-0.5">{metadataLocale === "en" ? "ADG kg/day" : "GMD kg/dia"}</p>
+                      <p className="text-[11px] text-amber-600 mt-0.5">{localized(metadataLocale, "GMD kg/dia", "ADG kg/day", "GMD kg/día")}</p>
                     </div>
                   )}
                 </div>
@@ -2392,9 +2455,12 @@ export default function PublicItem() {
                   </ResponsiveContainer>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    {metadataLocale === "en"
-                      ? "More weighings will form a progression chart."
-                      : "Novas pesagens formarão o gráfico de evolução."}
+                    {localized(
+                      metadataLocale,
+                      "Novas pesagens formarão o gráfico de evolução.",
+                      "More weighings will form a progression chart.",
+                      "Nuevos pesajes formarán el gráfico de evolución."
+                    )}
                   </p>
                 )}
               </div>
@@ -2406,7 +2472,7 @@ export default function PublicItem() {
           <section ref={setTourRef(3)} className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-1 h-4 rounded-full bg-emerald-400" />
-              <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Upcoming" : "Previsões"}</p>
+              <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{localized(metadataLocale, "Previsões", "Upcoming", "Próximos")}</p>
             </div>
             <div className="space-y-2">
               {upcomingEvents.map((ev, i) => (
@@ -2498,7 +2564,7 @@ export default function PublicItem() {
                   className="h-7 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
                   onClick={() => setShowProofOfLifeDialog(true)}
                 >
-                  Ver localizações
+                  {localized(metadataLocale, "Ver localizações", "View locations", "Ver ubicaciones")}
                 </Button>
               </div>
             </div>
@@ -2515,24 +2581,24 @@ export default function PublicItem() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-sm font-semibold text-emerald-950">
-                      IAGRO atesta: {sanitaryAnimalStatus || "ativo"} / {sanitaryStatus || "regular"} ✓
+                      {localized(metadataLocale, "IAGRO atesta", "IAGRO attests", "IAGRO certifica")}: {sanitaryAnimalStatus || "ativo"} / {sanitaryStatus || "regular"} ✓
                     </h2>
                     <span className="rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
-                      assinado
+                      {localized(metadataLocale, "assinado", "signed", "firmado")}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-emerald-800">
-                    {sanitaryIssuer?.name || "Órgão sanitário"} confirmou esta atestação com assinatura verificável.
-                    O QR aponta para o recibo público da credencial.
+                    {sanitaryIssuer?.name || localized(metadataLocale, "Órgão sanitário", "Sanitary agency", "Organismo sanitario")} {localized(metadataLocale, "confirmou esta atestação com assinatura verificável.", "confirmed this attestation with a verifiable signature.", "confirmó esta certificación con una firma verificable.")}
+                    {localized(metadataLocale, "O QR aponta para o recibo público da credencial.", "The QR points to the public credential receipt.", "El QR apunta al recibo público de la credencial.")}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-emerald-700">
                     {sanitaryAttestation.issued_at ? (
-                      <span>Emitido em {formatDateShort(sanitaryAttestation.issued_at)}</span>
+                      <span>{localized(metadataLocale, "Emitido em", "Issued on", "Emitido el")} {formatDateShort(sanitaryAttestation.issued_at)}</span>
                     ) : null}
                     {sanitaryAttestation.valid_until ? (
-                      <span>Válido até {formatDateShort(sanitaryAttestation.valid_until)}</span>
+                      <span>{localized(metadataLocale, "Válido até", "Valid until", "Válido hasta")} {formatDateShort(sanitaryAttestation.valid_until)}</span>
                     ) : null}
-                    <span className="font-mono">recibo {sanitaryAttestation.receipt_id.slice(0, 8)}...</span>
+                    <span className="font-mono">{localized(metadataLocale, "recibo", "receipt", "recibo")} {sanitaryAttestation.receipt_id.slice(0, 8)}...</span>
                   </div>
                 </div>
               </div>
@@ -2544,7 +2610,7 @@ export default function PublicItem() {
               >
                 <QRCodeSVG value={sanitaryVerifyUrl} size={72} level="M" fgColor="#047857" bgColor="#ffffff" />
                 <span className="max-w-[90px] text-[10px] font-medium leading-tight text-emerald-800">
-                  verificar recibo
+                  {localized(metadataLocale, "verificar recibo", "verify receipt", "verificar recibo")}
                 </span>
               </a>
             </div>
@@ -2558,16 +2624,22 @@ export default function PublicItem() {
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                 <div>
                   <div className="text-sm font-semibold text-stone-900">
-                    {metadataLocale === "en" ? "EUDR Due Diligence Statement" : "Declaração de Due Diligence (EUDR)"}
+                    {localized(metadataLocale, "Declaração de Due Diligence (EUDR)", "EUDR Due Diligence Statement", "Declaración de diligencia debida (EUDR)")}
                   </div>
                   <p className="mt-0.5 text-xs text-stone-600">
-                    {metadataLocale === "en"
-                      ? (eudrDds.ready
-                          ? "This asset has an emitted, anchored EUDR statement — verify it publicly."
-                          : "This asset has an emitted EUDR statement (with open points) — verify it publicly.")
-                      : (eudrDds.ready
-                          ? "Este ativo tem uma Declaração EUDR emitida e ancorada — confira publicamente."
-                          : "Este ativo tem uma Declaração EUDR emitida (com pontos em aberto) — confira publicamente.")}
+                    {eudrDds.ready
+                      ? localized(
+                          metadataLocale,
+                          "Este ativo tem uma Declaração EUDR emitida e ancorada - confira publicamente.",
+                          "This asset has an emitted, anchored EUDR statement - verify it publicly.",
+                          "Este activo tiene una declaración EUDR emitida y anclada - verifícala públicamente."
+                        )
+                      : localized(
+                          metadataLocale,
+                          "Este ativo tem uma Declaração EUDR emitida (com pontos em aberto) - confira publicamente.",
+                          "This asset has an emitted EUDR statement (with open points) - verify it publicly.",
+                          "Este activo tiene una declaración EUDR emitida (con puntos abiertos) - verifícala públicamente."
+                        )}
                   </p>
                 </div>
               </div>
@@ -2575,7 +2647,7 @@ export default function PublicItem() {
                 to={`/eudr/v/${encodeURIComponent(resolvedDfid)}`}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700"
               >
-                {metadataLocale === "en" ? "View statement" : "Ver Declaração"} →
+                {localized(metadataLocale, "Ver Declaração", "View statement", "Ver declaración")} →
               </Link>
             </div>
           </section>
@@ -2585,7 +2657,7 @@ export default function PublicItem() {
           <section className="border-t border-stone-200/40 pt-8">
             <div className="mb-4">
               <h2 className="text-sm font-semibold text-stone-700">
-                {metadataLocale === "en" ? "Public metadata" : "Metadados públicos"}
+                {localized(metadataLocale, "Metadados públicos", "Public metadata", "Metadatos públicos")}
               </h2>
             </div>
             <div className="space-y-6">
@@ -2631,14 +2703,14 @@ export default function PublicItem() {
                             </a>
                             <div className="flex items-center gap-2">
                               {isAuthenticated && (
-                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, metadataLocale === "en" ? "SISBOV number" : "SISBOV")}>
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(sisbov, localized(metadataLocale, "SISBOV", "SISBOV number", "Número SISBOV"))}>
                                   <Copy className="h-3 w-3 mr-1" />
-                                  {metadataLocale === "en" ? "Copy number" : "Copiar número"}
+                                  {localized(metadataLocale, "Copiar número", "Copy number", "Copiar número")}
                                 </Button>
                               )}
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(refUrl, metadataLocale === "en" ? "SISBOV link" : "Link SISBOV")}>
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(refUrl, localized(metadataLocale, "Link SISBOV", "SISBOV link", "Enlace SISBOV"))}>
                                 <Link2 className="h-3 w-3 mr-1" />
-                                {metadataLocale === "en" ? "Copy link" : "Copiar link"}
+                                {localized(metadataLocale, "Copiar link", "Copy link", "Copiar enlace")}
                               </Button>
                             </div>
                           </div>
@@ -2669,7 +2741,7 @@ export default function PublicItem() {
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               <div className="rounded-md bg-white/80 border border-emerald-100 px-3 py-2">
                                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                                  {metadataLocale === "en" ? "Protected proof" : "Prova protegida"}
+                                  {localized(metadataLocale, "Prova protegida", "Protected proof", "Prueba protegida")}
                                 </p>
                                 <p className="font-mono text-xs text-foreground mt-1 break-all">
                                   {shortCommitment(commitmentHash)}
@@ -2677,7 +2749,7 @@ export default function PublicItem() {
                               </div>
                               <div className="rounded-md bg-white/80 border border-emerald-100 px-3 py-2">
                                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                                  {metadataLocale === "en" ? "Scope" : "Escopo"}
+                                  {localized(metadataLocale, "Escopo", "Scope", "Alcance")}
                                 </p>
                                 <p className="text-xs font-medium text-foreground mt-1">
                                   {subject}
@@ -2685,7 +2757,7 @@ export default function PublicItem() {
                               </div>
                               <div className="rounded-md bg-white/80 border border-emerald-100 px-3 py-2">
                                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                                  {metadataLocale === "en" ? "Version" : "Versão"}
+                                  {localized(metadataLocale, "Versão", "Version", "Versión")}
                                 </p>
                                 <p className="text-xs font-medium text-foreground mt-1">
                                   {typeof version === "string" ? version : "v1"}
@@ -2694,7 +2766,7 @@ export default function PublicItem() {
                             </div>
                             <details>
                               <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
-                                {metadataLocale === "en" ? "View technical proof" : "Ver prova técnica"}
+                                {localized(metadataLocale, "Ver prova técnica", "View technical proof", "Ver prueba técnica")}
                               </summary>
                               <pre className="mt-2 text-xs text-foreground overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-white/80 border border-emerald-100 p-3">
                                 {compactJson(value)}
@@ -2708,7 +2780,7 @@ export default function PublicItem() {
                         // Collect all CARs: from metadata + from property events
                         const allCars = new Map<string, string>();
                         const metaCar = typeof value === "string" ? value.trim() : typeof value === "number" ? String(value) : null;
-                        if (metaCar) allCars.set(metaCar, metadataLocale === "en" ? "Registration origin" : "Registro de origem");
+                        if (metaCar) allCars.set(metaCar, localized(metadataLocale, "Registro de origem", "Registration origin", "Registro de origen"));
                         for (const ev of events) {
                           if (ev.event_type === "item_property_linked") {
                             const p = (ev.payload || {}) as Record<string, unknown>;
@@ -2721,7 +2793,7 @@ export default function PublicItem() {
                         return (
                           <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5 space-y-3 sm:col-span-2">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
-                              {metadataLocale === "en" ? "Associated properties (CAR)" : "Propriedades associadas (CAR)"}
+                              {localized(metadataLocale, "Propriedades associadas (CAR)", "Associated properties (CAR)", "Propiedades asociadas (CAR)")}
                             </p>
                             {Array.from(allCars.entries()).map(([carNum, propName]) => (
                               <div key={carNum} className="flex items-start gap-2">
@@ -2766,18 +2838,24 @@ export default function PublicItem() {
                                 onClick={() =>
                                   void copyText(
                                     ieValue,
-                                    metadataLocale === "en"
-                                      ? normalized === "inscricao_estadual_centro_custo"
-                                        ? "Cost center state registration"
-                                        : "State registration"
-                                      : normalized === "inscricao_estadual_centro_custo"
-                                      ? "Inscrição estadual do centro de custo"
-                                      : "Inscrição estadual"
+                                    normalized === "inscricao_estadual_centro_custo"
+                                      ? localized(
+                                          metadataLocale,
+                                          "Inscrição estadual do centro de custo",
+                                          "Cost center state registration",
+                                          "Registro estatal del centro de costo"
+                                        )
+                                      : localized(
+                                          metadataLocale,
+                                          "Inscrição estadual",
+                                          "State registration",
+                                          "Registro estatal"
+                                        )
                                   )
                                 }
                               >
                                 <Copy className="h-3 w-3 mr-1" />
-                                {metadataLocale === "en" ? "Copy number" : "Copiar número"}
+                                {localized(metadataLocale, "Copiar número", "Copy number", "Copiar número")}
                               </Button>
                             </div>
                           </div>
@@ -2798,11 +2876,11 @@ export default function PublicItem() {
                             </button>
                             {weightMeta?.date ? (
                               <p className="text-[11px] text-muted-foreground">
-                                {metadataLocale === "en" ? "Weighing date" : "Data da pesagem"}: {weightMeta.date}
+                                {localized(metadataLocale, "Data da pesagem", "Weighing date", "Fecha de pesaje")}: {weightMeta.date}
                               </p>
                             ) : (
                               <p className="text-[11px] text-muted-foreground">
-                                {metadataLocale === "en" ? "Click to view weight progression." : "Clique para ver evolução de peso."}
+                                {localized(metadataLocale, "Clique para ver evolução de peso.", "Click to view weight progression.", "Haz clic para ver la evolución de peso.")}
                               </p>
                             )}
                           </div>
@@ -2818,16 +2896,16 @@ export default function PublicItem() {
                                 <button
                                   type="button"
                                   className="inline-flex text-muted-foreground hover:text-foreground"
-                                  aria-label={metadataLocale === "en" ? "Show original field" : "Mostrar campo original"}
+                                  aria-label={localized(metadataLocale, "Mostrar campo original", "Show original field", "Mostrar campo original")}
                                 >
                                   <Info className="h-3 w-3" />
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs text-xs">
-                                {metadataLocale === "en" ? "Original field(s): " : "Campo(s) original(is): "}
+                                {localized(metadataLocale, "Campo(s) original(is): ", "Original field(s): ", "Campo(s) original(es): ")}
                                 {rawKeys.join(", ")}
                                 <br />
-                                {metadataLocale === "en" ? "Official field: " : "Campo oficial: "}
+                                {localized(metadataLocale, "Campo oficial: ", "Official field: ", "Campo oficial: ")}
                                 {canonicalKey}
                               </TooltipContent>
                             </Tooltip>
@@ -2883,31 +2961,23 @@ export default function PublicItem() {
                 <div>
                   <p className="text-sm font-semibold text-foreground">
                     {proofs?.identity_anchor?.status === "confirmed"
-                      ? metadataLocale === "en"
-                        ? "Verified on blockchain"
-                        : "Verificado em blockchain"
+                      ? localized(metadataLocale, "Verificado em blockchain", "Verified on blockchain", "Verificado en blockchain")
                       : latestContentVersion
-                        ? metadataLocale === "en"
-                          ? "Registered on IPFS"
-                          : "Registrado no IPFS"
-                        : metadataLocale === "en"
-                          ? "Proof pending"
-                          : "Prova pendente"}
+                        ? localized(metadataLocale, "Registrado no IPFS", "Registered on IPFS", "Registrado en IPFS")
+                        : localized(metadataLocale, "Prova pendente", "Proof pending", "Prueba pendiente")}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {proofs?.identity_anchor?.status === "confirmed"
                       ? "Stellar mainnet · IPFS (Pinata)"
                       : proofs?.identity_anchor
-                        ? metadataLocale === "en"
-                          ? "IPFS (Pinata) · Stellar anchoring pending"
-                          : "IPFS (Pinata) · ancoragem Stellar pendente"
+                        ? localized(metadataLocale, "IPFS (Pinata) · ancoragem Stellar pendente", "IPFS (Pinata) · Stellar anchoring pending", "IPFS (Pinata) · anclaje Stellar pendiente")
                         : "IPFS (Pinata)"}
                   </p>
                 </div>
               </div>
               <details className="mt-3">
                 <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
-                  {metadataLocale === "en" ? "View technical details" : "Ver detalhes técnicos"}
+                  {localized(metadataLocale, "Ver detalhes técnicos", "View technical details", "Ver detalles técnicos")}
                 </summary>
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
@@ -2931,12 +3001,8 @@ export default function PublicItem() {
                           }`}
                         >
                           {proofs.identity_anchor.status === "confirmed"
-                            ? metadataLocale === "en"
-                              ? "Confirmed on-chain"
-                              : "Confirmado on-chain"
-                            : metadataLocale === "en"
-                              ? `On-chain status: ${proofs.identity_anchor.status}`
-                              : `Status on-chain: ${proofs.identity_anchor.status}`}
+                            ? localized(metadataLocale, "Confirmado on-chain", "Confirmed on-chain", "Confirmado on-chain")
+                            : localized(metadataLocale, `Status on-chain: ${proofs.identity_anchor.status}`, `On-chain status: ${proofs.identity_anchor.status}`, `Estado on-chain: ${proofs.identity_anchor.status}`)}
                         </p>
                         <div className="flex items-center gap-2">
                           <Button
@@ -2954,7 +3020,7 @@ export default function PublicItem() {
                         </div>
                       </>
                     ) : (
-                      <p className="text-xs text-muted-foreground">Identidade ainda não disponível.</p>
+                      <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Identidade ainda não disponível.", "Identity is not available yet.", "Identidad aún no disponible.")}</p>
                     )}
                   </div>
 
@@ -3005,9 +3071,12 @@ export default function PublicItem() {
               <div>
                 <h2 className="text-base font-semibold text-foreground">Histórico</h2>
                 <p className="text-xs text-muted-foreground">
-                  {metadataLocale === "en"
-                    ? `${realEvents.length} public · ${operationalEvents.length} technical`
-                    : `${realEvents.length} público${realEvents.length !== 1 ? "s" : ""} · ${operationalEvents.length} técnico${operationalEvents.length !== 1 ? "s" : ""}`}
+                  {localized(
+                    metadataLocale,
+                    `${realEvents.length} público${realEvents.length !== 1 ? "s" : ""} · ${operationalEvents.length} técnico${operationalEvents.length !== 1 ? "s" : ""}`,
+                    `${realEvents.length} public · ${operationalEvents.length} technical`,
+                    `${realEvents.length} público${realEvents.length !== 1 ? "s" : ""} · ${operationalEvents.length} técnico${operationalEvents.length !== 1 ? "s" : ""}`
+                  )}
                 </p>
               </div>
             </div>
@@ -3020,12 +3089,12 @@ export default function PublicItem() {
                 {showOperational ? (
                   <>
                     <EyeOff className="h-3.5 w-3.5" />
-                    {metadataLocale === "en" ? "Hide technical" : "Ocultar operacionais"}
+                    {localized(metadataLocale, "Ocultar operacionais", "Hide technical", "Ocultar técnicos")}
                   </>
                 ) : (
                   <>
                     <Eye className="h-3.5 w-3.5" />
-                    {metadataLocale === "en" ? "Show technical" : "Mostrar técnicos"}
+                    {localized(metadataLocale, "Mostrar técnicos", "Show technical", "Mostrar técnicos")}
                   </>
                 )}
               </button>
@@ -3040,16 +3109,21 @@ export default function PublicItem() {
             <div className="rounded-xl border border-border bg-muted/30 py-12 text-center">
               <Activity className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-sm text-foreground font-medium">
-                {metadataLocale === "en" ? "No public events for this item." : "Sem eventos públicos neste item."}
+                {localized(metadataLocale, "Sem eventos públicos neste item.", "No public events for this item.", "No hay eventos públicos para este animal.")}
               </p>
               {isAuthenticated && operationalEvents.length > 0 && !showOperational ? (
                 <>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {metadataLocale === "en"
-                      ? `${operationalEvents.length} technical event${operationalEvents.length !== 1 ? "s are" : " is"} available to view.`
-                      : operationalEvents.length === 1
-                      ? "Há 1 evento técnico disponível para visualização."
-                      : `Há ${operationalEvents.length} eventos técnicos disponíveis para visualização.`}
+                    {localized(
+                      metadataLocale,
+                      operationalEvents.length === 1
+                        ? "Há 1 evento técnico disponível para visualização."
+                        : `Há ${operationalEvents.length} eventos técnicos disponíveis para visualização.`,
+                      `${operationalEvents.length} technical event${operationalEvents.length !== 1 ? "s are" : " is"} available to view.`,
+                      operationalEvents.length === 1
+                        ? "Hay 1 evento técnico disponible para ver."
+                        : `Hay ${operationalEvents.length} eventos técnicos disponibles para ver.`
+                    )}
                   </p>
                   <Button
                     size="sm"
@@ -3058,14 +3132,17 @@ export default function PublicItem() {
                     onClick={() => setShowOperational(true)}
                   >
                     <Eye className="h-3.5 w-3.5 mr-1.5" />
-                    {metadataLocale === "en" ? "Show technical" : "Mostrar técnicos"}
+                    {localized(metadataLocale, "Mostrar técnicos", "Show technical", "Mostrar técnicos")}
                   </Button>
                 </>
               ) : (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {metadataLocale === "en"
-                    ? "This item has no public timeline yet. Private circuit history is visible only to authorized participants."
-                    : "Este item ainda não tem linha do tempo pública. O histórico privado do circuito fica visível apenas para participantes autorizados."}
+                  {localized(
+                    metadataLocale,
+                    "Este item ainda não tem linha do tempo pública. O histórico privado do circuito fica visível apenas para participantes autorizados.",
+                    "This item has no public timeline yet. Private circuit history is visible only to authorized participants.",
+                    "Este animal todavía no tiene línea de tiempo pública. El historial privado del circuito solo es visible para participantes autorizados."
+                  )}
                 </p>
               )}
             </div>
@@ -3283,10 +3360,10 @@ export default function PublicItem() {
             <div className="space-y-4">
               {carGeoLoading || carGeojson || carGeoError ? (
                 <div className="rounded-lg border border-border bg-muted/20 p-3">
-                  <p className="text-xs text-muted-foreground mb-2">Polígono da propriedade</p>
+                  <p className="text-xs text-muted-foreground mb-2">{localized(metadataLocale, "Polígono da propriedade", "Property polygon", "Polígono de la propiedad")}</p>
                   {carGeoLoading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Carregando mapa...
+                      <Loader2 className="h-4 w-4 animate-spin" /> {localized(metadataLocale, "Carregando mapa...", "Loading map...", "Cargando mapa...")}
                     </div>
                   ) : carGeojson ? (
                     <PropertyMap geojson={carGeojson} className="h-64 w-full" />
@@ -3426,13 +3503,13 @@ export default function PublicItem() {
       <Dialog open={showJourneyDialog} onOpenChange={setShowJourneyDialog}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{metadataLocale === "en" ? "Animal Journey" : "Jornada do Animal"}</DialogTitle>
+            <DialogTitle>{localized(metadataLocale, "Jornada do Animal", "Animal Journey", "Recorrido del animal")}</DialogTitle>
             <DialogDescription>
-              Mapa com propriedades, deslocamentos e eventos geolocalizados. Clique nos marcadores para ver detalhes.
+              {localized(metadataLocale, "Mapa com propriedades, deslocamentos e eventos geolocalizados. Clique nos marcadores para ver detalhes.", "Map with properties, movements and geolocated events. Click markers to see details.", "Mapa con propiedades, desplazamientos y eventos geolocalizados. Haz clic en los marcadores para ver detalles.")}
             </DialogDescription>
           </DialogHeader>
           {showJourneyDialog && journeyPoints.length > 0 && (
-            <JourneyMapInline points={journeyPoints} />
+            <JourneyMapInline points={journeyPoints} locale={metadataLocale} />
           )}
         </DialogContent>
       </Dialog>
@@ -3440,15 +3517,15 @@ export default function PublicItem() {
       <Dialog open={showCircuitsDialog} onOpenChange={setShowCircuitsDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Redes de rastreabilidade</DialogTitle>
+            <DialogTitle>{localized(metadataLocale, "Redes de rastreabilidade", "Traceability networks", "Redes de trazabilidad")}</DialogTitle>
             <DialogDescription>
-              Se o circuito for privado/seletivo, a página de destino poderá exigir autenticação.
+              {localized(metadataLocale, "Se o circuito for privado/seletivo, a página de destino poderá exigir autenticação.", "If the circuit is private/selective, the destination page may require authentication.", "Si el circuito es privado/selectivo, la página de destino puede exigir autenticación.")}
             </DialogDescription>
           </DialogHeader>
 
           {associatedCircuitIds.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhum circuito associado foi identificado nos eventos públicos deste item.
+              {localized(metadataLocale, "Nenhum circuito associado foi identificado nos eventos públicos deste item.", "No associated circuit was identified in this item public events.", "No se identificó ningún circuito asociado en los eventos públicos de este animal.")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -3506,8 +3583,8 @@ export default function PublicItem() {
       <Dialog open={showWeightDialog} onOpenChange={setShowWeightDialog}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</DialogTitle>
-            <DialogDescription>Histórico de pesagens públicas registradas para este item.</DialogDescription>
+            <DialogTitle>{localized(metadataLocale, "Evolução de peso", "Weight progression", "Evolución de peso")}</DialogTitle>
+            <DialogDescription>{localized(metadataLocale, "Histórico de pesagens públicas registradas para este item.", "History of public weighings recorded for this item.", "Historial de pesajes públicos registrados para este animal.")}</DialogDescription>
           </DialogHeader>
 
           {weightHistory.length === 0 ? (
@@ -3525,13 +3602,11 @@ export default function PublicItem() {
                         const payload = item?.payload as WeightPoint | undefined;
                         const src = payload ? weightSourceLabel(payload.source, metadataLocale) : "-";
                         const inferred = payload?.inferredDate
-                          ? metadataLocale === "en"
-                            ? " (inferred date)"
-                            : " (data inferida)"
+                          ? localized(metadataLocale, " (data inferida)", " (inferred date)", " (fecha inferida)")
                           : "";
                         return [
                           `${Number(value).toFixed(1)} kg · ${src}${inferred}`,
-                          metadataLocale === "en" ? "Weight" : "Peso",
+                          localized(metadataLocale, "Peso", "Weight", "Peso"),
                         ];
                       }}
                     />
@@ -3577,9 +3652,12 @@ export default function PublicItem() {
               </div>
               {hasInferredWeightDates && (
                 <p className="text-xs text-muted-foreground">
-                  {metadataLocale === "en"
-                    ? "* Weighing date was not provided. The chart uses the data processing/submission date."
-                    : "* Não foi informada a data da pesagem. O gráfico usa a data do processamento/envio dos dados."}
+                  {localized(
+                    metadataLocale,
+                    "* Não foi informada a data da pesagem. O gráfico usa a data do processamento/envio dos dados.",
+                    "* Weighing date was not provided. The chart uses the data processing/submission date.",
+                    "* No se informó la fecha de pesaje. El gráfico usa la fecha de procesamiento/envío de los datos."
+                  )}
                 </p>
               )}
             </div>
@@ -3590,16 +3668,16 @@ export default function PublicItem() {
       <Dialog open={showIdentityDialog} onOpenChange={setShowIdentityDialog}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Identidade e eventos emitidos</DialogTitle>
+            <DialogTitle>{localized(metadataLocale, "Identidade e eventos emitidos", "Identity and emitted events", "Identidad y eventos emitidos")}</DialogTitle>
             <DialogDescription>
-              Primeiro registro de identidade e emissões on-chain associadas ao conteúdo.
+              {localized(metadataLocale, "Primeiro registro de identidade e emissões on-chain associadas ao conteúdo.", "First identity record and on-chain emissions associated with the content.", "Primer registro de identidad y emisiones on-chain asociadas al contenido.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 text-sm">
             {proofs?.identity_anchor ? (
               <div className="rounded border p-3">
-                <p className="text-xs text-muted-foreground">Hash de identidade</p>
+                <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Hash de identidade", "Identity hash", "Hash de identidad")}</p>
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <a
                     href={`https://stellar.expert/explorer/public/tx/${proofs.identity_anchor.transaction_hash}`}
@@ -3613,19 +3691,22 @@ export default function PublicItem() {
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs"
-                    onClick={() => void copyText(proofs.identity_anchor!.transaction_hash, "Hash de identidade")}
+                    onClick={() => void copyText(
+                      proofs.identity_anchor!.transaction_hash,
+                      localized(metadataLocale, "Hash de identidade", "Identity hash", "Hash de identidad")
+                    )}
                   >
-                    Copiar
+                    {localized(metadataLocale, "Copiar", "Copy", "Copiar")}
                   </Button>
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground">Sem hash de identidade disponível.</p>
+              <p className="text-muted-foreground">{localized(metadataLocale, "Sem hash de identidade disponível.", "No identity hash available.", "No hay hash de identidad disponible.")}</p>
             )}
 
             {proofs?.nft_mint_anchor ? (
               <div className="rounded border p-3">
-                <p className="text-xs text-muted-foreground">Hash de mint</p>
+                <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Hash de mint", "Mint hash", "Hash de mint")}</p>
                 <a
                   href={`https://stellar.expert/explorer/public/tx/${proofs.nft_mint_anchor.transaction_hash}`}
                   target="_blank"
@@ -3638,9 +3719,9 @@ export default function PublicItem() {
             ) : null}
 
             <div className="rounded border p-3">
-              <p className="text-xs text-muted-foreground mb-2">Hashes de eventos emitidos ({emittedTxHashes.length})</p>
+              <p className="text-xs text-muted-foreground mb-2">{localized(metadataLocale, "Hashes de eventos emitidos", "Emitted event hashes", "Hashes de eventos emitidos")} ({emittedTxHashes.length})</p>
               {emittedTxHashes.length === 0 ? (
-                <p className="text-muted-foreground">Nenhum evento emitido público encontrado.</p>
+                <p className="text-muted-foreground">{localized(metadataLocale, "Nenhum evento emitido público encontrado.", "No public emitted event found.", "No se encontró ningún evento emitido público.")}</p>
               ) : (
                 <div className="space-y-2">
                   {emittedTxHashes.map((tx) => (
@@ -3653,7 +3734,7 @@ export default function PublicItem() {
                       >
                         {shortHash(tx, 14, 10)}
                       </a>
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(tx, "Hash")}>Copiar</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(tx, "Hash") }> {localized(metadataLocale, "Copiar", "Copy", "Copiar")}</Button>
                     </div>
                   ))}
                 </div>
@@ -3666,16 +3747,16 @@ export default function PublicItem() {
       <Dialog open={showCidDialog} onOpenChange={setShowCidDialog}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Versões de CID</DialogTitle>
+            <DialogTitle>{localized(metadataLocale, "Versões de CID", "CID versions", "Versiones de CID")}</DialogTitle>
             <DialogDescription>
-              Última versão e histórico de CIDs anteriores.
+              {localized(metadataLocale, "Última versão e histórico de CIDs anteriores.", "Latest version and history of previous CIDs.", "Última versión e historial de CIDs anteriores.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 text-sm">
             {latestContentVersion ? (
               <div className="rounded border p-3 space-y-2">
-                <p className="text-xs text-muted-foreground">Último CID (v{latestContentVersion.version})</p>
+                <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Último CID", "Latest CID", "Último CID")} (v{latestContentVersion.version})</p>
                 <p className="font-mono text-xs text-foreground break-all">{latestContentVersion.cid}</p>
                 <div className="flex items-center gap-2">
                   <a
@@ -3684,7 +3765,7 @@ export default function PublicItem() {
                     rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                   >
-                    Ver registro original <ExternalLink className="h-3 w-3" />
+                    {localized(metadataLocale, "Ver registro original", "View original record", "Ver registro original")} <ExternalLink className="h-3 w-3" />
                   </a>
                   <Button
                     size="sm"
@@ -3704,18 +3785,18 @@ export default function PublicItem() {
                       }
                     }}
                   >
-                    {cidViewLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Visualizar"}
+                    {cidViewLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : localized(metadataLocale, "Visualizar", "View", "Visualizar")}
                   </Button>
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground">Nenhum CID disponível.</p>
+              <p className="text-muted-foreground">{localized(metadataLocale, "Nenhum CID disponível.", "No CID available.", "No hay CID disponible.")}</p>
             )}
 
             <div className="rounded border p-3">
-              <p className="text-xs text-muted-foreground mb-2">CIDs anteriores ({olderContentVersions.length})</p>
+              <p className="text-xs text-muted-foreground mb-2">{localized(metadataLocale, "CIDs anteriores", "Previous CIDs", "CIDs anteriores")} ({olderContentVersions.length})</p>
               {olderContentVersions.length === 0 ? (
-                <p className="text-muted-foreground">Sem versões anteriores.</p>
+                <p className="text-muted-foreground">{localized(metadataLocale, "Sem versões anteriores.", "No previous versions.", "Sin versiones anteriores.")}</p>
               ) : (
                 <div className="space-y-2">
                   {olderContentVersions.map((v) => (
@@ -3728,7 +3809,7 @@ export default function PublicItem() {
                       >
                         v{v.version} · {shortHash(v.cid, 14, 10)}
                       </a>
-                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(v.cid, "CID")}>Copiar</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(v.cid, "CID") }> {localized(metadataLocale, "Copiar", "Copy", "Copiar")}</Button>
                     </div>
                   ))}
                 </div>
@@ -3738,8 +3819,8 @@ export default function PublicItem() {
             {cidViewContent && (
               <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">Conteúdo do registro</p>
-                  <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => setCidViewContent(null)}>Fechar</Button>
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{localized(metadataLocale, "Conteúdo do registro", "Record content", "Contenido del registro")}</p>
+                  <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => setCidViewContent(null)}> {localized(metadataLocale, "Fechar", "Close", "Cerrar")}</Button>
                 </div>
                 {cidViewContent.data.schema_version && (
                   <p className="text-xs text-muted-foreground">Schema v{String(cidViewContent.data.schema_version)}</p>
@@ -3747,7 +3828,7 @@ export default function PublicItem() {
 
                 {cidViewContent.data.identity && typeof cidViewContent.data.identity === "object" && (
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-foreground">Identidade</p>
+                    <p className="text-xs font-medium text-foreground">{localized(metadataLocale, "Identidade", "Identity", "Identidad")}</p>
                     <div className="grid grid-cols-2 gap-1 text-xs">
                       {Object.entries(cidViewContent.data.identity as Record<string, unknown>).filter(([, v]) => v != null && !Array.isArray(v)).map(([k, v]) => (
                         <div key={k} className="flex gap-1.5"><span className="text-muted-foreground">{PAYLOAD_KEY_LABELS[k] || k}:</span><span className="font-mono">{String(v)}</span></div>
@@ -3810,6 +3891,7 @@ export default function PublicItem() {
         step={tourStep}
         steps={tourSteps}
         refs={tourRefs}
+        locale={metadataLocale}
         onNext={() => setTourStep((s) => s !== null && s < tourSteps.length - 1 ? s + 1 : null)}
         onPrev={() => setTourStep((s) => s !== null && s > 0 ? s - 1 : s)}
         onClose={() => setTourStep(null)}
