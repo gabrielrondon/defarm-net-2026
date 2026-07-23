@@ -155,6 +155,7 @@ const METADATA_GROUP_ORDER: MetadataGroupKey[] = [
 ];
 
 function resolveMetadataGroup(canonicalKey: string): MetadataGroupKey {
+  if (canonicalKey.endsWith("_commitment")) return "identification";
   if (
     [
       "value_chain",
@@ -450,6 +451,37 @@ function shortCommitment(value: unknown): string {
   const text = typeof value === "string" ? value : String(value || "");
   if (text.length <= 22) return text || "-";
   return `${text.slice(0, 12)}...${text.slice(-8)}`;
+}
+
+function commitmentSubject(canonicalKey: string, domain: string | undefined, locale: MetadataLocale): string {
+  const rawSubject = canonicalKey.replace(/_commitment$/, "") || (domain || "").split(".").pop() || "";
+  const subject = normalizeFieldKey(rawSubject);
+  if (locale === "en") {
+    if (subject === "sisbov") return "SISBOV identifier";
+    if (subject === "car") return "CAR property record";
+    if (subject === "chip" || subject === "rfid") return "chip/RFID identifier";
+    if (subject === "ear_tag" || subject === "eartag") return "ear tag identifier";
+    if (subject === "cpf") return "CPF";
+    if (subject === "cnpj") return "CNPJ";
+    return formatFallbackMetadataLabel(subject || "identifier");
+  }
+  if (subject === "sisbov") return "Identificador SISBOV";
+  if (subject === "car") return "CAR da propriedade";
+  if (subject === "chip" || subject === "rfid") return "Identificador chip/RFID";
+  if (subject === "ear_tag" || subject === "eartag") return "Identificador de brinco";
+  if (subject === "cpf") return "CPF";
+  if (subject === "cnpj") return "CNPJ";
+  return formatFallbackMetadataLabel(subject || "identificador");
+}
+
+function protectedCommitmentTitle(subject: string, locale: MetadataLocale): string {
+  return locale === "en" ? `Protected ${subject}` : `${subject} protegido`;
+}
+
+function protectedCommitmentDescription(subject: string, locale: MetadataLocale): string {
+  return locale === "en"
+    ? `The original ${subject} value is not public. This proof lets DeFarm confirm the same record later without exposing the original value.`
+    : `O valor original de ${subject} não é público. Esta prova permite confirmar o mesmo registro depois sem expor o dado bruto.`;
 }
 
 function weightSourceLabel(source: WeightPoint["source"], locale: MetadataLocale): string {
@@ -2613,10 +2645,12 @@ export default function PublicItem() {
                         );
                       }
 
-                      if (normalized === "sisbov_commitment") {
+                      if (normalized.endsWith("_commitment")) {
                         const commitment = readCommitment(value);
+                        if (!commitment) return null;
                         const commitmentHash = commitment?.value;
                         const version = commitment?.version;
+                        const subject = commitmentSubject(canonicalKey, commitment.domain, metadataLocale);
                         return (
                           <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-emerald-50/70 border border-emerald-100 rounded-lg p-3.5 space-y-3 sm:col-span-2">
                             <div className="flex items-start gap-3">
@@ -2625,12 +2659,10 @@ export default function PublicItem() {
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-foreground">
-                                  {metadataLocale === "en" ? "Protected SISBOV identifier" : "Identificador SISBOV protegido"}
+                                  {protectedCommitmentTitle(subject, metadataLocale)}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {metadataLocale === "en"
-                                    ? "The raw SISBOV number is not public. This proof lets DeFarm confirm the same animal later without exposing the identifier."
-                                    : "O número SISBOV cru não é público. Esta prova permite confirmar o mesmo animal depois sem expor o identificador."}
+                                  {protectedCommitmentDescription(subject, metadataLocale)}
                                 </p>
                               </div>
                             </div>
@@ -2648,7 +2680,7 @@ export default function PublicItem() {
                                   {metadataLocale === "en" ? "Scope" : "Escopo"}
                                 </p>
                                 <p className="text-xs font-medium text-foreground mt-1">
-                                  {metadataLocale === "en" ? "Animal identifier" : "Identificador do animal"}
+                                  {subject}
                                 </p>
                               </div>
                               <div className="rounded-md bg-white/80 border border-emerald-100 px-3 py-2">
