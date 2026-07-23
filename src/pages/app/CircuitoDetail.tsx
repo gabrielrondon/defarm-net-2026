@@ -94,7 +94,7 @@ import { ManageMembersDialog, DeleteCircuitDialog } from "@/components/circuit";
 import { CircuitFeeds } from "@/components/circuit/CircuitFeeds";
 import { VerifiedBadge, isVerified } from "@/components/circuit/VerifiedBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isCircuitPublic, normalizeCircuitStatus } from "@/lib/circuit-ui";
+import { isCircuitPublic } from "@/lib/circuit-ui";
 
 const CIR_DEFAULT_TERM_BODY = `Ao participar do Circuito Independente de Rastreabilidade, o participante autoriza o uso operacional dos dados enviados ou compartilhados no circuito para fins de rastreabilidade, verificação, auditoria e emissão de evidências associadas aos itens agropecuários vinculados.
 
@@ -490,7 +490,7 @@ export default function CircuitoDetail() {
               <GitBranch className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <div className="flex items-center gap-3 mb-1">
+              <div className="flex flex-wrap items-center gap-3 mb-1">
                 <h1 className="text-2xl font-bold text-foreground">
                   {circuit.name}
                 </h1>
@@ -506,38 +506,8 @@ export default function CircuitoDetail() {
                     {isVerified(circuit) ? t("portal.circuits.detail.removeSeal") : t("portal.circuits.detail.grantSeal")}
                   </Button>
                 ) : null}
-                {(() => {
-                  const normalizedStatus = normalizeCircuitStatus(circuit.status);
-                  return (
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    normalizedStatus === "active"
-                      ? "bg-primary/10 text-primary"
-                      : normalizedStatus === "inactive"
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-amber-500/10 text-amber-700"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "w-1.5 h-1.5 rounded-full",
-                      normalizedStatus === "active"
-                        ? "bg-primary"
-                        : normalizedStatus === "inactive"
-                        ? "bg-muted-foreground"
-                        : "bg-amber-600"
-                    )}
-                  />
-                  {t(`portal.enums.circuitStatus.${circuit.status?.toLowerCase()}`, { defaultValue: circuit.status })}
-                </span>
-                  );
-                })()}
               </div>
               <p className="text-muted-foreground">{circuit.description || t("portal.circuits.detail.noDescription")}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("portal.circuits.detail.statusHelp")}
-              </p>
               {user?.workspace_type === "government" && (
                 <div className="mt-3">
                   <Button asChild variant="outline" size="sm">
@@ -552,6 +522,7 @@ export default function CircuitoDetail() {
                 <button
                   onClick={handleCopyId}
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-mono bg-muted px-2 py-1 rounded"
+                  aria-label={t("portal.circuits.detail.copyCircuitId")}
                 >
                   {copied ? (
                     <CheckCircle2 className="h-3 w-3 text-primary" />
@@ -561,6 +532,51 @@ export default function CircuitoDetail() {
                   {circuit.id}
                 </button>
               </div>
+              {isPublic ? (
+                <div className="mt-3 rounded-lg border border-border bg-muted/30 px-3 py-2">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    {t("portal.circuits.detail.publicUrlLabel")}
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <a
+                      href={publicUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="min-w-0 flex-1 truncate font-mono text-sm text-foreground hover:text-primary"
+                    >
+                      {publicUrl}
+                    </a>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleCopyPublicUrl}
+                        title={t("portal.circuits.detail.sharing.copyUrl")}
+                        aria-label={t("portal.circuits.detail.sharing.copyUrl")}
+                      >
+                        {copiedPublicUrl ? (
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        title={t("portal.circuits.detail.sharing.openPublic")}
+                        aria-label={t("portal.circuits.detail.sharing.openPublic")}
+                      >
+                        <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -651,6 +667,25 @@ export default function CircuitoDetail() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCopyId}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  {t("portal.circuits.detail.copyCircuitId")}
+                </DropdownMenuItem>
+                {isPublic ? (
+                  <>
+                    <DropdownMenuItem onClick={handleCopyPublicUrl}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      {t("portal.circuits.detail.sharing.copyUrl")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        {t("portal.circuits.detail.sharing.openPublic")}
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
                 <DropdownMenuItem asChild>
                   <Link to={`/app/circuitos/${id}/editar`} className="flex items-center">
                     <Pencil className="h-4 w-4 mr-2" />
@@ -687,7 +722,7 @@ export default function CircuitoDetail() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-background border border-border rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -720,9 +755,7 @@ export default function CircuitoDetail() {
               )}
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">
-                {visibilityLabel}
-              </p>
+              <p className="text-lg font-bold text-foreground">{visibilityLabel}</p>
               <p className="text-sm text-muted-foreground">{t("portal.circuits.detail.stats.visibility")}</p>
             </div>
           </div>
@@ -733,9 +766,7 @@ export default function CircuitoDetail() {
               <Shield className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">
-                {typeLabel}
-              </p>
+              <p className="text-lg font-bold text-foreground">{typeLabel}</p>
               <p className="text-sm text-muted-foreground">{t("portal.circuits.detail.stats.category")}</p>
             </div>
           </div>
