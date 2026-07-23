@@ -29,7 +29,7 @@ export default function PartnerPortal() {
               className="h-6 px-2 text-[11px]"
               onClick={() => setLocale("pt-BR")}
             >
-              PT-BR
+              PT
             </Button>
             <Button
               size="sm"
@@ -38,6 +38,14 @@ export default function PartnerPortal() {
               onClick={() => setLocale("en")}
             >
               EN
+            </Button>
+            <Button
+              size="sm"
+              variant={locale === "es" ? "default" : "ghost"}
+              className="h-6 px-2 text-[11px]"
+              onClick={() => setLocale("es")}
+            >
+              ES
             </Button>
           </div>
         </div>

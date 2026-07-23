@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-export type PartnerPortalLocale = "pt-BR" | "en";
+export type PartnerPortalLocale = "pt-BR" | "en" | "es";
 
 // Key legada do sistema de locale ad-hoc do portal (pré-unificação, 2026-07-07).
 const LEGACY_STORAGE_KEY = "partner_portal_locale";
@@ -16,7 +16,7 @@ function migrateLegacyLocale(changeLanguage: (lng: string) => void) {
   const legacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
   if (!legacy) return;
   const alreadyChosen = window.localStorage.getItem(I18NEXT_STORAGE_KEY);
-  if (!alreadyChosen && (legacy === "en" || legacy === "pt-BR")) {
+  if (!alreadyChosen && (legacy === "en" || legacy === "pt-BR" || legacy === "es")) {
     changeLanguage(legacy);
   }
   window.localStorage.removeItem(LEGACY_STORAGE_KEY);
@@ -35,7 +35,11 @@ export function usePartnerPortalLocale() {
     });
   }, [i18n]);
 
-  const locale: PartnerPortalLocale = i18n.language?.startsWith("pt") ? "pt-BR" : "en";
+  const locale: PartnerPortalLocale = i18n.language?.startsWith("en")
+    ? "en"
+    : i18n.language?.startsWith("es")
+      ? "es"
+      : "pt-BR";
   const setLocale = (next: PartnerPortalLocale) => {
     void i18n.changeLanguage(next);
   };
