@@ -1275,6 +1275,8 @@
         "removeSeal": "Remove seal",
         "grantSeal": "Grant seal",
         "noDescription": "No description",
+        "copyCircuitId": "Copy circuit ID",
+        "publicUrlLabel": "Public page",
         "statusHelp": "Operational status: Active appears in lists and operation flows; Inactive keeps history but leaves the main flows.",
         "govGuide": "Gov guide: shared circuit",
         "pushItem": "Push Item",

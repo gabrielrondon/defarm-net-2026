@@ -159,12 +159,14 @@ function resolveMetadataGroup(canonicalKey: string): MetadataGroupKey {
     [
       "value_chain",
       "sisbov",
+      "sisbov_commitment",
       "chip",
       "car",
       "inscricao_estadual",
       "inscricao_estadual_centro_custo",
       "animal_id",
       "partner_internal_id",
+      "country",
       "category",
       "breed",
     ].includes(canonicalKey)
@@ -201,6 +203,11 @@ function metadataGroupTitle(group: MetadataGroupKey, locale: MetadataLocale): st
 const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
   { canonical: "value_chain", aliases: ["value_chain", "valuechain"], label: { "pt-BR": "Cadeia de valor", en: "Value chain" } },
   { canonical: "sisbov", aliases: ["sisbov"], label: { "pt-BR": "SISBOV", en: "SISBOV" } },
+  {
+    canonical: "sisbov_commitment",
+    aliases: ["sisbov_commitment"],
+    label: { "pt-BR": "SISBOV protegido", en: "Protected SISBOV" },
+  },
   { canonical: "chip", aliases: ["chip", "rfid"], label: { "pt-BR": "Chip", en: "Chip" } },
   { canonical: "car", aliases: ["car"], label: { "pt-BR": "CAR", en: "CAR" } },
   {
@@ -229,6 +236,7 @@ const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
     aliases: ["animal_id", "animalid", "id_animal"],
     label: { "pt-BR": "ID do animal", en: "Animal ID" },
   },
+  { canonical: "country", aliases: ["country", "pais", "país"], label: { "pt-BR": "País", en: "Country" } },
   { canonical: "weight_kg", aliases: ["weight_kg", "peso_kg", "weight", "peso"], label: { "pt-BR": "Peso (kg)", en: "Weight (kg)" } },
   {
     canonical: "data_peso",
@@ -436,6 +444,12 @@ function readCommitment(value: unknown): { alg?: string; domain?: string; versio
     version: typeof record.version === "string" ? record.version : undefined,
     value: commitmentValue,
   };
+}
+
+function shortCommitment(value: unknown): string {
+  const text = typeof value === "string" ? value : String(value || "");
+  if (text.length <= 22) return text || "-";
+  return `${text.slice(0, 12)}...${text.slice(-8)}`;
 }
 
 function weightSourceLabel(source: WeightPoint["source"], locale: MetadataLocale): string {
@@ -1883,6 +1897,13 @@ export default function PublicItem() {
     };
   }, [events]);
 
+  const hasHealthData = !!sanitySummary && (
+    sanitySummary.vaccines.length > 0 ||
+    sanitySummary.treatments.length > 0
+  );
+  const hasWeightData = weightHistory.length > 0;
+  const latestWeightPoint = hasWeightData ? weightHistory[weightHistory.length - 1] : null;
+
   // Upcoming expected events based on age + history
   const upcomingEvents = useMemo(() => {
     if (!sanitySummary || !animalAge) return [];
@@ -1932,15 +1953,15 @@ export default function PublicItem() {
   const tourSteps = useMemo(() => {
     const steps: { title: string; description: string }[] = [];
     if (currentProperty?.car) steps.push({ title: "Propriedade atual", description: "Visualize a fazenda onde o animal se encontra, com mapa satellite e polígono do CAR extraído do SICAR." });
-    if (sanitySummary) steps.push({ title: "Resumo sanitário", description: "Panorama completo de vacinações, tratamentos, pesagens e Ganho Médio Diário (GMD) — tudo calculado automaticamente dos eventos registrados." });
-    if (weightHistory.length >= 2) steps.push({ title: "Evolução de peso", description: "Curva de crescimento do animal ao longo do tempo. Cada ponto é uma pesagem real registrada no sistema." });
+    if (hasHealthData) steps.push({ title: "Resumo sanitário", description: "Panorama de vacinações e tratamentos registrados para o animal." });
+    if (hasWeightData) steps.push({ title: "Evolução de peso", description: "Peso atual, quantidade de pesagens e curva de crescimento quando há histórico suficiente." });
     if (upcomingEvents.length > 0) steps.push({ title: "Previsões", description: "O sistema analisa o histórico e infere quais procedimentos estão próximos do vencimento ou atrasados — reforço vacinal, vermifugação, pesagem periódica." });
     steps.push({ title: "Jornada do Animal", description: "Mapa interativo com todas as propriedades por onde o animal passou, rotas de transporte e eventos geolocalizados com timeline sincronizada." });
     steps.push({ title: "Timeline", description: "Histórico completo agrupado por ano. Cada evento tem ícone, tipo, data e resumo — pesagens, vacinas, movimentações, tudo em ordem cronológica." });
     steps.push({ title: "Certificado QR", description: "QR code escaneável com hash blockchain e CID do IPFS. Pode ser baixado como PDF ou PNG." });
     steps.push({ title: "Registro verificável", description: "Identidade ancorada na blockchain Stellar e conteúdo versionado no IPFS (Pinata). Cada versão tem um CID único e imutável." });
     return steps;
-  }, [currentProperty, sanitySummary, weightHistory, upcomingEvents]);
+  }, [currentProperty, hasHealthData, hasWeightData, weightHistory, upcomingEvents]);
 
   useEffect(() => {
     if (tourStep === null) return;
@@ -2261,15 +2282,15 @@ export default function PublicItem() {
           </section>
         )}
 
-        {(sanitySummary || weightHistory.length >= 2) && (
+        {(hasHealthData || hasWeightData) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {sanitySummary && (
+            {hasHealthData && sanitySummary && (
               <div ref={setTourRef(1)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1 h-4 rounded-full bg-emerald-400" />
                   <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Health" : "Sanidade"}</p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-emerald-50 border border-emerald-200/50 p-3 text-center">
                     <p className="text-2xl font-bold text-emerald-700">{sanitySummary.vaccines.length}</p>
                     <p className="text-[11px] text-emerald-600 mt-0.5">{metadataLocale === "en" ? "Vaccinations" : "Vacinações"}</p>
@@ -2278,16 +2299,6 @@ export default function PublicItem() {
                     <p className="text-2xl font-bold text-teal-700">{sanitySummary.treatments.length}</p>
                     <p className="text-[11px] text-teal-600 mt-0.5">{metadataLocale === "en" ? "Treatments" : "Tratamentos"}</p>
                   </div>
-                  <div className="rounded-lg bg-cyan-50 border border-cyan-200/50 p-3 text-center">
-                    <p className="text-2xl font-bold text-cyan-700">{weightHistory.length}</p>
-                    <p className="text-[11px] text-cyan-600 mt-0.5">{metadataLocale === "en" ? "Weighings" : "Pesagens"}</p>
-                  </div>
-                  {sanitySummary.gmd !== null && (
-                    <div className="rounded-lg bg-amber-50 border border-amber-200/50 p-3 text-center">
-                      <p className="text-2xl font-bold text-amber-700">{sanitySummary.gmd.toFixed(2)}</p>
-                      <p className="text-[11px] text-amber-600 mt-0.5">{metadataLocale === "en" ? "ADG (kg/day)" : "GMD (kg/dia)"}</p>
-                    </div>
-                  )}
                 </div>
                 {sanitySummary.vaccines.length > 0 && (
                   <div className="mt-3 space-y-1">
@@ -2303,33 +2314,57 @@ export default function PublicItem() {
               </div>
             )}
 
-            {weightHistory.length >= 2 && (
+            {hasWeightData && (
               <div ref={setTourRef(2)} className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                    <div className="w-1 h-4 rounded-full bg-cyan-400" />
                     <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">{metadataLocale === "en" ? "Weight progression" : "Evolução de peso"}</p>
                   </div>
-                  {sanitySummary?.lastWeight && (
-                    <span className="text-sm font-semibold text-foreground">{sanitySummary.lastWeight} kg</span>
+                  {latestWeightPoint && (
+                    <span className="text-sm font-semibold text-foreground">{latestWeightPoint.weight.toFixed(1)} kg</span>
                   )}
                 </div>
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={weightHistory.map((wp) => ({ name: wp.label, peso: wp.weight }))}>
-                    <defs>
-                      <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
-                    <RechartsTooltip contentStyle={{ fontSize: 12 }} formatter={(v: number) => [`${v} kg`, "Peso"]} />
-                    <Area type="monotone" dataKey="peso" stroke="none" fill="url(#weightGradient)" />
-                    <Line type="monotone" dataKey="peso" stroke="#16a34a" strokeWidth={2} dot={{ fill: "#16a34a", r: 5, stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-lg bg-cyan-50 border border-cyan-200/50 p-3 text-center">
+                    <p className="text-2xl font-bold text-cyan-700">{weightHistory.length}</p>
+                    <p className="text-[11px] text-cyan-600 mt-0.5">{metadataLocale === "en" ? "Weighings" : "Pesagens"}</p>
+                  </div>
+                  <div className="rounded-lg bg-sky-50 border border-sky-200/50 p-3 text-center">
+                    <p className="text-2xl font-bold text-sky-700">{latestWeightPoint ? latestWeightPoint.weight.toFixed(1) : "-"}</p>
+                    <p className="text-[11px] text-sky-600 mt-0.5">{metadataLocale === "en" ? "Latest kg" : "Último kg"}</p>
+                  </div>
+                  {sanitySummary?.gmd !== null && sanitySummary?.gmd !== undefined && (
+                    <div className="rounded-lg bg-amber-50 border border-amber-200/50 p-3 text-center col-span-2 sm:col-span-1">
+                      <p className="text-2xl font-bold text-amber-700">{sanitySummary.gmd.toFixed(2)}</p>
+                      <p className="text-[11px] text-amber-600 mt-0.5">{metadataLocale === "en" ? "ADG kg/day" : "GMD kg/dia"}</p>
+                    </div>
+                  )}
+                </div>
+                {weightHistory.length >= 2 ? (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={weightHistory.map((wp) => ({ name: wp.label, peso: wp.weight }))}>
+                      <defs>
+                        <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0891b2" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                      <RechartsTooltip contentStyle={{ fontSize: 12 }} formatter={(v: number) => [`${v} kg`, "Peso"]} />
+                      <Area type="monotone" dataKey="peso" stroke="none" fill="url(#weightGradient)" />
+                      <Line type="monotone" dataKey="peso" stroke="#0891b2" strokeWidth={2} dot={{ fill: "#0891b2", r: 5, stroke: "#fff", strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {metadataLocale === "en"
+                      ? "More weighings will form a progression chart."
+                      : "Novas pesagens formarão o gráfico de evolução."}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -2578,6 +2613,65 @@ export default function PublicItem() {
                         );
                       }
 
+                      if (normalized === "sisbov_commitment") {
+                        const commitment = readCommitment(value);
+                        const commitmentHash = commitment?.value;
+                        const version = commitment?.version;
+                        return (
+                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-emerald-50/70 border border-emerald-100 rounded-lg p-3.5 space-y-3 sm:col-span-2">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 h-8 w-8 rounded-full bg-white border border-emerald-100 flex items-center justify-center shrink-0">
+                                <Lock className="h-4 w-4 text-emerald-700" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-foreground">
+                                  {metadataLocale === "en" ? "Protected SISBOV identifier" : "Identificador SISBOV protegido"}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {metadataLocale === "en"
+                                    ? "The raw SISBOV number is not public. This proof lets DeFarm confirm the same animal later without exposing the identifier."
+                                    : "O número SISBOV cru não é público. Esta prova permite confirmar o mesmo animal depois sem expor o identificador."}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div className="rounded-md bg-white/80 border border-emerald-100 px-3 py-2">
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                  {metadataLocale === "en" ? "Protected proof" : "Prova protegida"}
+                                </p>
+                                <p className="font-mono text-xs text-foreground mt-1 break-all">
+                                  {shortCommitment(commitmentHash)}
+                                </p>
+                              </div>
+                              <div className="rounded-md bg-white/80 border border-emerald-100 px-3 py-2">
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                  {metadataLocale === "en" ? "Scope" : "Escopo"}
+                                </p>
+                                <p className="text-xs font-medium text-foreground mt-1">
+                                  {metadataLocale === "en" ? "Animal identifier" : "Identificador do animal"}
+                                </p>
+                              </div>
+                              <div className="rounded-md bg-white/80 border border-emerald-100 px-3 py-2">
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                  {metadataLocale === "en" ? "Version" : "Versão"}
+                                </p>
+                                <p className="text-xs font-medium text-foreground mt-1">
+                                  {typeof version === "string" ? version : "v1"}
+                                </p>
+                              </div>
+                            </div>
+                            <details>
+                              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                                {metadataLocale === "en" ? "View technical proof" : "Ver prova técnica"}
+                              </summary>
+                              <pre className="mt-2 text-xs text-foreground overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-white/80 border border-emerald-100 p-3">
+                                {compactJson(value)}
+                              </pre>
+                            </details>
+                          </div>
+                        );
+                      }
+
                       if (normalized === "car") {
                         // Collect all CARs: from metadata + from property events
                         const allCars = new Map<string, string>();
@@ -2683,46 +2777,7 @@ export default function PublicItem() {
 	                        );
 	                      }
 
-	                      if (normalized === "sisbov_commitment") {
-	                        const commitment = readCommitment(value);
-	                        return (
-	                          <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-emerald-50/70 border border-emerald-100 rounded-lg p-3.5 space-y-2">
-	                            <div className="flex items-center gap-1.5">
-	                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-	                              <p className="text-[11px] text-emerald-700 uppercase tracking-wider">
-	                                {metadataLocale === "en" ? "Protected SISBOV" : "SISBOV protegido"}
-	                              </p>
-	                            </div>
-	                            <p className="text-sm font-medium text-stone-900">
-	                              {metadataLocale === "en" ? "Identifier verified by cryptographic commitment" : "Identificador verificado por compromisso criptográfico"}
-	                            </p>
-	                            <p className="text-xs text-stone-600">
-	                              {metadataLocale === "en"
-	                                ? "The raw SISBOV number is not shown on the public page."
-	                                : "O número SISBOV bruto não é exibido na página pública."}
-	                            </p>
-	                            {commitment ? (
-	                              <div className="flex flex-wrap gap-1.5 pt-1">
-	                                {commitment.alg ? (
-	                                  <span className="rounded-full bg-white border border-emerald-100 px-2 py-0.5 text-[11px] text-emerald-800">
-	                                    {commitment.alg}
-	                                  </span>
-	                                ) : null}
-	                                {commitment.version ? (
-	                                  <span className="rounded-full bg-white border border-emerald-100 px-2 py-0.5 text-[11px] text-emerald-800">
-	                                    {commitment.version}
-	                                  </span>
-	                                ) : null}
-	                                <span className="rounded-full bg-white border border-emerald-100 px-2 py-0.5 text-[11px] font-mono text-emerald-800">
-	                                  {shortHash(commitment.value || "")}
-	                                </span>
-	                              </div>
-	                            ) : null}
-	                          </div>
-	                        );
-	                      }
-
-	                      return (
+		                      return (
 	                        <div key={`${canonicalKey}-${rawKeys.join(",")}`} className="bg-stone-50/80 rounded-lg p-3.5">
                           <div className="flex items-center gap-1.5">
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{displayLabel}</p>
@@ -2960,7 +3015,9 @@ export default function PublicItem() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {metadataLocale === "en"
                       ? `${operationalEvents.length} technical event${operationalEvents.length !== 1 ? "s are" : " is"} available to view.`
-                      : `Há ${operationalEvents.length} evento${operationalEvents.length !== 1 ? "s" : ""} técnico${operationalEvents.length !== 1 ? "s" : ""} disponível${operationalEvents.length !== 1 ? "is" : ""} para visualização.`}
+                      : operationalEvents.length === 1
+                      ? "Há 1 evento técnico disponível para visualização."
+                      : `Há ${operationalEvents.length} eventos técnicos disponíveis para visualização.`}
                   </p>
                   <Button
                     size="sm"
