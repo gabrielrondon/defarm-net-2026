@@ -13450,7 +13450,7 @@ paths:
       tags:
       - Items
       summary: GET /items/:id
-      description: 'Retrieve detailed information about a specific item by UUID.
+      description: 'Retrieve detailed information about a specific item by UUID or DFID.
 
 
         **What it returns:**
@@ -13479,9 +13479,9 @@ paths:
 
         **Note:**
 
-        This endpoint uses UUID (internal database ID), not DFID.
-
-        To query by DFID, use `GET /api/items?dfid=DFID-...` instead.
+        The `id` accepts EITHER the internal UUID OR the DFID (e.g. the DFID returned on
+        ingestion) — a UUID is used directly, anything else is resolved as a DFID. So a partner
+        can read an animal back by the DFID it received, with no resolve step.
 
 
         **Use cases:**
@@ -13508,11 +13508,10 @@ paths:
       parameters:
       - name: id
         in: path
-        description: Item ID
+        description: Item UUID or DFID
         required: true
         schema:
           type: string
-          format: uuid
       responses:
         '200':
           description: Item found
