@@ -987,8 +987,13 @@
       "done": {
         "sendAnother": "Send another file",
         "title": "Ingestion complete!",
-        "items": "Items",
-        "batches": "Batches",
+        "received": "Received",
+        "tracked": "Tracked",
+        "needAttention": "Need attention",
+        "attentionTitle": "{{count}} need attention:",
+        "attentionMore": "+ {{count}} more",
+        "creditHolds": "<strong>{{count}}</strong> on hold for credit on your account",
+        "viewPanel": "view panel",
         "itemsPublished": "Published items",
         "moreGeneric": "+ {{count}} more"
       },

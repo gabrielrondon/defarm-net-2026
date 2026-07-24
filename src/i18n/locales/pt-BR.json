@@ -987,8 +987,13 @@
       "done": {
         "sendAnother": "Enviar outro arquivo",
         "title": "Ingestão concluída!",
-        "items": "Itens",
-        "batches": "Lotes",
+        "received": "Recebidos",
+        "tracked": "Rastreados",
+        "needAttention": "Precisam de atenção",
+        "attentionTitle": "{{count}} precisam de atenção:",
+        "attentionMore": "+ {{count}} outro(s)",
+        "creditHolds": "<strong>{{count}}</strong> em espera de crédito na sua conta",
+        "viewPanel": "ver painel",
         "itemsPublished": "Itens publicados",
         "moreGeneric": "+ {{count}} outro(s)"
       },

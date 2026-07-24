@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
+import { getMyUsage } from "@/lib/api/partner-entitlements";
 import {
   partnerIntake,
   partnerIntakePreview,
@@ -14,10 +16,12 @@ import {
 import type { Circuit } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import {
+  AlertTriangle,
   ArrowRight,
   Check,
   CheckCircle2,
   ChevronRight,
+  Coins,
   ExternalLink,
   FileUp,
   Key,
@@ -643,13 +647,25 @@ function TestResults({ result }: { result: PartnerIntakeResponse }) {
 
 function DoneResults({ result }: { result: PartnerIntakeResponse }) {
   const { t } = useTranslation();
-  const totalRows = result.summary?.total_rows ?? 0;
-  // Alinhado ao campo canônico items_created (o mesmo que o TestResults usa) — antes
-  // lia summary.items e divergia da contagem mostrada no teste vs na publicação.
-  const itemsLinked = result.summary?.items_created ?? result.items?.length ?? 0;
-  const batchCount = result.verbose?.routed_batches?.length ?? 0;
+  const s = result.summary;
+  // #341: resumo em linguagem de gado. Recebidos = linhas enviadas; rastreados = os que
+  // ganharam trilha (criados + enriquecidos); precisam de atenção = os que não entraram.
+  const received = s?.total_rows ?? 0;
+  const tracked = (s?.items_created ?? 0) + (s?.items_enriched ?? 0);
+  const errors = result.errors || [];
+  const needAttention = s?.unresolved_rows ?? errors.length;
   const items = result.items || [];
   const circuitLinks = result.verbose?.circuit_links ?? [];
+
+  // "Em espera de crédito" NÃO vem na resposta: o gate de crédito roda async, DEPOIS do
+  // retorno, e o número é da CONTA inteira (não deste lote). Lemos do /partner/usage e
+  // rotulamos "na sua conta" — o painel de saldo (#340) é a fonte da verdade.
+  const usageQuery = useQuery({
+    queryKey: ["partner-usage"],
+    queryFn: getMyUsage,
+    retry: false,
+  });
+  const heldOnAccount = usageQuery.data?.holds_pending;
 
   return (
     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-8 space-y-5">
@@ -660,11 +676,63 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
         <h3 className="text-foreground">{t("portal.ingestion.done.title")}</h3>
       </div>
 
+      {/* Resumo humano: recebidos · rastreados · precisam de atenção */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label={t("portal.ingestion.stats.rows")} value={totalRows} />
-        <StatCard label={t("portal.ingestion.done.items")} value={itemsLinked} variant="primary" />
-        <StatCard label={t("portal.ingestion.done.batches")} value={batchCount} />
+        <StatCard label={t("portal.ingestion.done.received")} value={received} />
+        <StatCard label={t("portal.ingestion.done.tracked")} value={tracked} variant="primary" />
+        <StatCard
+          label={t("portal.ingestion.done.needAttention")}
+          value={needAttention}
+          variant={needAttention > 0 ? "destructive" : undefined}
+        />
       </div>
+
+      {/* Precisam de atenção: o motivo em linguagem humana (message do #334, não reason_code cru) */}
+      {errors.length > 0 && (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-left space-y-1">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            {t("portal.ingestion.done.attentionTitle", { count: errors.length })}
+          </p>
+          <ul className="space-y-0.5 list-disc pl-4">
+            {errors.slice(0, 5).map((e, i) => (
+              <li key={i} className="text-xs text-muted-foreground">
+                {e.message || e.reason_code}
+              </li>
+            ))}
+          </ul>
+          {errors.length > 5 && (
+            <p className="text-xs text-muted-foreground">
+              {t("portal.ingestion.done.attentionMore", { count: errors.length - 5 })}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Em espera de crédito — da CONTA (holds são async + agregados), com link ao painel */}
+      {heldOnAccount !== undefined && (
+        <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <Coins className="h-3.5 w-3.5 shrink-0" />
+          <Trans
+            i18nKey="portal.ingestion.done.creditHolds"
+            values={{ count: heldOnAccount }}
+            components={{
+              strong: (
+                <strong
+                  className={
+                    heldOnAccount > 0 ? "text-amber-700 dark:text-amber-400" : "text-foreground"
+                  }
+                />
+              ),
+            }}
+          />
+          {heldOnAccount > 0 && (
+            <Link to="/app/parceiro" className="text-primary underline underline-offset-2">
+              {t("portal.ingestion.done.viewPanel")}
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Sample DFIDs */}
       {items.length > 0 && (
