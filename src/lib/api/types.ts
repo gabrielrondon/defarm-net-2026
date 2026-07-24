@@ -975,6 +975,21 @@ export interface CreatePartnerApiKeyResponse {
   message: string;
 }
 
+/**
+ * Resposta do endpoint 1-clique `POST /partner/integration-key` (#336/#350): minta a
+ * chave de envio com scope `workspace_ingestion` e staging resolvidos automaticamente —
+ * sem expor circuito/scope. `api_key` é mostrado só na criação.
+ */
+export interface IntegrationKeyResponse {
+  id: string;
+  key_name: string;
+  api_key: string;
+  expires_at?: string | null;
+  rate_limit_per_minute?: number | null;
+  rate_limit_per_day?: number | null;
+  message: string;
+}
+
 /** Edição de api-key. Metadados + (Onda G) scope editável. Campos ausentes não mudam. */
 export interface EditPartnerApiKeyRequest {
   key_name?: string;

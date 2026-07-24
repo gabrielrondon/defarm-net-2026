@@ -4,6 +4,7 @@ import type {
   CreateApiKeyResponse,
   CreatePartnerApiKeyRequest,
   CreatePartnerApiKeyResponse,
+  IntegrationKeyResponse,
   EditPartnerApiKeyRequest,
   PartnerApiKeyResponse,
   ApiKeyMetricsResponse,
@@ -45,6 +46,20 @@ export async function createPartnerApiKey(
   data: CreatePartnerApiKeyRequest
 ): Promise<CreatePartnerApiKeyResponse> {
   return registryRequest<CreatePartnerApiKeyResponse>("/partner/api-keys", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Mint da chave de integração em 1 chamada, zero decisões (#336/#350): o scope
+ * `workspace_ingestion` e o circuito de staging são resolvidos no servidor — nada de
+ * circuito/scope na tela. Requer JWT (é a porta de entrada). `api_key` vem só aqui.
+ */
+export async function createIntegrationKey(
+  data: { key_name?: string; description?: string; expires_in_days?: number } = {}
+): Promise<IntegrationKeyResponse> {
+  return registryRequest<IntegrationKeyResponse>("/partner/integration-key", {
     method: "POST",
     body: JSON.stringify(data),
   });
