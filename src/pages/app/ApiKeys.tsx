@@ -877,7 +877,12 @@ export default function ApiKeys() {
 
       {/* Revealed Key Dialog */}
       <Dialog open={!!revealedKey} onOpenChange={() => setRevealedKey(null)}>
-        <DialogContent>
+        {/* A chave só vem na criação — clicar fora / Esc a descartaria pra sempre.
+            Forçamos fechar pelo botão explícito (o X e "Entendi" seguem funcionando). */}
+        <DialogContent
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-accent-foreground" />
