@@ -49,6 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   listPartnerApiKeys,
   createPartnerApiKey,
+  createIntegrationKey,
   revokePartnerApiKey,
   editPartnerApiKey,
   getPartnerApiKeyMetrics,
@@ -77,6 +78,8 @@ export default function ApiKeys() {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  // #339: 1-click integration-key mint (partner workspaces) — separate loading flag
+  const [integrating, setIntegrating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyScope, setNewKeyScope] = useState<PartnerApiKeyScope>(
     isPartnerWorkspace ? "workspace_ingestion" : "circuit"
@@ -197,6 +200,37 @@ export default function ApiKeys() {
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  // #339: gerar a chave de integração em 1 clique — sem dialog, sem escolher scope
+  // nem circuito. Bate no endpoint dedicado (#336/#350) que fixa tudo no servidor.
+  const handleCreateIntegrationKey = async () => {
+    setIntegrating(true);
+    try {
+      const result = await createIntegrationKey();
+      if (result?.api_key) {
+        setRevealedKey(result.api_key);
+        toast({
+          title: t("portal.apikeys.toasts.created"),
+          description: result.message || t("portal.apikeys.toasts.createdDesc"),
+        });
+      } else {
+        toast({
+          title: t("portal.apikeys.toasts.createdNoValue"),
+          description: t("portal.apikeys.toasts.createdNoValueDesc"),
+          variant: "destructive",
+        });
+      }
+      fetchData();
+    } catch (err) {
+      toast({
+        title: t("portal.apikeys.toasts.createError"),
+        description: err instanceof Error ? err.message : t("portal.common.tryAgain"),
+        variant: "destructive",
+      });
+    } finally {
+      setIntegrating(false);
     }
   };
 
@@ -372,21 +406,45 @@ export default function ApiKeys() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={() => {
-              if (isPartnerWorkspace) {
-                setNewKeyScope("workspace_ingestion");
-                if (!newKeyStagingCircuit) setNewKeyStagingCircuit(getDefaultStagingCircuit());
-              } else {
+          {isPartnerWorkspace ? (
+            // #339: caminho de 1 clique — a chave de integração é o padrão; o dialog
+            // avançado (scope/circuito) fica atrás de um botão secundário discreto.
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleCreateIntegrationKey}
+                disabled={integrating}
+                className="btn-offset"
+              >
+                {integrating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
+                {t("portal.apikeys.header.integrationKey")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setNewKeyScope("workspace_ingestion");
+                  if (!newKeyStagingCircuit) setNewKeyStagingCircuit(getDefaultStagingCircuit());
+                  setCreateOpen(true);
+                }}
+              >
+                {t("portal.apikeys.header.advanced")}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={() => {
                 setNewKeyScope("circuit");
-              }
-              setCreateOpen(true);
-            }}
-            className="btn-offset"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {t("portal.apikeys.header.newKey")}
-          </Button>
+                setCreateOpen(true);
+              }}
+              className="btn-offset"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t("portal.apikeys.header.newKey")}
+            </Button>
+          )}
         </div>
       </div>
 

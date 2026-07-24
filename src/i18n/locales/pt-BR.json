@@ -1657,7 +1657,9 @@
         "subtitle": "Gerencie suas chaves de acesso para integração",
         "docsPrefix": "Documentação:",
         "docsLink": "como usar API key no quickstart",
-        "newKey": "Nova API Key"
+        "newKey": "Nova API Key",
+        "integrationKey": "Gerar chave de integração",
+        "advanced": "Avançado"
       },
       "empty": "Nenhuma API Key criada",
       "emptyDesc": "Crie uma chave para integrar com a API do DeFarm",
