@@ -1844,12 +1844,20 @@
       "subtitle": "Send data, monitor processing, and manage client routing."
     },
     "usage": {
-      "title": "Tokenizations & balance",
-      "balance": "Balance",
+      "title": "Balance & status",
+      "balanceLabel": "Balance",
+      "animals": "animals",
+      "unlimited": "Unlimited",
+      "unlimitedDetail": "No metering on this workspace",
+      "balanceDetail": "{{credits}} credits · {{cost}}/animal",
+      "heldLabel": "On hold",
+      "heldDetail": "waiting on credit",
+      "attentionLabel": "Need attention",
+      "attentionDetail": "identifiers to fix",
+      "attentionHint": "Some submissions have identifier issues — review them under Routing so they enter tracking.",
       "today": "Today",
       "month": "Month",
       "total": "Total",
-      "queued": "Queued",
       "queuedNote": "Received and queued for tokenization — not an error. They go on-chain as soon as credit is available.",
       "requestBalance": "Request balance"
     },

@@ -1844,12 +1844,20 @@
       "subtitle": "Envie dados, acompanhe processamento e mantenha o roteamento dos seus clientes."
     },
     "usage": {
-      "title": "Tokenizações & saldo",
-      "balance": "Saldo",
+      "title": "Saldo & status",
+      "balanceLabel": "Saldo",
+      "animals": "animais",
+      "unlimited": "Ilimitado",
+      "unlimitedDetail": "Sem cobrança neste workspace",
+      "balanceDetail": "{{credits}} créditos · {{cost}}/animal",
+      "heldLabel": "Em espera",
+      "heldDetail": "aguardando crédito",
+      "attentionLabel": "Precisam de atenção",
+      "attentionDetail": "identificadores a corrigir",
+      "attentionHint": "Há envios com pendência de identificador — revise em Roteamento para que entrem no rastreio.",
       "today": "Hoje",
       "month": "Mês",
       "total": "Total",
-      "queued": "Na fila",
       "queuedNote": "Recebidos e na fila para tokenizar — não é erro. Entram na blockchain assim que houver crédito disponível.",
       "requestBalance": "Solicitar saldo"
     },

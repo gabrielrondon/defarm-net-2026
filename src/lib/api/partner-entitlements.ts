@@ -25,7 +25,18 @@ export interface PartnerUsage {
   tokenizations_today: number;
   tokenizations_month: number;
   balance_remaining: number;
+  /** Saldo já convertido em animais (floor(balance_remaining / credit_cost_creation)). */
+  balance_in_animals: number;
+  /** Créditos por animal novo (default 100; pode ter override por workspace). */
+  credit_cost_creation: number;
+  /**
+   * false = workspace sem cobrança (tokeniza ILIMITADO). Nesse caso exiba "ilimitado" e
+   * IGNORE balance_in_animals (vem 0 por não haver linha, não por saldo esgotado).
+   */
+  entitlement_provisioned: boolean;
   holds_pending: number;
+  /** Identificadores distintos com issue de ingestão aberta (mesmo filtro do /ingestions/issues). */
+  pending_issues: number;
 }
 
 /** Entitlement + usage, as returned by the admin list/get endpoints. */
