@@ -1845,7 +1845,6 @@
     },
     "usage": {
       "title": "Balance & status",
-      "balance": "Balance",
       "balanceLabel": "Balance",
       "animals": "animals",
       "unlimited": "Unlimited",
@@ -1859,7 +1858,6 @@
       "today": "Today",
       "month": "Month",
       "total": "Total",
-      "queued": "Queued",
       "queuedNote": "Received and queued for tokenization — not an error. They go on-chain as soon as credit is available.",
       "requestBalance": "Request balance"
     },

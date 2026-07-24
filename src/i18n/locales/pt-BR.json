@@ -1845,7 +1845,6 @@
     },
     "usage": {
       "title": "Saldo & status",
-      "balance": "Saldo",
       "balanceLabel": "Saldo",
       "animals": "animais",
       "unlimited": "Ilimitado",
@@ -1859,7 +1858,6 @@
       "today": "Hoje",
       "month": "Mês",
       "total": "Total",
-      "queued": "Na fila",
       "queuedNote": "Recebidos e na fila para tokenizar — não é erro. Entram na blockchain assim que houver crédito disponível.",
       "requestBalance": "Solicitar saldo"
     },
