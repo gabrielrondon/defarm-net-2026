@@ -1302,6 +1302,19 @@ export default function PublicItem() {
       }
       if (!identifierType || !identifierValue) return;
 
+      // LGPD: as chaves pseudonimizadas (SISBOV, e a identidade ISO do animal: chip/RFID/
+      // brinco/ear_tag) NÃO são resolvíveis publicamente — o backend responde 404 de propósito
+      // (um resolve anônimo por elas seria um oráculo de confirmação sobre a identidade do
+      // animal). Não dá pra redirecionar pro DFID sem reabrir esse oráculo. Mostra uma mensagem
+      // clara em vez de tentar resolver: o caminho é o QR/link direto /i/{dfid}.
+      if (SENSITIVE_PUBLIC_IDS.has(identifierType.toLowerCase())) {
+        setResolveError(
+          "Por privacidade (LGPD), o SISBOV/brinco/chip não resolve a página pública de forma anônima. " +
+            "Use o QR do animal ou o link direto /i/{DFID}. O número completo fica visível só para membros autorizados do circuito.",
+        );
+        return;
+      }
+
       setIsResolvingRef(true);
       setResolveError(null);
       setResolveDeprecated(false);
