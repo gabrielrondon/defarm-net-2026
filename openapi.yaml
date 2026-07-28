@@ -11975,14 +11975,26 @@ paths:
       description: '**Public endpoint** - No authentication required.
 
 
-        Resolve a canonical identifier (for example `sisbov` or `chip`) to the current
-        public DeFarm item URL.
+        Resolve a NON-personal, NON-pseudonymized canonical identifier to the current
+        public DeFarm item URL. Only land identifiers resolve anonymously (`car` for LAND
+        items, `ccir`, `incra`, `nirf`, `cib`, `matricula`, `georef`, `land_dfid`).
+
+
+        Personal keys (`cpf`, `cnpj`, `inscricao_estadual`, `gta`) and the PSEUDONYMIZED
+        identity keys — `sisbov` and the animal ISO identity (`chip`, `rfid`, `ear_tag`,
+        `brinco`) — return a uniform `404`: a public confirmation oracle over an enumerable
+        identity space would be as powerful as reversing the keyed commitment (LGPD). Those
+        keys stay resolvable on the AUTHENTICATED surface for circuit members. To reach an
+        animal''s public page from a physical tag, point the QR at `/i/{dfid}` (DeFarm-
+        generated), not at the identifier.
         '
       operationId: resolve_public_item_by_identifier
       parameters:
       - name: identifier_type
         in: path
-        description: Identifier type (for example sisbov, chip, ie, cnpj, cpf).
+        description: 'Public-safe identifier type (land keys: car [LAND only], ccir, incra,
+          nirf, cib, matricula, georef, land_dfid). Personal keys (cpf/cnpj/ie/gta) and
+          pseudonymized identity keys (sisbov/chip/rfid/ear_tag/brinco) return 404.'
         required: true
         schema:
           type: string
