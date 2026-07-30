@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { PartnerOverview } from "@/components/partner";
+import { PartnerConnectionPipe, PartnerOverview } from "@/components/partner";
 import { PartnerUsageCard } from "@/components/partner/PartnerUsageCard";
 import { Languages } from "lucide-react";
 import { usePartnerPortalLocale } from "@/components/partner/usePartnerPortalLocale";
@@ -53,6 +53,10 @@ export default function PartnerPortal() {
           {t("portal.portal.subtitle")}
         </p>
       </div>
+
+      {/* Cano de conexão (fase 1 do redesign): "meus dados já valem em algum
+          circuito de destino?" — o estado mais importante do portal, no topo. */}
+      <PartnerConnectionPipe />
 
       <PartnerUsageCard />
 

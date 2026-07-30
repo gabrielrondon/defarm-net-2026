@@ -792,6 +792,51 @@
     "gerbov": "Parceiro de Dados: ERP"
   },
   "portal": {
+    "pipe": {
+      "title": "Para onde vão os seus dados",
+      "sends": "Seus envios",
+      "sendsHint": "API · CSV",
+      "stagingHint": "circuito de teste",
+      "circuitHint": "seu circuito",
+      "noneBadge": "Sem circuito de destino",
+      "noneNote": "Seus dados estão registrados, mas ainda não alimentam nenhum outro circuito.",
+      "connectCta": "Conectar a um circuito",
+      "pendingBadge": "Pedido enviado em {{date}}",
+      "pendingNote": "O dono do circuito recebeu seu pedido. Nada a fazer — avisamos quando aprovar.",
+      "cancelRequest": "Cancelar pedido",
+      "connectedBadge": "Conectado",
+      "connectedNote": "Tudo que você envia aparece automaticamente no circuito conectado.",
+      "targetActiveHint": "recebendo automaticamente",
+      "targetPendingHint": "aguardando aprovação",
+      "addAnother": "Conectar outro circuito",
+      "picker": {
+        "title": "Escolher circuito de destino",
+        "subtitle": "Circuitos disponíveis para receber os seus dados. O dono do circuito precisa aprovar o pedido.",
+        "search": "Buscar circuito…",
+        "recommended": "Recomendado",
+        "counts": "{{items}} itens · {{members}} membros",
+        "empty": "Nenhum circuito disponível encontrado."
+      },
+      "consent": {
+        "title": "Conectar a {{name}}",
+        "subtitle": "Você está pedindo para {{source}} alimentar {{target}}. Depois da aprovação, tudo que você enviar aparece lá automaticamente.",
+        "question": "O que compartilhar com esse circuito?",
+        "skeletonLabel": "Só o registro dos itens",
+        "skeletonDesc": "Existência, identificação e movimentações. Dados detalhados continuam privados no seu circuito.",
+        "fullLabel": "Registro + dados detalhados",
+        "fullDesc": "Inclui também atributos como peso, vacinas e manejo — útil quando o destino exige o dossiê completo.",
+        "recommended": "Recomendado para começar",
+        "privacy": "Dados pessoais nunca são compartilhados. Você pode desconectar a qualquer momento.",
+        "cancel": "Cancelar",
+        "submit": "Enviar pedido de conexão"
+      },
+      "toast": {
+        "requestedTitle": "Pedido enviado",
+        "requestedDesc": "Avisamos quando o dono do circuito aprovar a conexão.",
+        "canceledTitle": "Pedido cancelado",
+        "errorTitle": "Algo deu errado"
+      }
+    },
     "enums": {
       "routeType": {
         "car": "CAR",

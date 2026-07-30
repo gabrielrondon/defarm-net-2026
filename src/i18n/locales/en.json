@@ -792,6 +792,51 @@
     "gerbov": "Data Partner: ERP"
   },
   "portal": {
+    "pipe": {
+      "title": "Where your data goes",
+      "sends": "Your submissions",
+      "sendsHint": "API · CSV",
+      "stagingHint": "test circuit",
+      "circuitHint": "your circuit",
+      "noneBadge": "No destination circuit",
+      "noneNote": "Your data is registered, but it doesn't feed any other circuit yet.",
+      "connectCta": "Connect to a circuit",
+      "pendingBadge": "Request sent on {{date}}",
+      "pendingNote": "The circuit owner received your request. Nothing to do — we'll let you know once it's approved.",
+      "cancelRequest": "Cancel request",
+      "connectedBadge": "Connected",
+      "connectedNote": "Everything you send shows up automatically in the connected circuit.",
+      "targetActiveHint": "receiving automatically",
+      "targetPendingHint": "awaiting approval",
+      "addAnother": "Connect another circuit",
+      "picker": {
+        "title": "Choose a destination circuit",
+        "subtitle": "Circuits available to receive your data. The circuit owner needs to approve the request.",
+        "search": "Search circuits…",
+        "recommended": "Recommended",
+        "counts": "{{items}} items · {{members}} members",
+        "empty": "No available circuits found."
+      },
+      "consent": {
+        "title": "Connect to {{name}}",
+        "subtitle": "You are asking {{source}} to feed {{target}}. Once approved, everything you send shows up there automatically.",
+        "question": "What to share with this circuit?",
+        "skeletonLabel": "Only the item registry",
+        "skeletonDesc": "Existence, identification and movements. Detailed data stays private in your circuit.",
+        "fullLabel": "Registry + detailed data",
+        "fullDesc": "Also includes attributes like weight, vaccines and handling — useful when the destination requires the full dossier.",
+        "recommended": "Recommended to start",
+        "privacy": "Personal data is never shared. You can disconnect at any time.",
+        "cancel": "Cancel",
+        "submit": "Send connection request"
+      },
+      "toast": {
+        "requestedTitle": "Request sent",
+        "requestedDesc": "We'll let you know once the circuit owner approves the connection.",
+        "canceledTitle": "Request canceled",
+        "errorTitle": "Something went wrong"
+      }
+    },
     "enums": {
       "routeType": {
         "car": "CAR",

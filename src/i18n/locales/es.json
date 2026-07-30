@@ -929,6 +929,51 @@
     "gerbov": "Data Partner: ERP"
   },
   "portal": {
+    "pipe": {
+      "title": "Adónde van tus datos",
+      "sends": "Tus envíos",
+      "sendsHint": "API · CSV",
+      "stagingHint": "circuito de prueba",
+      "circuitHint": "tu circuito",
+      "noneBadge": "Sin circuito de destino",
+      "noneNote": "Tus datos están registrados, pero todavía no alimentan ningún otro circuito.",
+      "connectCta": "Conectar a un circuito",
+      "pendingBadge": "Solicitud enviada el {{date}}",
+      "pendingNote": "El dueño del circuito recibió tu solicitud. Nada que hacer — te avisamos cuando la apruebe.",
+      "cancelRequest": "Cancelar solicitud",
+      "connectedBadge": "Conectado",
+      "connectedNote": "Todo lo que envías aparece automáticamente en el circuito conectado.",
+      "targetActiveHint": "recibiendo automáticamente",
+      "targetPendingHint": "esperando aprobación",
+      "addAnother": "Conectar otro circuito",
+      "picker": {
+        "title": "Elegir circuito de destino",
+        "subtitle": "Circuitos disponibles para recibir tus datos. El dueño del circuito debe aprobar la solicitud.",
+        "search": "Buscar circuito…",
+        "recommended": "Recomendado",
+        "counts": "{{items}} ítems · {{members}} miembros",
+        "empty": "No se encontraron circuitos disponibles."
+      },
+      "consent": {
+        "title": "Conectar a {{name}}",
+        "subtitle": "Estás pidiendo que {{source}} alimente a {{target}}. Una vez aprobado, todo lo que envíes aparece allí automáticamente.",
+        "question": "¿Qué compartir con este circuito?",
+        "skeletonLabel": "Solo el registro de los ítems",
+        "skeletonDesc": "Existencia, identificación y movimientos. Los datos detallados siguen privados en tu circuito.",
+        "fullLabel": "Registro + datos detallados",
+        "fullDesc": "Incluye también atributos como peso, vacunas y manejo — útil cuando el destino exige el expediente completo.",
+        "recommended": "Recomendado para empezar",
+        "privacy": "Los datos personales nunca se comparten. Puedes desconectar en cualquier momento.",
+        "cancel": "Cancelar",
+        "submit": "Enviar solicitud de conexión"
+      },
+      "toast": {
+        "requestedTitle": "Solicitud enviada",
+        "requestedDesc": "Te avisamos cuando el dueño del circuito apruebe la conexión.",
+        "canceledTitle": "Solicitud cancelada",
+        "errorTitle": "Algo salió mal"
+      }
+    },
     "enums": {
       "routeType": {
         "car": "CAR",
