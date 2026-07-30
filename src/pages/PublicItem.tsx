@@ -2238,7 +2238,7 @@ export default function PublicItem() {
                 <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title={localized(metadataLocale, "Selo de origem", "Origin seal", "Sello de origen")}>
                   <Tag className="h-3.5 w-3.5" />
                 </a>
-                <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Comparar">
+                <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title={localized(metadataLocale, "Comparar", "Compare", "Comparar")}>
                   <Scale className="h-3.5 w-3.5" />
                 </a>
               </div>

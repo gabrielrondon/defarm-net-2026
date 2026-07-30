@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Download, Share2, ExternalLink, Copy, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,16 @@ export function AssetQRCode({
   const { toast } = useToast();
   // Trilíngue local (a página pública tem toggle próprio, fora do i18next da app).
   const L = (pt: string, en: string, es: string) => (locale === "en" ? en : locale === "es" ? es : pt);
+
+  // Esc fecha o certificado (paridade com clicar fora / no X).
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
 
   const publicUrl = `https://defarm.net/i/${dfid}`;
   const latestCidUrl = latestCid ? `https://gateway.pinata.cloud/ipfs/${latestCid}` : null;
@@ -324,6 +334,7 @@ export function AssetQRCode({
             <button
               onClick={() => setFullscreen(false)}
               className="absolute -top-12 right-0 p-2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={L("Fechar certificado", "Close certificate", "Cerrar certificado")}
             >
               <X className="h-6 w-6" />
             </button>

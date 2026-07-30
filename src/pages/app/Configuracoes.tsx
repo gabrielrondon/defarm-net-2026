@@ -26,6 +26,7 @@ import {
   Globe,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PARTNER_CANVAS } from "@/components/partner/PartnerPage";
 import { cn } from "@/lib/utils";
 import {
   addWorkspaceMember,
@@ -756,7 +757,7 @@ export default function Configuracoes() {
                   </div>
                   <div className="space-y-2">
                     {workspaceMembers.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Nenhum membro encontrado.</p>
+                      <p className="text-xs text-muted-foreground">Nenhum membro ainda — convide pelo e-mail no campo acima.</p>
                     ) : (
                       workspaceMembers.map((member) => (
                         <div key={member.user_id} className="flex items-center justify-between border rounded-md p-3 bg-background">
@@ -829,7 +830,7 @@ export default function Configuracoes() {
                     </Button>
                   </div>
                   {workspaces.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhum workspace encontrado.</p>
+                    <p className="text-xs text-muted-foreground">Nenhum workspace listado — clique em Atualizar para recarregar.</p>
                   ) : (
                     workspaces.map((ws) => (
                       <div key={ws.id} className="flex items-center justify-between border rounded-md p-3 bg-background">
@@ -1062,7 +1063,7 @@ export default function Configuracoes() {
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {sessions.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhuma sessão encontrada
+                      Nenhuma sessão ativa além desta — bom sinal de segurança.
                     </p>
                   ) : (
                     sessions.map((session) => (
@@ -1117,33 +1118,31 @@ export default function Configuracoes() {
     }
   };
 
+  // Voltar determinístico (o navigate(-1) ejetava quem chegava por URL direta).
+  const backTo = user?.workspace_type === "partner" ? "/app/parceiro" : "/app";
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className={PARTNER_CANVAS}>
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(backTo)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar
         </button>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-            <Settings className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-            <p className="text-muted-foreground">Gerencie sua conta e preferências</p>
-          </div>
-        </div>
+        <p className="section-label mb-1">Conta</p>
+        <h1 className="text-foreground">Configurações</h1>
+        <p className="text-sm text-muted-foreground mt-1">Gerencie sua conta e preferências</p>
       </div>
 
       {/* Content */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="md:col-span-1">
-          <div className="bg-background border border-border rounded-2xl p-3 space-y-1">
+          <div className="bg-card border border-border rounded-2xl p-3 space-y-1">
             <TabButton
               icon={User}
               label="Perfil"
@@ -1174,6 +1173,7 @@ export default function Configuracoes() {
         {/* Main content */}
         <div className="md:col-span-3">{renderContent()}</div>
       </div>
+    </div>
     </div>
   );
 }
