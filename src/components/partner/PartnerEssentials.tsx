@@ -72,13 +72,35 @@ interface EssentialCard {
   key: "apiKey" | "send" | "activity" | "showcase";
   to: string;
   icon: typeof KeyRound;
+  /** Família de cor do chip do ícone — colorido com calma, um matiz por ação. */
+  chip: string;
 }
 
 const CARDS: EssentialCard[] = [
-  { key: "apiKey", to: "/app/api-keys", icon: KeyRound },
-  { key: "send", to: "/app/parceiro/ingestao", icon: Upload },
-  { key: "activity", to: "/app/parceiro/logs", icon: Activity },
-  { key: "showcase", to: "/app/parceiro/embed", icon: Globe },
+  {
+    key: "apiKey",
+    to: "/app/api-keys",
+    icon: KeyRound,
+    chip: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+  },
+  {
+    key: "send",
+    to: "/app/parceiro/ingestao",
+    icon: Upload,
+    chip: "bg-primary/10 text-primary",
+  },
+  {
+    key: "activity",
+    to: "/app/parceiro/logs",
+    icon: Activity,
+    chip: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400",
+  },
+  {
+    key: "showcase",
+    to: "/app/parceiro/embed",
+    icon: Globe,
+    chip: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400",
+  },
 ];
 
 export function PartnerEssentials() {
@@ -152,7 +174,7 @@ export function PartnerEssentials() {
                   {heroBadge}
                 </Badge>
               )}
-              <span className="w-10 h-10 rounded-lg bg-primary/10 text-primary grid place-items-center">
+              <span className={cn("w-10 h-10 rounded-lg grid place-items-center", card.chip)}>
                 <card.icon className="h-5 w-5" />
               </span>
               <h3 className="text-base font-semibold text-foreground">
@@ -185,33 +207,27 @@ export function PartnerEssentials() {
         })}
       </div>
 
-      {/* Rodapé "Avançado" — espelha o grupo colapsável do menu, fiel ao mock */}
-      <div className="mt-5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[13px] text-muted-foreground">
+      {/* Rodapé "Avançado" — espelha o grupo colapsável do menu */}
+      <div className="mt-6 flex items-center gap-x-5 gap-y-1.5 flex-wrap text-[13px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5 font-medium">
           <Settings className="h-3.5 w-3.5" />
           {t("portal.home.advanced")}
         </span>
-        <span className="text-border">·</span>
         <Link to="/app/parceiro/roteamento" className="hover:text-primary transition-colors">
           {t("portal.home.advRouting")}
         </Link>
-        <span className="text-border">·</span>
         <Link to="/app/webhooks" className="hover:text-primary transition-colors">
           Webhooks
         </Link>
-        <span className="text-border">·</span>
         <Link to="/app/cli" className="hover:text-primary transition-colors">
           CLI
         </Link>
-        <span className="text-border">·</span>
         <Link to="/app/sdk" className="hover:text-primary transition-colors">
           SDK
         </Link>
-        <span className="text-border">·</span>
         <Link to="/app/parceiro/kit" className="hover:text-primary transition-colors">
           {t("portal.home.advKit")}
         </Link>
-        <span className="text-border">·</span>
         <a
           href="https://docs.defarm.net/docs/getting-started"
           target="_blank"

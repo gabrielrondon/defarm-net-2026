@@ -125,7 +125,7 @@ export function PartnerConnectionPipe() {
   });
 
   // Sem circuito padrão resolvido ainda (parceiro recém-criado): não ocupamos a
-  // home com um cano vazio — o onboarding do PartnerOverview cobre esse caso.
+  // home com um cano vazio — os botões essenciais guiam o primeiro passo.
   if (sourceQuery.isLoading || (sourceQuery.isError && !sourceId)) return null;
   if (!sourceId) return null;
 
@@ -178,7 +178,7 @@ export function PartnerConnectionPipe() {
           <p className="text-xs text-muted-foreground whitespace-nowrap">{t("portal.pipe.sendsHint")}</p>
         </div>
 
-        <div className="flex-1 min-w-8 border-t-2 border-primary" aria-hidden />
+        <div className="pipe-flow flex-1 min-w-8 border-t-2 border-primary" aria-hidden />
 
         <div className="shrink-0 rounded-lg border border-border bg-muted/30 px-3 py-2">
           <p className="text-sm font-medium text-foreground whitespace-nowrap">{source.name}</p>
@@ -187,7 +187,17 @@ export function PartnerConnectionPipe() {
           </p>
         </div>
 
-        <div className={`flex-1 min-w-8 border-t-2 ${segmentClass}`} aria-hidden />
+        <div
+          className={`relative flex-1 min-w-8 border-t-2 ${segmentClass} ${state === "connected" ? "pipe-flow" : ""}`}
+          aria-hidden
+        >
+          {/* Trecho rompido: o ✕ diz visualmente "aqui ainda não passa nada" */}
+          {state === "none" && (
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full bg-card border border-border text-muted-foreground text-[10px] leading-none grid place-items-center">
+              ✕
+            </span>
+          )}
+        </div>
 
         {primary ? (
           <div
