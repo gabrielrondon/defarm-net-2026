@@ -3,6 +3,7 @@ import { PartnerConnectionPipe } from "@/components/partner";
 import { PartnerEssentials, PartnerUsageInline } from "@/components/partner/PartnerEssentials";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { PARTNER_CANVAS } from "@/components/partner/PartnerPage";
 import {
   usePartnerPortalLocale,
   type PartnerPortalLocale,
@@ -28,7 +29,7 @@ export default function PartnerPortal() {
   const name = user?.workspace_name && user.workspace_name !== "Workspace" ? user.workspace_name : null;
 
   return (
-    <div className="-m-4 lg:-m-6 min-h-full p-4 lg:p-6 bg-[hsl(60,18%,96%)] dark:bg-background">
+    <div className={PARTNER_CANVAS}>
       <div className="max-w-6xl mx-auto">
         <div className="mb-7">
           <div className="flex items-start justify-between gap-3">

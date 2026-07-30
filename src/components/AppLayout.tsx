@@ -76,6 +76,7 @@ const navCatalog: NavItem[] = [
   { icon: Code2, label: "SDK", href: "/app/sdk" },
   { icon: PackageOpen, label: "Kit", href: "/app/parceiro/kit" },
   { icon: Share2, label: "Link de Visualização", href: "/app/parceiro/embed" },
+  { icon: Shield, label: "Verificar DFID", href: "/app/verificar" },
   { icon: Building2, label: "Docs Governo", href: "/app/governo/docs" },
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
@@ -124,6 +125,7 @@ const navGroupsByWorkspace: Partial<Record<WorkspaceType, NavGroup[]>> = {
         "https://docs.defarm.net/docs/getting-started",
         "/app/api-keys",
         "/app/webhooks",
+        "/app/verificar",
       ],
     },
   ],
@@ -250,7 +252,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       ): s is { key: string; label: string; icon: typeof BookOpen; route: string; personas?: string[] } =>
         // só exibe ações já com tela (route) e adequadas à persona atual.
         // 'read.settings' fica de fora: Configurações já tem entrada fixa no rodapé (evita duplicata).
+        // 'read.verify' no parceiro fica de fora: Verificar DFID mora no grupo
+        // Avançado do menu (redesign parceiro) — evita duplicata na seção Ações.
         s.key !== "read.settings" &&
+        !(workspaceType === "partner" && s.key === "read.verify") &&
         Boolean(s.label) &&
         Boolean(s.route) &&
         (!s.personas || s.personas.includes(workspaceType))

@@ -92,7 +92,7 @@ export function PartnerRouting() {
       <DefaultCircuitCard />
 
       {/* Add rule */}
-      <div className="rounded-xl bg-muted/40 p-4">
+      <div className="rounded-xl bg-muted/40 p-4" data-routing-form>
         <p className="text-sm font-medium text-foreground mb-3">{t("portal.routing.newRule")}</p>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
           <Select value={identifierType} onValueChange={setIdentifierType}>
@@ -132,6 +132,19 @@ export function PartnerRouting() {
             icon={Route}
             title={t("portal.routing.empty.title")}
             description={t("portal.routing.empty.desc")}
+            action={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  document
+                    .querySelector<HTMLElement>("[data-routing-form]")
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                }
+              >
+                {t("portal.routing.newRule")}
+              </Button>
+            }
           />
         ) : (
           <div className="divide-y divide-border rounded-xl border">

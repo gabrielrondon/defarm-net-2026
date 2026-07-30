@@ -1,11 +1,19 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Copy, Check, ExternalLink, GitBranch } from "lucide-react";
 import { getCircuits } from "@/lib/api/circuits";
 import { createEmbedToken, type CreateEmbedTokenResponse } from "@/lib/api/partner-routing";
 
@@ -74,24 +82,27 @@ export function PartnerEmbed() {
           <div className="space-y-1.5">
             <Label className="text-xs">{t("portal.embed.circuit")}</Label>
             {circuits.length > 0 ? (
-              <select
-                className="w-full h-9 rounded-md border border-border bg-background px-3 text-sm"
-                value={circuitId}
-                onChange={(e) => setCircuitId(e.target.value)}
-              >
-                <option value="">{t("portal.embed.selectCircuit")}</option>
-                {circuits.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={circuitId} onValueChange={setCircuitId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("portal.embed.selectCircuit")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {circuits.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : (
-              <Input
-                placeholder={t("portal.embed.circuitIdPlaceholder")}
-                value={circuitId}
-                onChange={(e) => setCircuitId(e.target.value)}
-              />
+              // Sem circuito não há o que compartilhar — o caminho é criar um,
+              // não colar um UUID cru.
+              <Button asChild variant="outline" size="sm" className="w-full justify-start">
+                <Link to="/app/circuitos/novo">
+                  <GitBranch className="h-3.5 w-3.5 mr-1.5" />
+                  {t("portal.ingestion.noCircuit.create")}
+                </Link>
+              </Button>
             )}
           </div>
           <div className="space-y-1.5">

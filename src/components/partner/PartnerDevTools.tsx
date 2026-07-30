@@ -110,7 +110,7 @@ const SDK_CATALOG: SdkItem[] = [
     repoUrl: "https://search.maven.org/",
     version: "0.1.0",
     status: "beta",
-    note: "Versao beta para ecossistema Java 11+.",
+    note: "Versão beta para ecossistema Java 11+.",
   },
   {
     id: "dotnet",
@@ -121,7 +121,7 @@ const SDK_CATALOG: SdkItem[] = [
     repoUrl: "https://www.nuget.org/packages/Defarm.Sdk",
     version: "0.1.0",
     status: "beta",
-    note: "SDK beta para integracoes .NET 8+.",
+    note: "SDK beta para integrações .NET 8+.",
   },
 ];
 

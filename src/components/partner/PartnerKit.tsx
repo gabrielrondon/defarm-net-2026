@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -123,7 +124,7 @@ function downloadTemplate(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function PartnerKit() {
+export function PartnerKit({ hideHeader = false }: { hideHeader?: boolean } = {}) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState<"none" | "curl" | "jwt" | "template">("none");
 
@@ -147,13 +148,15 @@ export function PartnerKit() {
 
   return (
     <div className="space-y-8">
-      {/* Hero intro — flat, no card */}
-      <div>
-        <h2 className="text-foreground">{t("portal.kit.title")}</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-          <Trans i18nKey="portal.kit.intro" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
-        </p>
-      </div>
+      {/* Hero intro — some quando a página (PartnerPage) já fornece h1 + intro */}
+      {!hideHeader && (
+        <div>
+          <h2 className="text-foreground">{t("portal.kit.title")}</h2>
+          <p className="text-sm text-muted-foreground mt-1 max-w-lg">
+            <Trans i18nKey="portal.kit.intro" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} />
+          </p>
+        </div>
+      )}
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -334,10 +337,10 @@ export function PartnerKit() {
           <li>{t("portal.kit.checklist.i4")}</li>
           <li><Trans i18nKey="portal.kit.checklist.i5" components={{ code: <code className="text-xs bg-muted px-1 py-0.5 rounded" /> }} /></li>
         </ol>
-        <a href="/app/api-keys" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-3">
+        <Link to="/app/api-keys" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-3">
           <Link2 className="h-3.5 w-3.5" />
           {t("portal.kit.goToApiKeys")}
-        </a>
+        </Link>
       </div>
     </div>
   );
