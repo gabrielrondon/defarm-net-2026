@@ -845,19 +845,28 @@
         "subtitle": "Circuitos disponíveis para receber os seus dados. O dono do circuito precisa aprovar o pedido.",
         "search": "Buscar circuito…",
         "recommended": "Recomendado",
-        "counts": "{{items}} itens · {{members}} membros",
         "empty": "Nenhum circuito disponível encontrado."
+      },
+      "invites": {
+        "strip": "O circuito {{name}} convidou o seu a alimentá-lo.",
+        "review": "Revisar convite",
+        "dialogTitle": "Convite de {{name}}",
+        "dialogSubtitle": "Se você aceitar, tudo que {{source}} registra passa a aparecer em {{target}}. Você pode desconectar quando quiser.",
+        "scopeSkeleton": "Este circuito receberá só o registro dos itens — existência, identificação e movimentações.",
+        "scopeFull": "Este circuito receberá o registro e também os dados detalhados (peso, vacinas, manejo).",
+        "accept": "Aceitar convite",
+        "reject": "Recusar"
       },
       "consent": {
         "title": "Conectar a {{name}}",
         "subtitle": "Você está pedindo para {{source}} alimentar {{target}}. Depois da aprovação, tudo que você enviar aparece lá automaticamente.",
         "question": "O que compartilhar com esse circuito?",
         "skeletonLabel": "Só o registro dos itens",
-        "skeletonDesc": "Existência, identificação e movimentações. Dados detalhados continuam privados no seu circuito.",
+        "skeletonDesc": "O circuito de destino vê que os itens existem, a identificação e as movimentações — com prova pública. Peso, vacinas e manejo continuam privados no seu circuito.",
         "fullLabel": "Registro + dados detalhados",
-        "fullDesc": "Inclui também atributos como peso, vacinas e manejo — útil quando o destino exige o dossiê completo.",
+        "fullDesc": "Além do registro, compartilha também os dados de manejo (peso, vacinas, histórico). Use quando o destino exigir o dossiê completo.",
         "recommended": "Recomendado para começar",
-        "privacy": "Dados pessoais nunca são compartilhados. Você pode desconectar a qualquer momento.",
+        "privacy": "Os dados pertencem ao produtor e nada é compartilhado sem este consentimento. Dados pessoais nunca são incluídos. Você pode desconectar a qualquer momento.",
         "cancel": "Cancelar",
         "submit": "Enviar pedido de conexão"
       },
@@ -865,6 +874,9 @@
         "requestedTitle": "Pedido enviado",
         "requestedDesc": "Avisamos quando o dono do circuito aprovar a conexão.",
         "canceledTitle": "Pedido cancelado",
+        "acceptedTitle": "Convite aceito",
+        "acceptedDesc": "{{count}} itens já enviados foram incluídos no circuito.",
+        "rejectedTitle": "Convite recusado",
         "errorTitle": "Algo deu errado"
       }
     },

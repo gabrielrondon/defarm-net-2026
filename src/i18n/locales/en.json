@@ -845,19 +845,28 @@
         "subtitle": "Circuits available to receive your data. The circuit owner needs to approve the request.",
         "search": "Search circuits…",
         "recommended": "Recommended",
-        "counts": "{{items}} items · {{members}} members",
         "empty": "No available circuits found."
+      },
+      "invites": {
+        "strip": "The circuit {{name}} invited yours to feed it.",
+        "review": "Review invitation",
+        "dialogTitle": "Invitation from {{name}}",
+        "dialogSubtitle": "If you accept, everything {{source}} registers starts showing up in {{target}}. You can disconnect whenever you want.",
+        "scopeSkeleton": "This circuit will receive only the item registry — existence, identification and movements.",
+        "scopeFull": "This circuit will receive the registry and also the detailed data (weight, vaccines, handling).",
+        "accept": "Accept invitation",
+        "reject": "Decline"
       },
       "consent": {
         "title": "Connect to {{name}}",
         "subtitle": "You are asking {{source}} to feed {{target}}. Once approved, everything you send shows up there automatically.",
         "question": "What to share with this circuit?",
         "skeletonLabel": "Only the item registry",
-        "skeletonDesc": "Existence, identification and movements. Detailed data stays private in your circuit.",
+        "skeletonDesc": "The destination circuit sees that the items exist, their identification and movements — with public proof. Weight, vaccines and handling stay private in your circuit.",
         "fullLabel": "Registry + detailed data",
-        "fullDesc": "Also includes attributes like weight, vaccines and handling — useful when the destination requires the full dossier.",
+        "fullDesc": "Beyond the registry, also shares the handling data (weight, vaccines, history). Use when the destination requires the full dossier.",
         "recommended": "Recommended to start",
-        "privacy": "Personal data is never shared. You can disconnect at any time.",
+        "privacy": "The data belongs to the producer and nothing is shared without this consent. Personal data is never included. You can disconnect at any time.",
         "cancel": "Cancel",
         "submit": "Send connection request"
       },
@@ -865,6 +874,9 @@
         "requestedTitle": "Request sent",
         "requestedDesc": "We'll let you know once the circuit owner approves the connection.",
         "canceledTitle": "Request canceled",
+        "acceptedTitle": "Invitation accepted",
+        "acceptedDesc": "{{count}} items you already sent were included in the circuit.",
+        "rejectedTitle": "Invitation declined",
         "errorTitle": "Something went wrong"
       }
     },

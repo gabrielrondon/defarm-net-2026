@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Loader2, Plug, Search } from "lucide-react";
+import { ArrowRight, Inbox, Loader2, Plug, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,25 +18,28 @@ import { getPartnerDefaultCircuit } from "@/lib/api/partner-routing";
 import { getCircuits } from "@/lib/api/circuits";
 import { getPublicCircuits } from "@/lib/api/join-requests";
 import {
+  acceptFeed,
   createFeedRequest,
+  feedSharesLayers,
   listCircuitFeeds,
+  rejectFeed,
   revokeCircuitFeed,
   type CircuitFeed,
 } from "@/lib/api/circuit-feeds";
 import type { PublicCircuitInfo } from "@/lib/api/types";
 
 /**
- * O "cano de conexão" do portal (redesign parceiro, fase 1): responde de cara
- * "meus dados já valem em algum circuito de destino?". Três estados — sem
- * conexão / pedido pendente / conectado — derivados dos circuit feeds que já
- * existem (Track B). O destino NÃO é fixo: o parceiro escolhe entre os
- * circuitos públicos descobríveis (featured primeiro), e pode conectar mais
- * de um. Só APIs existentes; nenhuma mudança de contrato.
+ * O "cano de conexão" do portal (redesign parceiro): responde de cara "meus
+ * dados já valem em algum circuito de destino?". O consentimento é o coração
+ * do fluxo (LGPD: o dado é do produtor; a DeFarm é neutra — recomenda, nunca
+ * conecta sozinha). Três pendências distintas, três tratamentos:
+ *  - pedido que EU enviei (direction=request): aguardo o outro lado — âmbar.
+ *  - convite que RECEBI (direction=invite, sou o source): PRECISA da minha
+ *    ação — faixa de notificação com revisar/aceitar/recusar.
+ *  - conectado: fluxo animado + o accept celebra o backfill.
+ * Só APIs existentes; nenhuma mudança de contrato.
  */
 
-// Sub-estado do trecho source→target do cano, na perspectiva do parceiro
-// (source = meu circuito padrão). Feeds onde NÃO sou o source (invites de
-// terceiros etc.) ficam fora daqui — continuam no detalhe do circuito.
 type PipeState = "none" | "pending" | "connected";
 
 export function PartnerConnectionPipe() {
@@ -48,6 +51,7 @@ export function PartnerConnectionPipe() {
   const [search, setSearch] = useState("");
   const [target, setTarget] = useState<PublicCircuitInfo | null>(null);
   const [shareLayers, setShareLayers] = useState(false);
+  const [inviteToReview, setInviteToReview] = useState<CircuitFeed | null>(null);
 
   const sourceQuery = useQuery({
     queryKey: ["partner-default-circuit"],
@@ -82,46 +86,77 @@ export function PartnerConnectionPipe() {
     return (id: string) => map.get(id) ?? `${id.slice(0, 8)}…`;
   }, [ownCircuitsQuery.data, publicQuery.data]);
 
-  // Só o que EU iniciei a partir do meu circuito padrão.
-  const outgoing = (feedsQuery.data ?? []).filter((f) => f.source_circuit_id === sourceId);
-  const active = outgoing.filter((f) => f.status === "active");
-  const pending = outgoing.filter((f) => f.status === "pending");
+  // Feeds onde meu circuito padrão é o source, por natureza da pendência.
+  const mine = (feedsQuery.data ?? []).filter(
+    (f) => f.source_circuit_id === sourceId && f.status !== "revoked"
+  );
+  const active = mine.filter((f) => f.status === "active");
+  // Pedidos que eu enviei — a bola está com o dono do destino.
+  const waiting = mine.filter((f) => f.status === "pending" && f.direction === "request");
+  // Convites que o dono de um destino me fez — a bola está COMIGO.
+  const invites = mine.filter((f) => f.status === "pending" && f.direction === "invite");
 
-  const state: PipeState = active.length > 0 ? "connected" : pending.length > 0 ? "pending" : "none";
+  const state: PipeState = active.length > 0 ? "connected" : waiting.length > 0 ? "pending" : "none";
   // O feed exibido na linha principal do cano; os demais viram lista compacta.
-  const primary: CircuitFeed | undefined = active[0] ?? pending[0];
-  const others = outgoing.filter((f) => f.id !== primary?.id && f.status !== "revoked");
+  const primary: CircuitFeed | undefined = active[0] ?? waiting[0];
+  const others = [...active, ...waiting].filter((f) => f.id !== primary?.id);
+
+  const invalidate = () =>
+    qc.invalidateQueries({ queryKey: ["partner-connection-feeds", sourceId] });
+
+  const errorToast = (err: unknown) =>
+    toast({
+      title: t("portal.pipe.toast.errorTitle"),
+      description: err instanceof Error ? err.message : String(err),
+      variant: "destructive",
+    });
 
   const requestMutation = useMutation({
     mutationFn: ({ targetId, layers }: { targetId: string; layers: boolean }) =>
       createFeedRequest(sourceId!, targetId, null, layers),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["partner-connection-feeds", sourceId] });
+      invalidate();
       toast({ title: t("portal.pipe.toast.requestedTitle"), description: t("portal.pipe.toast.requestedDesc") });
       setPickerOpen(false);
       setTarget(null);
       setShareLayers(false);
     },
-    onError: (err) =>
-      toast({
-        title: t("portal.pipe.toast.errorTitle"),
-        description: err instanceof Error ? err.message : String(err),
-        variant: "destructive",
-      }),
+    onError: errorToast,
   });
 
   const cancelMutation = useMutation({
     mutationFn: (feedId: string) => revokeCircuitFeed(sourceId!, feedId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["partner-connection-feeds", sourceId] });
+      invalidate();
       toast({ title: t("portal.pipe.toast.canceledTitle") });
     },
-    onError: (err) =>
+    onError: errorToast,
+  });
+
+  const acceptMutation = useMutation({
+    mutationFn: (feedId: string) => acceptFeed(feedId),
+    onSuccess: (res) => {
+      invalidate();
       toast({
-        title: t("portal.pipe.toast.errorTitle"),
-        description: err instanceof Error ? err.message : String(err),
-        variant: "destructive",
-      }),
+        title: t("portal.pipe.toast.acceptedTitle"),
+        description:
+          res.backfilled > 0
+            ? t("portal.pipe.toast.acceptedDesc", { count: res.backfilled })
+            : undefined,
+      });
+      setInviteToReview(null);
+    },
+    onError: errorToast,
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (feedId: string) => rejectFeed(feedId),
+    onSuccess: () => {
+      invalidate();
+      toast({ title: t("portal.pipe.toast.rejectedTitle") });
+      setInviteToReview(null);
+    },
+    onError: errorToast,
   });
 
   // Sem circuito padrão resolvido ainda (parceiro recém-criado): não ocupamos a
@@ -130,13 +165,13 @@ export function PartnerConnectionPipe() {
   if (!sourceId) return null;
 
   const source = sourceQuery.data!;
-  const connectedTargetIds = new Set(outgoing.filter((f) => f.status !== "revoked").map((f) => f.target_circuit_id));
+  const engagedTargetIds = new Set(mine.map((f) => f.target_circuit_id));
   const ownIds = new Set((ownCircuitsQuery.data ?? []).map((c) => c.id));
 
   const candidates = (publicQuery.data?.circuits ?? [])
-    .filter((c) => !ownIds.has(c.id) && !connectedTargetIds.has(c.id))
+    .filter((c) => !ownIds.has(c.id) && !engagedTargetIds.has(c.id))
     .filter((c) => (search.trim() ? c.name.toLowerCase().includes(search.trim().toLowerCase()) : true))
-    .sort((a, b) => Number(b.featured) - Number(a.featured) || b.item_count - a.item_count);
+    .sort((a, b) => Number(b.featured) - Number(a.featured));
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(i18n.language, { day: "2-digit", month: "short" });
@@ -154,7 +189,6 @@ export function PartnerConnectionPipe() {
       <Badge variant="secondary">{t("portal.pipe.noneBadge")}</Badge>
     );
 
-  // Trecho source→target: cor/traço acompanham o estado.
   const segmentClass =
     state === "connected"
       ? "border-primary"
@@ -170,6 +204,22 @@ export function PartnerConnectionPipe() {
         </p>
         {feedsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : stateBadge}
       </div>
+
+      {/* Convites recebidos: precisa de ação SUA — nunca escondemos isso */}
+      {invites.map((inv) => (
+        <div
+          key={inv.id}
+          className="mb-4 flex items-center justify-between gap-3 flex-wrap rounded-lg border border-primary/40 bg-primary/5 px-3 py-2.5"
+        >
+          <span className="flex items-center gap-2 text-sm text-foreground">
+            <Inbox className="h-4 w-4 text-primary shrink-0" />
+            {t("portal.pipe.invites.strip", { name: nameOf(inv.target_circuit_id) })}
+          </span>
+          <Button size="sm" onClick={() => setInviteToReview(inv)}>
+            {t("portal.pipe.invites.review")}
+          </Button>
+        </div>
+      ))}
 
       {/* O cano: Seus envios ─ Circuito padrão ─ Destino */}
       <div className="flex items-center overflow-x-auto pb-1">
@@ -263,7 +313,7 @@ export function PartnerConnectionPipe() {
                   ? t("portal.pipe.targetActiveHint")
                   : t("portal.pipe.targetPendingHint")}
               </span>
-              {f.status === "pending" && (
+              {f.status === "pending" && f.direction === "request" && (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -334,9 +384,6 @@ export function PartnerConnectionPipe() {
                       {c.public_description || c.description}
                     </p>
                   )}
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {t("portal.pipe.picker.counts", { items: c.item_count, members: c.member_count })}
-                  </p>
                 </button>
               ))
             )}
@@ -344,7 +391,8 @@ export function PartnerConnectionPipe() {
         </DialogContent>
       </Dialog>
 
-      {/* Passo 2: consentimento — o que compartilhar (esqueleto × carne, #Fase 5) */}
+      {/* Passo 2: consentimento — o que compartilhar. É o coração do fluxo:
+          o dado é do produtor, e nada viaja sem esta escolha explícita. */}
       <Dialog
         open={!!target}
         onOpenChange={(o) => {
@@ -413,6 +461,50 @@ export function PartnerConnectionPipe() {
             >
               {requestMutation.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
               {t("portal.pipe.consent.submit")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revisão de convite recebido: aqui quem consente é VOCÊ. Mostramos o
+          que o convite propõe compartilhar antes de aceitar. */}
+      <Dialog open={!!inviteToReview} onOpenChange={(o) => !o && setInviteToReview(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {t("portal.pipe.invites.dialogTitle", {
+                name: inviteToReview ? nameOf(inviteToReview.target_circuit_id) : "",
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("portal.pipe.invites.dialogSubtitle", {
+                source: source.name,
+                target: inviteToReview ? nameOf(inviteToReview.target_circuit_id) : "",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          {inviteToReview && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
+              {feedSharesLayers(inviteToReview)
+                ? t("portal.pipe.invites.scopeFull")
+                : t("portal.pipe.invites.scopeSkeleton")}
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground">{t("portal.pipe.consent.privacy")}</p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={rejectMutation.isPending || acceptMutation.isPending}
+              onClick={() => inviteToReview && rejectMutation.mutate(inviteToReview.id)}
+            >
+              {t("portal.pipe.invites.reject")}
+            </Button>
+            <Button
+              disabled={acceptMutation.isPending || rejectMutation.isPending}
+              onClick={() => inviteToReview && acceptMutation.mutate(inviteToReview.id)}
+            >
+              {acceptMutation.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+              {t("portal.pipe.invites.accept")}
             </Button>
           </DialogFooter>
         </DialogContent>
