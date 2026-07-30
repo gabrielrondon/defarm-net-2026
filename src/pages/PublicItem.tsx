@@ -85,17 +85,23 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const chainLabels: Record<string, string> = {
-  BEEF: "Bovinos",
-  DAIRY: "Leite",
-  PORK: "Suínos",
-  POULTRY: "Aves",
+// Trilíngue: o rótulo da cadeia acompanha o toggle PT/EN/ES da página pública.
+const chainLabels3: Record<string, [string, string, string]> = {
+  BEEF: ["Bovinos", "Cattle", "Bovinos"],
+  DAIRY: ["Leite", "Dairy", "Lácteos"],
+  PORK: ["Suínos", "Pork", "Porcinos"],
+  POULTRY: ["Aves", "Poultry", "Aves"],
 };
+function chainLabel(locale: MetadataLocale, chain: string): string {
+  const entry = chainLabels3[chain];
+  if (!entry) return chain;
+  return localized(locale, entry[0], entry[1], entry[2]);
+}
 
-const statusMap: Record<string, { text: string; className: string }> = {
-  active: { text: "Ativo", className: "bg-primary/10 text-primary" },
-  inactive: { text: "Inativo", className: "bg-muted text-muted-foreground" },
-  deprecated: { text: "Depreciado", className: "bg-destructive/10 text-destructive" },
+const statusMap: Record<string, { text: [string, string, string]; className: string }> = {
+  active: { text: ["Ativo", "Active", "Activo"], className: "bg-primary/10 text-primary" },
+  inactive: { text: ["Inativo", "Inactive", "Inactivo"], className: "bg-muted text-muted-foreground" },
+  deprecated: { text: ["Depreciado", "Deprecated", "Obsoleto"], className: "bg-destructive/10 text-destructive" },
 };
 
 type TechnicalProof = {
@@ -2158,7 +2164,7 @@ export default function PublicItem() {
             </p>
             <p className="text-xs font-bold text-stone-800 font-mono mt-1 break-all">{item.dfid}</p>
             <div className="flex flex-wrap gap-2 mt-2">
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${st.className}`}>{st.text}</span>
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${st.className}`}>{localized(metadataLocale, st.text[0], st.text[1], st.text[2])}</span>
               {sanitySummary?.lastWeight && (
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">{sanitySummary.lastWeight} kg</span>
               )}
@@ -2240,7 +2246,7 @@ export default function PublicItem() {
 
             {/* Animal identity */}
             <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-widest text-emerald-700/60 font-medium">
-              <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
+              <span>{metadata.breed ? String(metadata.breed) : chainLabel(metadataLocale, item.value_chain)}</span>
               {metadata.sex && <><span className="text-emerald-300">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
               {metadata.birth_date && <><span className="text-emerald-300">·</span><span>Nasc. {String(metadata.birth_date)}{animalAge ? ` (${animalAge})` : ""}</span></>}
               <span className="text-emerald-300">·</span><span>{item.country}</span>
@@ -2251,7 +2257,7 @@ export default function PublicItem() {
             </h1>
 
             <div className="flex flex-wrap items-center gap-3 mt-4">
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${st.className}`}>{st.text}</span>
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${st.className}`}>{localized(metadataLocale, st.text[0], st.text[1], st.text[2])}</span>
               {sanitySummary?.lastWeight && (
                 <span className="text-lg font-bold text-stone-800">{sanitySummary.lastWeight} <span className="text-sm font-normal text-stone-400">kg</span></span>
               )}
@@ -2279,15 +2285,15 @@ export default function PublicItem() {
             </div>
 
             <div className="flex items-center gap-3 mt-3 text-xs text-stone-400">
-              <span>{formatDateShort(item.updated_at || item.created_at)}</span>
+              <span>{new Date(item.updated_at || item.created_at).toLocaleDateString(metadataLocale, { day: "2-digit", month: "short", year: "numeric" })}</span>
               <span>·</span>
-              <span>{chainLabels[item.value_chain] || item.value_chain}</span>
+              <span>{chainLabel(metadataLocale, item.value_chain)}</span>
               {associatedCircuitIds.length > 0 && (
                 <>
                   <span>·</span>
                   <button onClick={() => setShowCircuitsDialog(true)} className="hover:text-emerald-600 inline-flex items-center gap-1 transition-colors">
                     <Network className="h-3 w-3" />
-                    {associatedCircuitIds.length} rede{associatedCircuitIds.length !== 1 ? "s" : ""}
+                    {associatedCircuitIds.length} {localized(metadataLocale, "rede", "network", "red")}{associatedCircuitIds.length !== 1 ? (metadataLocale === "en" ? "s" : "s") : ""}
                   </button>
                 </>
               )}
@@ -2299,6 +2305,7 @@ export default function PublicItem() {
           <div ref={setTourRef(6)} className="relative z-0">
             <AssetQRCode
               dfid={item.dfid}
+              locale={metadataLocale}
               canonicalIdLabel={canonicalIdentifier?.label}
               canonicalIdValue={canonicalIdentifier ? maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated) : undefined}
               identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
@@ -2981,7 +2988,7 @@ export default function PublicItem() {
                 </summary>
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Identidade</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{localized(metadataLocale, "Identidade", "Identity", "Identidad")}</p>
                     {proofs?.identity_anchor?.transaction_hash ? (
                       <>
                         <a
@@ -3012,10 +3019,10 @@ export default function PublicItem() {
                             onClick={() => void copyText(proofs.identity_anchor!.transaction_hash, "Hash de identidade")}
                           >
                             <Copy className="h-3 w-3 mr-1" />
-                            Copiar hash
+                            {localized(metadataLocale, "Copiar hash", "Copy hash", "Copiar hash")}
                           </Button>
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowIdentityDialog(true)}>
-                            Ver detalhes
+                            {localized(metadataLocale, "Ver detalhes", "View details", "Ver detalles")}
                           </Button>
                         </div>
                       </>
@@ -3025,7 +3032,7 @@ export default function PublicItem() {
                   </div>
 
                   <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">CID (última versão)</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{localized(metadataLocale, "CID (última versão)", "CID (latest version)", "CID (última versión)")}</p>
                     {latestContentVersion ? (
                       <>
                         <a
@@ -3045,15 +3052,15 @@ export default function PublicItem() {
                             onClick={() => void copyText(latestContentVersion.cid, "CID")}
                           >
                             <Copy className="h-3 w-3 mr-1" />
-                            Copiar CID
+                            {localized(metadataLocale, "Copiar CID", "Copy CID", "Copiar CID")}
                           </Button>
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCidDialog(true)}>
-                            Ver versões
+                            {localized(metadataLocale, "Ver versões", "View versions", "Ver versiones")}
                           </Button>
                         </div>
                       </>
                     ) : (
-                      <p className="text-xs text-muted-foreground">Nenhuma versão de conteúdo disponível.</p>
+                      <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Nenhuma versão de conteúdo disponível.", "No content version available.", "Ninguna versión de contenido disponible.")}</p>
                     )}
                   </div>
                 </div>
@@ -3069,7 +3076,7 @@ export default function PublicItem() {
                 <Activity className="h-4.5 w-4.5 text-primary" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-foreground">Histórico</h2>
+                <h2 className="text-base font-semibold text-foreground">{localized(metadataLocale, "Histórico", "History", "Historial")}</h2>
                 <p className="text-xs text-muted-foreground">
                   {localized(
                     metadataLocale,

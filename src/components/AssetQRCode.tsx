@@ -73,9 +73,12 @@ export function AssetQRCode({
   identityHash,
   latestCid,
   className = "",
+  locale = "pt-BR",
 }: AssetQRCodeProps) {
   const [fullscreen, setFullscreen] = useState(false);
   const { toast } = useToast();
+  // Trilíngue local (a página pública tem toggle próprio, fora do i18next da app).
+  const L = (pt: string, en: string, es: string) => (locale === "en" ? en : locale === "es" ? es : pt);
 
   const publicUrl = `https://defarm.net/i/${dfid}`;
   const latestCidUrl = latestCid ? `https://gateway.pinata.cloud/ipfs/${latestCid}` : null;
@@ -293,7 +296,7 @@ export function AssetQRCode({
             <DiamondQR dfid={dfid} size={140} />
           </div>
           <div className="text-center">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Escaneie para rastrear</p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">{L("Escaneie para rastrear", "Scan to trace", "Escanea para rastrear")}</p>
             <p className="text-xs font-mono text-foreground/70 mt-1 break-all">{dfid}</p>
             {canonicalIdLabel && canonicalIdValue ? (
               <p className="text-[11px] text-muted-foreground mt-1 break-all">
@@ -304,7 +307,7 @@ export function AssetQRCode({
         </div>
         <div className="absolute inset-0 rounded-2xl bg-foreground/0 group-hover:bg-foreground/[0.02] transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
           <span className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border">
-            Clique para expandir
+            {L("Clique para expandir", "Click to expand", "Haz clic para ampliar")}
           </span>
         </div>
       </div>
@@ -331,7 +334,7 @@ export function AssetQRCode({
 
                 <div className="text-center space-y-1">
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">
-                    Certificado de Rastreabilidade
+                    {L("Certificado de Rastreabilidade", "Traceability Certificate", "Certificado de Trazabilidad")}
                   </p>
                   <p className="text-sm font-mono text-foreground font-medium break-all">{dfid}</p>
                   {canonicalIdLabel && canonicalIdValue ? (
@@ -341,7 +344,7 @@ export function AssetQRCode({
                   ) : null}
                   {identityHash ? (
                     <div className="text-[11px] text-muted-foreground break-all">
-                      <p>Registro de identidade:</p>
+                      <p>{L("Registro de identidade:", "Identity record:", "Registro de identidad:")}</p>
                       <div className="inline-flex items-center gap-1.5">
                         <a
                           href={identityHashUrl || "#"}
@@ -365,7 +368,7 @@ export function AssetQRCode({
                   ) : null}
                   {latestCid ? (
                     <div className="text-[11px] text-muted-foreground break-all">
-                      <p>Último registro de conteúdo:</p>
+                      <p>{L("Último registro de conteúdo:", "Latest content record:", "Último registro de contenido:")}</p>
                       <div className="inline-flex items-center gap-1.5">
                         <a
                           href={latestCidUrl || "#"}
@@ -395,7 +398,7 @@ export function AssetQRCode({
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="flex-1">
                         <Download className="h-4 w-4 mr-1.5" />
-                        Baixar
+                        {L("Baixar", "Download", "Descargar")}
                         <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -409,16 +412,16 @@ export function AssetQRCode({
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="flex-1">
                         <Share2 className="h-4 w-4 mr-1.5" />
-                        Compartilhar
+                        {L("Compartilhar", "Share", "Compartir")}
                         <ChevronDown className="h-4 w-4 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuItem onClick={() => void handleCopy(publicUrl, "Link")}>
-                        <Copy className="h-4 w-4 mr-2" /> Copiar link
+                        <Copy className="h-4 w-4 mr-2" /> {L("Copiar link", "Copy link", "Copiar enlace")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => void onShareLink()}>
-                        <Share2 className="h-4 w-4 mr-2" /> Compartilhar… (WhatsApp, etc.)
+                        <Share2 className="h-4 w-4 mr-2" /> {L("Compartilhar… (WhatsApp, etc.)", "Share… (WhatsApp, etc.)", "Compartir… (WhatsApp, etc.)")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => void onSharePng()}>PNG (QR + dados)</DropdownMenuItem>
@@ -430,7 +433,7 @@ export function AssetQRCode({
             </div>
 
             <p className="text-center text-[10px] text-muted-foreground mt-4">
-              Verificado pela plataforma DeFarm
+              {L("Verificado pela plataforma DeFarm", "Verified by the DeFarm platform", "Verificado por la plataforma DeFarm")}
             </p>
           </div>
         </div>,
