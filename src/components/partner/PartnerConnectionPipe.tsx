@@ -51,7 +51,7 @@ export function PartnerConnectionPipe() {
   const [search, setSearch] = useState("");
   const [target, setTarget] = useState<PublicCircuitInfo | null>(null);
   const [shareLayers, setShareLayers] = useState(false);
-  const [inviteToReview, setInviteToReview] = useState<CircuitFeed | null>(null);
+  const [inviteToReview, setInviteToReview] = useState<{ feed: CircuitFeed; kind: "invite" | "inbound" } | null>(null);
 
   const sourceQuery = useQuery({
     queryKey: ["partner-default-circuit"],
@@ -95,6 +95,13 @@ export function PartnerConnectionPipe() {
   const waiting = mine.filter((f) => f.status === "pending" && f.direction === "request");
   // Convites que o dono de um destino me fez — a bola está COMIGO.
   const invites = mine.filter((f) => f.status === "pending" && f.direction === "invite");
+  // Lado de cá do balcão: feeds em que MEU circuito é o DESTINO (alguém quer me
+  // alimentar). request pendente = precisa da MINHA aprovação (QA F2).
+  const inbound = (feedsQuery.data ?? []).filter(
+    (f) => f.target_circuit_id === sourceId && f.source_circuit_id !== sourceId && f.status !== "revoked"
+  );
+  const inboundPending = inbound.filter((f) => f.status === "pending" && f.direction === "request");
+  const inboundActive = inbound.filter((f) => f.status === "active");
 
   const state: PipeState = active.length > 0 ? "connected" : waiting.length > 0 ? "pending" : "none";
   // O feed exibido na linha principal do cano; os demais viram lista compacta.
@@ -205,17 +212,22 @@ export function PartnerConnectionPipe() {
         {feedsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : stateBadge}
       </div>
 
-      {/* Convites recebidos: precisa de ação SUA — nunca escondemos isso */}
-      {invites.map((inv) => (
+      {/* Pendências que precisam de ação SUA — nunca escondemos isso */}
+      {[
+        ...invites.map((f) => ({ feed: f, kind: "invite" as const, otherName: nameOf(f.target_circuit_id) })),
+        ...inboundPending.map((f) => ({ feed: f, kind: "inbound" as const, otherName: nameOf(f.source_circuit_id) })),
+      ].map(({ feed, kind, otherName }) => (
         <div
-          key={inv.id}
+          key={feed.id}
           className="mb-4 flex items-center justify-between gap-3 flex-wrap rounded-lg border border-primary/40 bg-primary/5 px-3 py-2.5"
         >
           <span className="flex items-center gap-2 text-sm text-foreground">
             <Inbox className="h-4 w-4 text-primary shrink-0" />
-            {t("portal.pipe.invites.strip", { name: nameOf(inv.target_circuit_id) })}
+            {kind === "invite"
+              ? t("portal.pipe.invites.strip", { name: otherName })
+              : t("portal.pipe.invites.stripInbound", { name: otherName })}
           </span>
-          <Button size="sm" onClick={() => setInviteToReview(inv)}>
+          <Button size="sm" onClick={() => setInviteToReview({ feed, kind })}>
             {t("portal.pipe.invites.review")}
           </Button>
         </div>
@@ -301,9 +313,18 @@ export function PartnerConnectionPipe() {
         </div>
       </div>
 
-      {/* Conexões além da principal, em lista compacta */}
-      {others.length > 0 && (
+      {/* Conexões além da principal (saída) + quem alimenta o meu circuito */}
+      {(others.length > 0 || inboundActive.length > 0) && (
         <div className="mt-3 border-t border-border pt-2 space-y-1">
+          {inboundActive.map((f) => (
+            <div key={f.id} className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-muted-foreground">
+                <span className="text-foreground font-medium">{nameOf(f.source_circuit_id)}</span>
+                {" · "}
+                {t("portal.pipe.incomingActiveHint")}
+              </span>
+            </div>
+          ))}
           {others.map((f) => (
             <div key={f.id} className="flex items-center justify-between gap-2 text-xs">
               <span className="text-muted-foreground">
@@ -472,22 +493,35 @@ export function PartnerConnectionPipe() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {t("portal.pipe.invites.dialogTitle", {
-                name: inviteToReview ? nameOf(inviteToReview.target_circuit_id) : "",
-              })}
+              {inviteToReview?.kind === "inbound"
+                ? t("portal.pipe.invites.dialogTitleInbound", {
+                    name: inviteToReview ? nameOf(inviteToReview.feed.source_circuit_id) : "",
+                  })
+                : t("portal.pipe.invites.dialogTitle", {
+                    name: inviteToReview ? nameOf(inviteToReview.feed.target_circuit_id) : "",
+                  })}
             </DialogTitle>
             <DialogDescription>
-              {t("portal.pipe.invites.dialogSubtitle", {
-                source: source.name,
-                target: inviteToReview ? nameOf(inviteToReview.target_circuit_id) : "",
-              })}
+              {inviteToReview?.kind === "inbound"
+                ? t("portal.pipe.invites.dialogSubtitle", {
+                    source: inviteToReview ? nameOf(inviteToReview.feed.source_circuit_id) : "",
+                    target: source.name,
+                  })
+                : t("portal.pipe.invites.dialogSubtitle", {
+                    source: source.name,
+                    target: inviteToReview ? nameOf(inviteToReview.feed.target_circuit_id) : "",
+                  })}
             </DialogDescription>
           </DialogHeader>
           {inviteToReview && (
             <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
-              {feedSharesLayers(inviteToReview)
-                ? t("portal.pipe.invites.scopeFull")
-                : t("portal.pipe.invites.scopeSkeleton")}
+              {inviteToReview.kind === "inbound"
+                ? feedSharesLayers(inviteToReview.feed)
+                  ? t("portal.pipe.invites.scopeInboundFull")
+                  : t("portal.pipe.invites.scopeInboundSkeleton")
+                : feedSharesLayers(inviteToReview.feed)
+                  ? t("portal.pipe.invites.scopeFull")
+                  : t("portal.pipe.invites.scopeSkeleton")}
             </div>
           )}
           <p className="text-[11px] text-muted-foreground">{t("portal.pipe.consent.privacy")}</p>
@@ -495,13 +529,13 @@ export function PartnerConnectionPipe() {
             <Button
               variant="outline"
               disabled={rejectMutation.isPending || acceptMutation.isPending}
-              onClick={() => inviteToReview && rejectMutation.mutate(inviteToReview.id)}
+              onClick={() => inviteToReview && rejectMutation.mutate(inviteToReview.feed.id)}
             >
               {t("portal.pipe.invites.reject")}
             </Button>
             <Button
               disabled={acceptMutation.isPending || rejectMutation.isPending}
-              onClick={() => inviteToReview && acceptMutation.mutate(inviteToReview.id)}
+              onClick={() => inviteToReview && acceptMutation.mutate(inviteToReview.feed.id)}
             >
               {acceptMutation.isPending && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
               {t("portal.pipe.invites.accept")}

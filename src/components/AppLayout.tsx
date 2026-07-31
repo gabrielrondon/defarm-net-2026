@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +59,8 @@ import {
 interface NavItem {
   icon: typeof BookOpen;
   label: string;
+  /** Chave i18n opcional — itens do parceiro traduzem; sem chave, cai no label PT. */
+  labelKey?: string;
   href: string;
   external?: boolean;
 }
@@ -65,24 +68,24 @@ type WorkspaceType = "partner" | "producer" | "processor" | "certifier" | "gover
 
 const navCatalog: NavItem[] = [
   { icon: BookOpen, label: "Minha Caderneta", href: "/app" },
-  { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro" },
-  { icon: Upload, label: "Enviar dados", href: "/app/parceiro/ingestao" },
-  { icon: Route, label: "Roteamento", href: "/app/parceiro/roteamento" },
-  { icon: BookOpen, label: "Docs", href: "https://docs.defarm.net/docs/getting-started", external: true },
-  { icon: ScrollText, label: "Central de Envios", href: "/app/parceiro/logs" },
+  { icon: Handshake, label: "Portal Parceiro", href: "/app/parceiro", labelKey: "nav.items.portal" },
+  { icon: Upload, label: "Enviar dados", href: "/app/parceiro/ingestao", labelKey: "nav.items.send" },
+  { icon: Route, label: "Roteamento", href: "/app/parceiro/roteamento", labelKey: "nav.items.routing" },
+  { icon: BookOpen, label: "Docs", href: "https://docs.defarm.net/docs/getting-started", external: true, labelKey: "nav.items.docs" },
+  { icon: ScrollText, label: "Central de Envios", href: "/app/parceiro/logs", labelKey: "nav.items.logs" },
   { icon: Key, label: "API Keys", href: "/app/api-keys" },
   { icon: Webhook, label: "Webhooks", href: "/app/webhooks" },
   { icon: TerminalSquare, label: "CLI", href: "/app/cli" },
   { icon: Code2, label: "SDK", href: "/app/sdk" },
-  { icon: PackageOpen, label: "Kit", href: "/app/parceiro/kit" },
-  { icon: Share2, label: "Link de Visualização", href: "/app/parceiro/embed" },
-  { icon: Shield, label: "Verificar DFID", href: "/app/verificar" },
+  { icon: PackageOpen, label: "Kit", href: "/app/parceiro/kit", labelKey: "nav.items.kit" },
+  { icon: Share2, label: "Link de Visualização", href: "/app/parceiro/embed", labelKey: "nav.items.embed" },
+  { icon: Shield, label: "Verificar DFID", href: "/app/verificar", labelKey: "nav.items.verify" },
   { icon: Building2, label: "Docs Governo", href: "/app/governo/docs" },
   { icon: Users, label: "Minhas Propriedades", href: "/app/claims" },
   { icon: Users, label: "Rebanho por Propriedade", href: "/app/propriedades/rebanho" },
   { icon: GitBranch, label: "Circuitos", href: "/app/circuitos" },
-  { icon: GitBranch, label: "Meus Circuitos", href: "/app/meus-circuitos" },
-  { icon: Package, label: "Itens", href: "/app/itens" },
+  { icon: GitBranch, label: "Meus Circuitos", href: "/app/meus-circuitos", labelKey: "nav.items.myCircuits" },
+  { icon: Package, label: "Itens", href: "/app/itens", labelKey: "nav.items.items" },
   { icon: Activity, label: "Eventos", href: "/app/eventos" },
   { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
   { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
@@ -104,17 +107,18 @@ const navByWorkspace: Record<WorkspaceType, string[]> = {
 // do Portal e demos a cada capacidade um lar coerente no menu, em vez do split
 // arbitrário aba-vs-sidebar. Workspaces sem grupo caem no render liso (1 grupo sem
 // label = lista plana, comportamento idêntico ao anterior).
-type NavGroup = { label?: string; hrefs: string[]; collapsible?: boolean };
+type NavGroup = { label?: string; labelKey?: string; hrefs: string[]; collapsible?: boolean };
 const navGroupsByWorkspace: Partial<Record<WorkspaceType, NavGroup[]>> = {
   // Fase 1 do redesign parceiro: menu enxuto — só o essencial visível (5 itens);
   // todo o resto vive em "Avançado" (colapsado, abre sozinho se a rota ativa
   // estiver lá dentro). Nenhuma rota mudou — só a navegação.
   partner: [
     { hrefs: ["/app/parceiro"] },
-    { label: "Operar", hrefs: ["/app/parceiro/ingestao", "/app/parceiro/logs"] },
-    { label: "Catálogo", hrefs: ["/app/meus-circuitos", "/app/itens"] },
+    { label: "Operar", labelKey: "nav.groups.operate", hrefs: ["/app/parceiro/ingestao", "/app/parceiro/logs"] },
+    { label: "Catálogo", labelKey: "nav.groups.catalog", hrefs: ["/app/meus-circuitos", "/app/itens"] },
     {
       label: "Avançado",
+      labelKey: "nav.groups.advanced",
       collapsible: true,
       hrefs: [
         "/app/parceiro/roteamento",
@@ -185,6 +189,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { t } = useTranslation();
   const { user, isAuthenticated, isLoading, logout, login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -202,7 +207,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       .filter((item): item is NavItem => !!item);
   // Render agrupado quando o workspace tem seções (parceiro); senão, 1 grupo sem
   // label = lista plana (idêntico ao comportamento anterior).
-  const navGroups: { label?: string; items: NavItem[]; collapsible?: boolean }[] = user?.is_admin
+  const navGroups: { label?: string; labelKey?: string; items: NavItem[]; collapsible?: boolean }[] = user?.is_admin
     ? []
     : (navGroupsByWorkspace[workspaceType as WorkspaceType] ?? [{ hrefs: workspaceMenu }]).map((g) => ({
         label: g.label,
@@ -406,7 +411,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     className="w-full flex items-center justify-between pb-1 px-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {group.label}
+                      {group.labelKey ? t(group.labelKey, { defaultValue: group.label }) : group.label}
                     </span>
                     <ChevronRight
                       className={cn(
@@ -418,7 +423,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 ) : (
                   <div className="pb-1 px-3">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {group.label}
+                      {group.labelKey ? t(group.labelKey, { defaultValue: group.label }) : group.label}
                     </span>
                   </div>
                 )
@@ -437,7 +442,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                       <item.icon className="h-5 w-5" />
-                      {item.label}
+                      {item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}
                       <ExternalLink className="h-4 w-4 ml-auto" />
                     </a>
                   );
@@ -456,7 +461,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     )}
                   >
                     <item.icon className="h-5 w-5" />
-                    {item.label}
+                    {item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}
                     {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
                   </Link>
                 );
@@ -470,7 +475,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <>
               <div className="pt-4 pb-1 px-3">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Ações
+                  {t("nav.groups.actions", { defaultValue: "Ações" })}
                 </span>
               </div>
               {actionSections.map((item) => {
@@ -521,7 +526,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     )}
                   >
                     <item.icon className="h-5 w-5" />
-                    {item.label}
+                    {item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}
                     {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
                   </Link>
                 );
@@ -556,13 +561,14 @@ export function AppLayout({ children }: AppLayoutProps) {
               onClick={() => navigate("/app/configuracoes")}
             >
               <Settings className="h-4 w-4 mr-2" />
-              Configurações
+              {t("nav.items.settings", { defaultValue: "Configurações" })}
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className="text-muted-foreground hover:text-destructive"
               onClick={handleLogout}
+              aria-label={t("nav.logout", { defaultValue: "Sair" })}
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -590,9 +596,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         <main className="flex-1 overflow-auto p-4 lg:p-6">
           {!user?.email_verified && (
             <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-center justify-between gap-3">
-              <span>Seu email ainda não foi verificado. Verifique para aumentar a segurança da conta.</span>
+              <span>{t("nav.emailBanner.text", { defaultValue: "Seu email ainda não foi verificado. Verifique para aumentar a segurança da conta." })}</span>
               <Button variant="outline" size="sm" onClick={handleResendVerification}>
-                Reenviar verificação
+                {t("nav.emailBanner.cta", { defaultValue: "Reenviar verificação" })}
               </Button>
             </div>
           )}

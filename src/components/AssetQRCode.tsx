@@ -1,14 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Download, Share2, ExternalLink, Copy, ChevronDown } from "lucide-react";
+import { X, Download, Share2, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
 interface AssetQRCodeProps {
@@ -106,9 +99,17 @@ export function AssetQRCode({
   };
 
   const fetchQrPngBlob = async (size = 1200) => {
-    const response = await fetch(buildQrUrl(dfid, size));
-    if (!response.ok) throw new Error("Falha ao gerar QR");
-    return await response.blob();
+    // Timeout explícito: se o serviço de QR não responder, o usuário vê um
+    // toast de erro em vez de um botão que "não faz nada".
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12_000);
+    try {
+      const response = await fetch(buildQrUrl(dfid, size), { signal: controller.signal });
+      if (!response.ok) throw new Error(L("Falha ao gerar QR", "Failed to generate QR", "Fallo al generar QR"));
+      return await response.blob();
+    } finally {
+      clearTimeout(timer);
+    }
   };
 
   const generatePngCardBlob = async (): Promise<Blob> => {
@@ -211,27 +212,6 @@ export function AssetQRCode({
     URL.revokeObjectURL(url);
   };
 
-  const shareBlob = async (blob: Blob, fileName: string, title: string) => {
-    const file = new File([blob], fileName, { type: blob.type || "application/octet-stream" });
-    const shareData: ShareData = {
-      title,
-      text: `${title} - ${dfid}`,
-      url: publicUrl,
-      files: [file],
-    };
-
-    try {
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(publicUrl);
-        toast({ title: "Link copiado", description: "Seu dispositivo não suporta compartilhamento de arquivo." });
-      }
-    } catch {
-      toast({ title: "Compartilhamento cancelado", variant: "destructive" });
-    }
-  };
-
   const onDownloadPng = async () => {
     try {
       const blob = await generatePngCardBlob();
@@ -247,24 +227,6 @@ export function AssetQRCode({
       downloadBlob(blob, `${dfid}-certificado.pdf`);
     } catch (err) {
       toast({ title: "Falha ao baixar PDF", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
-    }
-  };
-
-  const onSharePng = async () => {
-    try {
-      const blob = await generatePngCardBlob();
-      await shareBlob(blob, `${dfid}-certificado.png`, "Certificado PNG");
-    } catch (err) {
-      toast({ title: "Falha ao compartilhar PNG", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
-    }
-  };
-
-  const onSharePdf = async () => {
-    try {
-      const blob = await generatePdfBlob();
-      await shareBlob(blob, `${dfid}-certificado.pdf`, "Certificado PDF");
-    } catch (err) {
-      toast({ title: "Falha ao compartilhar PDF", description: err instanceof Error ? err.message : "Erro", variant: "destructive" });
     }
   };
 
@@ -324,6 +286,9 @@ export function AssetQRCode({
 
       {fullscreen && createPortal(
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={L("Certificado de Rastreabilidade", "Traceability Certificate", "Certificado de Trazabilidad")}
           className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in"
           onClick={() => setFullscreen(false)}
         >
@@ -404,41 +369,19 @@ export function AssetQRCode({
                   <p className="text-xs text-muted-foreground">{publicUrl}</p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Download className="h-4 w-4 mr-1.5" />
-                        {L("Baixar", "Download", "Descargar")}
-                        <ChevronDown className="h-4 w-4 ml-1" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-52">
-                      <DropdownMenuItem onClick={() => void onDownloadPng()}>PNG (QR + dados)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => void onDownloadPdf()}>PDF (QR + dados + links)</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Share2 className="h-4 w-4 mr-1.5" />
-                        {L("Compartilhar", "Share", "Compartir")}
-                        <ChevronDown className="h-4 w-4 ml-1" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem onClick={() => void handleCopy(publicUrl, "Link")}>
-                        <Copy className="h-4 w-4 mr-2" /> {L("Copiar link", "Copy link", "Copiar enlace")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => void onShareLink()}>
-                        <Share2 className="h-4 w-4 mr-2" /> {L("Compartilhar… (WhatsApp, etc.)", "Share… (WhatsApp, etc.)", "Compartir… (WhatsApp, etc.)")}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => void onSharePng()}>PNG (QR + dados)</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => void onSharePdf()}>PDF (QR + dados + links)</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="flex items-center gap-2 w-full">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => void onDownloadPng()}>
+                    <Download className="h-4 w-4 mr-1.5" />
+                    PNG
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => void onDownloadPdf()}>
+                    <Download className="h-4 w-4 mr-1.5" />
+                    PDF
+                  </Button>
+                  <Button size="sm" className="flex-1" onClick={() => void onShareLink()}>
+                    <Share2 className="h-4 w-4 mr-1.5" />
+                    {L("Compartilhar", "Share", "Compartir")}
+                  </Button>
                 </div>
               </div>
             </div>

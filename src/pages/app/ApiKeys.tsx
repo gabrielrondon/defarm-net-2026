@@ -546,6 +546,7 @@ export default function ApiKeys() {
                           size="sm"
                           onClick={() => openEdit(key)}
                           title={t("portal.apikeys.rowEdit")}
+                          aria-label={t("portal.apikeys.rowEdit")}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -555,6 +556,7 @@ export default function ApiKeys() {
                         size="sm"
                         onClick={() => handleViewMetrics(key)}
                         title={t("portal.apikeys.rowMetrics")}
+                        aria-label={t("portal.apikeys.rowMetrics")}
                       >
                         <BarChart3 className="h-4 w-4" />
                       </Button>
@@ -567,6 +569,7 @@ export default function ApiKeys() {
                             setRevokeOpen(true);
                           }}
                           title={t("portal.apikeys.rowRevoke")}
+                          aria-label={t("portal.apikeys.rowRevoke")}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -912,7 +915,7 @@ export default function ApiKeys() {
               <code className="flex-1 text-sm font-mono break-all text-foreground">
                 {revealedKey}
               </code>
-              <Button variant="ghost" size="sm" onClick={handleCopy}>
+              <Button variant="ghost" size="sm" onClick={handleCopy} aria-label={t("portal.apikeys.reveal.copyAria")}>
                 {copied ? (
                   <Check className="h-4 w-4 text-primary" />
                 ) : (

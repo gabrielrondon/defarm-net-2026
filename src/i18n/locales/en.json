@@ -791,6 +791,12 @@
     "cowpro": "Data Partner: Proof of Life",
     "gerbov": "Data Partner: ERP"
   },
+  "nav": {
+    "groups": { "operate": "Operate", "catalog": "Catalog", "advanced": "Advanced", "actions": "Actions" },
+    "items": { "portal": "Partner Portal", "send": "Send data", "logs": "Submissions", "myCircuits": "My Circuits", "items": "Items", "routing": "Routing", "kit": "Kit", "embed": "View Link", "verify": "Verify DFID", "docs": "Docs", "settings": "Settings" },
+    "logout": "Log out",
+    "emailBanner": { "text": "Your email is not verified yet. Verify it to increase account security.", "cta": "Resend verification" }
+  },
   "settings": {
     "header": {
       "back": "Back",
@@ -998,6 +1004,7 @@
       "connectedBadge": "Connected",
       "connectedNote": "Everything you send shows up automatically in the connected circuit.",
       "targetActiveHint": "receiving automatically",
+      "incomingActiveHint": "sending to your circuit",
       "targetPendingHint": "awaiting approval",
       "addAnother": "Connect another circuit",
       "picker": {
@@ -1014,6 +1021,10 @@
         "dialogSubtitle": "If you accept, everything {{source}} registers starts showing up in {{target}}. You can disconnect whenever you want.",
         "scopeSkeleton": "This circuit will receive only the item registry — existence, identification and movements.",
         "scopeFull": "This circuit will receive the registry and also the detailed data (weight, vaccines, handling).",
+        "stripInbound": "The circuit {{name}} wants to send data to your circuit.",
+        "dialogTitleInbound": "Connection request from {{name}}",
+        "scopeInboundSkeleton": "Your circuit will receive only their item registry — existence, identification and movements.",
+        "scopeInboundFull": "Your circuit will receive the registry and also the detailed data (weight, vaccines, handling).",
         "accept": "Accept invitation",
         "reject": "Decline"
       },
@@ -1235,6 +1246,9 @@
       "done": {
         "sendAnother": "Send another file",
         "title": "Ingestion complete!",
+        "partialTitle": "Partial submission — not everything made it",
+        "failedTitle": "The submission failed",
+        "partialHint": "Some rows did not become a trail. Check the reasons below and in Submissions — fix and resend only what is missing.",
         "received": "Received",
         "tracked": "Tracked",
         "needAttention": "Need attention",
@@ -1914,7 +1928,7 @@
         "integrationKey": "Generate integration key",
         "advanced": "Advanced"
       },
-      "empty": "No API Key created",
+      "empty": "No active key",
       "emptyDesc": "Create a key to integrate with the DeFarm API",
       "table": {
         "name": "Name",
@@ -1990,6 +2004,7 @@
       "reveal": {
         "title": "Save your API Key",
         "desc": "This key will be shown only once. Copy it and store it in a safe place.",
+        "copyAria": "Copy key",
         "gotIt": "Got it, already copied"
       },
       "revoke": {

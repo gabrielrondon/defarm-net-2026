@@ -928,6 +928,12 @@
     "cowpro": "Socio de datos: prueba de vida",
     "gerbov": "Socio de datos: ERP"
   },
+  "nav": {
+    "groups": { "operate": "Operar", "catalog": "Catálogo", "advanced": "Avanzado", "actions": "Acciones" },
+    "items": { "portal": "Portal del Socio", "send": "Enviar datos", "logs": "Central de Envíos", "myCircuits": "Mis Circuitos", "items": "Ítems", "routing": "Ruteo", "kit": "Kit", "embed": "Enlace de Visualización", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configuración" },
+    "logout": "Cerrar sesión",
+    "emailBanner": { "text": "Tu email todavía no fue verificado. Verifícalo para aumentar la seguridad de la cuenta.", "cta": "Reenviar verificación" }
+  },
   "settings": {
     "header": {
       "back": "Volver",
@@ -1135,6 +1141,7 @@
       "connectedBadge": "Conectado",
       "connectedNote": "Todo lo que envías aparece automáticamente en el circuito conectado.",
       "targetActiveHint": "recibiendo automáticamente",
+      "incomingActiveHint": "enviando a tu circuito",
       "targetPendingHint": "esperando aprobación",
       "addAnother": "Conectar otro circuito",
       "picker": {
@@ -1151,6 +1158,10 @@
         "dialogSubtitle": "Si aceptas, todo lo que {{source}} registra empieza a aparecer en {{target}}. Puedes desconectar cuando quieras.",
         "scopeSkeleton": "Este circuito recibirá solo el registro de los ítems — existencia, identificación y movimientos.",
         "scopeFull": "Este circuito recibirá el registro y también los datos detallados (peso, vacunas, manejo).",
+        "stripInbound": "El circuito {{name}} quiere enviar datos a tu circuito.",
+        "dialogTitleInbound": "Solicitud de conexión de {{name}}",
+        "scopeInboundSkeleton": "Tu circuito recibirá solo el registro de sus ítems — existencia, identificación y movimientos.",
+        "scopeInboundFull": "Tu circuito recibirá el registro y también los datos detallados (peso, vacunas, manejo).",
         "accept": "Aceptar invitación",
         "reject": "Rechazar"
       },
@@ -1372,6 +1383,9 @@
       "done": {
         "sendAnother": "Enviar otro archivo",
         "title": "¡Ingesta completa!",
+        "partialTitle": "Envío parcial — no todo entró",
+        "failedTitle": "El envío falló",
+        "partialHint": "Parte de las filas no se convirtió en trilla. Revisa los motivos abajo y en la Central de Envíos — corrige y reenvía solo lo que faltó.",
         "items": "Items",
         "batches": "Batches",
         "itemsPublished": "Ítems publicados",
@@ -2044,8 +2058,8 @@
         "docsLink": "cómo usar una clave de API en el quickstart",
         "newKey": "Nueva clave de API"
       },
-      "empty": "No hay ninguna clave de API creada",
-      "emptyDesc": "Crea una clave para integrarte con la API de DeFarm",
+      "empty": "Ninguna clave activa",
+      "emptyDesc": "Crea una clave de integración para enviar datos por la API de DeFarm",
       "table": {
         "name": "Nombre",
         "scope": "Alcance",
@@ -2120,6 +2134,7 @@
       "reveal": {
         "title": "Guarda tu clave de API",
         "desc": "Esta clave se mostrará solo una vez. Cópiala y guárdala en un lugar seguro.",
+        "copyAria": "Copiar clave",
         "gotIt": "Entendido, ya la copié"
       },
       "revoke": {

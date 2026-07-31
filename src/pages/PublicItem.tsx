@@ -2118,12 +2118,16 @@ export default function PublicItem() {
 
   if (isSelo) {
     const breed = metadata.breed ? String(metadata.breed) : "";
-    const sex = String(metadata.sex || "") === "male" ? "Macho" : String(metadata.sex || "") === "female" ? "Fêmea" : "";
+    const sex = String(metadata.sex || "") === "male"
+      ? localized(metadataLocale, "Macho", "Male", "Macho")
+      : String(metadata.sex || "") === "female"
+        ? localized(metadataLocale, "Fêmea", "Female", "Hembra")
+        : "";
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-6">
         <div className="max-w-xs w-full text-center">
           <img src={logoIcon} alt="DeFarm" className="h-8 w-8 mx-auto mb-4 opacity-60" />
-          <p className="text-[10px] uppercase tracking-widest text-stone-400 font-medium">Origem rastreada</p>
+          <p className="text-[10px] uppercase tracking-widest text-stone-400 font-medium">{localized(metadataLocale, "Origem rastreada", "Traced origin", "Origen rastreado")}</p>
           <p className="text-lg font-bold text-stone-800 mt-2">{breed}{sex ? ` · ${sex}` : ""}</p>
           {animalAge && <p className="text-xs text-stone-400 mt-1">{animalAge}</p>}
           {currentProperty?.name && (
@@ -2142,8 +2146,8 @@ export default function PublicItem() {
           {sanitySummary && (
             <div className="flex justify-center gap-3 mt-4 text-[10px] text-stone-400">
               {sanitySummary.lastWeight && <span>{sanitySummary.lastWeight} kg</span>}
-              <span>{sanitySummary.vaccines.length} vacinas</span>
-              <span>{weightHistory.length} pesagens</span>
+              <span>{sanitySummary.vaccines.length} {localized(metadataLocale, "vacinas", "vaccines", "vacunas")}</span>
+              <span>{weightHistory.length} {localized(metadataLocale, "pesagens", "weighings", "pesajes")}</span>
             </div>
           )}
           <p className="text-[9px] text-stone-300 mt-4">defarm.net</p>
