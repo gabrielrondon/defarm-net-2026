@@ -7,14 +7,9 @@ import {
   Loader2,
   ShieldCheck,
   ExternalLink,
-  Beef,
-  MapPin,
   CalendarDays,
-  TrendingUp,
-  CheckCircle2,
   AlertCircle,
   Clock,
-  Fingerprint,
 } from "lucide-react";
 import logoIcon from "@/assets/logo-icon.png";
 
@@ -149,48 +144,26 @@ export default function EmbedPortfolio() {
   return (
     <Shell>
       <div className="space-y-8">
-        {/* ── hero header ── */}
-        <div className="rounded-2xl bg-gradient-to-br from-primary/8 via-background to-primary/4 border border-primary/10 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Beef className="h-7 w-7 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-                {circuitName}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">{circuitDesc}</p>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium self-start sm:self-center">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Verificado
-            </div>
-          </div>
+        {/* ── hero header — selo de verificação + identidade, sem ornamento ── */}
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Rastreabilidade verificada
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mt-3">
+            {circuitName}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{circuitDesc}</p>
         </div>
 
-        {/* ── stat cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* ── stat cards — números do escopo do link, sem ornamento ── */}
+        <div className="grid grid-cols-3 gap-3">
           <StatCard
-            icon={<Beef className="h-4 w-4" />}
             value={totalItems}
             label={totalItems === 1 ? "Item neste link" : "Itens neste link"}
           />
-          <StatCard
-            icon={<CheckCircle2 className="h-4 w-4" />}
-            value={activeItems}
-            label="Ativos"
-            accent
-          />
-          <StatCard
-            icon={<ShieldCheck className="h-4 w-4" />}
-            value={proofs.length}
-            label="Comprovações"
-          />
-          <StatCard
-            icon={<MapPin className="h-4 w-4" />}
-            value={valueChains.length}
-            label={valueChains.length === 1 ? "Cadeia" : "Cadeias"}
-          />
+          <StatCard value={activeItems} label="Ativos" accent />
+          <StatCard value={proofs.length} label="Comprovações" />
         </div>
 
         {/* ── value chains ── */}
@@ -199,9 +172,8 @@ export default function EmbedPortfolio() {
             {valueChains.map((vc) => (
               <span
                 key={vc}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-sm font-medium text-foreground"
+                className="inline-flex items-center px-3 py-1.5 rounded-full border border-border bg-card text-sm font-medium text-foreground"
               >
-                <Beef className="h-3.5 w-3.5 text-primary" />
                 {chainLabels[vc] || vc}
               </span>
             ))}
@@ -215,10 +187,10 @@ export default function EmbedPortfolio() {
           </h2>
 
           {items.length === 0 ? (
-            <div className="rounded-xl border border-border bg-muted/30 py-12 text-center">
+            <div className="rounded-xl border border-border bg-card py-12 text-center">
               <Clock className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                Nenhum animal registrado ainda.
+                Nenhum item neste link.
               </p>
             </div>
           ) : (
@@ -227,15 +199,15 @@ export default function EmbedPortfolio() {
                 const dfid = String(item.dfid || item.id || "");
                 const st = statusLabel(String(item.status || ""));
                 return (
-                  <div
+                  <a
                     key={String(item.id)}
-                    className="flex items-center gap-3 px-4 py-3 bg-background hover:bg-muted/30 transition-colors"
+                    href={`/i/${encodeURIComponent(dfid)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center gap-3 px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      <Fingerprint className="h-4 w-4 text-muted-foreground" />
-                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground font-mono truncate">
+                      <p className="text-sm font-medium text-foreground font-mono truncate group-hover:text-primary transition-colors">
                         {dfid.length > 28 ? `${dfid.slice(0, 28)}…` : dfid}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -261,7 +233,8 @@ export default function EmbedPortfolio() {
                     >
                       {st.text}
                     </span>
-                  </div>
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                  </a>
                 );
               })}
             </div>
@@ -278,7 +251,7 @@ export default function EmbedPortfolio() {
               {proofs.map((proof: EmbedEventProof) => (
                 <div
                   key={proof.id}
-                  className="flex items-center gap-3 px-4 py-3 bg-background"
+                  className="flex items-center gap-3 px-4 py-3 bg-card"
                 >
                   <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
                     <ShieldCheck className="h-4 w-4 text-primary" />
@@ -323,9 +296,9 @@ export default function EmbedPortfolio() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[hsl(60,18%,96%)] dark:bg-background">
       {/* Topbar */}
-      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border bg-card/90 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <img src={logoIcon} alt="DeFarm" className="h-7 w-7" />
@@ -362,26 +335,21 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function StatCard({
-  icon,
   value,
   label,
   accent,
 }: {
-  icon: React.ReactNode;
   value: number | string;
   label: string;
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-4">
-      <div
-        className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
-          accent ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p
+        className={`text-2xl font-bold tracking-tight tabular-nums ${
+          accent ? "text-primary" : "text-foreground"
         }`}
       >
-        {icon}
-      </div>
-      <p className="text-2xl font-bold text-foreground tracking-tight">
         {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
       </p>
       <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
