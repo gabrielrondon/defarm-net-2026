@@ -4,7 +4,11 @@
     "about": "About",
     "contact": "Contact",
     "getStarted": "My Passbook",
-    "back": "Back"
+    "back": "Back",
+    "groups": { "operate": "Operate", "catalog": "Catalog", "advanced": "Advanced", "actions": "Actions" },
+    "items": { "portal": "Partner Portal", "send": "Send data", "logs": "Submissions", "myCircuits": "My Circuits", "items": "Items", "routing": "Routing", "kit": "Kit", "embed": "View Link", "verify": "Verify DFID", "docs": "Docs", "settings": "Settings" },
+    "logout": "Log out",
+    "emailBanner": { "text": "Your email is not verified yet. Verify it to increase account security.", "cta": "Resend verification" }
   },
   "home": {
     "hero": {
@@ -790,12 +794,6 @@
     "rbb": "Observer node",
     "cowpro": "Data Partner: Proof of Life",
     "gerbov": "Data Partner: ERP"
-  },
-  "nav": {
-    "groups": { "operate": "Operate", "catalog": "Catalog", "advanced": "Advanced", "actions": "Actions" },
-    "items": { "portal": "Partner Portal", "send": "Send data", "logs": "Submissions", "myCircuits": "My Circuits", "items": "Items", "routing": "Routing", "kit": "Kit", "embed": "View Link", "verify": "Verify DFID", "docs": "Docs", "settings": "Settings" },
-    "logout": "Log out",
-    "emailBanner": { "text": "Your email is not verified yet. Verify it to increase account security.", "cta": "Resend verification" }
   },
   "settings": {
     "header": {

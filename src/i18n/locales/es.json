@@ -4,7 +4,11 @@
     "about": "Acerca de",
     "contact": "Contacto",
     "getStarted": "Empezar",
-    "back": "Volver"
+    "back": "Volver",
+    "groups": { "operate": "Operar", "catalog": "Catálogo", "advanced": "Avanzado", "actions": "Acciones" },
+    "items": { "portal": "Portal del Socio", "send": "Enviar datos", "logs": "Central de Envíos", "myCircuits": "Mis Circuitos", "items": "Ítems", "routing": "Ruteo", "kit": "Kit", "embed": "Enlace de Visualización", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configuración" },
+    "logout": "Cerrar sesión",
+    "emailBanner": { "text": "Tu email todavía no fue verificado. Verifícalo para aumentar la seguridad de la cuenta.", "cta": "Reenviar verificación" }
   },
   "home": {
     "hero": {
@@ -927,12 +931,6 @@
     "rbb": "Nodo observador",
     "cowpro": "Socio de datos: prueba de vida",
     "gerbov": "Socio de datos: ERP"
-  },
-  "nav": {
-    "groups": { "operate": "Operar", "catalog": "Catálogo", "advanced": "Avanzado", "actions": "Acciones" },
-    "items": { "portal": "Portal del Socio", "send": "Enviar datos", "logs": "Central de Envíos", "myCircuits": "Mis Circuitos", "items": "Ítems", "routing": "Ruteo", "kit": "Kit", "embed": "Enlace de Visualización", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configuración" },
-    "logout": "Cerrar sesión",
-    "emailBanner": { "text": "Tu email todavía no fue verificado. Verifícalo para aumentar la seguridad de la cuenta.", "cta": "Reenviar verificación" }
   },
   "settings": {
     "header": {

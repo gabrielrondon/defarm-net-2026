@@ -4,7 +4,11 @@
     "about": "Sobre",
     "contact": "Contato",
     "getStarted": "Minha Caderneta",
-    "back": "Voltar"
+    "back": "Voltar",
+    "groups": { "operate": "Operar", "catalog": "Catálogo", "advanced": "Avançado", "actions": "Ações" },
+    "items": { "portal": "Portal Parceiro", "send": "Enviar dados", "logs": "Central de Envios", "myCircuits": "Meus Circuitos", "items": "Itens", "routing": "Roteamento", "kit": "Kit", "embed": "Link de Visualização", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configurações" },
+    "logout": "Sair",
+    "emailBanner": { "text": "Seu email ainda não foi verificado. Verifique para aumentar a segurança da conta.", "cta": "Reenviar verificação" }
   },
   "home": {
     "hero": {
@@ -790,12 +794,6 @@
     "rbb": "Nó observador",
     "cowpro": "Parceiro de Dados: Prova de Vida",
     "gerbov": "Parceiro de Dados: ERP"
-  },
-  "nav": {
-    "groups": { "operate": "Operar", "catalog": "Catálogo", "advanced": "Avançado", "actions": "Ações" },
-    "items": { "portal": "Portal Parceiro", "send": "Enviar dados", "logs": "Central de Envios", "myCircuits": "Meus Circuitos", "items": "Itens", "routing": "Roteamento", "kit": "Kit", "embed": "Link de Visualização", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configurações" },
-    "logout": "Sair",
-    "emailBanner": { "text": "Seu email ainda não foi verificado. Verifique para aumentar a segurança da conta.", "cta": "Reenviar verificação" }
   },
   "settings": {
     "header": {
