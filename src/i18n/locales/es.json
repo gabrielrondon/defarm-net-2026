@@ -1155,7 +1155,7 @@
         "strip": "El circuito {{name}} invitó al tuyo a alimentarlo.",
         "review": "Revisar invitación",
         "dialogTitle": "Invitación de {{name}}",
-        "dialogSubtitle": "Si aceptas, todo lo que {{source}} registra empieza a aparecer en {{target}}. Puedes desconectar cuando quieras.",
+        "dialogSubtitle": "Si aceptas, los ítems ya registrados en {{source}} y los futuros empiezan a aparecer en {{target}}. Desconectar después interrumpe los envíos futuros, pero no retira lo ya compartido.",
         "scopeSkeleton": "Este circuito recibirá solo el registro de los ítems — existencia, identificación y movimientos.",
         "scopeFull": "Este circuito recibirá el registro y también los datos detallados (peso, vacunas, manejo).",
         "stripInbound": "El circuito {{name}} quiere enviar datos a tu circuito.",
@@ -1174,7 +1174,7 @@
         "fullLabel": "Registro + datos detallados",
         "fullDesc": "Además del registro, comparte también los datos de manejo (peso, vacunas, historial). Úsalo cuando el destino exija el expediente completo.",
         "recommended": "Recomendado para empezar",
-        "privacy": "Los datos pertenecen al productor y nada se comparte sin este consentimiento. Los datos personales nunca se incluyen. Puedes desconectar en cualquier momento.",
+        "privacy": "Los datos pertenecen al productor y nada se comparte sin este consentimiento. Los datos personales nunca se incluyen. Desconectar después interrumpe los envíos futuros — lo ya compartido permanece en el circuito de destino.",
         "cancel": "Cancelar",
         "submit": "Enviar solicitud de conexión"
       },

@@ -1018,7 +1018,7 @@
         "strip": "The circuit {{name}} invited yours to feed it.",
         "review": "Review invitation",
         "dialogTitle": "Invitation from {{name}}",
-        "dialogSubtitle": "If you accept, everything {{source}} registers starts showing up in {{target}}. You can disconnect whenever you want.",
+        "dialogSubtitle": "If you accept, the items already registered in {{source}} and future ones start showing up in {{target}}. Disconnecting later stops future submissions, but does not withdraw what was already shared.",
         "scopeSkeleton": "This circuit will receive only the item registry — existence, identification and movements.",
         "scopeFull": "This circuit will receive the registry and also the detailed data (weight, vaccines, handling).",
         "stripInbound": "The circuit {{name}} wants to send data to your circuit.",
@@ -1037,7 +1037,7 @@
         "fullLabel": "Registry + detailed data",
         "fullDesc": "Beyond the registry, also shares the handling data (weight, vaccines, history). Use when the destination requires the full dossier.",
         "recommended": "Recommended to start",
-        "privacy": "The data belongs to the producer and nothing is shared without this consent. Personal data is never included. You can disconnect at any time.",
+        "privacy": "The data belongs to the producer and nothing is shared without this consent. Personal data is never included. Disconnecting later stops future submissions — what was already shared remains in the destination circuit.",
         "cancel": "Cancel",
         "submit": "Send connection request"
       },
