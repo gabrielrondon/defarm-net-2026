@@ -221,7 +221,12 @@ export interface RoutingIssueItemsResponse {
 
 export interface CreateEmbedTokenRequest {
   circuit_id: string;
+  /** Escopo explícito de DFIDs — obrigatório e não-vazio no backend: o link só
+   *  expõe estes itens (por design, não dá pra usá-lo pra contar o rebanho). */
+  item_ids: string[];
   expires_in_minutes?: number;
+  /** Rótulo pro trilho de auditoria (ex.: "Frigorífico X"). */
+  audience?: string | null;
 }
 
 export interface CreateEmbedTokenResponse {
