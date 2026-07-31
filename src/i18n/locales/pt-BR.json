@@ -991,8 +991,8 @@
       "title": "Para onde vão os seus dados",
       "sends": "Seus envios",
       "sendsHint": "API · CSV",
-      "stagingHint": "circuito de teste",
-      "circuitHint": "seu circuito",
+      "stagingHint": "seu circuito privado",
+      "circuitHint": "seu circuito privado",
       "noneBadge": "Sem circuito de destino",
       "noneNote": "Seus dados estão registrados, mas ainda não alimentam nenhum outro circuito.",
       "connectCta": "Conectar a um circuito",
@@ -1199,7 +1199,7 @@
       },
       "circuitBadge": {
         "label": "Circuito:",
-        "staging": "staging"
+        "staging": "privado"
       },
       "steps": {
         "upload": "Upload",

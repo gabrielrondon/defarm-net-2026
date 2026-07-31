@@ -690,7 +690,13 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
             <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
           )}
         </div>
-        <h3 className="text-foreground">
+        <h3
+          className={
+            outcome === "completed"
+              ? "text-foreground"
+              : "text-amber-700 dark:text-amber-400"
+          }
+        >
           {outcome === "completed"
             ? t("portal.ingestion.done.title")
             : outcome === "failed"

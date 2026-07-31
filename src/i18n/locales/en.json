@@ -991,8 +991,8 @@
       "title": "Where your data goes",
       "sends": "Your submissions",
       "sendsHint": "API · CSV",
-      "stagingHint": "test circuit",
-      "circuitHint": "your circuit",
+      "stagingHint": "your private circuit",
+      "circuitHint": "your private circuit",
       "noneBadge": "No destination circuit",
       "noneNote": "Your data is registered, but it doesn't feed any other circuit yet.",
       "connectCta": "Connect to a circuit",
@@ -1199,7 +1199,7 @@
       },
       "circuitBadge": {
         "label": "Circuit:",
-        "staging": "staging"
+        "staging": "private"
       },
       "steps": {
         "upload": "Upload",
