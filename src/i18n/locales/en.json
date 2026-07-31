@@ -1008,7 +1008,9 @@
       "picker": {
         "title": "Choose a destination circuit",
         "subtitle": "Circuits available to receive your data. The circuit owner needs to approve the request.",
-        "search": "Search circuits…",
+        "search": "Search by name or paste the circuit ID…",
+        "foundById": "Found by ID",
+        "idNotFound": "No circuit with that ID — double-check with whoever sent it.",
         "recommended": "Recommended",
         "empty": "No available circuits found."
       },
@@ -1016,7 +1018,7 @@
         "strip": "The circuit {{name}} invited yours to feed it.",
         "review": "Review invitation",
         "dialogTitle": "Invitation from {{name}}",
-        "dialogSubtitle": "If you accept, everything {{source}} registers starts showing up in {{target}}. You can disconnect whenever you want.",
+        "dialogSubtitle": "If you accept, the items already registered in {{source}} and future ones start showing up in {{target}}. Disconnecting later stops future submissions, but does not withdraw what was already shared.",
         "scopeSkeleton": "This circuit will receive only the item registry — existence, identification and movements.",
         "scopeFull": "This circuit will receive the registry and also the detailed data (weight, vaccines, handling).",
         "stripInbound": "The circuit {{name}} wants to send data to your circuit.",
@@ -1035,7 +1037,7 @@
         "fullLabel": "Registry + detailed data",
         "fullDesc": "Beyond the registry, also shares the handling data (weight, vaccines, history). Use when the destination requires the full dossier.",
         "recommended": "Recommended to start",
-        "privacy": "The data belongs to the producer and nothing is shared without this consent. Personal data is never included. You can disconnect at any time.",
+        "privacy": "The data belongs to the producer and nothing is shared without this consent. Personal data is never included. Disconnecting later stops future submissions — what was already shared remains in the destination circuit.",
         "cancel": "Cancel",
         "submit": "Send connection request"
       },
@@ -1836,6 +1838,19 @@
       "subtitle": "Ready-made commands to integrate the partner quickly via terminal."
     },
     "embed": {
+        "links": {
+          "title": "Generated links",
+          "hint": "Stored in this browser — the server never re-displays a link.",
+          "items": "{{count}} items",
+          "activeFor": "Active · expires in {{mins}} min",
+          "statusExpired": "Expired",
+          "statusRevoked": "Revoked",
+          "copy": "Copy link",
+          "open": "Open link",
+          "revoke": "Revoke link",
+          "revoked": "Link revoked",
+          "revokeError": "Failed to revoke the link"
+        },
       "page": {
         "section": "Integration",
         "title": "View Link",

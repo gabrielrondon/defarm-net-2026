@@ -1145,7 +1145,9 @@
       "picker": {
         "title": "Elegir circuito de destino",
         "subtitle": "Circuitos disponibles para recibir tus datos. El dueño del circuito debe aprobar la solicitud.",
-        "search": "Buscar circuito…",
+        "search": "Busca por nombre o pega el ID del circuito…",
+        "foundById": "Encontrado por ID",
+        "idNotFound": "Ningún circuito con ese ID — verifica con quien te lo envió.",
         "recommended": "Recomendado",
         "empty": "No se encontraron circuitos disponibles."
       },
@@ -1153,7 +1155,7 @@
         "strip": "El circuito {{name}} invitó al tuyo a alimentarlo.",
         "review": "Revisar invitación",
         "dialogTitle": "Invitación de {{name}}",
-        "dialogSubtitle": "Si aceptas, todo lo que {{source}} registra empieza a aparecer en {{target}}. Puedes desconectar cuando quieras.",
+        "dialogSubtitle": "Si aceptas, los ítems ya registrados en {{source}} y los futuros empiezan a aparecer en {{target}}. Desconectar después interrumpe los envíos futuros, pero no retira lo ya compartido.",
         "scopeSkeleton": "Este circuito recibirá solo el registro de los ítems — existencia, identificación y movimientos.",
         "scopeFull": "Este circuito recibirá el registro y también los datos detallados (peso, vacunas, manejo).",
         "stripInbound": "El circuito {{name}} quiere enviar datos a tu circuito.",
@@ -1172,7 +1174,7 @@
         "fullLabel": "Registro + datos detallados",
         "fullDesc": "Además del registro, comparte también los datos de manejo (peso, vacunas, historial). Úsalo cuando el destino exija el expediente completo.",
         "recommended": "Recomendado para empezar",
-        "privacy": "Los datos pertenecen al productor y nada se comparte sin este consentimiento. Los datos personales nunca se incluyen. Puedes desconectar en cualquier momento.",
+        "privacy": "Los datos pertenecen al productor y nada se comparte sin este consentimiento. Los datos personales nunca se incluyen. Desconectar después interrumpe los envíos futuros — lo ya compartido permanece en el circuito de destino.",
         "cancel": "Cancelar",
         "submit": "Enviar solicitud de conexión"
       },
@@ -1973,6 +1975,19 @@
       "subtitle": "Comandos listos para integrar al socio rápidamente vía terminal."
     },
     "embed": {
+        "links": {
+          "title": "Enlaces generados",
+          "hint": "Guardados en este navegador — el servidor nunca vuelve a mostrar un enlace.",
+          "items": "{{count}} ítems",
+          "activeFor": "Activo · expira en {{mins}} min",
+          "statusExpired": "Expirado",
+          "statusRevoked": "Revocado",
+          "copy": "Copiar enlace",
+          "open": "Abrir enlace",
+          "revoke": "Revocar enlace",
+          "revoked": "Enlace revocado",
+          "revokeError": "No se pudo revocar el enlace"
+        },
       "page": {
         "section": "Integración",
         "title": "Link de visualización",

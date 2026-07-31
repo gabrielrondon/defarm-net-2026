@@ -230,6 +230,8 @@ export interface CreateEmbedTokenRequest {
 }
 
 export interface CreateEmbedTokenResponse {
+  id: string;
+  /** Mostrado uma única vez — o servidor guarda só o hash. */
   token: string;
   expires_at: string;
   embed_url: string;
@@ -244,13 +246,17 @@ export interface EmbedEventProof {
   ipfs_cid?: string | null;
 }
 
+// Shape real do engines (embed.rs): header do circuito deliberadamente SEM
+// contagens (o link não expõe o tamanho do rebanho) + só os itens do escopo.
 export interface EmbedPortfolioResponse {
-  portfolio: {
-    circuit: Record<string, unknown>;
-    stats: Record<string, unknown>;
-    recent_items: Record<string, unknown>[];
+  circuit: {
+    id: string;
+    name: string;
+    public_logo_url?: string | null;
+    public_banner_url?: string | null;
   };
-  recent_event_proofs: EmbedEventProof[];
+  items: Record<string, unknown>[];
+  event_proofs: EmbedEventProof[];
 }
 
 export interface DefaultCircuitResponse {
@@ -495,6 +501,10 @@ export async function createEmbedToken(
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function revokeEmbedToken(id: string): Promise<void> {
+  return registryRequest<void>(`/embed/tokens/${id}/revoke`, { method: "POST" });
 }
 
 export async function getEmbedPortfolio(token: string): Promise<EmbedPortfolioResponse> {

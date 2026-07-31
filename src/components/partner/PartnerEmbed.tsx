@@ -14,10 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Check, ExternalLink, GitBranch, Loader2 } from "lucide-react";
+import { Copy, Check, ExternalLink, GitBranch, Link2Off, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { getCircuits } from "@/lib/api/circuits";
 import { getCircuitItems } from "@/lib/api/items";
-import { createEmbedToken, type CreateEmbedTokenResponse } from "@/lib/api/partner-routing";
+import { createEmbedToken, revokeEmbedToken, type CreateEmbedTokenResponse } from "@/lib/api/partner-routing";
 
 /**
  * "Link de Visualização" — gera um link temporário e só-leitura (sem login) pra
@@ -28,6 +30,34 @@ import { createEmbedToken, type CreateEmbedTokenResponse } from "@/lib/api/partn
  * lote" que o piloto frigorífico precisa — escolha os animais, rotule o
  * destinatário (audience, trilho de auditoria) e envie.
  */
+// Histórico local dos links gerados (estágio 1, por navegador): o servidor só
+// guarda o HASH do token — nunca poderá re-exibir o link — então quem gera
+// precisa de um lugar pra revê-lo. Lista servidor + contagem de aberturas
+// (embed_token_access_logs) dependem de endpoint novo no engines.
+type SavedLink = {
+  id: string;
+  circuitId: string;
+  circuitName: string;
+  audience: string | null;
+  itemCount: number;
+  embedUrl: string;
+  expiresAt: string;
+  createdAt: string;
+  revoked?: boolean;
+};
+const LINKS_KEY = "defarm_embed_links";
+function loadLinks(): SavedLink[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LINKS_KEY) || "[]");
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+function persistLinks(links: SavedLink[]) {
+  localStorage.setItem(LINKS_KEY, JSON.stringify(links.slice(0, 50)));
+}
+
 export function PartnerEmbed() {
   const { t } = useTranslation();
   const circuitsQuery = useQuery({ queryKey: ["partner-circuits"], queryFn: () => getCircuits(), retry: false });
@@ -37,6 +67,9 @@ export function PartnerEmbed() {
   const [audience, setAudience] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [result, setResult] = useState<CreateEmbedTokenResponse | null>(null);
+  const [links, setLinks] = useState<SavedLink[]>(loadLinks);
+  const [revoking, setRevoking] = useState<string | null>(null);
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
@@ -82,10 +115,62 @@ export function PartnerEmbed() {
         audience: audience.trim() || undefined,
       });
       setResult(r);
+      const circuitName = circuits.find((c) => c.id === circuitId)?.name ?? circuitId.slice(0, 8);
+      const entry: SavedLink = {
+        id: r.id,
+        circuitId,
+        circuitName,
+        audience: audience.trim() || null,
+        itemCount: selected.size,
+        embedUrl: r.embed_url,
+        expiresAt: r.expires_at,
+        createdAt: new Date().toISOString(),
+      };
+      setLinks((prev) => {
+        const next = [entry, ...prev.filter((l) => l.id !== entry.id)];
+        persistLinks(next);
+        return next;
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Tick de 1 min: o status Ativo/Expirado dos links acompanha o relógio.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const linkStatus = (l: SavedLink): "active" | "expired" | "revoked" =>
+    l.revoked ? "revoked" : new Date(l.expiresAt).getTime() > now ? "active" : "expired";
+
+  const sortedLinks = [...links].sort((a, b) => {
+    const rank = (l: SavedLink) => (linkStatus(l) === "active" ? 0 : 1);
+    return rank(a) - rank(b) || b.createdAt.localeCompare(a.createdAt);
+  });
+
+  const revoke = async (l: SavedLink) => {
+    setRevoking(l.id);
+    try {
+      await revokeEmbedToken(l.id);
+      setLinks((prev) => {
+        const next = prev.map((x) => (x.id === l.id ? { ...x, revoked: true } : x));
+        persistLinks(next);
+        return next;
+      });
+      toast({ title: t("portal.embed.links.revoked") });
+    } catch (e) {
+      toast({
+        title: t("portal.embed.links.revokeError"),
+        description: e instanceof Error ? e.message : String(e),
+        variant: "destructive",
+      });
+    } finally {
+      setRevoking(null);
     }
   };
 
@@ -254,6 +339,90 @@ export function PartnerEmbed() {
               <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
             </a>
           </Button>
+        </Card>
+      )}
+
+      {/* Histórico dos links gerados — válidos em destaque, mortos apagados.
+          Estágio 1: por navegador (o servidor não re-exibe tokens). */}
+      {sortedLinks.length > 0 && (
+        <Card className="p-4 md:p-5 space-y-3">
+          <div className="flex items-baseline justify-between gap-2 flex-wrap">
+            <p className="text-sm font-medium">{t("portal.embed.links.title")}</p>
+            <p className="text-[11px] text-muted-foreground">{t("portal.embed.links.hint")}</p>
+          </div>
+          <div className="divide-y divide-border">
+            {sortedLinks.map((l) => {
+              const status = linkStatus(l);
+              const minsLeft = Math.max(0, Math.round((new Date(l.expiresAt).getTime() - now) / 60_000));
+              return (
+                <div
+                  key={l.id}
+                  className={`py-2.5 flex items-center justify-between gap-3 flex-wrap ${
+                    status !== "active" ? "opacity-55" : ""
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground truncate">
+                      {l.audience || l.circuitName}
+                      <span className="text-muted-foreground font-normal">
+                        {" · "}
+                        {t("portal.embed.links.items", { count: l.itemCount })}
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {l.audience ? `${l.circuitName} · ` : ""}
+                      {new Date(l.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {status === "active" ? (
+                      <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-0 text-[10px]">
+                        {t("portal.embed.links.activeFor", { mins: minsLeft })}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {status === "revoked"
+                          ? t("portal.embed.links.statusRevoked")
+                          : t("portal.embed.links.statusExpired")}
+                      </Badge>
+                    )}
+                    {status === "active" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          onClick={() => copy(l.id, l.embedUrl)}
+                          aria-label={t("portal.embed.links.copy")}
+                        >
+                          {copied === l.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button asChild size="sm" variant="outline" className="h-7 px-2" aria-label={t("portal.embed.links.open")}>
+                          <a href={l.embedUrl} target="_blank" rel="noreferrer">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-muted-foreground"
+                          disabled={revoking === l.id}
+                          onClick={() => revoke(l)}
+                          aria-label={t("portal.embed.links.revoke")}
+                        >
+                          {revoking === l.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Link2Off className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </Card>
       )}
     </div>

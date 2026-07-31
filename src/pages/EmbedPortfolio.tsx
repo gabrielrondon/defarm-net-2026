@@ -64,19 +64,18 @@ export default function EmbedPortfolio() {
     staleTime: 15_000,
   });
 
+  // Contrato atual do engines: {circuit, items, event_proofs} no topo — o
+  // circuito vem SEM contagens (por design, o link não conta o rebanho), então
+  // todo número exibido é derivado apenas dos itens do escopo do link.
   const circuit = useMemo(
-    () => (data?.portfolio?.circuit as Record<string, unknown>) || {},
-    [data]
-  );
-  const stats = useMemo(
-    () => (data?.portfolio?.stats as Record<string, unknown>) || {},
+    () => (data?.circuit as Record<string, unknown>) || {},
     [data]
   );
   const items = useMemo(
-    () => (data?.portfolio?.recent_items || []) as Record<string, unknown>[],
+    () => (data?.items || []) as Record<string, unknown>[],
     [data]
   );
-  const proofs = useMemo(() => data?.recent_event_proofs || [], [data]);
+  const proofs = useMemo(() => data?.event_proofs || [], [data]);
 
   /* ── edge states ── */
 
@@ -133,12 +132,12 @@ export default function EmbedPortfolio() {
     circuit?.description || "Portfólio de rastreabilidade"
   );
 
-  const totalItems = Number(stats?.total_items || 0);
-  const activeItems = Number(stats?.active_items || 0);
-  const valueChains = Array.isArray(stats?.value_chains)
-    ? (stats.value_chains as string[])
-    : [];
-  const recentCount = Number(stats?.recent_activity_count || 0);
+  const totalItems = items.length;
+  const activeItems = items.filter((i) => {
+    const st = String(i.status || "").toLowerCase();
+    return st === "active" || st === "at" || st === "ativo";
+  }).length;
+  const valueChains = [...new Set(items.map((i) => String(i.value_chain || "")).filter(Boolean))];
 
   const chainLabels: Record<string, string> = {
     BEEF: "Bovinos",
@@ -174,7 +173,7 @@ export default function EmbedPortfolio() {
           <StatCard
             icon={<Beef className="h-4 w-4" />}
             value={totalItems}
-            label="Animais registrados"
+            label={totalItems === 1 ? "Item neste link" : "Itens neste link"}
           />
           <StatCard
             icon={<CheckCircle2 className="h-4 w-4" />}
@@ -183,9 +182,9 @@ export default function EmbedPortfolio() {
             accent
           />
           <StatCard
-            icon={<TrendingUp className="h-4 w-4" />}
-            value={recentCount}
-            label="Movimentações (7d)"
+            icon={<ShieldCheck className="h-4 w-4" />}
+            value={proofs.length}
+            label="Comprovações"
           />
           <StatCard
             icon={<MapPin className="h-4 w-4" />}
@@ -212,7 +211,7 @@ export default function EmbedPortfolio() {
         {/* ── recent items ── */}
         <section>
           <h2 className="text-base font-semibold text-foreground mb-3">
-            Últimos registros
+            Itens compartilhados neste link
           </h2>
 
           {items.length === 0 ? (
