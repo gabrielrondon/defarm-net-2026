@@ -1975,6 +1975,19 @@
       "subtitle": "Comandos listos para integrar al socio rápidamente vía terminal."
     },
     "embed": {
+        "links": {
+          "title": "Enlaces generados",
+          "hint": "Guardados en este navegador — el servidor nunca vuelve a mostrar un enlace.",
+          "items": "{{count}} ítems",
+          "activeFor": "Activo · expira en {{mins}} min",
+          "statusExpired": "Expirado",
+          "statusRevoked": "Revocado",
+          "copy": "Copiar enlace",
+          "open": "Abrir enlace",
+          "revoke": "Revocar enlace",
+          "revoked": "Enlace revocado",
+          "revokeError": "No se pudo revocar el enlace"
+        },
       "page": {
         "section": "Integración",
         "title": "Link de visualización",

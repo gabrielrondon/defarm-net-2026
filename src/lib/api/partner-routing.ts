@@ -230,6 +230,8 @@ export interface CreateEmbedTokenRequest {
 }
 
 export interface CreateEmbedTokenResponse {
+  id: string;
+  /** Mostrado uma única vez — o servidor guarda só o hash. */
   token: string;
   expires_at: string;
   embed_url: string;
@@ -495,6 +497,10 @@ export async function createEmbedToken(
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function revokeEmbedToken(id: string): Promise<void> {
+  return registryRequest<void>(`/embed/tokens/${id}/revoke`, { method: "POST" });
 }
 
 export async function getEmbedPortfolio(token: string): Promise<EmbedPortfolioResponse> {

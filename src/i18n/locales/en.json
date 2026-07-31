@@ -1838,6 +1838,19 @@
       "subtitle": "Ready-made commands to integrate the partner quickly via terminal."
     },
     "embed": {
+        "links": {
+          "title": "Generated links",
+          "hint": "Stored in this browser — the server never re-displays a link.",
+          "items": "{{count}} items",
+          "activeFor": "Active · expires in {{mins}} min",
+          "statusExpired": "Expired",
+          "statusRevoked": "Revoked",
+          "copy": "Copy link",
+          "open": "Open link",
+          "revoke": "Revoke link",
+          "revoked": "Link revoked",
+          "revokeError": "Failed to revoke the link"
+        },
       "page": {
         "section": "Integration",
         "title": "View Link",

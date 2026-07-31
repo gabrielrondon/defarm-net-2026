@@ -1838,6 +1838,19 @@
       "subtitle": "Comandos prontos para integrar o parceiro rapidamente via terminal."
     },
     "embed": {
+        "links": {
+          "title": "Links gerados",
+          "hint": "Guardados neste navegador — o servidor nunca re-exibe um link.",
+          "items": "{{count}} itens",
+          "activeFor": "Ativo · expira em {{mins}} min",
+          "statusExpired": "Expirado",
+          "statusRevoked": "Revogado",
+          "copy": "Copiar link",
+          "open": "Abrir link",
+          "revoke": "Revogar link",
+          "revoked": "Link revogado",
+          "revokeError": "Falha ao revogar o link"
+        },
       "page": {
         "section": "Integração",
         "title": "Link de Visualização",
