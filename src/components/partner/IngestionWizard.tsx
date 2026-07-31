@@ -656,7 +656,9 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
   // QA F3: o backend pode devolver status partial/failed com unresolved_rows=0
   // (ex.: rota falhou). O que o parceiro precisa saber é "quantos NÃO viraram
   // trilha" — então o piso de atenção é recebidos - rastreados.
-  const outcome = (result.status || "completed").toLowerCase();
+  // O status real vive em summary.status (o topo da resposta não tem status —
+  // ler result.status caía no default e celebrava envio parcial; QA F3 round 2).
+  const outcome = (result.summary?.status || "completed").toLowerCase();
   const needAttention = Math.max(
     s?.unresolved_rows ?? errors.length,
     outcome !== "completed" ? received - tracked : 0

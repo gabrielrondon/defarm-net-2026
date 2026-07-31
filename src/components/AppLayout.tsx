@@ -211,6 +211,8 @@ export function AppLayout({ children }: AppLayoutProps) {
     ? []
     : (navGroupsByWorkspace[workspaceType as WorkspaceType] ?? [{ hrefs: workspaceMenu }]).map((g) => ({
         label: g.label,
+        // Sem repassar labelKey o render caía no fallback PT — QA F7 round 2.
+        labelKey: g.labelKey,
         collapsible: g.collapsible,
         items: resolveNavItems(g.hrefs),
       }));

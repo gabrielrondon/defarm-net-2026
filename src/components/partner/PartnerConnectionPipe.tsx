@@ -358,7 +358,7 @@ export function PartnerConnectionPipe() {
           if (!o) setSearch("");
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" aria-modal="true">
           <DialogHeader>
             <DialogTitle>{t("portal.pipe.picker.title")}</DialogTitle>
             <DialogDescription>{t("portal.pipe.picker.subtitle")}</DialogDescription>
@@ -423,7 +423,7 @@ export function PartnerConnectionPipe() {
           }
         }}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-modal="true">
           <DialogHeader>
             <DialogTitle>{t("portal.pipe.consent.title", { name: target?.name ?? "" })}</DialogTitle>
             <DialogDescription>
@@ -490,7 +490,7 @@ export function PartnerConnectionPipe() {
       {/* Revisão de convite recebido: aqui quem consente é VOCÊ. Mostramos o
           que o convite propõe compartilhar antes de aceitar. */}
       <Dialog open={!!inviteToReview} onOpenChange={(o) => !o && setInviteToReview(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-modal="true">
           <DialogHeader>
             <DialogTitle>
               {inviteToReview?.kind === "inbound"

@@ -1379,13 +1379,18 @@
         "nextStepBody": "Los datos están en un circuito de prueba. Revisa los ítems creados arriba. Cuando estés conforme, publica en la cadena de valor real."
       },
       "done": {
+        "viewPanel": "ver panel",
+        "received": "Recibidos",
+        "tracked": "Rastreados",
+        "needAttention": "Necesitan atención",
+        "attentionTitle": "{{count}} necesitan atención:",
+        "attentionMore": "+ {{count}} más",
+        "creditHolds": "<strong>{{count}}</strong> en espera de crédito en tu cuenta",
         "sendAnother": "Enviar otro archivo",
         "title": "¡Ingesta completa!",
         "partialTitle": "Envío parcial — no todo entró",
         "failedTitle": "El envío falló",
         "partialHint": "Parte de las filas no se convirtió en trilla. Revisa los motivos abajo y en la Central de Envíos — corrige y reenvía solo lo que faltó.",
-        "items": "Items",
-        "batches": "Batches",
         "itemsPublished": "Ítems publicados",
         "moreGeneric": "+ {{count}} más"
       },
@@ -2050,6 +2055,8 @@
         "saveError": "No se pudo guardar"
       },
       "header": {
+        "integrationKey": "Generar clave de integración",
+        "advanced": "Avanzado",
         "back": "Configuración",
         "subtitle": "Gestiona tus claves de acceso para integración",
         "docsPrefix": "Documentación:",
@@ -2241,11 +2248,19 @@
     },
     "usage": {
       "title": "Tokenizaciones y saldo",
-      "balance": "Balance",
+      "balanceLabel": "Saldo",
+      "animals": "animales",
+      "unlimited": "Ilimitado",
+      "unlimitedDetail": "Sin cobro en este workspace",
+      "balanceDetail": "{{credits}} créditos · {{cost}}/animal",
+      "heldLabel": "En espera",
+      "heldDetail": "esperando crédito",
+      "attentionLabel": "Necesitan atención",
+      "attentionDetail": "identificadores por corregir",
+      "attentionHint": "Hay envíos con pendencia de identificador — revísalos en Ruteo para liberarlos.",
       "today": "Hoy",
       "month": "Mes",
       "total": "Total",
-      "queued": "Queued",
       "queuedNote": "Recibidos y en cola para tokenización — no es un error. Van on-chain en cuanto haya crédito disponible.",
       "requestBalance": "Pedir saldo"
     },

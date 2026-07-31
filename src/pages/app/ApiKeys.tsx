@@ -586,7 +586,7 @@ export default function ApiKeys() {
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle>{t("portal.apikeys.create.title")}</DialogTitle>
             <DialogDescription>
@@ -762,7 +762,7 @@ export default function ApiKeys() {
 
       {/* Edit dialog — só metadados mutáveis (scope/circuito imutáveis) */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle>{t("portal.apikeys.edit.title")}</DialogTitle>
             <DialogDescription>
@@ -898,6 +898,7 @@ export default function ApiKeys() {
         {/* A chave só vem na criação — clicar fora / Esc a descartaria pra sempre.
             Forçamos fechar pelo botão explícito (o X e "Entendi" seguem funcionando). */}
         <DialogContent
+          aria-modal="true"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
@@ -932,7 +933,7 @@ export default function ApiKeys() {
 
       {/* Revoke Dialog */}
       <Dialog open={revokeOpen} onOpenChange={setRevokeOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-destructive" />
@@ -956,7 +957,7 @@ export default function ApiKeys() {
 
       {/* Metrics Dialog */}
       <Dialog open={metricsOpen} onOpenChange={setMetricsOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />

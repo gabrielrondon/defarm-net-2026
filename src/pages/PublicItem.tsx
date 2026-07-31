@@ -2068,7 +2068,7 @@ export default function PublicItem() {
 
   if (isResolvingRef || isLoading) {
     return (
-      <Shell isAuthenticated={isAuthenticated}>
+      <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
         <div className="flex flex-col items-center justify-center py-24">
           <Loader2 className="h-7 w-7 animate-spin text-primary mb-3" />
           <p className="text-sm text-muted-foreground">
@@ -2081,7 +2081,7 @@ export default function PublicItem() {
 
   if (itemDeprecated) {
     return (
-      <Shell isAuthenticated={isAuthenticated}>
+      <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="mb-4 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-left max-w-md w-full">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Item reference</p>
@@ -2099,7 +2099,7 @@ export default function PublicItem() {
 
   if (resolveError || error || !item) {
     return (
-      <Shell isAuthenticated={isAuthenticated}>
+      <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Package className="h-10 w-10 text-muted-foreground/40 mb-4" />
           <h1 className="text-lg font-semibold text-foreground">Item não encontrado</h1>
@@ -2202,7 +2202,7 @@ export default function PublicItem() {
   }
 
   return (
-    <Shell isAuthenticated={isAuthenticated}>
+    <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
       <div className="space-y-5">
         {/* === HERO HEADER === */}
         <div className="rounded-2xl bg-gradient-to-b from-emerald-50/60 via-white to-white border border-emerald-100/50 shadow-sm overflow-hidden">
@@ -3925,9 +3925,11 @@ export default function PublicItem() {
 function Shell({
   children,
   isAuthenticated,
+  locale = "pt-BR",
 }: {
   children: React.ReactNode;
   isAuthenticated: boolean;
+  locale?: MetadataLocale;
 }) {
   return (
     <div className="min-h-screen bg-stone-50/80">
@@ -3941,14 +3943,14 @@ function Shell({
             {!isAuthenticated ? (
               <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`}>
                 <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
-                  Login na DeFarm
+                  {localized(locale, "Login na DeFarm", "Log in to DeFarm", "Iniciar sesión en DeFarm")}
                 </Button>
               </Link>
             ) : (
               <div className="flex items-center gap-1.5">
                 <Link to="/app">
                   <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
-                    Abrir app
+                    {localized(locale, "Abrir app", "Open app", "Abrir app")}
                   </Button>
                 </Link>
                 <Button
