@@ -1008,7 +1008,9 @@
       "picker": {
         "title": "Escolher circuito de destino",
         "subtitle": "Circuitos disponíveis para receber os seus dados. O dono do circuito precisa aprovar o pedido.",
-        "search": "Buscar circuito…",
+        "search": "Buscar por nome ou colar o ID do circuito…",
+        "foundById": "Encontrado pelo ID",
+        "idNotFound": "Nenhum circuito com esse ID — confira com quem te enviou.",
         "recommended": "Recomendado",
         "empty": "Nenhum circuito disponível encontrado."
       },

@@ -16,7 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { getPartnerDefaultCircuit } from "@/lib/api/partner-routing";
 import { getCircuits } from "@/lib/api/circuits";
-import { getPublicCircuits } from "@/lib/api/join-requests";
+import { getPublicCircuit, getPublicCircuits } from "@/lib/api/join-requests";
 import {
   acceptFeed,
   createFeedRequest,
@@ -77,6 +77,20 @@ export function PartnerConnectionPipe() {
     queryKey: ["public-circuits-for-pipe"],
     queryFn: () => getPublicCircuits({ limit: 50 }),
     staleTime: 300_000,
+  });
+
+  // Descoberta por convite fora-de-banda: quem recebeu um ID de circuito (ex.:
+  // o dono mandou por e-mail) cola o UUID na busca e alcança o circuito mesmo
+  // que ele NÃO esteja na vitrine de descobríveis. O endpoint público continua
+  // sendo o guarda — não expomos nada que ele negue.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const searchId = UUID_RE.test(search.trim()) ? search.trim().toLowerCase() : null;
+  const byIdQuery = useQuery({
+    queryKey: ["public-circuit-by-id", searchId],
+    queryFn: () => getPublicCircuit(searchId!),
+    enabled: pickerOpen && !!searchId,
+    retry: false,
+    staleTime: 60_000,
   });
 
   const nameOf = useMemo(() => {
@@ -175,10 +189,24 @@ export function PartnerConnectionPipe() {
   const engagedTargetIds = new Set(mine.map((f) => f.target_circuit_id));
   const ownIds = new Set((ownCircuitsQuery.data ?? []).map((c) => c.id));
 
-  const candidates = (publicQuery.data?.circuits ?? [])
+  const q = search.trim().toLowerCase();
+  // Busca por nome, slug público OU id (colável).
+  const matches = (c: PublicCircuitInfo) =>
+    !q ||
+    c.name.toLowerCase().includes(q) ||
+    c.id.toLowerCase().includes(q) ||
+    (c.public_slug ?? "").toLowerCase().includes(q);
+  const listed = (publicQuery.data?.circuits ?? [])
     .filter((c) => !ownIds.has(c.id) && !engagedTargetIds.has(c.id))
-    .filter((c) => (search.trim() ? c.name.toLowerCase().includes(search.trim().toLowerCase()) : true))
+    .filter(matches)
     .sort((a, b) => Number(b.featured) - Number(a.featured));
+  // Achado pelo ID e ausente da vitrine → entra no topo, rotulado.
+  const byId = byIdQuery.data?.circuit;
+  const foundById =
+    searchId && byId && !ownIds.has(byId.id) && !engagedTargetIds.has(byId.id) && !listed.some((c) => c.id === byId.id)
+      ? byId
+      : null;
+  const candidates = foundById ? [foundById, ...listed] : listed;
 
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleDateString(i18n.language, { day: "2-digit", month: "short" });
@@ -373,13 +401,13 @@ export function PartnerConnectionPipe() {
             />
           </div>
           <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
-            {publicQuery.isLoading ? (
+            {publicQuery.isLoading || (searchId && byIdQuery.isLoading) ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : candidates.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                {t("portal.pipe.picker.empty")}
+                {searchId ? t("portal.pipe.picker.idNotFound") : t("portal.pipe.picker.empty")}
               </p>
             ) : (
               candidates.map((c) => (
@@ -392,6 +420,11 @@ export function PartnerConnectionPipe() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium text-foreground">{c.name}</p>
                     <span className="flex items-center gap-1.5 shrink-0">
+                      {foundById?.id === c.id && (
+                        <Badge variant="secondary" className="text-[10px]">
+                          {t("portal.pipe.picker.foundById")}
+                        </Badge>
+                      )}
                       {c.featured && (
                         <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-0 text-[10px]">
                           {t("portal.pipe.picker.recommended")}

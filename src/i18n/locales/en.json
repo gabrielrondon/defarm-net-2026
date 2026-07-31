@@ -1008,7 +1008,9 @@
       "picker": {
         "title": "Choose a destination circuit",
         "subtitle": "Circuits available to receive your data. The circuit owner needs to approve the request.",
-        "search": "Search circuits…",
+        "search": "Search by name or paste the circuit ID…",
+        "foundById": "Found by ID",
+        "idNotFound": "No circuit with that ID — double-check with whoever sent it.",
         "recommended": "Recommended",
         "empty": "No available circuits found."
       },
