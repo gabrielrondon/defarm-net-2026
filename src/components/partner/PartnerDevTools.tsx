@@ -110,7 +110,7 @@ const SDK_CATALOG: SdkItem[] = [
     repoUrl: "https://search.maven.org/",
     version: "0.1.0",
     status: "beta",
-    note: "Versao beta para ecossistema Java 11+.",
+    note: "Versão beta para ecossistema Java 11+.",
   },
   {
     id: "dotnet",
@@ -121,7 +121,7 @@ const SDK_CATALOG: SdkItem[] = [
     repoUrl: "https://www.nuget.org/packages/Defarm.Sdk",
     version: "0.1.0",
     status: "beta",
-    note: "SDK beta para integracoes .NET 8+.",
+    note: "SDK beta para integrações .NET 8+.",
   },
 ];
 
@@ -131,15 +131,17 @@ const SDK_CATALOG: SdkItem[] = [
 // exist. Add an id here when its package ships.
 const PUBLISHED_SDK_IDS = new Set(["typescript"]);
 
-function LanguageLogo({ language, slug }: { language: string; slug: string }) {
+// QA F8: o CDN de ícones (simpleicons) é bloqueado por CORP no browser —
+// monograma local elimina a dependência externa e o erro de console.
+function LanguageLogo({ language }: { language: string; slug?: string }) {
+  const initials = language.slice(0, 2).toUpperCase();
   return (
-    <img
-      src={`https://cdn.simpleicons.org/${slug}`}
-      alt={`Logo ${language}`}
-      className="h-4 w-4 rounded-sm"
-      loading="lazy"
-      decoding="async"
-    />
+    <span
+      aria-hidden
+      className="h-4 w-4 rounded-sm bg-primary/10 text-primary text-[8px] font-bold grid place-items-center leading-none"
+    >
+      {initials}
+    </span>
   );
 }
 

@@ -85,17 +85,23 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const chainLabels: Record<string, string> = {
-  BEEF: "Bovinos",
-  DAIRY: "Leite",
-  PORK: "Suínos",
-  POULTRY: "Aves",
+// Trilíngue: o rótulo da cadeia acompanha o toggle PT/EN/ES da página pública.
+const chainLabels3: Record<string, [string, string, string]> = {
+  BEEF: ["Bovinos", "Cattle", "Bovinos"],
+  DAIRY: ["Leite", "Dairy", "Lácteos"],
+  PORK: ["Suínos", "Pork", "Porcinos"],
+  POULTRY: ["Aves", "Poultry", "Aves"],
 };
+function chainLabel(locale: MetadataLocale, chain: string): string {
+  const entry = chainLabels3[chain];
+  if (!entry) return chain;
+  return localized(locale, entry[0], entry[1], entry[2]);
+}
 
-const statusMap: Record<string, { text: string; className: string }> = {
-  active: { text: "Ativo", className: "bg-primary/10 text-primary" },
-  inactive: { text: "Inativo", className: "bg-muted text-muted-foreground" },
-  deprecated: { text: "Depreciado", className: "bg-destructive/10 text-destructive" },
+const statusMap: Record<string, { text: [string, string, string]; className: string }> = {
+  active: { text: ["Ativo", "Active", "Activo"], className: "bg-primary/10 text-primary" },
+  inactive: { text: ["Inativo", "Inactive", "Inactivo"], className: "bg-muted text-muted-foreground" },
+  deprecated: { text: ["Depreciado", "Deprecated", "Obsoleto"], className: "bg-destructive/10 text-destructive" },
 };
 
 type TechnicalProof = {
@@ -2075,7 +2081,7 @@ export default function PublicItem() {
 
   if (isResolvingRef || isLoading) {
     return (
-      <Shell isAuthenticated={isAuthenticated}>
+      <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
         <div className="flex flex-col items-center justify-center py-24">
           <Loader2 className="h-7 w-7 animate-spin text-primary mb-3" />
           <p className="text-sm text-muted-foreground">
@@ -2088,7 +2094,7 @@ export default function PublicItem() {
 
   if (itemDeprecated) {
     return (
-      <Shell isAuthenticated={isAuthenticated}>
+      <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="mb-4 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-left max-w-md w-full">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Item reference</p>
@@ -2106,7 +2112,7 @@ export default function PublicItem() {
 
   if (resolveError || error || !item) {
     return (
-      <Shell isAuthenticated={isAuthenticated}>
+      <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <Package className="h-10 w-10 text-muted-foreground/40 mb-4" />
           <h1 className="text-lg font-semibold text-foreground">Item não encontrado</h1>
@@ -2125,12 +2131,16 @@ export default function PublicItem() {
 
   if (isSelo) {
     const breed = metadata.breed ? String(metadata.breed) : "";
-    const sex = String(metadata.sex || "") === "male" ? "Macho" : String(metadata.sex || "") === "female" ? "Fêmea" : "";
+    const sex = String(metadata.sex || "") === "male"
+      ? localized(metadataLocale, "Macho", "Male", "Macho")
+      : String(metadata.sex || "") === "female"
+        ? localized(metadataLocale, "Fêmea", "Female", "Hembra")
+        : "";
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-6">
         <div className="max-w-xs w-full text-center">
           <img src={logoIcon} alt="DeFarm" className="h-8 w-8 mx-auto mb-4 opacity-60" />
-          <p className="text-[10px] uppercase tracking-widest text-stone-400 font-medium">Origem rastreada</p>
+          <p className="text-[10px] uppercase tracking-widest text-stone-400 font-medium">{localized(metadataLocale, "Origem rastreada", "Traced origin", "Origen rastreado")}</p>
           <p className="text-lg font-bold text-stone-800 mt-2">{breed}{sex ? ` · ${sex}` : ""}</p>
           {animalAge && <p className="text-xs text-stone-400 mt-1">{animalAge}</p>}
           {currentProperty?.name && (
@@ -2149,8 +2159,8 @@ export default function PublicItem() {
           {sanitySummary && (
             <div className="flex justify-center gap-3 mt-4 text-[10px] text-stone-400">
               {sanitySummary.lastWeight && <span>{sanitySummary.lastWeight} kg</span>}
-              <span>{sanitySummary.vaccines.length} vacinas</span>
-              <span>{weightHistory.length} pesagens</span>
+              <span>{sanitySummary.vaccines.length} {localized(metadataLocale, "vacinas", "vaccines", "vacunas")}</span>
+              <span>{weightHistory.length} {localized(metadataLocale, "pesagens", "weighings", "pesajes")}</span>
             </div>
           )}
           <p className="text-[9px] text-stone-300 mt-4">defarm.net</p>
@@ -2171,7 +2181,7 @@ export default function PublicItem() {
             </p>
             <p className="text-xs font-bold text-stone-800 font-mono mt-1 break-all">{item.dfid}</p>
             <div className="flex flex-wrap gap-2 mt-2">
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${st.className}`}>{st.text}</span>
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${st.className}`}>{localized(metadataLocale, st.text[0], st.text[1], st.text[2])}</span>
               {sanitySummary?.lastWeight && (
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">{sanitySummary.lastWeight} kg</span>
               )}
@@ -2205,7 +2215,7 @@ export default function PublicItem() {
   }
 
   return (
-    <Shell isAuthenticated={isAuthenticated}>
+    <Shell isAuthenticated={isAuthenticated} locale={metadataLocale}>
       <div className="space-y-5">
         {/* === HERO HEADER === */}
         <div className="rounded-2xl bg-gradient-to-b from-emerald-50/60 via-white to-white border border-emerald-100/50 shadow-sm overflow-hidden">
@@ -2245,7 +2255,7 @@ export default function PublicItem() {
                 <a href={`/i/${item.dfid}?selo=1`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title={localized(metadataLocale, "Selo de origem", "Origin seal", "Sello de origen")}>
                   <Tag className="h-3.5 w-3.5" />
                 </a>
-                <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="Comparar">
+                <a href={`/compare?ids=${item.dfid}`} className="p-1.5 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title={localized(metadataLocale, "Comparar", "Compare", "Comparar")}>
                   <Scale className="h-3.5 w-3.5" />
                 </a>
               </div>
@@ -2253,7 +2263,7 @@ export default function PublicItem() {
 
             {/* Animal identity */}
             <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-widest text-emerald-700/60 font-medium">
-              <span>{metadata.breed ? String(metadata.breed) : chainLabels[item.value_chain] || item.value_chain}</span>
+              <span>{metadata.breed ? String(metadata.breed) : chainLabel(metadataLocale, item.value_chain)}</span>
               {metadata.sex && <><span className="text-emerald-300">·</span><span>{String(metadata.sex) === "male" ? "Macho" : String(metadata.sex) === "female" ? "Fêmea" : String(metadata.sex)}</span></>}
               {metadata.birth_date && <><span className="text-emerald-300">·</span><span>Nasc. {String(metadata.birth_date)}{animalAge ? ` (${animalAge})` : ""}</span></>}
               <span className="text-emerald-300">·</span><span>{item.country}</span>
@@ -2264,7 +2274,7 @@ export default function PublicItem() {
             </h1>
 
             <div className="flex flex-wrap items-center gap-3 mt-4">
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${st.className}`}>{st.text}</span>
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${st.className}`}>{localized(metadataLocale, st.text[0], st.text[1], st.text[2])}</span>
               {sanitySummary?.lastWeight && (
                 <span className="text-lg font-bold text-stone-800">{sanitySummary.lastWeight} <span className="text-sm font-normal text-stone-400">kg</span></span>
               )}
@@ -2292,15 +2302,15 @@ export default function PublicItem() {
             </div>
 
             <div className="flex items-center gap-3 mt-3 text-xs text-stone-400">
-              <span>{formatDateShort(item.updated_at || item.created_at)}</span>
+              <span>{new Date(item.updated_at || item.created_at).toLocaleDateString(metadataLocale, { day: "2-digit", month: "short", year: "numeric" })}</span>
               <span>·</span>
-              <span>{chainLabels[item.value_chain] || item.value_chain}</span>
+              <span>{chainLabel(metadataLocale, item.value_chain)}</span>
               {associatedCircuitIds.length > 0 && (
                 <>
                   <span>·</span>
                   <button onClick={() => setShowCircuitsDialog(true)} className="hover:text-emerald-600 inline-flex items-center gap-1 transition-colors">
                     <Network className="h-3 w-3" />
-                    {associatedCircuitIds.length} rede{associatedCircuitIds.length !== 1 ? "s" : ""}
+                    {associatedCircuitIds.length} {localized(metadataLocale, "rede", "network", "red")}{associatedCircuitIds.length !== 1 ? (metadataLocale === "en" ? "s" : "s") : ""}
                   </button>
                 </>
               )}
@@ -2312,6 +2322,7 @@ export default function PublicItem() {
           <div ref={setTourRef(6)} className="relative z-0">
             <AssetQRCode
               dfid={item.dfid}
+              locale={metadataLocale}
               canonicalIdLabel={canonicalIdentifier?.label}
               canonicalIdValue={canonicalIdentifier ? maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated) : undefined}
               identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
@@ -2994,7 +3005,7 @@ export default function PublicItem() {
                 </summary>
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Identidade</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{localized(metadataLocale, "Identidade", "Identity", "Identidad")}</p>
                     {proofs?.identity_anchor?.transaction_hash ? (
                       <>
                         <a
@@ -3025,10 +3036,10 @@ export default function PublicItem() {
                             onClick={() => void copyText(proofs.identity_anchor!.transaction_hash, "Hash de identidade")}
                           >
                             <Copy className="h-3 w-3 mr-1" />
-                            Copiar hash
+                            {localized(metadataLocale, "Copiar hash", "Copy hash", "Copiar hash")}
                           </Button>
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowIdentityDialog(true)}>
-                            Ver detalhes
+                            {localized(metadataLocale, "Ver detalhes", "View details", "Ver detalles")}
                           </Button>
                         </div>
                       </>
@@ -3038,7 +3049,7 @@ export default function PublicItem() {
                   </div>
 
                   <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">CID (última versão)</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{localized(metadataLocale, "CID (última versão)", "CID (latest version)", "CID (última versión)")}</p>
                     {latestContentVersion ? (
                       <>
                         <a
@@ -3058,15 +3069,15 @@ export default function PublicItem() {
                             onClick={() => void copyText(latestContentVersion.cid, "CID")}
                           >
                             <Copy className="h-3 w-3 mr-1" />
-                            Copiar CID
+                            {localized(metadataLocale, "Copiar CID", "Copy CID", "Copiar CID")}
                           </Button>
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCidDialog(true)}>
-                            Ver versões
+                            {localized(metadataLocale, "Ver versões", "View versions", "Ver versiones")}
                           </Button>
                         </div>
                       </>
                     ) : (
-                      <p className="text-xs text-muted-foreground">Nenhuma versão de conteúdo disponível.</p>
+                      <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Nenhuma versão de conteúdo disponível.", "No content version available.", "Ninguna versión de contenido disponible.")}</p>
                     )}
                   </div>
                 </div>
@@ -3082,7 +3093,7 @@ export default function PublicItem() {
                 <Activity className="h-4.5 w-4.5 text-primary" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-foreground">Histórico</h2>
+                <h2 className="text-base font-semibold text-foreground">{localized(metadataLocale, "Histórico", "History", "Historial")}</h2>
                 <p className="text-xs text-muted-foreground">
                   {localized(
                     metadataLocale,
@@ -3927,9 +3938,11 @@ export default function PublicItem() {
 function Shell({
   children,
   isAuthenticated,
+  locale = "pt-BR",
 }: {
   children: React.ReactNode;
   isAuthenticated: boolean;
+  locale?: MetadataLocale;
 }) {
   return (
     <div className="min-h-screen bg-stone-50/80">
@@ -3943,14 +3956,14 @@ function Shell({
             {!isAuthenticated ? (
               <Link to={`/login?redirect=${encodeURIComponent(window.location.pathname)}`}>
                 <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
-                  Login na DeFarm
+                  {localized(locale, "Login na DeFarm", "Log in to DeFarm", "Iniciar sesión en DeFarm")}
                 </Button>
               </Link>
             ) : (
               <div className="flex items-center gap-1.5">
                 <Link to="/app">
                   <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
-                    Abrir app
+                    {localized(locale, "Abrir app", "Open app", "Abrir app")}
                   </Button>
                 </Link>
                 <Button

@@ -653,7 +653,16 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
   const received = s?.total_rows ?? 0;
   const tracked = (s?.items_created ?? 0) + (s?.items_enriched ?? 0);
   const errors = result.errors || [];
-  const needAttention = s?.unresolved_rows ?? errors.length;
+  // QA F3: o backend pode devolver status partial/failed com unresolved_rows=0
+  // (ex.: rota falhou). O que o parceiro precisa saber é "quantos NÃO viraram
+  // trilha" — então o piso de atenção é recebidos - rastreados.
+  // O status real vive em summary.status (o topo da resposta não tem status —
+  // ler result.status caía no default e celebrava envio parcial; QA F3 round 2).
+  const outcome = (result.summary?.status || "completed").toLowerCase();
+  const needAttention = Math.max(
+    s?.unresolved_rows ?? errors.length,
+    outcome !== "completed" ? received - tracked : 0
+  );
   const items = result.items || [];
   const circuitLinks = result.verbose?.circuit_links ?? [];
 
@@ -670,10 +679,35 @@ function DoneResults({ result }: { result: PartnerIntakeResponse }) {
   return (
     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-8 space-y-5">
       <div className="text-center space-y-2">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto animate-scale-in">
-          <PartyPopper className="h-8 w-8 text-primary" />
+        <div
+          className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto animate-scale-in ${
+            outcome === "completed" ? "bg-primary/10" : "bg-amber-100 dark:bg-amber-950"
+          }`}
+        >
+          {outcome === "completed" ? (
+            <PartyPopper className="h-8 w-8 text-primary" />
+          ) : (
+            <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+          )}
         </div>
-        <h3 className="text-foreground">{t("portal.ingestion.done.title")}</h3>
+        <h3
+          className={
+            outcome === "completed"
+              ? "text-foreground"
+              : "text-amber-700 dark:text-amber-400"
+          }
+        >
+          {outcome === "completed"
+            ? t("portal.ingestion.done.title")
+            : outcome === "failed"
+              ? t("portal.ingestion.done.failedTitle")
+              : t("portal.ingestion.done.partialTitle")}
+        </h3>
+        {outcome !== "completed" && (
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            {t("portal.ingestion.done.partialHint")}
+          </p>
+        )}
       </div>
 
       {/* Resumo humano: recebidos · rastreados · precisam de atenção */}

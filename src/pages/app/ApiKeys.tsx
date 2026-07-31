@@ -56,6 +56,7 @@ import {
 } from "@/lib/api/admin";
 import { getCircuits } from "@/lib/api/circuits";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PARTNER_CANVAS } from "@/components/partner/PartnerPage";
 import type {
   PartnerApiKeyResponse,
   PartnerApiKeyScope,
@@ -375,7 +376,8 @@ export default function ApiKeys() {
   const defaultStagingCircuitName = taggedStagingCircuit?.name || "";
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className={PARTNER_CANVAS}>
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <button
@@ -385,26 +387,21 @@ export default function ApiKeys() {
           <ArrowLeft className="h-4 w-4" />
           {t("portal.apikeys.header.back")}
         </button>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Key className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">API Keys</h1>
-              <p className="text-muted-foreground">{t("portal.apikeys.header.subtitle")}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("portal.apikeys.header.docsPrefix")}{" "}
-                <a
-                  href="https://docs.defarm.net/docs/getting-started#api-key"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary underline underline-offset-2"
-                >
-                  {t("portal.apikeys.header.docsLink")}
-                </a>
-              </p>
-            </div>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="section-label mb-1">{t("portal.apikeys.header.subtitle")}</p>
+            <h1 className="text-foreground">API Keys</h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("portal.apikeys.header.docsPrefix")}{" "}
+              <a
+                href="https://docs.defarm.net/docs/getting-started#api-key"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline underline-offset-2"
+              >
+                {t("portal.apikeys.header.docsLink")}
+              </a>
+            </p>
           </div>
           {isPartnerWorkspace ? (
             // #339: caminho de 1 clique — a chave de integração é o padrão; o dialog
@@ -461,6 +458,24 @@ export default function ApiKeys() {
             <p className="text-sm text-muted-foreground mt-1">
               {t("portal.apikeys.emptyDesc")}
             </p>
+            {/* Empty state acionável: o CTA principal também aqui, no foco visual */}
+            <Button
+              className="mt-4"
+              onClick={() => {
+                if (isPartnerWorkspace) {
+                  handleCreateIntegrationKey();
+                } else {
+                  setNewKeyScope("circuit");
+                  setCreateOpen(true);
+                }
+              }}
+              disabled={integrating}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {isPartnerWorkspace
+                ? t("portal.apikeys.header.integrationKey")
+                : t("portal.apikeys.header.newKey")}
+            </Button>
           </div>
         ) : (
           <Table>
@@ -531,6 +546,7 @@ export default function ApiKeys() {
                           size="sm"
                           onClick={() => openEdit(key)}
                           title={t("portal.apikeys.rowEdit")}
+                          aria-label={t("portal.apikeys.rowEdit")}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -540,6 +556,7 @@ export default function ApiKeys() {
                         size="sm"
                         onClick={() => handleViewMetrics(key)}
                         title={t("portal.apikeys.rowMetrics")}
+                        aria-label={t("portal.apikeys.rowMetrics")}
                       >
                         <BarChart3 className="h-4 w-4" />
                       </Button>
@@ -552,6 +569,7 @@ export default function ApiKeys() {
                             setRevokeOpen(true);
                           }}
                           title={t("portal.apikeys.rowRevoke")}
+                          aria-label={t("portal.apikeys.rowRevoke")}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -568,7 +586,7 @@ export default function ApiKeys() {
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle>{t("portal.apikeys.create.title")}</DialogTitle>
             <DialogDescription>
@@ -744,7 +762,7 @@ export default function ApiKeys() {
 
       {/* Edit dialog — só metadados mutáveis (scope/circuito imutáveis) */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle>{t("portal.apikeys.edit.title")}</DialogTitle>
             <DialogDescription>
@@ -880,6 +898,7 @@ export default function ApiKeys() {
         {/* A chave só vem na criação — clicar fora / Esc a descartaria pra sempre.
             Forçamos fechar pelo botão explícito (o X e "Entendi" seguem funcionando). */}
         <DialogContent
+          aria-modal="true"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
@@ -897,7 +916,7 @@ export default function ApiKeys() {
               <code className="flex-1 text-sm font-mono break-all text-foreground">
                 {revealedKey}
               </code>
-              <Button variant="ghost" size="sm" onClick={handleCopy}>
+              <Button variant="ghost" size="sm" onClick={handleCopy} aria-label={t("portal.apikeys.reveal.copyAria")}>
                 {copied ? (
                   <Check className="h-4 w-4 text-primary" />
                 ) : (
@@ -914,7 +933,7 @@ export default function ApiKeys() {
 
       {/* Revoke Dialog */}
       <Dialog open={revokeOpen} onOpenChange={setRevokeOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-destructive" />
@@ -938,7 +957,7 @@ export default function ApiKeys() {
 
       {/* Metrics Dialog */}
       <Dialog open={metricsOpen} onOpenChange={setMetricsOpen}>
-        <DialogContent>
+        <DialogContent aria-modal="true">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
@@ -1010,6 +1029,7 @@ export default function ApiKeys() {
           ) : null}
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

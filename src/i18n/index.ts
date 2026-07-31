@@ -29,4 +29,13 @@ i18n
     },
   });
 
+// QA F6: <html lang> deve refletir o idioma ativo (a11y + SEO). O i18next não
+// faz isso sozinho.
+if (typeof document !== "undefined") {
+  document.documentElement.lang = i18n.language || "pt-BR";
+  i18n.on("languageChanged", (lng) => {
+    document.documentElement.lang = lng;
+  });
+}
+
 export default i18n;

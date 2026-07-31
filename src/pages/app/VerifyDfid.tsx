@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { PartnerPage } from "@/components/partner/PartnerPage";
 
 // "Verificar DFID" (capability read.verify): em vez de cair no stub, leva ao
 // verificador público que já existe (/i/:dfid). Disponível pra todas as personas.
@@ -25,22 +26,18 @@ export default function VerifyDfid() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
-      <div className="flex items-center gap-3 mb-2">
-        <ShieldCheck className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-semibold">Verificar DFID</h1>
-      </div>
-      <p className="text-sm text-muted-foreground mb-6">
-        Consulte a prova pública de um ativo pelo DFID — identidade, histórico
-        assinado por cada elo e âncora on-chain. É a mesma página que o comprador
-        vê ao escanear o QR.
-      </p>
-
+    <PartnerPage
+      width="focused"
+      section="Verificação"
+      title="Verificar DFID"
+      subtitle="Consulte a prova pública de um ativo pelo DFID — identidade, histórico assinado por cada elo e âncora on-chain. É a mesma página que o comprador vê ao escanear o QR."
+    >
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Consultar ativo</CardTitle>
           <CardDescription>
-            Cole o DFID do ativo. Você vai pro verificador público.
+            Cole o DFID do ativo. A prova abre no verificador público, fora do
+            painel — use o botão Voltar do navegador pra retornar.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -61,6 +58,6 @@ export default function VerifyDfid() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </PartnerPage>
   );
 }

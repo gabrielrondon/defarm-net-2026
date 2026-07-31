@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { PARTNER_CANVAS } from "@/components/partner/PartnerPage";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -290,13 +291,14 @@ export default function PartnerLogs() {
   const selectedErrors = selectedSnapshot?.errors || [];
 
   return (
-    <div className="space-y-5">
+    <div className={PARTNER_CANVAS}>
+    <div className="max-w-6xl mx-auto space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="section-label mb-1">Portal parceiro</p>
           <h1 className="text-foreground">Central de Envios</h1>
           <p className="text-sm text-muted-foreground mt-1.5 max-w-3xl">
-            Confira cada payload recebido pela DeFarm, a resposta devolvida pela API, os DFIDs gerados ou enriquecidos e o recibo tecnico do processamento.
+            Confira cada payload recebido pela DeFarm, a resposta devolvida pela API, os DFIDs gerados ou enriquecidos e o recibo técnico do processamento.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -316,7 +318,7 @@ export default function PartnerLogs() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
           ["Envios", stats.total],
-          ["Concluidos", stats.completed],
+          ["Concluídos", stats.completed],
           ["Falhas", stats.failed],
           ["Itens retornados", stats.items],
           ["Erros no corpo", stats.errors],
@@ -335,7 +337,7 @@ export default function PartnerLogs() {
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por arquivo, DFID, hash, status ou referencia"
+              placeholder="Buscar por arquivo, DFID, hash, status ou referência"
               className="pl-9"
             />
           </div>
@@ -345,7 +347,7 @@ export default function PartnerLogs() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="completed">Concluidos</SelectItem>
+              <SelectItem value="completed">Concluídos</SelectItem>
               <SelectItem value="partial">Parciais</SelectItem>
               <SelectItem value="failed">Falhas</SelectItem>
               <SelectItem value="processing">Processando</SelectItem>
@@ -363,8 +365,20 @@ export default function PartnerLogs() {
           </div>
           <div className="max-h-[680px] overflow-y-auto p-3 space-y-2">
             {filteredRows.length === 0 ? (
-              <div className="text-sm text-muted-foreground p-6 text-center">
-                Nenhum envio encontrado para os filtros atuais.
+              <div className="p-6 text-center space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Nenhum envio encontrado para os filtros atuais.
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  {(search || status !== "all") && (
+                    <Button variant="outline" size="sm" onClick={() => { setSearch(""); setStatus("all"); }}>
+                      Limpar filtros
+                    </Button>
+                  )}
+                  <Button size="sm" asChild>
+                    <Link to="/app/parceiro/ingestao">Enviar primeiro arquivo</Link>
+                  </Button>
+                </div>
               </div>
             ) : (
               filteredRows.map((row) => {
@@ -549,6 +563,7 @@ export default function PartnerLogs() {
           )}
         </Card>
       </div>
+    </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import {
   Globe,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PARTNER_CANVAS } from "@/components/partner/PartnerPage";
 import { cn } from "@/lib/utils";
 import {
   addWorkspaceMember,
@@ -84,6 +86,7 @@ export default function Configuracoes() {
   const { user, logout, setUserData, switchWorkspace, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -135,8 +138,8 @@ export default function Configuracoes() {
       setSessionsOpen(true);
     } catch (err) {
       toast({
-        title: "Erro ao carregar sessões",
-        description: "Não foi possível buscar as sessões ativas.",
+        title: t("settings.toasts.sessionsLoadErrorTitle"),
+        description: t("settings.toasts.sessionsLoadErrorDesc"),
         variant: "destructive",
       });
     } finally {
@@ -151,8 +154,8 @@ export default function Configuracoes() {
       setWorkspaces(data.workspaces);
     } catch (error) {
       toast({
-        title: "Falha ao carregar workspaces",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.workspacesLoadErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -166,13 +169,13 @@ export default function Configuracoes() {
       await switchWorkspace(workspaceId);
       await handleLoadWorkspaces();
       toast({
-        title: "Workspace alterado",
-        description: "Seu contexto foi atualizado com sucesso.",
+        title: t("settings.toasts.workspaceSwitchedTitle"),
+        description: t("settings.toasts.workspaceSwitchedDesc"),
       });
     } catch (error) {
       toast({
-        title: "Falha ao trocar workspace",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.workspaceSwitchErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -185,13 +188,13 @@ export default function Configuracoes() {
     try {
       const res = await requestEmailVerification();
       toast({
-        title: "Verificação enviada",
+        title: t("settings.toasts.verificationSentTitle"),
         description: res.message,
       });
     } catch (error) {
       toast({
-        title: "Falha ao enviar verificação",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.verificationErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -202,8 +205,8 @@ export default function Configuracoes() {
   const handleRequestEmailChange = async () => {
     if (!newEmail.trim()) {
       toast({
-        title: "Informe um email",
-        description: "Digite o novo email para enviar a verificação.",
+        title: t("settings.toasts.emailRequiredTitle"),
+        description: t("settings.toasts.emailRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -213,14 +216,14 @@ export default function Configuracoes() {
       const res = await requestEmailChange({ new_email: newEmail.trim() });
       await refreshUser();
       toast({
-        title: "Verificação enviada",
+        title: t("settings.toasts.verificationSentTitle"),
         description: res.message,
       });
       setNewEmail("");
     } catch (error) {
       toast({
-        title: "Falha ao solicitar troca de email",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.emailChangeErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     }
@@ -237,8 +240,8 @@ export default function Configuracoes() {
       setWorkspaceMembers(data.members);
     } catch (error) {
       toast({
-        title: "Falha ao carregar membros",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.membersLoadErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -248,12 +251,12 @@ export default function Configuracoes() {
 
   const handleAddWorkspaceMember = async () => {
     if (!canManageWorkspace) {
-      toast({ title: "Permissão insuficiente", description: "Apenas admin/owner pode gerenciar membros.", variant: "destructive" });
+      toast({ title: t("settings.toasts.permissionDeniedTitle"), description: t("settings.toasts.permissionDeniedDesc"), variant: "destructive" });
       return;
     }
     if (!memberEmail.trim()) {
       toast({
-        title: "Informe o email do membro",
+        title: t("settings.toasts.memberEmailRequiredTitle"),
         variant: "destructive",
       });
       return;
@@ -264,12 +267,12 @@ export default function Configuracoes() {
       setMemberEmail("");
       await handleLoadWorkspaceMembers();
       toast({
-        title: "Membro adicionado",
+        title: t("settings.toasts.memberAddedTitle"),
       });
     } catch (error) {
       toast({
-        title: "Falha ao adicionar membro",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.memberAddErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -279,18 +282,18 @@ export default function Configuracoes() {
 
   const handleUpdateMemberRole = async (memberUserId: string, role: "owner" | "admin" | "member") => {
     if (!canManageWorkspace) {
-      toast({ title: "Permissão insuficiente", description: "Apenas admin/owner pode gerenciar membros.", variant: "destructive" });
+      toast({ title: t("settings.toasts.permissionDeniedTitle"), description: t("settings.toasts.permissionDeniedDesc"), variant: "destructive" });
       return;
     }
     setMemberActionLoading(true);
     try {
       await updateWorkspaceMemberRole(memberUserId, role);
       await handleLoadWorkspaceMembers();
-      toast({ title: "Papel atualizado" });
+      toast({ title: t("settings.toasts.roleUpdatedTitle") });
     } catch (error) {
       toast({
-        title: "Falha ao atualizar papel",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.roleUpdateErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -300,18 +303,18 @@ export default function Configuracoes() {
 
   const handleRemoveWorkspaceMember = async (memberUserId: string) => {
     if (!canManageWorkspace) {
-      toast({ title: "Permissão insuficiente", description: "Apenas admin/owner pode gerenciar membros.", variant: "destructive" });
+      toast({ title: t("settings.toasts.permissionDeniedTitle"), description: t("settings.toasts.permissionDeniedDesc"), variant: "destructive" });
       return;
     }
     setMemberActionLoading(true);
     try {
       await removeWorkspaceMember(memberUserId);
       await handleLoadWorkspaceMembers();
-      toast({ title: "Membro removido" });
+      toast({ title: t("settings.toasts.memberRemovedTitle") });
     } catch (error) {
       toast({
-        title: "Falha ao remover membro",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.memberRemoveErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -329,8 +332,8 @@ export default function Configuracoes() {
       setItemAlerts(prefs.item_alerts);
     } catch (error) {
       toast({
-        title: "Falha ao carregar notificações",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.notificationsLoadErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -348,12 +351,12 @@ export default function Configuracoes() {
         item_alerts: itemAlerts,
       });
       toast({
-        title: "Preferências salvas",
+        title: t("settings.toasts.preferencesSavedTitle"),
       });
     } catch (error) {
       toast({
-        title: "Falha ao salvar notificações",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.notificationsSaveErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -368,8 +371,8 @@ export default function Configuracoes() {
       setTwofaRecoveryRemaining(status.recovery_codes_remaining);
     } catch (error) {
       toast({
-        title: "Falha ao carregar status de 2FA",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.twofaStatusErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     }
@@ -382,13 +385,13 @@ export default function Configuracoes() {
       setTwofaSetupSecret(setup.secret);
       setTwofaSetupUrl(setup.otpauth_url);
       toast({
-        title: "Setup 2FA iniciado",
-        description: "Adicione o segredo no autenticador e confirme com um código.",
+        title: t("settings.toasts.twofaSetupStartedTitle"),
+        description: t("settings.toasts.twofaSetupStartedDesc"),
       });
     } catch (error) {
       toast({
-        title: "Falha ao iniciar 2FA",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.twofaStartErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -406,11 +409,11 @@ export default function Configuracoes() {
       setTwofaSetupSecret("");
       setTwofaSetupUrl("");
       await handleLoadTwoFaStatus();
-      toast({ title: "2FA ativado", description: "Guarde os recovery codes com segurança." });
+      toast({ title: t("settings.toasts.twofaEnabledTitle"), description: t("settings.toasts.twofaEnabledDesc") });
     } catch (error) {
       toast({
-        title: "Falha ao ativar 2FA",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.twofaEnableErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -426,11 +429,11 @@ export default function Configuracoes() {
       setTwofaPassword("");
       setRecoveryCodes([]);
       await handleLoadTwoFaStatus();
-      toast({ title: "2FA desativado", description: res.message });
+      toast({ title: t("settings.toasts.twofaDisabledTitle"), description: res.message });
     } catch (error) {
       toast({
-        title: "Falha ao desativar 2FA",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.twofaDisableErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -445,11 +448,11 @@ export default function Configuracoes() {
       const res = await regenerateRecoveryCodes(twofaPassword.trim());
       setRecoveryCodes(res.recovery_codes);
       await handleLoadTwoFaStatus();
-      toast({ title: "Recovery codes regenerados" });
+      toast({ title: t("settings.toasts.recoveryRegeneratedTitle") });
     } catch (error) {
       toast({
-        title: "Falha ao regenerar recovery codes",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.recoveryRegenerateErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -462,13 +465,13 @@ export default function Configuracoes() {
       await revokeMySession(sessionId);
       setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, is_active: false, ended_at: new Date().toISOString() } : s)));
       toast({
-        title: "Sessão revogada",
-        description: "A sessão/dispositivo foi desconectado.",
+        title: t("settings.toasts.sessionRevokedTitle"),
+        description: t("settings.toasts.sessionRevokedDesc"),
       });
     } catch (error) {
       toast({
-        title: "Falha ao revogar sessão",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.sessionRevokeErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     }
@@ -479,20 +482,20 @@ export default function Configuracoes() {
       await revokeAllMySessions();
       setSessions((prev) => prev.map((s) => ({ ...s, is_active: false, ended_at: new Date().toISOString() })));
       toast({
-        title: "Sessões encerradas",
-        description: "Todas as sessões foram revogadas.",
+        title: t("settings.toasts.sessionsEndedTitle"),
+        description: t("settings.toasts.sessionsEndedDesc"),
       });
     } catch (error) {
       toast({
-        title: "Falha ao encerrar sessões",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t("settings.toasts.sessionsEndErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgain"),
         variant: "destructive",
       });
     }
   };
 
   const parseUserAgent = (ua?: string | null) => {
-    if (!ua) return "Dispositivo desconhecido";
+    if (!ua) return t("settings.sessions.unknownDevice");
     if (ua.includes("Chrome")) return "Google Chrome";
     if (ua.includes("Firefox")) return "Firefox";
     if (ua.includes("Safari")) return "Safari";
@@ -523,13 +526,13 @@ export default function Configuracoes() {
       });
 
       toast({
-        title: "Perfil atualizado",
-        description: "Suas alterações foram salvas com sucesso.",
+        title: t("settings.toasts.profileUpdatedTitle"),
+        description: t("settings.toasts.profileUpdatedDesc"),
       });
     } catch (error) {
       toast({
-        title: "Erro ao salvar",
-        description: "Tente novamente mais tarde.",
+        title: t("settings.toasts.profileSaveErrorTitle"),
+        description: t("settings.toasts.tryAgainLater"),
         variant: "destructive",
       });
     } finally {
@@ -540,8 +543,8 @@ export default function Configuracoes() {
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Informe a senha atual e a nova senha.",
+        title: t("settings.toasts.passwordRequiredTitle"),
+        description: t("settings.toasts.passwordRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -555,13 +558,13 @@ export default function Configuracoes() {
       setCurrentPassword("");
       setNewPassword("");
       toast({
-        title: "Senha alterada",
+        title: t("settings.toasts.passwordChangedTitle"),
         description: res.message,
       });
     } catch (error) {
       toast({
-        title: "Falha ao alterar senha",
-        description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
+        title: t("settings.toasts.passwordChangeErrorTitle"),
+        description: error instanceof Error ? error.message : t("settings.toasts.tryAgainLater"),
         variant: "destructive",
       });
     } finally {
@@ -600,9 +603,9 @@ export default function Configuracoes() {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">Perfil</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-1">{t("settings.profile.title")}</h2>
               <p className="text-sm text-muted-foreground">
-                Gerencie suas informações pessoais
+                {t("settings.profile.subtitle")}
               </p>
             </div>
 
@@ -617,49 +620,51 @@ export default function Configuracoes() {
                   <p className="text-lg font-medium text-foreground">{user?.username}</p>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Email: {user?.email_verified ? "verificado" : "não verificado"}
+                    {user?.email_verified
+                      ? t("settings.profile.emailVerified")
+                      : t("settings.profile.emailUnverified")}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="displayName">Nome de exibição</Label>
+                  <Label htmlFor="displayName">{t("settings.profile.displayNameLabel")}</Label>
                   <Input
                     id="displayName"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Seu nome"
+                    placeholder={t("settings.profile.displayNamePlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t("settings.profile.emailLabel")}</Label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
+                    placeholder={t("settings.profile.emailPlaceholder")}
                     disabled
                   />
                   <p className="text-xs text-muted-foreground">
                     {user?.pending_email
-                      ? `Troca pendente para ${user.pending_email}. Verifique o novo email para confirmar.`
-                      : "Para alterar, solicite abaixo e confirme no novo email."}
+                      ? t("settings.profile.pendingEmailNote", { email: user.pending_email })
+                      : t("settings.profile.changeEmailHint")}
                   </p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="newEmail">Novo email</Label>
+                  <Label htmlFor="newEmail">{t("settings.profile.newEmailLabel")}</Label>
                   <div className="flex flex-col md:flex-row gap-2">
                     <Input
                       id="newEmail"
                       type="email"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="novo@email.com"
+                      placeholder={t("settings.profile.newEmailPlaceholder")}
                     />
                     <Button variant="outline" onClick={handleRequestEmailChange} disabled={!newEmail.trim()}>
-                      Solicitar troca
+                      {t("settings.profile.requestChange")}
                     </Button>
                   </div>
                 </div>
@@ -671,7 +676,7 @@ export default function Configuracoes() {
                 onClick={handleSaveProfile}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isLoading ? "Salvando..." : "Salvar alterações"}
+                {isLoading ? t("settings.profile.saving") : t("settings.profile.saveChanges")}
               </Button>
               {!user?.email_verified && (
                 <Button
@@ -680,7 +685,7 @@ export default function Configuracoes() {
                   disabled={emailVerifyLoading}
                 >
                   {emailVerifyLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Reenviar verificação de email
+                  {t("settings.profile.resendVerification")}
                 </Button>
               )}
             </div>
@@ -691,9 +696,9 @@ export default function Configuracoes() {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">Workspace</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-1">{t("settings.workspace.title")}</h2>
               <p className="text-sm text-muted-foreground">
-                Configurações do seu espaço de trabalho
+                {t("settings.workspace.subtitle")}
               </p>
             </div>
 
@@ -704,10 +709,13 @@ export default function Configuracoes() {
                 </div>
                 <div>
                   <p className="text-lg font-medium text-foreground">
-                    {user?.workspace_name || "Meu Workspace"}
+                    {user?.workspace_name || t("settings.workspace.defaultName")}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Plano: Starter · Tipo: {user?.workspace_type || "producer"} · Papel: {user?.role || "viewer"}
+                    {t("settings.workspace.planLine", {
+                      type: user?.workspace_type || "producer",
+                      role: user?.role || "viewer",
+                    })}
                   </p>
                 </div>
               </div>
@@ -715,11 +723,11 @@ export default function Configuracoes() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Membros</p>
+                    <p className="text-sm font-medium text-foreground">{t("settings.workspace.membersTitle")}</p>
                     <p className="text-xs text-muted-foreground">
                       {canManageWorkspace
-                        ? "Adicione membros existentes e gerencie papéis"
-                        : "Somente admins/owners podem alterar membros"}
+                        ? t("settings.workspace.membersManageHint")
+                        : t("settings.workspace.membersReadOnlyHint")}
                     </p>
                   </div>
                   <Button
@@ -728,7 +736,7 @@ export default function Configuracoes() {
                     onClick={handleLoadWorkspaceMembers}
                     disabled={membersLoading || !canManageWorkspace}
                   >
-                    {membersLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Atualizar"}
+                    {membersLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t("settings.workspace.refresh")}
                   </Button>
                 </div>
 
@@ -738,7 +746,7 @@ export default function Configuracoes() {
                       value={memberEmail}
                       onChange={(e) => setMemberEmail(e.target.value)}
                       type="email"
-                      placeholder="email do membro"
+                      placeholder={t("settings.workspace.memberEmailPlaceholder")}
                       disabled={!canManageWorkspace}
                     />
                     <select
@@ -751,12 +759,12 @@ export default function Configuracoes() {
                       <option value="admin">admin</option>
                     </select>
                     <Button onClick={handleAddWorkspaceMember} disabled={memberActionLoading || !memberEmail.trim() || !canManageWorkspace}>
-                      Adicionar
+                      {t("settings.workspace.add")}
                     </Button>
                   </div>
                   <div className="space-y-2">
                     {workspaceMembers.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">Nenhum membro encontrado.</p>
+                      <p className="text-xs text-muted-foreground">{t("settings.workspace.membersEmpty")}</p>
                     ) : (
                       workspaceMembers.map((member) => (
                         <div key={member.user_id} className="flex items-center justify-between border rounded-md p-3 bg-background">
@@ -773,7 +781,9 @@ export default function Configuracoes() {
                                   disabled={memberActionLoading}
                                   onClick={() => handleUpdateMemberRole(member.user_id, member.role === "admin" ? "member" : "admin")}
                                 >
-                                  {member.role === "admin" ? "Tornar member" : "Tornar admin"}
+                                  {member.role === "admin"
+                                    ? t("settings.workspace.makeMember")
+                                    : t("settings.workspace.makeAdmin")}
                                 </Button>
                                 <Button
                                   variant="destructive"
@@ -781,7 +791,7 @@ export default function Configuracoes() {
                                   disabled={memberActionLoading}
                                   onClick={() => handleRemoveWorkspaceMember(member.user_id)}
                                 >
-                                  Remover
+                                  {t("settings.workspace.remove")}
                                 </Button>
                               </>
                             )}
@@ -794,47 +804,47 @@ export default function Configuracoes() {
 
                 <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-foreground">API Keys</p>
+                    <p className="text-sm font-medium text-foreground">{t("settings.workspace.apiKeysTitle")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Chaves de acesso para integração
+                      {t("settings.workspace.apiKeysHint")}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => navigate("/app/api-keys")}>
-                    Ver chaves
+                    {t("settings.workspace.viewKeys")}
                   </Button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg opacity-50">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Uso e limites</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("settings.workspace.usageTitle")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Painel de consumo e limites do plano (backend pendente)
+                      {t("settings.workspace.usageHint")}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>
-                    Indisponível
+                    {t("settings.workspace.unavailable")}
                   </Button>
                 </div>
 
                 <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-foreground">Trocar workspace padrão</p>
+                      <p className="text-sm font-medium text-foreground">{t("settings.workspace.switchTitle")}</p>
                       <p className="text-xs text-muted-foreground">
-                        Define o contexto padrão da sua conta e renova seu token.
+                        {t("settings.workspace.switchHint")}
                       </p>
                     </div>
                     <Button variant="outline" size="sm" onClick={handleLoadWorkspaces} disabled={workspacesLoading}>
-                      {workspacesLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Atualizar"}
+                      {workspacesLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t("settings.workspace.refresh")}
                     </Button>
                   </div>
                   {workspaces.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhum workspace encontrado.</p>
+                    <p className="text-xs text-muted-foreground">{t("settings.workspace.workspacesEmpty")}</p>
                   ) : (
                     workspaces.map((ws) => (
                       <div key={ws.id} className="flex items-center justify-between border rounded-md p-3 bg-background">
                         <div>
-                          <p className="text-sm font-medium">{ws.name} {ws.is_default ? "(atual)" : ""}</p>
+                          <p className="text-sm font-medium">{ws.name} {ws.is_default ? t("settings.workspace.current") : ""}</p>
                           <p className="text-xs text-muted-foreground">{ws.slug} · {ws.workspace_type} · {ws.role}</p>
                         </div>
                         <Button
@@ -843,7 +853,7 @@ export default function Configuracoes() {
                           disabled={ws.is_default || workspaceSwitchLoading}
                           onClick={() => handleSwitchWorkspace(ws.id)}
                         >
-                          Usar
+                          {t("settings.workspace.use")}
                         </Button>
                       </div>
                     ))
@@ -858,23 +868,23 @@ export default function Configuracoes() {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">Notificações</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-1">{t("settings.notifications.title")}</h2>
               <p className="text-sm text-muted-foreground">
-                Configure como você quer ser notificado
+                {t("settings.notifications.subtitle")}
               </p>
             </div>
 
             <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
               {notificationsLoading && (
-                <p className="text-xs text-muted-foreground">Carregando preferências...</p>
+                <p className="text-xs text-muted-foreground">{t("settings.notifications.loading")}</p>
               )}
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Notificações por email
+                    {t("settings.notifications.emailTitle")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Receba atualizações importantes no seu email
+                    {t("settings.notifications.emailHint")}
                   </p>
                 </div>
                 <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
@@ -882,9 +892,9 @@ export default function Configuracoes() {
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Push notifications</p>
+                  <p className="text-sm font-medium text-foreground">{t("settings.notifications.pushTitle")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Notificações no navegador
+                    {t("settings.notifications.pushHint")}
                   </p>
                 </div>
                 <Switch checked={pushNotifications} onCheckedChange={setPushNotifications} />
@@ -893,10 +903,10 @@ export default function Configuracoes() {
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Atualizações de circuitos
+                    {t("settings.notifications.circuitTitle")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Quando itens são adicionados ou removidos
+                    {t("settings.notifications.circuitHint")}
                   </p>
                 </div>
                 <Switch checked={circuitUpdates} onCheckedChange={setCircuitUpdates} />
@@ -904,9 +914,9 @@ export default function Configuracoes() {
 
               <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Alertas de itens</p>
+                  <p className="text-sm font-medium text-foreground">{t("settings.notifications.itemTitle")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Quando itens são tokenizados ou deprecados
+                    {t("settings.notifications.itemHint")}
                   </p>
                 </div>
                 <Switch checked={itemAlerts} onCheckedChange={setItemAlerts} />
@@ -914,7 +924,7 @@ export default function Configuracoes() {
               <div className="flex justify-end">
                 <Button onClick={handleSaveNotificationPreferences} disabled={notificationsSaving}>
                   {notificationsSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Salvar preferências
+                  {t("settings.notifications.save")}
                 </Button>
               </div>
             </div>
@@ -925,30 +935,30 @@ export default function Configuracoes() {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">Segurança</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-1">{t("settings.security.title")}</h2>
               <p className="text-sm text-muted-foreground">
-                Proteja sua conta
+                {t("settings.security.subtitle")}
               </p>
             </div>
 
             <div className="bg-background border border-border rounded-2xl p-6 space-y-4">
               <div className="p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Alterar senha</p>
+                  <p className="text-sm font-medium text-foreground">{t("settings.security.changePasswordTitle")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Atualize sua senha regularmente
+                    {t("settings.security.changePasswordHint")}
                   </p>
                 </div>
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
                   <Input
                     type="password"
-                    placeholder="Senha atual"
+                    placeholder={t("settings.security.currentPasswordPlaceholder")}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                   />
                   <Input
                     type="password"
-                    placeholder="Nova senha (mín. 8 chars)"
+                    placeholder={t("settings.security.newPasswordPlaceholder")}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     minLength={8}
@@ -958,36 +968,41 @@ export default function Configuracoes() {
                     onClick={handleChangePassword}
                     disabled={passwordLoading || !currentPassword || newPassword.length < 8}
                   >
-                    {passwordLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Atualizar senha"}
+                    {passwordLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("settings.security.updatePassword")}
                   </Button>
                 </div>
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Autenticação em dois fatores (2FA)</p>
+                  <p className="text-sm font-medium text-foreground">{t("settings.security.twofaTitle")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Status: {twofaEnabled ? "Ativado" : "Desativado"} · Recovery codes restantes: {twofaRecoveryRemaining}
+                    {t("settings.security.twofaStatus", {
+                      status: twofaEnabled
+                        ? t("settings.security.twofaEnabled")
+                        : t("settings.security.twofaDisabled"),
+                      remaining: twofaRecoveryRemaining,
+                    })}
                   </p>
                 </div>
                 {!twofaEnabled ? (
                   <div className="space-y-2">
                     <Button variant="outline" size="sm" onClick={handleStartTwoFaSetup} disabled={twofaLoading}>
-                      Iniciar configuração 2FA
+                      {t("settings.security.startTwofa")}
                     </Button>
                     {twofaSetupSecret && (
                       <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">Segredo (use no app autenticador):</p>
+                        <p className="text-xs text-muted-foreground">{t("settings.security.secretHint")}</p>
                         <Input value={twofaSetupSecret} readOnly />
                         <p className="text-xs text-muted-foreground break-all">{twofaSetupUrl}</p>
                         <div className="flex gap-2">
                           <Input
-                            placeholder="Código de 6 dígitos"
+                            placeholder={t("settings.security.codePlaceholder")}
                             value={twofaCode}
                             onChange={(e) => setTwofaCode(e.target.value)}
                           />
                           <Button onClick={handleEnableTwoFa} disabled={twofaLoading || !twofaCode.trim()}>
-                            Ativar
+                            {t("settings.security.enable")}
                           </Button>
                         </div>
                       </div>
@@ -997,23 +1012,23 @@ export default function Configuracoes() {
                   <div className="space-y-2">
                     <Input
                       type="password"
-                      placeholder="Senha atual para ações de 2FA"
+                      placeholder={t("settings.security.twofaPasswordPlaceholder")}
                       value={twofaPassword}
                       onChange={(e) => setTwofaPassword(e.target.value)}
                     />
                     <div className="flex flex-wrap gap-2">
                       <Button variant="outline" onClick={handleRegenerateRecoveryCodes} disabled={twofaLoading || !twofaPassword.trim()}>
-                        Regenerar recovery codes
+                        {t("settings.security.regenerateCodes")}
                       </Button>
                       <Button variant="destructive" onClick={handleDisableTwoFa} disabled={twofaLoading || !twofaPassword.trim()}>
-                        Desativar 2FA
+                        {t("settings.security.disableTwofa")}
                       </Button>
                     </div>
                   </div>
                 )}
                 {recoveryCodes.length > 0 && (
                   <div className="mt-2 border rounded-md p-3 bg-background">
-                    <p className="text-xs font-medium mb-2">Recovery codes (salve agora):</p>
+                    <p className="text-xs font-medium mb-2">{t("settings.security.recoveryCodesTitle")}</p>
                     <div className="grid grid-cols-2 gap-2">
                       {recoveryCodes.map((code) => (
                         <code key={code} className="text-xs">{code}</code>
@@ -1025,18 +1040,18 @@ export default function Configuracoes() {
 
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Sessões ativas</p>
+                  <p className="text-sm font-medium text-foreground">{t("settings.security.activeSessionsTitle")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Veja onde sua conta está conectada
+                    {t("settings.security.activeSessionsHint")}
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleViewSessions}>
-                  {sessionsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Ver sessões"}
+                  {sessionsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t("settings.security.viewSessions")}
                 </Button>
               </div>
               <div className="flex justify-end">
                 <Button variant="destructive" size="sm" onClick={handleRevokeAllSessions}>
-                  Encerrar todas as sessões
+                  {t("settings.security.endAllSessions")}
                 </Button>
               </div>
             </div>
@@ -1049,7 +1064,7 @@ export default function Configuracoes() {
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Sair da conta
+                {t("settings.security.logout")}
               </Button>
             </div>
 
@@ -1057,12 +1072,12 @@ export default function Configuracoes() {
             <Dialog open={sessionsOpen} onOpenChange={setSessionsOpen}>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Sessões ativas</DialogTitle>
+                  <DialogTitle>{t("settings.sessions.title")}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {sessions.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhuma sessão encontrada
+                      {t("settings.sessions.empty")}
                     </p>
                   ) : (
                     sessions.map((session) => (
@@ -1081,14 +1096,16 @@ export default function Configuracoes() {
                             {parseUserAgent(session.user_agent)}
                           </p>
                           {session.ip_address && (
-                            <p className="text-xs text-muted-foreground">IP: {session.ip_address}</p>
+                            <p className="text-xs text-muted-foreground">{t("settings.sessions.ip", { ip: session.ip_address })}</p>
                           )}
                           <p className="text-xs text-muted-foreground">
-                            Último acesso: {new Date(session.last_activity_at).toLocaleString("pt-BR")}
+                            {t("settings.sessions.lastActivity", {
+                              date: new Date(session.last_activity_at).toLocaleString(i18n.language),
+                            })}
                           </p>
                           {session.is_active && (
                             <span className="inline-block mt-1 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                              Ativa
+                              {t("settings.sessions.activeBadge")}
                             </span>
                           )}
                           {session.is_active && (
@@ -1098,7 +1115,7 @@ export default function Configuracoes() {
                                 size="sm"
                                 onClick={() => handleRevokeSession(session.id)}
                               >
-                                Revogar
+                                {t("settings.sessions.revoke")}
                               </Button>
                             </div>
                           )}
@@ -1117,54 +1134,52 @@ export default function Configuracoes() {
     }
   };
 
+  // Voltar determinístico (o navigate(-1) ejetava quem chegava por URL direta).
+  const backTo = user?.workspace_type === "partner" ? "/app/parceiro" : "/app";
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className={PARTNER_CANVAS}>
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(backTo)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar
+          {t("settings.header.back")}
         </button>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-            <Settings className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-            <p className="text-muted-foreground">Gerencie sua conta e preferências</p>
-          </div>
-        </div>
+        <p className="section-label mb-1">{t("settings.header.eyebrow")}</p>
+        <h1 className="text-foreground">{t("settings.header.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("settings.header.subtitle")}</p>
       </div>
 
       {/* Content */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="md:col-span-1">
-          <div className="bg-background border border-border rounded-2xl p-3 space-y-1">
+          <div className="bg-card border border-border rounded-2xl p-3 space-y-1">
             <TabButton
               icon={User}
-              label="Perfil"
+              label={t("settings.tabs.profile")}
               isActive={activeTab === "perfil"}
               onClick={() => setActiveTab("perfil")}
             />
             <TabButton
               icon={Building2}
-              label="Workspace"
+              label={t("settings.tabs.workspace")}
               isActive={activeTab === "workspace"}
               onClick={() => setActiveTab("workspace")}
             />
             <TabButton
               icon={Bell}
-              label="Notificações"
+              label={t("settings.tabs.notifications")}
               isActive={activeTab === "notificacoes"}
               onClick={() => setActiveTab("notificacoes")}
             />
             <TabButton
               icon={Shield}
-              label="Segurança"
+              label={t("settings.tabs.security")}
               isActive={activeTab === "seguranca"}
               onClick={() => setActiveTab("seguranca")}
             />
@@ -1174,6 +1189,7 @@ export default function Configuracoes() {
         {/* Main content */}
         <div className="md:col-span-3">{renderContent()}</div>
       </div>
+    </div>
     </div>
   );
 }

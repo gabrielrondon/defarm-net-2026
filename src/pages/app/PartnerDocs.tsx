@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, BookOpen, FileText, Code } from "lucide-react";
+import { PartnerPage } from "@/components/partner/PartnerPage";
 
 const DOCS_URL = "https://docs.defarm.net";
 
@@ -13,23 +14,20 @@ const resources = [
 export default function PartnerDocs() {
   const { t } = useTranslation();
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <p className="section-label mb-1">{t("portal.docs.section")}</p>
-        <h1 className="text-foreground">{t("portal.docs.title")}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {t("portal.docs.subtitle")}
-        </p>
-      </div>
-
+    <PartnerPage
+      width="focused"
+      section={t("portal.docs.section")}
+      title={t("portal.docs.title")}
+      subtitle={t("portal.docs.subtitle")}
+    >
       <div className="space-y-3">
         {resources.map((r) => (
           <a
-            key={r.title}
+            key={r.titleKey}
             href={r.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-4 rounded-xl bg-muted/40 p-4 hover:bg-muted/60 transition-colors group"
+            className="flex items-start gap-4 rounded-xl border border-border bg-card p-4 hover:border-primary/50 transition-colors group"
           >
             <r.icon className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -51,6 +49,6 @@ export default function PartnerDocs() {
           </a>
         </Button>
       </div>
-    </div>
+    </PartnerPage>
   );
 }

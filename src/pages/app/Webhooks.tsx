@@ -18,7 +18,8 @@ import {
   updateWebhook,
 } from "@/lib/api/webhooks";
 import type { Circuit, Webhook, WebhookDelivery, WebhookStats } from "@/lib/api/types";
-import { AlertTriangle, CheckCircle2, Clock3, Copy, FlaskConical, Loader2, RefreshCw, Trash2, Webhook as WebhookIcon, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Copy, Loader2, RefreshCw, Trash2, Webhook as WebhookIcon, XCircle } from "lucide-react";
+import { PARTNER_CANVAS } from "@/components/partner/PartnerPage";
 
 type WebhookHealth = {
   loading: boolean;
@@ -327,31 +328,26 @@ export default function WebhooksPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className={PARTNER_CANVAS}>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Webhooks</h1>
-          <p className="text-sm text-muted-foreground">
-            {t("portal.webhooks.subtitle")}
-          </p>
+          <p className="section-label mb-1">{t("portal.webhooks.subtitle")}</p>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-foreground">Webhooks</h1>
+            <Badge
+              variant="secondary"
+              className="bg-amber-100 text-amber-800 border border-amber-300/60 dark:bg-amber-950 dark:text-amber-300"
+            >
+              {t("portal.common.beta")}
+            </Badge>
+          </div>
         </div>
         <Button variant="outline" onClick={load} disabled={healthLoading || loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${healthLoading ? "animate-spin" : ""}`} />
           {t("portal.webhooks.refreshHealth")}
         </Button>
       </div>
-
-      <Card className="p-4 border-amber-300/50 bg-amber-50/60 dark:bg-amber-950/20">
-        <div className="flex items-start gap-3">
-          <FlaskConical className="h-4 w-4 mt-0.5 text-amber-700 dark:text-amber-300" />
-          <div className="space-y-1">
-            <Badge variant="secondary" className="bg-amber-100 text-amber-800 border border-amber-300/60">{t("portal.common.beta")}</Badge>
-            <p className="text-sm text-foreground">
-              {t("portal.webhooks.betaNote")}
-            </p>
-          </div>
-        </div>
-      </Card>
 
       <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between">
@@ -421,7 +417,7 @@ export default function WebhooksPage() {
           </div>
           <div className="space-y-2">
             <Label>{t("portal.webhooks.form.name")}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("portal.webhooks.form.namePlaceholder")} />
+            <Input id="webhook-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("portal.webhooks.form.namePlaceholder")} />
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label>{t("portal.webhooks.form.url")}</Label>
@@ -445,7 +441,19 @@ export default function WebhooksPage() {
       <Card className="p-5 space-y-4">
         <h2 className="text-base font-semibold">{t("portal.webhooks.registered")}</h2>
         {webhooks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("portal.webhooks.empty")}</p>
+          <div className="py-6 text-center">
+            <WebhookIcon className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">{t("portal.webhooks.empty")}</p>
+            {/* Empty state acionável: aponta pro form de criação logo acima */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => document.getElementById("webhook-name")?.focus()}
+            >
+              {t("portal.webhooks.form.submit")}
+            </Button>
+          </div>
         ) : (
           <div className="space-y-2">
             {webhooks.map((webhook) => {
@@ -536,6 +544,7 @@ export default function WebhooksPage() {
           </div>
         )}
       </Card>
+    </div>
     </div>
   );
 }

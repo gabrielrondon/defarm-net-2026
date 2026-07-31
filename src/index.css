@@ -154,6 +154,35 @@
     transform: translate(4px, 4px);
   }
 
+  /* Cano de conexão do portal parceiro: trecho com fluxo animado (estado
+     conectado). O pontinho percorre o segmento; some em reduced-motion. */
+  .pipe-flow {
+    @apply relative;
+  }
+  .pipe-flow::after {
+    content: "";
+    position: absolute;
+    top: -4.5px;
+    left: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    animation: pipe-flow-dot 2.4s linear infinite;
+  }
+  @keyframes pipe-flow-dot {
+    0% { left: 0%; opacity: 0; }
+    12% { opacity: 1; }
+    88% { opacity: 1; }
+    100% { left: calc(100% - 7px); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pipe-flow::after {
+      animation: none;
+      opacity: 0;
+    }
+  }
+
   /* Card variants for visual hierarchy */
   .card-flat {
     @apply bg-transparent border-0 shadow-none p-0;
