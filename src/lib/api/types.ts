@@ -1191,6 +1191,53 @@ export interface PublicItem {
   updated_at?: string;
 }
 
+export interface ApproximatePoint {
+  lat: number;
+  lon: number;
+}
+
+export interface PublicLocationProjection {
+  level: string;
+  label: string;
+  country: string;
+  uf?: string | null;
+  municipio?: string | null;
+  precision: string;
+  source: string;
+  map_available: boolean;
+  public_policy: string;
+  approximate_center?: ApproximatePoint | null;
+  approximate_radius_km?: number | null;
+}
+
+export interface PrivateLocation {
+  latitude?: number | null;
+  longitude?: number | null;
+  geolocalizacao?: string | null;
+  municipio?: string | null;
+  uf?: string | null;
+  car?: string | null;
+  codigo_mapa?: string | null;
+}
+
+export interface PropertyPolygonView {
+  car: string;
+  geojson: Record<string, unknown>;
+  source: string;
+  area_ha?: number | null;
+}
+
+export interface PrivateLocationResponse {
+  dfid: string;
+  item_id: string;
+  access_level: string;
+  public_location?: PublicLocationProjection | null;
+  private_location?: PrivateLocation | null;
+  property_polygon?: PropertyPolygonView | null;
+  location_sources: string[];
+  reason?: string | null;
+}
+
 export interface PublicCanonicalIdentifier {
   identifier_type: string;
   value: string;
