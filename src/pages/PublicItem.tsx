@@ -66,7 +66,7 @@ import cowproLogo from "@/assets/partners/cowpro.png";
 import { AssetQRCode } from "@/components/AssetQRCode";
 import { getPublicWorkspace } from "@/lib/api/workspaces";
 import { GATEWAY_BASE } from "@/lib/api/client";
-import type { PublicItemEvent, PublicWorkspace } from "@/lib/api/types";
+import type { PublicItemEvent, PublicLocationProjection, PublicWorkspace } from "@/lib/api/types";
 import type { CheckResponse } from "@/lib/check-api/types";
 import { executeCheck } from "@/lib/check-api";
 import { getCarGeoJSON, getCarMetadata, type CarGeoJSON, type CarMetadata } from "@/lib/check-api/car";
@@ -918,6 +918,110 @@ function PropertyMapMini({ car }: { car: string }) {
   return <div ref={mapRef} className="w-full h-full" />;
 }
 
+function readPublicLocation(metadata: Record<string, unknown>): PublicLocationProjection | null {
+  const raw = metadata.public_location;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.label !== "string" || typeof obj.level !== "string") return null;
+  const centerRaw = obj.approximate_center;
+  const center =
+    centerRaw && typeof centerRaw === "object" && !Array.isArray(centerRaw)
+      ? (centerRaw as Record<string, unknown>)
+      : null;
+  const lat = typeof center?.lat === "number" ? center.lat : null;
+  const lon = typeof center?.lon === "number" ? center.lon : null;
+  return {
+    level: obj.level,
+    label: obj.label,
+    country: typeof obj.country === "string" ? obj.country : "BR",
+    uf: typeof obj.uf === "string" ? obj.uf : null,
+    municipio: typeof obj.municipio === "string" ? obj.municipio : null,
+    precision: typeof obj.precision === "string" ? obj.precision : "approximate",
+    source: typeof obj.source === "string" ? obj.source : "public_projection",
+    map_available: obj.map_available === true,
+    public_policy:
+      typeof obj.public_policy === "string"
+        ? obj.public_policy
+        : "no_raw_coordinates_no_property_polygon",
+    approximate_center:
+      lat !== null && lon !== null
+        ? {
+            lat,
+            lon,
+          }
+        : null,
+    approximate_radius_km:
+      typeof obj.approximate_radius_km === "number" ? obj.approximate_radius_km : null,
+  };
+}
+
+function PublicLocationMap({ location }: { location: PublicLocationProjection }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<any>(null);
+  const center = location.approximate_center;
+
+  useEffect(() => {
+    if (!mapRef.current || !center) return;
+    let cancelled = false;
+
+    Promise.all([
+      import("leaflet").then((m) => m.default || m),
+      import("leaflet/dist/leaflet.css"),
+    ]).then(([L_]) => {
+      if (cancelled || !mapRef.current) return;
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+
+      const radiusMeters = Math.max(25, location.approximate_radius_km || 75) * 1000;
+      const map = L_.map(mapRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        touchZoom: false,
+      });
+      L_.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 12,
+      }).addTo(map);
+      const circle = L_.circle([center.lat, center.lon], {
+        radius: radiusMeters,
+        color: "#059669",
+        weight: 2,
+        fillColor: "#10b981",
+        fillOpacity: 0.18,
+      }).addTo(map);
+      map.fitBounds(circle.getBounds(), { padding: [12, 12] });
+      mapInstance.current = map;
+    }).catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, [center, location.approximate_radius_km]);
+
+  if (!center) return null;
+  return (
+    <div className="relative h-40 w-full overflow-hidden rounded-lg border border-emerald-200/60 bg-[linear-gradient(135deg,#ecfdf5_0%,#f8fafc_55%,#d1fae5_100%)]">
+      <div ref={mapRef} className="absolute inset-0" />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="h-28 w-28 rounded-full border-2 border-emerald-500/60 bg-emerald-400/20 shadow-[0_0_0_26px_rgba(16,185,129,0.08)]" />
+      </div>
+      <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-white/85 px-2 py-1 text-[11px] font-medium text-emerald-800 shadow-sm">
+        {location.approximate_radius_km
+          ? `raio aprox. ${Math.round(location.approximate_radius_km)} km`
+          : "zona aproximada"}
+      </div>
+    </div>
+  );
+}
+
 const EVENT_ICON_EMOJI: Record<string, string> = {
   item_born: "N",
   item_weighed: "P",
@@ -1522,6 +1626,7 @@ export default function PublicItem() {
   }, [technicalProofs, proofs]);
 
   const metadata = useMemo(() => ((item?.metadata || {}) as Record<string, unknown>), [item?.metadata]);
+  const publicLocation = useMemo(() => readPublicLocation(metadata), [metadata]);
 
   // #16: cross-link da Declaração EUDR — se o DFID tem DDS emitida, mostra um
   // card pra /eudr/v/:dfid (verificação pública). Sem auth (endpoint público).
@@ -1622,6 +1727,8 @@ export default function PublicItem() {
       "partner_internal_id",
       "partner_reference",
       "data_peso",
+      "public_location",
+      "public_map_available",
     ]);
 
     const grouped = new Map<string, NormalizedMetadataEntry>();
@@ -2329,6 +2436,36 @@ export default function PublicItem() {
               latestCid={latestContentVersion?.cid || undefined}
             />
           </div>
+        )}
+
+        {publicLocation && (
+          <section className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">
+                    {localized(metadataLocale, "Localização aproximada", "Approximate location", "Ubicación aproximada")}
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-foreground">{publicLocation.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {localized(
+                    metadataLocale,
+                    "Mapa público em baixa precisão. Coordenadas brutas e polígono da propriedade ficam restritos a acessos autorizados.",
+                    "Low-precision public map. Raw coordinates and the property polygon are restricted to authorized access.",
+                    "Mapa público de baja precisión. Las coordenadas crudas y el polígono de la propiedad quedan restringidos a accesos autorizados.",
+                  )}
+                </p>
+              </div>
+              <MapPinned className="h-5 w-5 text-emerald-600 shrink-0" />
+            </div>
+            {publicLocation.approximate_center ? (
+              <div className="mt-4">
+                <PublicLocationMap location={publicLocation} />
+              </div>
+            ) : null}
+          </section>
         )}
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}

@@ -9,6 +9,7 @@ import type {
   PublicCanonicalIdentifier,
   PublicItemProofs,
   PublicItemEvent,
+  PrivateLocationResponse,
 } from "./types";
 
 // Public endpoints (no auth required for discovery)
@@ -31,6 +32,10 @@ export async function getPublicCircuit(id: string): Promise<PublicCircuitPortfol
 // Public item endpoints (no auth required)
 export async function getPublicItem(dfid: string): Promise<PublicItem> {
   return registryRequest<PublicItem>(`/items/${dfid}/public`);
+}
+
+export async function getPrivateItemLocation(dfid: string): Promise<PrivateLocationResponse> {
+  return registryRequest<PrivateLocationResponse>(`/items/${dfid}/location/private`);
 }
 
 export async function getPublicItemCanonicalIdentifier(

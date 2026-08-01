@@ -136,6 +136,140 @@ components:
           type: string
           nullable: true
           description: Optional detailed error context
+    ApproximatePoint:
+      type: object
+      required:
+      - lat
+      - lon
+      properties:
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+    PublicLocationProjection:
+      type: object
+      required:
+      - level
+      - label
+      - country
+      - precision
+      - source
+      - map_available
+      - public_policy
+      properties:
+        approximate_center:
+          allOf:
+          - $ref: '#/components/schemas/ApproximatePoint'
+          nullable: true
+        approximate_radius_km:
+          type: number
+          format: double
+          nullable: true
+        country:
+          type: string
+        label:
+          type: string
+        level:
+          type: string
+          example: municipality
+        map_available:
+          type: boolean
+        municipio:
+          type: string
+          nullable: true
+        precision:
+          type: string
+          example: approximate
+        public_policy:
+          type: string
+          example: municipality_only_no_raw_coordinates_no_property_polygon
+        source:
+          type: string
+          example: metadata_municipality
+        uf:
+          type: string
+          nullable: true
+    PrivateLocation:
+      type: object
+      properties:
+        car:
+          type: string
+          nullable: true
+        codigo_mapa:
+          type: string
+          nullable: true
+        geolocalizacao:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          format: double
+          nullable: true
+        longitude:
+          type: number
+          format: double
+          nullable: true
+        municipio:
+          type: string
+          nullable: true
+        uf:
+          type: string
+          nullable: true
+    PropertyPolygonView:
+      type: object
+      required:
+      - car
+      - geojson
+      - source
+      properties:
+        area_ha:
+          type: number
+          format: double
+          nullable: true
+        car:
+          type: string
+        geojson:
+          type: object
+          additionalProperties: true
+        source:
+          type: string
+    PrivateLocationResponse:
+      type: object
+      required:
+      - dfid
+      - item_id
+      - access_level
+      - location_sources
+      properties:
+        access_level:
+          type: string
+          example: private
+        dfid:
+          type: string
+        item_id:
+          type: string
+          format: uuid
+        location_sources:
+          type: array
+          items:
+            type: string
+        private_location:
+          allOf:
+          - $ref: '#/components/schemas/PrivateLocation'
+          nullable: true
+        property_polygon:
+          allOf:
+          - $ref: '#/components/schemas/PropertyPolygonView'
+          nullable: true
+        public_location:
+          allOf:
+          - $ref: '#/components/schemas/PublicLocationProjection'
+          nullable: true
+        reason:
+          type: string
+          nullable: true
     WorkspaceInfo:
       type: object
       required:
@@ -2065,6 +2199,40 @@ components:
         message:
           type: string
           description: Important security message
+    SwitchPartnerStagingCircuitRequest:
+      description: Switch workspace staging inbox circuit for workspace_ingestion keys.
+      type: object
+      required:
+      - staging_circuit_id
+      properties:
+        staging_circuit_id:
+          type: string
+          format: uuid
+          description: New staging circuit id for this workspace
+    SwitchPartnerStagingCircuitResponse:
+      description: Result of safe staging inbox migration.
+      type: object
+      required:
+      - workspace_id
+      - staging_circuit_id
+      - updated_keys
+      - message
+      properties:
+        workspace_id:
+          type: string
+          format: uuid
+          description: Workspace where staging inbox was switched
+        staging_circuit_id:
+          type: string
+          format: uuid
+          description: Staging circuit now active for workspace ingestion
+        updated_keys:
+          type: integer
+          format: int64
+          description: Number of active workspace_ingestion keys synchronized
+        message:
+          type: string
+          description: Migration result message
     ApiKeyMetricsResponse:
       description: Usage metrics for an API key.
       type: object
@@ -2111,6 +2279,7 @@ components:
           description: 'Type of routing identifier. Determines how the value is normalized and matched during ingestion.'
           enum:
           - car
+          - exploracao
           - ccir
           - incra
           - nirf
@@ -2215,6 +2384,11 @@ components:
           format: uuid
           nullable: true
           description: 'Staging circuit used for this ingestion.'
+        created_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'User ID that submitted this payload. Null when submitted by workspace API key.'
         intake_mode:
           type: string
           description: 'How the payload was submitted (e.g. multipart, json).'
@@ -2556,7 +2730,7 @@ components:
           nullable: true
           additionalProperties:
             type: string
-          description: 'Canonical reference links by identifier type (e.g. sisbov, chip). Only present for identifiers detected for this item.'
+          description: 'Canonical reference links by identifier type, ONLY for public-safe identifiers (e.g. CAR in LAND). Sensitive animal identifiers (sisbov/chip/rfid/ear_tag) are NOT included — they do not resolve publicly (LGPD) and must not appear raw in a URL; use `url` (the DFID page). Only present when a public-safe reference applies.'
         partner_reference:
           type: string
           nullable: true
@@ -9608,6 +9782,49 @@ paths:
           description: Internal server error
       security:
       - bearerAuth: []
+  /api/partner/api-keys/{id}/staging-circuit:
+    put:
+      tags:
+      - Partner API Keys
+      summary: Switch staging inbox circuit safely
+      description: 'Switch staging inbox for workspace ingestion safely.
+
+
+        This endpoint marks the selected circuit as workspace staging inbox, synchronizes active workspace_ingestion API keys, and keeps delete-safety guarantees.'
+      operationId: switch_partner_api_key_staging_circuit
+      parameters:
+      - name: id
+        in: path
+        description: Workspace ingestion API key ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchPartnerStagingCircuitRequest'
+        required: true
+      responses:
+        '200':
+          description: Workspace staging circuit switched and keys synchronized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwitchPartnerStagingCircuitResponse'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
   /api/partner/routing-rules:
     get:
       tags:
@@ -11773,6 +11990,10 @@ paths:
 
         - Metadata (breed, weight, etc.)
 
+        - `metadata.public_location` when a safe public map projection exists
+          (municipality/UF or coarse geocell; never raw coordinates or the exact
+          property polygon)
+
         - Status (active, sold, etc.)
 
         - Created/updated timestamps
@@ -11859,6 +12080,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/items/{dfid}/location/private:
+    get:
+      tags:
+      - Items
+      summary: GET /items/:dfid/location/private - Private item location
+      description: 'Authenticated endpoint. Returns raw location fields and stored
+        CAR polygon only to callers that can read at least one circuit containing
+        the item. Anonymous public surfaces should use `metadata.public_location`
+        from `/api/items/{dfid}/public`, which is intentionally approximate.'
+      operationId: get_item_location_private
+      parameters:
+      - name: dfid
+        in: path
+        description: Item DFID
+        required: true
+        schema:
+          type: string
+          example: DFID-BEEF-BR-2026-000123-a3f2c1
+      responses:
+        '200':
+          description: Private item location
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivateLocationResponse'
+        '401':
+          description: Unauthorized - JWT required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Caller cannot read this item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
   /api/items/{dfid}/events/public:
     get:
       tags:
