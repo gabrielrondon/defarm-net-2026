@@ -7237,6 +7237,15 @@ paths:
                   status:
                     type: string
                     example: healthy
+                  version:
+                    type: string
+                    example: 0.1.0
+                  commit:
+                    type: string
+                    example: e3665d1
+                  build_timestamp:
+                    type: string
+                    example: '2026-08-01T12:00:00Z'
                   timestamp:
                     type: string
                     format: date-time
