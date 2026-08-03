@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Coins, RefreshCw, Save, PlusCircle, PlayCircle } from "lucide-react";
+import { Coins, RefreshCw, Save, PlusCircle, PlayCircle, Search, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   listPartners,
@@ -16,6 +17,28 @@ import {
   type UpsertEntitlementRequest,
 } from "@/lib/api/partner-entitlements";
 import { listWorkspaces, type AdminWorkspace } from "@/lib/api/admin-users";
+
+/** Status de entitlement derivado (workspace partner ⨝ entitlement). */
+type EntStatus = "provisioned" | "legacy_unlimited" | "inactive";
+
+/** Uma linha da lista unificada de parceiros: todo workspace_type=partner, tenha ou não entitlement. */
+interface PartnerRow {
+  workspace_id: string;
+  name: string;
+  slug: string;
+  owner_email: string | null;
+  status: EntStatus;
+  /** entitlement+usage se provisionado; null se legacy (sem linha). */
+  summary: PartnerSummary | null;
+}
+
+const STATUS_META: Record<EntStatus, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+  provisioned: { label: "Provisionado", variant: "default" },
+  legacy_unlimited: { label: "Legacy ∞", variant: "secondary" },
+  inactive: { label: "Inativo", variant: "destructive" },
+};
+
+type StatusFilter = "all" | EntStatus;
 
 interface FormState {
   workspace_id: string;
@@ -105,11 +128,80 @@ export default function AdminPartnerEntitlements() {
     enabled: !!selected,
   });
 
-  const partners = partnersQuery.data ?? [];
+  const partners = useMemo(() => partnersQuery.data ?? [], [partnersQuery.data]);
   const selectedSummary = useMemo(
     () => partners.find((p) => p.workspace_id === selected) ?? null,
     [partners, selected]
   );
+
+  // Lista unificada de parceiros: TODO workspace_type=partner (do auth-service) mesclado
+  // com quem tem entitlement (item-registry). Sem backend novo — junta os dois endpoints
+  // que a tela já carrega. Legacy (sem linha) = liberado ilimitado, precisa ficar visível.
+  const [listSearch, setListSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const partnerRows = useMemo<PartnerRow[]>(() => {
+    const byId = new Map(partners.map((s) => [s.workspace_id, s]));
+    const partnerWorkspaces = (workspacesQuery.data ?? []).filter((w) => w.workspace_type === "partner");
+    const rows: PartnerRow[] = partnerWorkspaces.map((w) => {
+      const s = byId.get(w.id) ?? null;
+      const status: EntStatus = !s ? "legacy_unlimited" : s.is_active ? "provisioned" : "inactive";
+      return { workspace_id: w.id, name: w.name, slug: w.slug, owner_email: w.owner_email ?? null, status, summary: s };
+    });
+    // Defensivo: entitlement cujo workspace não veio na lista de partners (tipo mudou/ausente).
+    const covered = new Set(partnerWorkspaces.map((w) => w.id));
+    for (const s of partners) {
+      if (!covered.has(s.workspace_id)) {
+        rows.push({
+          workspace_id: s.workspace_id,
+          name: `${s.workspace_id.slice(0, 8)}…`,
+          slug: "",
+          owner_email: null,
+          status: s.is_active ? "provisioned" : "inactive",
+          summary: s,
+        });
+      }
+    }
+    return rows;
+  }, [partners, workspacesQuery.data]);
+
+  const statusCounts = useMemo(
+    () => ({
+      all: partnerRows.length,
+      provisioned: partnerRows.filter((r) => r.status === "provisioned").length,
+      legacy_unlimited: partnerRows.filter((r) => r.status === "legacy_unlimited").length,
+      inactive: partnerRows.filter((r) => r.status === "inactive").length,
+    }),
+    [partnerRows]
+  );
+
+  const visibleRows = useMemo(() => {
+    const q = listSearch.trim().toLowerCase();
+    return partnerRows
+      .filter((r) => statusFilter === "all" || r.status === statusFilter)
+      .filter(
+        (r) =>
+          !q ||
+          [r.name, r.slug, r.owner_email ?? "", r.workspace_id, STATUS_META[r.status].label]
+            .some((f) => String(f).toLowerCase().includes(q))
+      )
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [partnerRows, listSearch, statusFilter]);
+
+  // Workspace legacy atualmente carregado no form de provisionar (pra avisar do landmine).
+  const provisioningLegacy = useMemo(
+    () => (!selected ? partnerRows.find((r) => r.workspace_id === form.workspace_id.trim() && r.status === "legacy_unlimited") ?? null : null),
+    [selected, partnerRows, form.workspace_id]
+  );
+
+  const selectRow = (r: PartnerRow) => {
+    if (r.summary) {
+      setSelected(r.workspace_id); // provisionado/inativo → modo edição
+    } else {
+      setSelected(null); // legacy → modo provisionar, pré-preenchido
+      setForm({ ...EMPTY_FORM, workspace_id: r.workspace_id });
+    }
+  };
 
   useEffect(() => {
     if (selectedSummary) setForm(fromSummary(selectedSummary));
@@ -189,10 +281,37 @@ export default function AdminPartnerEntitlements() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Partners list */}
+        {/* Partners list — unificada: provisionados + legacy + inativos */}
         <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-sm">Parceiros provisionados</CardTitle>
+          <CardHeader className="space-y-3">
+            <CardTitle className="text-sm">Parceiros ({statusCounts.all})</CardTitle>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-8"
+                value={listSearch}
+                placeholder="Buscar por nome, slug, e-mail ou ID…"
+                onChange={(e) => setListSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {([
+                ["all", `Todos (${statusCounts.all})`],
+                ["legacy_unlimited", `Legacy (${statusCounts.legacy_unlimited})`],
+                ["provisioned", `Provisionados (${statusCounts.provisioned})`],
+                ["inactive", `Inativos (${statusCounts.inactive})`],
+              ] as [StatusFilter, string][]).map(([key, label]) => (
+                <Button
+                  key={key}
+                  variant={statusFilter === key ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setStatusFilter(key)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
             <Button
@@ -206,28 +325,44 @@ export default function AdminPartnerEntitlements() {
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Provisionar novo
             </Button>
-            {partnersQuery.isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-            {partners.length === 0 && !partnersQuery.isLoading && (
-              <p className="text-sm text-muted-foreground">Nenhum parceiro provisionado ainda.</p>
+            {(partnersQuery.isLoading || workspacesQuery.isLoading) && (
+              <p className="text-sm text-muted-foreground">Carregando…</p>
+            )}
+            {visibleRows.length === 0 && !partnersQuery.isLoading && !workspacesQuery.isLoading && (
+              <p className="text-sm text-muted-foreground">
+                {partnerRows.length === 0 ? "Nenhum parceiro encontrado." : "Nenhum parceiro para este filtro/busca."}
+              </p>
             )}
             <ul className="divide-y">
-              {partners.map((p) => (
-                <li key={p.workspace_id}>
-                  <button
-                    className={`w-full rounded p-2 text-left text-sm hover:bg-muted ${
-                      selected === p.workspace_id ? "bg-muted" : ""
-                    }`}
-                    onClick={() => setSelected(p.workspace_id)}
-                  >
-                    <div className="font-mono text-xs">{p.workspace_id.slice(0, 8)}…</div>
-                    <div className="text-muted-foreground">
-                      {(p.allowed_value_chains || []).join(", ") || "—"} · saldo {p.balance_remaining}
-                      {p.usage?.holds_pending ? ` · ${p.usage.holds_pending} na fila` : ""}
-                      {!p.is_active ? " · inativo" : ""}
-                    </div>
-                  </button>
-                </li>
-              ))}
+              {visibleRows.map((r) => {
+                const isSel = selected === r.workspace_id || (!selected && form.workspace_id.trim() === r.workspace_id);
+                return (
+                  <li key={r.workspace_id}>
+                    <button
+                      className={`w-full rounded p-2 text-left text-sm hover:bg-muted ${isSel ? "bg-muted" : ""}`}
+                      onClick={() => selectRow(r)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium">{r.name || `${r.workspace_id.slice(0, 8)}…`}</span>
+                        <Badge variant={STATUS_META[r.status].variant} className="shrink-0 text-[10px]">
+                          {STATUS_META[r.status].label}
+                        </Badge>
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {r.owner_email ? `${r.owner_email} · ` : ""}
+                        {r.slug ? `${r.slug} · ` : ""}
+                        {r.workspace_id.slice(0, 8)}…
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {r.status === "legacy_unlimited"
+                          ? "sem cobrança · tokeniza ilimitado"
+                          : `saldo ${r.summary?.balance_remaining ?? 0}` +
+                            (r.summary?.usage?.holds_pending ? ` · ${r.summary.usage.holds_pending} na fila` : "")}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </CardContent>
         </Card>
@@ -240,12 +375,34 @@ export default function AdminPartnerEntitlements() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {provisioningLegacy && (
+              <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="font-medium">{provisioningLegacy.name} está em modo legacy (ilimitado).</p>
+                  <p className="mt-1 text-xs">
+                    Provisionar cria controle de saldo/quota — o parceiro deixa de tokenizar ilimitado.
+                    Só faça com <strong>saldo suficiente</strong>, senão os itens vão para a fila (hold).
+                    Deletar o entitlement depois volta ao legacy.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {selectedSummary && (
               <div className="grid grid-cols-2 gap-3 rounded-md bg-muted/40 p-3 text-sm md:grid-cols-4">
                 <Usage label="Hoje" value={selectedSummary.usage.tokenizations_today} />
                 <Usage label="Mês" value={selectedSummary.usage.tokenizations_month} />
                 <Usage label="Total" value={selectedSummary.usage.tokenizations_total} />
-                <Usage label="Saldo" value={selectedSummary.usage.balance_remaining} />
+                <Usage
+                  label="Saldo"
+                  value={selectedSummary.usage.balance_remaining}
+                  hint={
+                    selectedSummary.usage.entitlement_provisioned
+                      ? `${selectedSummary.usage.balance_in_animals} animais`
+                      : "ilimitado"
+                  }
+                />
               </div>
             )}
 
@@ -451,11 +608,12 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Usage({ label, value }: { label: string; value: number }) {
+function Usage({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-lg font-semibold">{value}</div>
+      {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
 }
