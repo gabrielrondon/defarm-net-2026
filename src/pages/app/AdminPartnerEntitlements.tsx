@@ -27,6 +27,8 @@ interface PartnerRow {
   name: string;
   slug: string;
   owner_email: string | null;
+  /** tipo do workspace; pode não ser 'partner' (ex.: producer com entitlement). */
+  workspace_type?: AdminWorkspace["workspace_type"];
   status: EntStatus;
   /** entitlement+usage se provisionado; null se legacy (sem linha). */
   summary: PartnerSummary | null;
@@ -141,26 +143,31 @@ export default function AdminPartnerEntitlements() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const partnerRows = useMemo<PartnerRow[]>(() => {
+    const allWorkspaces = workspacesQuery.data ?? [];
+    const wsById = new Map(allWorkspaces.map((w) => [w.id, w]));
     const byId = new Map(partners.map((s) => [s.workspace_id, s]));
-    const partnerWorkspaces = (workspacesQuery.data ?? []).filter((w) => w.workspace_type === "partner");
+    const partnerWorkspaces = allWorkspaces.filter((w) => w.workspace_type === "partner");
     const rows: PartnerRow[] = partnerWorkspaces.map((w) => {
       const s = byId.get(w.id) ?? null;
       const status: EntStatus = !s ? "legacy_unlimited" : s.is_active ? "provisioned" : "inactive";
-      return { workspace_id: w.id, name: w.name, slug: w.slug, owner_email: w.owner_email ?? null, status, summary: s };
+      return { workspace_id: w.id, name: w.name, slug: w.slug, owner_email: w.owner_email ?? null, workspace_type: w.workspace_type, status, summary: s };
     });
-    // Defensivo: entitlement cujo workspace não veio na lista de partners (tipo mudou/ausente).
+    // Entitlements em workspaces que NÃO são type=partner (ex.: producer com entitlement):
+    // ainda pertencem ao painel. Puxa nome/slug/email/tipo REAIS da lista completa de
+    // workspaces (não anonimiza) — só cai pro UUID se o workspace realmente não veio.
     const covered = new Set(partnerWorkspaces.map((w) => w.id));
     for (const s of partners) {
-      if (!covered.has(s.workspace_id)) {
-        rows.push({
-          workspace_id: s.workspace_id,
-          name: `${s.workspace_id.slice(0, 8)}…`,
-          slug: "",
-          owner_email: null,
-          status: s.is_active ? "provisioned" : "inactive",
-          summary: s,
-        });
-      }
+      if (covered.has(s.workspace_id)) continue;
+      const w = wsById.get(s.workspace_id) ?? null;
+      rows.push({
+        workspace_id: s.workspace_id,
+        name: w?.name ?? `${s.workspace_id.slice(0, 8)}…`,
+        slug: w?.slug ?? "",
+        owner_email: w?.owner_email ?? null,
+        workspace_type: w?.workspace_type,
+        status: s.is_active ? "provisioned" : "inactive",
+        summary: s,
+      });
     }
     return rows;
   }, [partners, workspacesQuery.data]);
@@ -182,7 +189,7 @@ export default function AdminPartnerEntitlements() {
       .filter(
         (r) =>
           !q ||
-          [r.name, r.slug, r.owner_email ?? "", r.workspace_id, STATUS_META[r.status].label]
+          [r.name, r.slug, r.owner_email ?? "", r.workspace_id, r.workspace_type ?? "", STATUS_META[r.status].label]
             .some((f) => String(f).toLowerCase().includes(q))
       )
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -349,6 +356,7 @@ export default function AdminPartnerEntitlements() {
                         </Badge>
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
+                        {r.workspace_type && r.workspace_type !== "partner" ? `${r.workspace_type} · ` : ""}
                         {r.owner_email ? `${r.owner_email} · ` : ""}
                         {r.slug ? `${r.slug} · ` : ""}
                         {r.workspace_id.slice(0, 8)}…
@@ -397,11 +405,7 @@ export default function AdminPartnerEntitlements() {
                 <Usage
                   label="Saldo"
                   value={selectedSummary.usage.balance_remaining}
-                  hint={
-                    selectedSummary.usage.entitlement_provisioned
-                      ? `${selectedSummary.usage.balance_in_animals} animais`
-                      : "ilimitado"
-                  }
+                  hint={`${selectedSummary.usage.balance_in_animals} animais`}
                 />
               </div>
             )}
