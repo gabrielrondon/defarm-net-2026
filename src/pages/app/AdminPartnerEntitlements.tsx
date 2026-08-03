@@ -56,16 +56,19 @@ interface FormState {
   notes: string;
 }
 
+// Defaults SEGUROS pra provisionar sem quebrar o parceiro (o gate segura itens quando
+// auto_release=false, is_active=false, ou value-chain fora da lista — ver banner do legacy):
+// auto_release=true + quotas ∞ (soft-gate que segura) + saldo generoso. O gate real é o SALDO.
 const EMPTY_FORM: FormState = {
   workspace_id: "",
   allowed_value_chains: "DEFARM, BEEF, DAIRY, LAND",
-  quota_daily: "50",
+  quota_daily: "",
   quota_monthly: "",
-  quota_total: "500",
+  quota_total: "",
   balance_remaining: "10000",
   cost_creation: "100",
   cost_enrichment: "1",
-  auto_release: false,
+  auto_release: true,
   is_active: true,
   notes: "",
 };
@@ -390,8 +393,10 @@ export default function AdminPartnerEntitlements() {
                   <p className="font-medium">{provisioningLegacy.name} está em modo legacy (ilimitado).</p>
                   <p className="mt-1 text-xs">
                     Provisionar cria controle de saldo/quota — o parceiro deixa de tokenizar ilimitado.
-                    Só faça com <strong>saldo suficiente</strong>, senão os itens vão para a fila (hold).
-                    Deletar o entitlement depois volta ao legacy.
+                    Os campos abaixo já vêm com <strong>defaults seguros</strong> (auto-liberar ligado,
+                    quotas ∞, saldo generoso) pra não segurar itens; confira o <strong>saldo</strong> —
+                    com saldo 0 os itens vão para a fila. Reverter ao ilimitado hoje exige remover o
+                    entitlement no backend (não há botão).
                   </p>
                 </div>
               </div>
@@ -524,8 +529,37 @@ export default function AdminPartnerEntitlements() {
             </Field>
 
             <div className="flex items-center gap-2">
-              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                <Save className="mr-2 h-4 w-4" /> Salvar
+              <Button
+                onClick={() => {
+                  const balance = numOrNull(form.balance_remaining) ?? 0;
+                  // Guard: is_active + auto_release + saldo 0 = os itens vão pra fila (no_balance)
+                  // silenciosamente. É o landmine que quebra o parceiro. Bloqueia antes de salvar.
+                  if (form.is_active && form.auto_release && balance <= 0) {
+                    toast({
+                      title: "Saldo 0 vai segurar os itens",
+                      description:
+                        "Com auto-liberar ligado e saldo 0, cada item vai para a fila (no_balance) e o parceiro para de tokenizar. Defina um saldo > 0.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  // Confirmar a saída do legacy (transição ilimitado → cobrança por saldo).
+                  if (
+                    provisioningLegacy &&
+                    !window.confirm(
+                      `Provisionar "${provisioningLegacy.name}"?\n\n` +
+                        "Isto tira o parceiro do modo legacy (tokeniza ilimitado, sem cobrança) e passa a " +
+                        "cobrar por saldo. Reverter ao ilimitado hoje exige remover o entitlement no backend " +
+                        "(não há botão). Continuar?"
+                    )
+                  ) {
+                    return;
+                  }
+                  saveMutation.mutate();
+                }}
+                disabled={saveMutation.isPending}
+              >
+                <Save className="mr-2 h-4 w-4" /> {provisioningLegacy ? "Provisionar controle de saldo" : "Salvar"}
               </Button>
               {selected && (
                 <div className="ml-auto flex items-center gap-2">
