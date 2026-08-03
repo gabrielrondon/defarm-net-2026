@@ -23,6 +23,7 @@ import {
   upsertWorkspaceLabels,
   LABEL_TAGS,
   type UpsertLabelsRequest,
+  type WorkspaceLabel,
 } from "@/lib/api/partner-labels";
 
 /** Status de entitlement derivado (workspace partner ⨝ entitlement). */
@@ -163,9 +164,11 @@ export default function AdminPartnerEntitlements() {
   });
 
   // Labels admin (favorito/tags/notas) por workspace — mescladas na lista por workspace_id.
+  // retry:1 — se o endpoint não existir ainda (deploy do #439 antes), não martela 3x.
   const labelsQuery = useQuery({
     queryKey: ["admin-partner-labels"],
     queryFn: listWorkspaceLabels,
+    retry: 1,
   });
 
   const partners = useMemo(() => partnersQuery.data ?? [], [partnersQuery.data]);
@@ -324,13 +327,37 @@ export default function AdminPartnerEntitlements() {
       toast({ title: "Falha ao liberar", description: String((e as Error).message), variant: "destructive" }),
   });
 
-  // Labels (favorito/tags) — persistem no backend; invalida a lista ao salvar.
+  // Labels (favorito/tags) — persistem no backend com UPDATE OTIMISTA: a UI reflete na hora
+  // (sem freeze global de todas as estrelas) e cliques rápidos leem o estado já atualizado
+  // (sem lost-update); rollback no erro; resync no fim. Achados #185 (Hetzner).
   const labelsMutation = useMutation({
     mutationFn: ({ workspace_id, body }: { workspace_id: string; body: UpsertLabelsRequest }) =>
       upsertWorkspaceLabels(workspace_id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-partner-labels"] }),
-    onError: (e: unknown) =>
-      toast({ title: "Falha ao salvar label", description: String((e as Error).message), variant: "destructive" }),
+    onMutate: async ({ workspace_id, body }) => {
+      await qc.cancelQueries({ queryKey: ["admin-partner-labels"] });
+      const prev = qc.getQueryData<WorkspaceLabel[]>(["admin-partner-labels"]);
+      qc.setQueryData<WorkspaceLabel[]>(["admin-partner-labels"], (old) => {
+        const list = old ? [...old] : [];
+        const i = list.findIndex((l) => l.workspace_id === workspace_id);
+        const base: WorkspaceLabel =
+          i >= 0 ? list[i] : { workspace_id, is_favorite: false, tags: [], notes: null };
+        const updated: WorkspaceLabel = {
+          ...base,
+          ...(body.is_favorite !== undefined ? { is_favorite: body.is_favorite } : {}),
+          ...(body.tags !== undefined ? { tags: body.tags } : {}),
+          ...(body.notes !== undefined ? { notes: body.notes } : {}),
+        };
+        if (i >= 0) list[i] = updated;
+        else list.push(updated);
+        return list;
+      });
+      return { prev };
+    },
+    onError: (e: unknown, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["admin-partner-labels"], ctx.prev);
+      toast({ title: "Falha ao salvar label", description: String((e as Error).message), variant: "destructive" });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["admin-partner-labels"] }),
   });
   const toggleFavorite = (r: PartnerRow) =>
     labelsMutation.mutate({ workspace_id: r.workspace_id, body: { is_favorite: !r.is_favorite } });
@@ -437,7 +464,6 @@ export default function AdminPartnerEntitlements() {
                       title={r.is_favorite ? "Desfavoritar" : "Favoritar"}
                       aria-label={r.is_favorite ? "Desfavoritar" : "Favoritar"}
                       onClick={() => toggleFavorite(r)}
-                      disabled={labelsMutation.isPending}
                     >
                       <Star
                         className={`h-4 w-4 ${r.is_favorite ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`}
@@ -527,7 +553,6 @@ export default function AdminPartnerEntitlements() {
                     type="button"
                     className="flex items-center gap-1 text-xs hover:underline"
                     onClick={() => toggleFavorite(focusedRow)}
-                    disabled={labelsMutation.isPending}
                   >
                     <Star
                       className={`h-4 w-4 ${focusedRow.is_favorite ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`}
@@ -545,7 +570,6 @@ export default function AdminPartnerEntitlements() {
                         size="sm"
                         className="h-7 px-2 text-xs"
                         onClick={() => toggleTag(focusedRow.workspace_id, focusedRow.tags, t)}
-                        disabled={labelsMutation.isPending}
                       >
                         {t}
                       </Button>
