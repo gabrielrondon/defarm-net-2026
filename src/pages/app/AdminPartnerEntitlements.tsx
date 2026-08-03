@@ -17,6 +17,7 @@ import {
   type UpsertEntitlementRequest,
 } from "@/lib/api/partner-entitlements";
 import { listWorkspaces, type AdminWorkspace } from "@/lib/api/admin-users";
+import { listValueChainPolicies } from "@/lib/api/value-chains";
 
 /** Status de entitlement derivado (workspace partner ⨝ entitlement). */
 type EntStatus = "provisioned" | "legacy_unlimited" | "inactive";
@@ -61,7 +62,10 @@ interface FormState {
 // auto_release=true + quotas ∞ (soft-gate que segura) + saldo generoso. O gate real é o SALDO.
 const EMPTY_FORM: FormState = {
   workspace_id: "",
-  allowed_value_chains: "DEFARM, BEEF, DAIRY, LAND",
+  // Fallback se o catálogo (value_chain_policies) não carregar. O default REAL vem do
+  // catálogo em runtime (defaultChains). LAND não existe no catálogo — era código fantasma,
+  // e omitir uma cadeia ativa (ex.: COFFEE/SOY) faz o gate segurar (value_chain_blocked).
+  allowed_value_chains: "DEFARM, BEEF, DAIRY, COFFEE, SOY",
   quota_daily: "",
   quota_monthly: "",
   quota_total: "",
@@ -115,6 +119,22 @@ export default function AdminPartnerEntitlements() {
     queryKey: ["admin-workspaces"],
     queryFn: listWorkspaces,
   });
+
+  // Catálogo de value chains ativas → default de allowed_value_chains ao provisionar
+  // (drift-proof: cadeia nova ativa entra sozinha; fantasma não aparece). Ver achado do
+  // Hetzner no #184: LAND não existe e COFFEE ativa faltava → value_chain_blocked.
+  const valueChainsQuery = useQuery({
+    queryKey: ["admin-value-chains"],
+    queryFn: () => listValueChainPolicies(true),
+  });
+  const defaultChains = useMemo(() => {
+    const codes = (valueChainsQuery.data ?? []).map((v) => v.code).filter(Boolean);
+    return codes.length ? codes.join(", ") : EMPTY_FORM.allowed_value_chains;
+  }, [valueChainsQuery.data]);
+  const provisionForm = useMemo<FormState>(
+    () => ({ ...EMPTY_FORM, allowed_value_chains: defaultChains }),
+    [defaultChains]
+  );
   const workspaceMatches = useMemo(() => {
     const all = workspacesQuery.data ?? [];
     const q = wsSearch.trim().toLowerCase();
@@ -209,7 +229,7 @@ export default function AdminPartnerEntitlements() {
       setSelected(r.workspace_id); // provisionado/inativo → modo edição
     } else {
       setSelected(null); // legacy → modo provisionar, pré-preenchido
-      setForm({ ...EMPTY_FORM, workspace_id: r.workspace_id });
+      setForm({ ...provisionForm, workspace_id: r.workspace_id });
     }
   };
 
@@ -330,7 +350,7 @@ export default function AdminPartnerEntitlements() {
               className="w-full"
               onClick={() => {
                 setSelected(null);
-                setForm(EMPTY_FORM);
+                setForm(provisionForm);
               }}
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Provisionar novo
@@ -531,10 +551,14 @@ export default function AdminPartnerEntitlements() {
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => {
-                  const balance = numOrNull(form.balance_remaining) ?? 0;
+                  // Saldo vazio: em EDIÇÃO o backend faz COALESCE (mantém o saldo atual) → não é 0,
+                  // não guardar (achado #184: bloqueava editar só as Notas de um parceiro c/ 5000).
+                  // Em PROVISÃO (novo/legacy) vazio vira 0 no INSERT → tratar como 0.
+                  const balanceInput = numOrNull(form.balance_remaining);
+                  const balance = balanceInput ?? (selected ? null : 0);
                   // Guard: is_active + auto_release + saldo 0 = os itens vão pra fila (no_balance)
                   // silenciosamente. É o landmine que quebra o parceiro. Bloqueia antes de salvar.
-                  if (form.is_active && form.auto_release && balance <= 0) {
+                  if (form.is_active && form.auto_release && balance !== null && balance <= 0) {
                     toast({
                       title: "Saldo 0 vai segurar os itens",
                       description:
