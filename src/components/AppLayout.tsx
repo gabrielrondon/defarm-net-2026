@@ -47,6 +47,8 @@ import logoIcon from "@/assets/logo-icon.png";
 import { useQuery } from "@tanstack/react-query";
 import { ProducerGate } from "@/components/ProducerGate";
 import { getMyCapabilities } from "@/lib/api/capabilities";
+import { getMyCircuitInvitations } from "@/lib/api/circuits";
+import { Badge } from "@/components/ui/badge";
 import { getMyJoinRequests, requestEmailVerification } from "@/lib/defarm-api";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -251,6 +253,19 @@ export function AppLayout({ children }: AppLayoutProps) {
     enabled: isAuthenticated,
     staleTime: 300_000,
   });
+  // Convites de circuito recebidos (pendentes) → badge no nav "Meus Circuitos".
+  // Mesma queryKey do MeusCircuitos: aceitar/recusar lá invalida o badge aqui.
+  const { data: myCircuitInvitations = [] } = useQuery({
+    queryKey: ["my-circuit-invitations"],
+    queryFn: getMyCircuitInvitations,
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const receivedInviteCount = myCircuitInvitations.filter(
+    (i) => i.invitation?.status === "pending"
+  ).length;
+
   const actionSections = (capabilities?.sections ?? [])
     .map((s) => ({ key: s.key, ...capabilityPresentation[s.key] }))
     .filter(
@@ -464,7 +479,24 @@ export function AppLayout({ children }: AppLayoutProps) {
                   >
                     <item.icon className="h-5 w-5" />
                     {item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}
-                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                    {item.href === "/app/meus-circuitos" && receivedInviteCount > 0 && (
+                      <Badge
+                        className="ml-auto h-5 min-w-[1.25rem] justify-center px-1.5 text-[11px]"
+                        aria-label={`${receivedInviteCount} ${receivedInviteCount === 1 ? "convite recebido" : "convites recebidos"}`}
+                      >
+                        {receivedInviteCount}
+                      </Badge>
+                    )}
+                    {isActive && (
+                      <ChevronRight
+                        className={cn(
+                          "h-4 w-4",
+                          item.href === "/app/meus-circuitos" && receivedInviteCount > 0
+                            ? "ml-1"
+                            : "ml-auto"
+                        )}
+                      />
+                    )}
                   </Link>
                 );
               })}
