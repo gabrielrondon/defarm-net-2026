@@ -148,6 +148,7 @@ export function ManageMembersDialog({
         description: `Convite pendente para ${vars.email} (${vars.role}).`,
       });
       setInviteEmail("");
+      setInviteRole("member"); // reseta o papel — senão gruda e o próximo convite herda (ex.: admin)
       setShowInviteForm(false);
       queryClient.invalidateQueries({ queryKey: ["circuit-invitations", circuit.id] });
       queryClient.invalidateQueries({ queryKey: ["circuitMembers", circuit.id] });
@@ -269,8 +270,9 @@ export function ManageMembersDialog({
           </div>
           <Button
             onClick={() => {
-              // Se digitou um email na busca, leva-o pro convite (mata o footgun do email na busca).
-              if (!showInviteForm && isEmail(searchQuery)) openInvite(searchQuery);
+              // Se há um email na busca, leva-o pro convite (mata o footgun) — mesmo com o painel
+              // já aberto. Sem email, alterna o painel.
+              if (isEmail(searchQuery)) openInvite(searchQuery);
               else setShowInviteForm((v) => !v);
             }}
             variant={showInviteForm ? "secondary" : "default"}
@@ -334,12 +336,15 @@ export function ManageMembersDialog({
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Convites ({invitations.length})
               </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {invitations.map((invitation) => {
                 const st = INV_STATUS[invitation.status] ?? {
                   label: invitation.status,
                   cls: "bg-muted text-muted-foreground",
                 };
-                const canResend = ["expired", "cancelled", "declined"].includes(invitation.status);
+                // Reenviar só em não-decisões (expirou/foi cancelado). 'declined' = a pessoa
+                // recusou de propósito; não oferecemos re-convite de 1 clique (evita insistência).
+                const canResend = ["expired", "cancelled"].includes(invitation.status);
                 return (
                   <div
                     key={invitation.id}
@@ -394,6 +399,7 @@ export function ManageMembersDialog({
                   </div>
                 );
               })}
+              </div>
             </div>
           ) : null}
 
