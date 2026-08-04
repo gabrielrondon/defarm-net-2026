@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Coins, RefreshCw, Save, PlusCircle, PlayCircle, Search, AlertTriangle } from "lucide-react";
+import { Coins, RefreshCw, Save, PlusCircle, PlayCircle, Search, AlertTriangle, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,13 @@ import {
 } from "@/lib/api/partner-entitlements";
 import { listWorkspaces, type AdminWorkspace } from "@/lib/api/admin-users";
 import { listValueChainPolicies } from "@/lib/api/value-chains";
+import {
+  listWorkspaceLabels,
+  upsertWorkspaceLabels,
+  LABEL_TAGS,
+  type UpsertLabelsRequest,
+  type WorkspaceLabel,
+} from "@/lib/api/partner-labels";
 
 /** Status de entitlement derivado (workspace partner ⨝ entitlement). */
 type EntStatus = "provisioned" | "legacy_unlimited" | "inactive";
@@ -33,6 +40,9 @@ interface PartnerRow {
   status: EntStatus;
   /** entitlement+usage se provisionado; null se legacy (sem linha). */
   summary: PartnerSummary | null;
+  /** labels admin (mescladas por workspace_id de /admin/partners/labels). */
+  is_favorite: boolean;
+  tags: string[];
 }
 
 const STATUS_META: Record<EntStatus, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
@@ -153,6 +163,14 @@ export default function AdminPartnerEntitlements() {
     enabled: !!selected,
   });
 
+  // Labels admin (favorito/tags/notas) por workspace — mescladas na lista por workspace_id.
+  // retry:1 — se o endpoint não existir ainda (deploy do #439 antes), não martela 3x.
+  const labelsQuery = useQuery({
+    queryKey: ["admin-partner-labels"],
+    queryFn: listWorkspaceLabels,
+    retry: 1,
+  });
+
   const partners = useMemo(() => partnersQuery.data ?? [], [partnersQuery.data]);
   const selectedSummary = useMemo(
     () => partners.find((p) => p.workspace_id === selected) ?? null,
@@ -164,16 +182,23 @@ export default function AdminPartnerEntitlements() {
   // que a tela já carrega. Legacy (sem linha) = liberado ilimitado, precisa ficar visível.
   const [listSearch, setListSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
 
   const partnerRows = useMemo<PartnerRow[]>(() => {
     const allWorkspaces = workspacesQuery.data ?? [];
     const wsById = new Map(allWorkspaces.map((w) => [w.id, w]));
     const byId = new Map(partners.map((s) => [s.workspace_id, s]));
+    const labelById = new Map((labelsQuery.data ?? []).map((l) => [l.workspace_id, l]));
+    const lbl = (id: string) => labelById.get(id);
     const partnerWorkspaces = allWorkspaces.filter((w) => w.workspace_type === "partner");
     const rows: PartnerRow[] = partnerWorkspaces.map((w) => {
       const s = byId.get(w.id) ?? null;
       const status: EntStatus = !s ? "legacy_unlimited" : s.is_active ? "provisioned" : "inactive";
-      return { workspace_id: w.id, name: w.name, slug: w.slug, owner_email: w.owner_email ?? null, workspace_type: w.workspace_type, status, summary: s };
+      return {
+        workspace_id: w.id, name: w.name, slug: w.slug, owner_email: w.owner_email ?? null,
+        workspace_type: w.workspace_type, status, summary: s,
+        is_favorite: lbl(w.id)?.is_favorite ?? false, tags: lbl(w.id)?.tags ?? [],
+      };
     });
     // Entitlements em workspaces que NÃO são type=partner (ex.: producer com entitlement):
     // ainda pertencem ao painel. Puxa nome/slug/email/tipo REAIS da lista completa de
@@ -190,10 +215,12 @@ export default function AdminPartnerEntitlements() {
         workspace_type: w?.workspace_type,
         status: s.is_active ? "provisioned" : "inactive",
         summary: s,
+        is_favorite: lbl(s.workspace_id)?.is_favorite ?? false,
+        tags: lbl(s.workspace_id)?.tags ?? [],
       });
     }
     return rows;
-  }, [partners, workspacesQuery.data]);
+  }, [partners, workspacesQuery.data, labelsQuery.data]);
 
   const statusCounts = useMemo(
     () => ({
@@ -209,14 +236,16 @@ export default function AdminPartnerEntitlements() {
     const q = listSearch.trim().toLowerCase();
     return partnerRows
       .filter((r) => statusFilter === "all" || r.status === statusFilter)
+      .filter((r) => !tagFilter || r.tags.includes(tagFilter))
       .filter(
         (r) =>
           !q ||
-          [r.name, r.slug, r.owner_email ?? "", r.workspace_id, r.workspace_type ?? "", STATUS_META[r.status].label]
+          [r.name, r.slug, r.owner_email ?? "", r.workspace_id, r.workspace_type ?? "", STATUS_META[r.status].label, ...r.tags]
             .some((f) => String(f).toLowerCase().includes(q))
       )
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [partnerRows, listSearch, statusFilter]);
+      // favoritos no topo, depois alfabético
+      .sort((a, b) => Number(b.is_favorite) - Number(a.is_favorite) || a.name.localeCompare(b.name));
+  }, [partnerRows, listSearch, statusFilter, tagFilter]);
 
   // Workspace legacy atualmente carregado no form de provisionar (pra avisar do landmine).
   const provisioningLegacy = useMemo(
@@ -298,6 +327,53 @@ export default function AdminPartnerEntitlements() {
       toast({ title: "Falha ao liberar", description: String((e as Error).message), variant: "destructive" }),
   });
 
+  // Labels (favorito/tags) — persistem no backend com UPDATE OTIMISTA: a UI reflete na hora
+  // (sem freeze global de todas as estrelas) e cliques rápidos leem o estado já atualizado
+  // (sem lost-update); rollback no erro; resync no fim. Achados #185 (Hetzner).
+  const labelsMutation = useMutation({
+    mutationFn: ({ workspace_id, body }: { workspace_id: string; body: UpsertLabelsRequest }) =>
+      upsertWorkspaceLabels(workspace_id, body),
+    onMutate: async ({ workspace_id, body }) => {
+      await qc.cancelQueries({ queryKey: ["admin-partner-labels"] });
+      const prev = qc.getQueryData<WorkspaceLabel[]>(["admin-partner-labels"]);
+      qc.setQueryData<WorkspaceLabel[]>(["admin-partner-labels"], (old) => {
+        const list = old ? [...old] : [];
+        const i = list.findIndex((l) => l.workspace_id === workspace_id);
+        const base: WorkspaceLabel =
+          i >= 0 ? list[i] : { workspace_id, is_favorite: false, tags: [], notes: null };
+        const updated: WorkspaceLabel = {
+          ...base,
+          ...(body.is_favorite !== undefined ? { is_favorite: body.is_favorite } : {}),
+          ...(body.tags !== undefined ? { tags: body.tags } : {}),
+          ...(body.notes !== undefined ? { notes: body.notes } : {}),
+        };
+        if (i >= 0) list[i] = updated;
+        else list.push(updated);
+        return list;
+      });
+      return { prev };
+    },
+    onError: (e: unknown, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["admin-partner-labels"], ctx.prev);
+      toast({ title: "Falha ao salvar label", description: String((e as Error).message), variant: "destructive" });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["admin-partner-labels"] }),
+  });
+  const toggleFavorite = (r: PartnerRow) =>
+    labelsMutation.mutate({ workspace_id: r.workspace_id, body: { is_favorite: !r.is_favorite } });
+  const toggleTag = (workspaceId: string, current: string[], tag: string) => {
+    const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
+    labelsMutation.mutate({ workspace_id: workspaceId, body: { tags: next } });
+  };
+
+  // Workspace em foco (provisionado selecionado OU o carregado no form de provisionar):
+  // é quem recebe a edição de labels no painel de detalhe.
+  const focusedWorkspaceId = selected ?? (form.workspace_id.trim() || null);
+  const focusedRow = useMemo(
+    () => (focusedWorkspaceId ? partnerRows.find((r) => r.workspace_id === focusedWorkspaceId) ?? null : null),
+    [partnerRows, focusedWorkspaceId]
+  );
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
@@ -342,6 +418,20 @@ export default function AdminPartnerEntitlements() {
                 </Button>
               ))}
             </div>
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">tags:</span>
+              {LABEL_TAGS.map((t) => (
+                <Button
+                  key={t}
+                  variant={tagFilter === t ? "default" : "outline"}
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() => setTagFilter(tagFilter === t ? null : t)}
+                >
+                  {t}
+                </Button>
+              ))}
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
             <Button
@@ -367,9 +457,20 @@ export default function AdminPartnerEntitlements() {
               {visibleRows.map((r) => {
                 const isSel = selected === r.workspace_id || (!selected && form.workspace_id.trim() === r.workspace_id);
                 return (
-                  <li key={r.workspace_id}>
+                  <li key={r.workspace_id} className="flex items-start gap-1">
                     <button
-                      className={`w-full rounded p-2 text-left text-sm hover:bg-muted ${isSel ? "bg-muted" : ""}`}
+                      type="button"
+                      className="mt-2 shrink-0 rounded p-0.5 hover:bg-muted"
+                      title={r.is_favorite ? "Desfavoritar" : "Favoritar"}
+                      aria-label={r.is_favorite ? "Desfavoritar" : "Favoritar"}
+                      onClick={() => toggleFavorite(r)}
+                    >
+                      <Star
+                        className={`h-4 w-4 ${r.is_favorite ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`}
+                      />
+                    </button>
+                    <button
+                      className={`min-w-0 flex-1 rounded p-2 text-left text-sm hover:bg-muted ${isSel ? "bg-muted" : ""}`}
                       onClick={() => selectRow(r)}
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -390,6 +491,15 @@ export default function AdminPartnerEntitlements() {
                           : `saldo ${r.summary?.balance_remaining ?? 0}` +
                             (r.summary?.usage?.holds_pending ? ` · ${r.summary.usage.holds_pending} na fila` : "")}
                       </div>
+                      {r.tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {r.tags.map((t) => (
+                            <Badge key={t} variant="outline" className="text-[10px]">
+                              {t}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </button>
                   </li>
                 );
@@ -432,6 +542,40 @@ export default function AdminPartnerEntitlements() {
                   value={selectedSummary.usage.balance_remaining}
                   hint={`${selectedSummary.usage.balance_in_animals} animais`}
                 />
+              </div>
+            )}
+
+            {focusedRow && (
+              <div className="space-y-2 rounded-md border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Labels operacionais</span>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs hover:underline"
+                    onClick={() => toggleFavorite(focusedRow)}
+                  >
+                    <Star
+                      className={`h-4 w-4 ${focusedRow.is_favorite ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground"}`}
+                    />
+                    {focusedRow.is_favorite ? "Favorito" : "Favoritar"}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {LABEL_TAGS.map((t) => {
+                    const on = focusedRow.tags.includes(t);
+                    return (
+                      <Button
+                        key={t}
+                        variant={on ? "default" : "outline"}
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => toggleTag(focusedRow.workspace_id, focusedRow.tags, t)}
+                      >
+                        {t}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
