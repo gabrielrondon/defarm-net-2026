@@ -480,7 +480,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <item.icon className="h-5 w-5" />
                     {item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}
                     {item.href === "/app/meus-circuitos" && receivedInviteCount > 0 && (
-                      <Badge className="ml-auto h-5 min-w-[1.25rem] justify-center px-1.5 text-[11px]">
+                      <Badge
+                        className="ml-auto h-5 min-w-[1.25rem] justify-center px-1.5 text-[11px]"
+                        aria-label={`${receivedInviteCount} ${receivedInviteCount === 1 ? "convite recebido" : "convites recebidos"}`}
+                      >
                         {receivedInviteCount}
                       </Badge>
                     )}
