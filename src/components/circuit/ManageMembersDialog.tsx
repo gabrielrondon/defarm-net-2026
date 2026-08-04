@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Users,
@@ -13,6 +13,7 @@ import {
   Loader2,
   Clock,
   XCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Circuit } from "@/lib/defarm-api";
@@ -62,6 +70,20 @@ const roleColors: Record<string, string> = {
   viewer: "bg-muted text-muted-foreground",
 };
 
+// Papéis que podem ser convidados (owner nunca é convidável).
+const INVITE_ROLES = ["member", "admin", "viewer"] as const;
+
+// Estados de convite → rótulo + cor. Deixa "pendente" ≠ "expirado/cancelado" óbvio.
+const INV_STATUS: Record<string, { label: string; cls: string }> = {
+  pending: { label: "Pendente", cls: "bg-amber-500/10 text-amber-600" },
+  accepted: { label: "Aceito", cls: "bg-green-500/10 text-green-600" },
+  declined: { label: "Recusado", cls: "bg-red-500/10 text-red-600" },
+  expired: { label: "Expirado", cls: "bg-muted text-muted-foreground" },
+  cancelled: { label: "Cancelado", cls: "bg-muted text-muted-foreground" },
+};
+
+const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
+
 export function ManageMembersDialog({
   circuit,
   open,
@@ -71,7 +93,22 @@ export function ManageMembersDialog({
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<string>("member");
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const inviteInputRef = useRef<HTMLInputElement>(null);
+
+  // Abre o painel de convite (opcionalmente pré-preenchendo o email vindo da busca) e foca.
+  const openInvite = (prefillEmail?: string) => {
+    if (prefillEmail) {
+      setInviteEmail(prefillEmail.trim());
+      setSearchQuery("");
+    }
+    setShowInviteForm(true);
+  };
+  // Foca o campo de email sempre que o painel de convite abre (some a confusão com a busca).
+  useEffect(() => {
+    if (showInviteForm) inviteInputRef.current?.focus();
+  }, [showInviteForm]);
 
   const membersQuery = useQuery({
     queryKey: ["circuitMembers", circuit.id],
@@ -85,58 +122,79 @@ export function ManageMembersDialog({
     enabled: open && Boolean(circuit.id),
   });
 
-  const pendingInvitations = (invitationsQuery.data ?? []).filter(
-    (invitation) => invitation.status === "pending"
-  );
+  // Todos os convites, pendentes primeiro, depois mais recentes.
+  const invitations = [...(invitationsQuery.data ?? [])].sort((a, b) => {
+    const rank = (s: string) => (s === "pending" ? 0 : 1);
+    return rank(a.status) - rank(b.status) || (b.created_at ?? "").localeCompare(a.created_at ?? "");
+  });
+
+  const inviteErrorMessage = (error: unknown) =>
+    error instanceof ApiError && error.status === 409
+      ? "Já existe um convite pendente para este destinatário."
+      : error instanceof Error
+        ? error.message
+        : "Tente novamente mais tarde";
 
   const inviteMutation = useMutation({
-    mutationFn: (email: string) =>
+    mutationFn: (vars: { email: string; role: string }) =>
       createCircuitInvitation(circuit.id, {
-        invited_email: email,
-        role: "member",
+        invited_email: vars.email,
+        role: vars.role,
         expires_in_days: 14,
       }),
-    onSuccess: (_invitation, email) => {
+    onSuccess: (_invitation, vars) => {
       toast({
-        title: "Convite registrado",
-        description: `Convite pendente para ${email}.`,
+        title: "Convite enviado",
+        description: `Convite pendente para ${vars.email} (${vars.role}).`,
       });
       setInviteEmail("");
+      setInviteRole("member"); // reseta o papel — senão gruda e o próximo convite herda (ex.: admin)
       setShowInviteForm(false);
       queryClient.invalidateQueries({ queryKey: ["circuit-invitations", circuit.id] });
       queryClient.invalidateQueries({ queryKey: ["circuitMembers", circuit.id] });
     },
-    onError: (error) => {
-      const message =
-        error instanceof ApiError && error.status === 409
-          ? "Já existe um convite pendente para este destinatário."
-          : error instanceof Error
-            ? error.message
-            : "Tente novamente mais tarde";
+    onError: (error) =>
       toast({
         title: "Erro ao enviar convite",
-        description: message,
+        description: inviteErrorMessage(error),
         variant: "destructive",
-      });
+      }),
+  });
+
+  // Reenviar = criar um convite novo com o mesmo destinatário/papel (não há endpoint de
+  // resend; só oferecemos em convites não-pendentes: expirado/recusado/cancelado).
+  const resendMutation = useMutation({
+    mutationFn: (invitation: CircuitInvitation) =>
+      createCircuitInvitation(circuit.id, {
+        invited_email: invitation.invited_email ?? undefined,
+        invited_user_id: invitation.invited_email ? undefined : invitation.invited_user_id,
+        role: invitation.role,
+        expires_in_days: 14,
+      }),
+    onSuccess: () => {
+      toast({ title: "Convite reenviado", description: "Um novo convite pendente foi criado." });
+      queryClient.invalidateQueries({ queryKey: ["circuit-invitations", circuit.id] });
     },
+    onError: (error) =>
+      toast({
+        title: "Erro ao reenviar convite",
+        description: inviteErrorMessage(error),
+        variant: "destructive",
+      }),
   });
 
   const cancelMutation = useMutation({
     mutationFn: (invitationId: string) => cancelCircuitInvitation(invitationId),
     onSuccess: () => {
-      toast({
-        title: "Convite cancelado",
-        description: "O convite pendente foi cancelado.",
-      });
+      toast({ title: "Convite cancelado", description: "O convite pendente foi cancelado." });
       queryClient.invalidateQueries({ queryKey: ["circuit-invitations", circuit.id] });
     },
-    onError: (error) => {
+    onError: (error) =>
       toast({
         title: "Erro ao cancelar convite",
         description: error instanceof Error ? error.message : "Tente novamente mais tarde",
         variant: "destructive",
-      });
-    },
+      }),
   });
 
   const filteredMembers = members.filter((member) => {
@@ -149,9 +207,10 @@ export function ManageMembersDialog({
     );
   });
 
-  const handleInvite = async () => {
-    if (!inviteEmail.trim()) return;
-    inviteMutation.mutate(inviteEmail.trim());
+  const handleInvite = () => {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    inviteMutation.mutate({ email, role: inviteRole });
   };
 
   const formatDate = (value: string) => {
@@ -197,18 +256,25 @@ export function ManageMembersDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Zona 1: BUSCAR membros (só filtra a lista abaixo — não convida). */}
         <div className="flex items-center gap-2 py-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar membros..."
+              placeholder="Buscar membros do circuito..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              aria-label="Buscar membros"
             />
           </div>
           <Button
-            onClick={() => setShowInviteForm(!showInviteForm)}
+            onClick={() => {
+              // Se há um email na busca, leva-o pro convite (mata o footgun) — mesmo com o painel
+              // já aberto. Sem email, alterna o painel.
+              if (isEmail(searchQuery)) openInvite(searchQuery);
+              else setShowInviteForm((v) => !v);
+            }}
             variant={showInviteForm ? "secondary" : "default"}
           >
             <UserPlus className="h-4 w-4 mr-2" />
@@ -216,63 +282,124 @@ export function ManageMembersDialog({
           </Button>
         </div>
 
+        {/* Zona 2: CONVIDAR por email (o que de fato cria o convite). */}
         {showInviteForm && (
-          <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg border border-border">
-            <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <Input
-              placeholder="email@exemplo.com"
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="flex-1"
-            />
-            <Button onClick={handleInvite} disabled={inviteMutation.isPending || !inviteEmail.trim()}>
-              {inviteMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Enviar"
-              )}
-            </Button>
+          <div className="space-y-2 p-4 bg-muted/50 rounded-lg border border-border">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground inline-flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5" /> Convidar por email
+            </p>
+            <div className="flex items-center gap-2">
+              <Input
+                ref={inviteInputRef}
+                placeholder="email@exemplo.com"
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleInvite();
+                  }
+                }}
+                className="flex-1"
+                aria-label="Email do convidado"
+              />
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger className="w-[110px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INVITE_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleInvite} disabled={inviteMutation.isPending || !inviteEmail.trim()}>
+                {inviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar"}
+              </Button>
+            </div>
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto min-h-0 space-y-2 py-2">
           {invitationsQuery.isError ? (
             <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
-              Não foi possível carregar os convites pendentes.
+              Não foi possível carregar os convites.
             </div>
           ) : null}
 
-          {pendingInvitations.length > 0 ? (
+          {/* Convites — todos os estados (pendente/aceito/recusado/expirado/cancelado). */}
+          {invitations.length > 0 ? (
             <div className="space-y-2 pb-2">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Convites pendentes
+                Convites ({invitations.length})
               </p>
-              {pendingInvitations.map((invitation) => (
-                <div
-                  key={invitation.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-amber-200 bg-amber-50/70"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground truncate">
-                      {invitationTarget(invitation)}
-                    </p>
-                    <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Expira em {formatDateTime(invitation.expires_at)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => cancelMutation.mutate(invitation.id)}
-                    disabled={cancelMutation.isPending}
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {invitations.map((invitation) => {
+                const st = INV_STATUS[invitation.status] ?? {
+                  label: invitation.status,
+                  cls: "bg-muted text-muted-foreground",
+                };
+                // Reenviar só em não-decisões (expirou/foi cancelado). 'declined' = a pessoa
+                // recusou de propósito; não oferecemos re-convite de 1 clique (evita insistência).
+                const canResend = ["expired", "cancelled"].includes(invitation.status);
+                return (
+                  <div
+                    key={invitation.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border bg-background"
                   >
-                    <XCircle className="h-3.5 w-3.5 mr-1" />
-                    Cancelar
-                  </Button>
-                </div>
-              ))}
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {invitationTarget(invitation)}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {roleLabel(invitation.role)}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {invitation.status === "pending"
+                          ? `Enviado ${formatDate(invitation.created_at)} · expira ${formatDateTime(invitation.expires_at)}`
+                          : `Enviado ${formatDate(invitation.created_at)}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium",
+                          st.cls
+                        )}
+                      >
+                        {st.label}
+                      </span>
+                      {invitation.status === "pending" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => cancelMutation.mutate(invitation.id)}
+                          disabled={cancelMutation.isPending}
+                        >
+                          <XCircle className="h-3.5 w-3.5 mr-1" />
+                          Cancelar
+                        </Button>
+                      )}
+                      {canResend && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => resendMutation.mutate(invitation)}
+                          disabled={resendMutation.isPending}
+                        >
+                          <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                          Reenviar
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              </div>
             </div>
           ) : null}
 
@@ -352,6 +479,13 @@ export function ManageMembersDialog({
               <p className="text-sm">
                 {searchQuery ? "Nenhum membro encontrado" : "Nenhum membro no circuito"}
               </p>
+              {/* Footgun-killer: digitou um email na busca? Oferece convidar direto. */}
+              {searchQuery && isEmail(searchQuery) && (
+                <Button className="mt-3" size="sm" onClick={() => openInvite(searchQuery)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Convidar {searchQuery.trim()}
+                </Button>
+              )}
             </div>
           )}
         </div>
