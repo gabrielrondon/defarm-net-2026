@@ -91,9 +91,75 @@ export interface PublicSanitaryAttestation {
   verify_url: string;
 }
 
+// ---- /verify público (#8): âncora + receita reproduzível + flags de honestidade ----
+export interface VerifyIdentity {
+  value_chain: string;
+  country: string;
+  year: number;
+  status: string;
+}
+export interface VerifyIdentifier {
+  identifier_type: string;
+  value: string;
+  is_canonical: boolean;
+}
+export interface VerifyAnchor {
+  transaction_hash: string;
+  chain_type: string;
+  status: string;
+  anchored_at: string;
+  network: string;
+  explorer_url: string;
+  ledger_number?: number | null;
+  anchor_type?: string | null;
+  anchored_dfid?: string | null;
+  metadata_cid?: string | null;
+  anchor_content_root?: string | null;
+  snapshot_hash?: string | null;
+  events_root?: string | null;
+  commitments_root?: string | null;
+  content_root_onchain: boolean;
+  onchain_content_binding?: string | null;
+  cid_onchain: boolean;
+  anchor_content_root_location?: string | null;
+}
+export interface VerifyEvent {
+  event_type: string;
+  source_type: string;
+  trust_score: number;
+  trust_level: string;
+  occurred_at: string;
+  issuer_workspace_id?: string | null;
+  signature_verified?: boolean | null;
+  signature_key_id?: string | null;
+  signature_public_key_b64?: string | null;
+  content_hash?: string | null;
+}
+export interface VerifyMethod {
+  event_hash_alg: string;
+  content_hash_canonicalization: string;
+  signature_alg: string;
+  signature_canonicalization: string;
+  anchor_binding: string;
+  anchor_content_root_canonicalization: string;
+  steps: string[];
+}
+export interface VerifyLinks {
+  full_metadata: string;
+  proofs: string;
+  events: string;
+}
 export interface PublicVerifyResponse {
   dfid: string;
+  identity?: VerifyIdentity;
+  identifiers?: VerifyIdentifier[];
+  anchor?: VerifyAnchor | null;
+  events?: VerifyEvent[];
+  issuers?: string[];
   sanitary_attestation?: PublicSanitaryAttestation | null;
+  certificate_url?: string;
+  links?: VerifyLinks;
+  verification?: VerifyMethod;
 }
 
 export async function verifyPublicItem(dfid: string): Promise<PublicVerifyResponse> {
