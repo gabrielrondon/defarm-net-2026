@@ -4,62 +4,50 @@ import { useTranslation } from "react-i18next";
 import { Loader2, AlertTriangle, ExternalLink, ChevronDown } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { AnchorStatus, anchorStateOf, type AnchorState } from "@/components/proof";
+import { anchorStateOf, type AnchorState } from "@/components/proof";
 import { verifyPublicItem, type PublicVerifyResponse } from "@/lib/defarm-api";
 
-// Página de verificação PÚBLICA de um DFID (#8, Nível 0). Linguagem fácil no topo,
-// prova reproduzível embaixo. Não substitui /i/:dfid (a ficha completa) — é o "confie
-// no que você mesmo confere". Sem login. Decisão anti-AI (#55): estado = COR + texto.
+// Página pública /v/:dfid (#8, Nível 0). Direção "selo minimalista": veredito + 1 ação;
+// todo o detalhe atrás de um único "Como isto é provado?". Sem login. Anti-AI #55: cor + texto.
 
 function fmtDate(s?: string | null): string {
   if (!s) return "";
   return s.replace("T", " ").slice(0, 16) + (s.length > 10 ? " UTC" : "");
 }
 
-// Bloco expansível (progressive disclosure) — leigo fica no topo, auditor abre.
-function Pillar({
-  k,
-  title,
-  desc,
+// Linha de prova em linguagem simples (dentro do disclosure). Estado = cor + palavra.
+function ProofLine({
+  label,
   status,
-  statusColor,
-  defaultOpen = true,
+  color,
   children,
 }: {
-  k: string;
-  title: string;
-  desc: string;
-  status: string;
-  statusColor: string;
-  defaultOpen?: boolean;
+  label: string;
+  status?: string;
+  color?: string;
   children: React.ReactNode;
 }) {
   return (
-    <details open={defaultOpen} className="group mb-3 overflow-hidden rounded-2xl border border-border bg-card">
-      <summary className="flex cursor-pointer list-none items-start gap-4 p-5 [&::-webkit-details-marker]:hidden">
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">{k}</div>
-          <div className="mt-0.5 font-display text-[18px] font-semibold tracking-tight">{title}</div>
-          <p className="mt-1 max-w-[54ch] text-[14px] text-muted-foreground">{desc}</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 pt-1">
-          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold" style={{ color: statusColor }}>
-            <span className="h-2 w-2 rounded-[2px]" style={{ background: statusColor }} />
+    <div>
+      <div className="flex items-center gap-2">
+        <span className="text-[14px] font-semibold">{label}</span>
+        {status && (
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium" style={{ color }}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
             {status}
           </span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-        </div>
-      </summary>
-      <div className="border-t border-border/60 px-5 pb-5 pt-4">{children}</div>
-    </details>
+        )}
+      </div>
+      <p className="mt-1 text-[13.5px] leading-relaxed text-muted-foreground">{children}</p>
+    </div>
   );
 }
 
-function ProofRow({ label, value }: { label: string; value: string }) {
+function TechRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+    <div>
       <div className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">{label}</div>
-      <div className="mt-1 break-all font-mono text-[12.5px] leading-relaxed">{value}</div>
+      <div className="mt-0.5 break-all font-mono text-[12px] leading-relaxed text-foreground/80">{value}</div>
     </div>
   );
 }
@@ -76,15 +64,9 @@ export default function PublicVerify() {
     setLoading(true);
     setError(false);
     verifyPublicItem(dfid)
-      .then((r) => {
-        if (!cancelled) setRes(r);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .then((r) => !cancelled && setRes(r))
+      .catch(() => !cancelled && setError(true))
+      .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
@@ -95,11 +77,9 @@ export default function PublicVerify() {
   const events = res?.events ?? [];
   const signed = events.filter((e) => e.signature_verified === true);
   const sigFailed = events.some((e) => e.signature_verified === false);
-  const hasAnchor = !!anchor;
-  const eventsMaybeTruncated = events.length >= 200; // /verify limita a página de eventos (H5)
-  // Há material pra CONFERIR integridade? (não afirmamos "confere" — PR-A não recomputa; PR-B fará.)
   const hasIntegrityMaterial = !!anchor?.snapshot_hash || events.some((e) => !!e.content_hash);
   const hasRoots = !!(anchor?.anchor_content_root || anchor?.events_root || anchor?.commitments_root);
+  const eventsMaybeTruncated = events.length >= 200; // veredito sobre a amostra (H5)
 
   const primary = "hsl(var(--primary))";
   const primaryDeep = "hsl(var(--primary-deep))";
@@ -107,11 +87,7 @@ export default function PublicVerify() {
   const destructive = "hsl(var(--destructive))";
   const muted = "hsl(var(--muted-foreground))";
 
-  // Veredito HONESTO, derivado dos dados (nunca afirma o que não foi conferido):
-  //  attention  → alguma assinatura NÃO confere.
-  //  verified   → âncora confirmada E há assinatura válida (existência + autoria + integridade do assinado).
-  //  anchored   → âncora confirmada mas SEM assinatura (só existência/data provadas).
-  //  pending    → âncora ainda não confirmada.
+  // Veredito honesto, derivado dos dados (ver notas nos 4 estados).
   const verdict: "attention" | "verified" | "anchored" | "pending" = sigFailed
     ? "attention"
     : anchorState === "confirmed" && signed.length > 0
@@ -119,238 +95,159 @@ export default function PublicVerify() {
       : anchorState === "confirmed"
         ? "anchored"
         : "pending";
-  const isGood = verdict === "verified" || verdict === "anchored";
   const vAccent = verdict === "attention" ? destructive : verdict === "pending" ? amber : primary;
   const vInk = verdict === "attention" ? destructive : verdict === "pending" ? amber : primaryDeep;
   const vBg =
     verdict === "attention"
-      ? "hsl(var(--destructive) / 0.1)"
+      ? "hsl(var(--destructive) / 0.12)"
       : verdict === "pending"
-        ? "hsl(38 92% 50% / 0.13)"
-        : "hsl(var(--primary) / 0.12)";
+        ? "hsl(38 92% 50% / 0.14)"
+        : "hsl(var(--primary) / 0.13)";
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-24 pb-16">
-        <div className="section-container max-w-3xl">
-          <div className="flex items-center gap-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-primary">
-            <span className="h-px w-6 bg-primary/50" />
+      <main className="pt-24 pb-20">
+        <div className="section-container max-w-xl">
+          <div className="text-center text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             {t("v.eyebrow")}
           </div>
-          <h1 className="mt-3 text-balance text-[30px] font-bold tracking-tight sm:text-[38px]">{t("v.title")}</h1>
-          <p className="mt-2 max-w-2xl text-[15px] text-muted-foreground">{t("v.sub")}</p>
 
           {loading ? (
-            <div className="mt-10 flex items-center gap-3 text-muted-foreground">
+            <div className="mt-16 flex items-center justify-center gap-3 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" /> {t("v.loading")}
             </div>
           ) : error || !res ? (
-            <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-              <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+            <div className="mt-10 rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+              <AlertTriangle className="mx-auto mb-3 h-7 w-7 text-muted-foreground" />
               <p className="text-[15px] font-semibold">{t("v.notfound_t")}</p>
-              <p className="mx-auto mt-1 max-w-md text-[13.5px] text-muted-foreground">{t("v.notfound_d")}</p>
+              <p className="mx-auto mt-1 max-w-sm text-[13.5px] text-muted-foreground">{t("v.notfound_d")}</p>
               <p className="mt-3 break-all font-mono text-[12px] text-muted-foreground">{dfid}</p>
             </div>
           ) : (
             <>
-              {/* VEREDITO */}
-              <section
-                className="relative mt-6 overflow-hidden rounded-2xl border border-border bg-card p-6"
-                style={{ boxShadow: "0 8px 40px -18px hsl(var(--primary) / 0.35)" }}
-              >
-                <span className="absolute inset-y-0 left-0 w-[5px]" style={{ background: vAccent }} aria-hidden="true" />
+              {/* SELO — veredito + 1 ação. O resto fica escondido. */}
+              <section className="mt-6 rounded-[20px] border border-border bg-card px-7 py-10 text-center sm:px-10">
                 <span
-                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-semibold"
-                  style={{ color: vInk, background: vBg }}
+                  className="mx-auto flex h-11 w-11 items-center justify-center rounded-full"
+                  style={{ background: vBg }}
+                  aria-hidden="true"
                 >
-                  <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: vAccent }} />
-                  {t(`v.verdict_${verdict}_t`)}
+                  <span className="h-3 w-3 rounded-[4px]" style={{ background: vAccent }} />
                 </span>
-                <h2 className="mt-4 text-balance font-display text-[22px] font-semibold leading-snug tracking-tight sm:text-[25px]">
+                <h1
+                  className="mt-5 text-balance font-display text-[25px] font-semibold tracking-tight sm:text-[29px]"
+                  style={{ color: vInk }}
+                >
+                  {t(`v.verdict_${verdict}_t`)}
+                </h1>
+                <p className="mx-auto mt-2.5 max-w-[40ch] text-[15px] leading-relaxed text-muted-foreground">
                   {t(`v.verdict_${verdict}_h`)}
-                </h2>
-                <p className="mt-2 max-w-[58ch] text-[14.5px] text-muted-foreground">{t(`v.verdict_${verdict}_d`)}</p>
-                {eventsMaybeTruncated && (
-                  <p className="mt-2 text-[12.5px] text-muted-foreground">{t("v.events_sample")}</p>
-                )}
-                <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-dashed border-border pt-4">
-                  <span className="break-all rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 font-mono text-[13.5px] font-semibold">
-                    {res.dfid}
-                  </span>
+                </p>
+
+                <div className="mx-auto mt-6 max-w-[24rem] border-t border-dashed border-border pt-5">
+                  <p className="break-all font-mono text-[13px] font-medium tracking-tight">{res.dfid}</p>
                   {anchor && (
-                    <span className="font-mono text-[12px] text-muted-foreground">
-                      {t("v.anchored_on")} {fmtDate(anchor.anchored_at)} · {t("v.network")} {anchor.network}
-                    </span>
+                    <p className="mt-1 font-mono text-[11.5px] text-muted-foreground">
+                      {fmtDate(anchor.anchored_at)} · {anchor.network}
+                    </p>
                   )}
                 </div>
+
+                {anchor?.explorer_url && (
+                  <a
+                    href={anchor.explorer_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[14.5px] font-semibold text-primary-foreground transition-[filter] hover:brightness-[1.06]"
+                    style={{ background: "hsl(var(--primary))" }}
+                  >
+                    {t("v.open_explorer")} <ExternalLink className="h-[17px] w-[17px]" />
+                  </a>
+                )}
               </section>
 
-              <div className="mt-9 mb-3 px-1 text-[12px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
-                {t("v.section_proof")}
-              </div>
-
-              {/* PILAR 1 — QUANDO & ONDE */}
-              <Pillar
-                k={t("v.when_k")}
-                title={t("v.when_t")}
-                desc={t("v.when_d")}
-                status={hasAnchor ? (anchorState === "confirmed" ? t("v.st_confirmed") : t("v.st_pending")) : t("v.st_none")}
-                statusColor={anchorState === "confirmed" ? primary : muted}
-              >
-                {anchor ? (
-                  <div className="space-y-3">
-                    <p className="text-[14px] text-muted-foreground">{t("v.when_body")}</p>
-                    <a
-                      href={anchor.explorer_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-lg border border-primary px-3.5 py-2 text-[14px] font-semibold text-primary transition-colors hover:bg-primary/10"
-                    >
-                      {t("v.open_explorer")} <ExternalLink className="h-4 w-4" />
-                    </a>
-                    <ProofRow label={t("v.tx")} value={anchor.transaction_hash} />
-                    {anchor.metadata_cid && <ProofRow label={t("v.cid")} value={anchor.metadata_cid} />}
-                  </div>
-                ) : (
-                  <p className="text-[14px] text-muted-foreground">{t("v.when_none")}</p>
-                )}
-              </Pillar>
-
-              {/* PILAR 2 — ÍNTEGRO */}
-              <Pillar
-                k={t("v.integrity_k")}
-                title={t("v.integrity_t")}
-                desc={t("v.integrity_d")}
-                status={hasIntegrityMaterial ? t("v.st_recomputable") : t("v.st_nodata")}
-                statusColor={muted}
-              >
-                <p className="text-[14px] text-muted-foreground">{t("v.integrity_body")}</p>
-                {res.verification?.content_hash_canonicalization && (
-                  <div className="mt-3">
-                    <ProofRow label={t("v.integrity_recipe")} value={res.verification.content_hash_canonicalization} />
-                  </div>
-                )}
-                {anchor?.snapshot_hash && (
-                  <div className="mt-2">
-                    <ProofRow label={t("v.snapshot_hash")} value={anchor.snapshot_hash} />
-                  </div>
-                )}
-              </Pillar>
-
-              {/* PILAR 3 — QUEM */}
-              <Pillar
-                k={t("v.who_k")}
-                title={t("v.who_t")}
-                desc={t("v.who_d")}
-                status={sigFailed ? t("v.st_attention") : signed.length > 0 ? t("v.st_signed") : t("v.st_unsigned")}
-                statusColor={sigFailed ? destructive : signed.length > 0 ? primary : muted}
-              >
-                <p className="text-[14px] text-muted-foreground">{t("v.who_body")}</p>
-                {signed[0]?.signature_public_key_b64 && (
-                  <div className="mt-3">
-                    <ProofRow label={t("v.pubkey")} value={signed[0].signature_public_key_b64} />
-                  </div>
-                )}
-                <div className="mt-3 rounded-xl border border-border bg-muted/40 px-3.5 py-3">
-                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
-                    {t("v.sig_level_k")}
-                  </div>
-                  <p className="mt-1 text-[13px] text-muted-foreground">{t("v.sig_level_d")}</p>
-                </div>
-              </Pillar>
-
-              {/* PARA TÉCNICOS — a receita crua, escondida por padrão */}
-              {res.verification && (
-                <details className="group mt-3 overflow-hidden rounded-2xl border border-border bg-card">
-                  <summary className="flex cursor-pointer list-none items-center justify-between p-5 [&::-webkit-details-marker]:hidden">
-                    <span className="font-display text-[16px] font-semibold">{t("v.tech_t")}</span>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-                  </summary>
-                  <div className="space-y-4 border-t border-border/60 px-5 pb-5 pt-4">
-                    <p className="text-[13px] text-muted-foreground">{t("v.tech_d")}</p>
-                    <ol className="space-y-2">
-                      {res.verification.steps.map((s, i) => (
-                        <li key={i} className="flex gap-3 text-[13px] text-muted-foreground">
-                          <span className="mt-0.5 font-mono text-[11px] font-semibold text-primary">{i + 1}.</span>
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ol>
-                    <div className="space-y-2">
-                      <ProofRow label={t("v.tech_sig_canon")} value={res.verification.signature_canonicalization} />
-                      <ProofRow label={t("v.tech_content_canon")} value={res.verification.content_hash_canonicalization} />
-                    </div>
-                    {/* Flags de honestidade LIDAS de verdade (H3): o que está on-chain vs conveniência em DB. */}
-                    {anchor && (
-                      <div className="space-y-2">
-                        <ProofRow
-                          label={t("v.tech_binding")}
-                          value={anchor.onchain_content_binding ?? t("v.tech_binding_none")}
-                        />
-                        <ProofRow
-                          label={t("v.tech_root_onchain")}
-                          value={anchor.content_root_onchain ? t("v.yes") : t("v.tech_root_offchain")}
-                        />
-                      </div>
-                    )}
-                    {/* Roots só quando existem (âncoras pós-PR2-B.2); sem valor visível, sem nota órfã. */}
-                    {hasRoots ? (
-                      <div className="space-y-2">
-                        {anchor?.anchor_content_root && (
-                          <ProofRow label={t("v.tech_root")} value={anchor.anchor_content_root} />
-                        )}
-                        {anchor?.events_root && <ProofRow label={t("v.tech_events_root")} value={anchor.events_root} />}
-                        {anchor?.commitments_root && (
-                          <ProofRow label={t("v.tech_commitments_root")} value={anchor.commitments_root} />
-                        )}
-                        <p className="rounded-xl px-3.5 py-3 text-[12.5px] leading-snug text-muted-foreground" style={{ background: "hsl(var(--muted) / 0.6)" }}>
-                          {anchor?.cid_onchain ? t("v.tech_note_cid") : t("v.tech_note_nocid")}
-                        </p>
-                      </div>
-                    ) : anchor ? (
-                      <p className="rounded-xl px-3.5 py-3 text-[12.5px] leading-snug text-muted-foreground" style={{ background: "hsl(var(--muted) / 0.6)" }}>
-                        {t("v.tech_roots_pending")}
-                      </p>
-                    ) : null}
-                  </div>
-                </details>
-              )}
-
-              {/* HONESTIDADE — o que prova, o que não prova */}
-              <details className="group mt-3 overflow-hidden rounded-2xl border border-border">
-                <summary className="flex cursor-pointer list-none items-center justify-between p-5 [&::-webkit-details-marker]:hidden">
-                  <span className="font-display text-[16px] font-semibold">{t("v.honesty_t")}</span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+              {/* UM link discreto abre todo o detalhe */}
+              <details className="group mt-6">
+                <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 py-1 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+                  {t("v.how_t")}
+                  <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
                 </summary>
-                <div className="grid gap-6 border-t border-border/60 p-5 sm:grid-cols-2">
-                  <div>
-                    <h4 className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: primaryDeep }}>
-                      {t("v.proves_t")}
-                    </h4>
-                    <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[13.5px] text-muted-foreground">
-                      <li>{t("v.proves_1")}</li>
-                      <li>{t("v.proves_2")}</li>
-                      <li>{t("v.proves_3")}</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="text-[11px] font-bold uppercase tracking-[0.06em] text-muted-foreground">
-                      {t("v.notproves_t")}
-                    </h4>
-                    <ul className="mt-2 list-disc space-y-1.5 pl-4 text-[13.5px] text-muted-foreground">
-                      <li>{t("v.notproves_1")}</li>
-                      <li>{t("v.notproves_2")}</li>
-                    </ul>
+
+                <div className="mt-4 space-y-5 rounded-[20px] border border-border bg-card p-6 sm:p-7">
+                  <ProofLine
+                    label={t("v.when_k")}
+                    status={anchor ? (anchorState === "confirmed" ? t("v.st_confirmed") : t("v.st_pending")) : t("v.st_none")}
+                    color={anchor && anchorState === "confirmed" ? primaryDeep : muted}
+                  >
+                    {t("v.when_d")}
+                  </ProofLine>
+
+                  <ProofLine
+                    label={t("v.integrity_k")}
+                    status={hasIntegrityMaterial ? t("v.st_recomputable") : t("v.st_nodata")}
+                    color={muted}
+                  >
+                    {t("v.integrity_d")}
+                  </ProofLine>
+
+                  <ProofLine
+                    label={t("v.who_k")}
+                    status={sigFailed ? t("v.st_attention") : signed.length > 0 ? t("v.st_signed") : t("v.st_unsigned")}
+                    color={sigFailed ? destructive : signed.length > 0 ? primaryDeep : muted}
+                  >
+                    {t("v.who_d")}
+                  </ProofLine>
+
+                  {/* Técnico: aninhado, pra sumir de quem não quer */}
+                  {res.verification && (
+                    <details className="group/tech border-t border-border/60 pt-4">
+                      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+                        {t("v.tech_t")}
+                        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open/tech:rotate-180" />
+                      </summary>
+                      <div className="mt-4 space-y-3">
+                        <ol className="space-y-1.5">
+                          {res.verification.steps.map((s, i) => (
+                            <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed text-muted-foreground">
+                              <span className="font-mono text-[11px] font-semibold text-primary">{i + 1}.</span>
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ol>
+                        <div className="space-y-3 rounded-xl bg-muted/40 p-3.5">
+                          <TechRow label={t("v.tech_sig_canon")} value={res.verification.signature_canonicalization} />
+                          <TechRow label={t("v.tech_content_canon")} value={res.verification.content_hash_canonicalization} />
+                          {anchor && (
+                            <TechRow
+                              label={t("v.tech_binding")}
+                              value={anchor.onchain_content_binding ?? t("v.tech_binding_none")}
+                            />
+                          )}
+                          {hasRoots && anchor?.anchor_content_root && (
+                            <TechRow label={t("v.tech_root")} value={anchor.anchor_content_root} />
+                          )}
+                          {hasRoots && anchor?.events_root && (
+                            <TechRow label={t("v.tech_events_root")} value={anchor.events_root} />
+                          )}
+                          {hasRoots && anchor?.commitments_root && (
+                            <TechRow label={t("v.tech_commitments_root")} value={anchor.commitments_root} />
+                          )}
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  <div className="border-t border-border/60 pt-4">
+                    <p className="text-[12.5px] leading-relaxed text-muted-foreground">{t("v.honesty_short")}</p>
+                    {eventsMaybeTruncated && (
+                      <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{t("v.events_sample")}</p>
+                    )}
                   </div>
                 </div>
               </details>
 
-              <p className="mt-6 text-center font-mono text-[11.5px] leading-relaxed text-muted-foreground">
-                {t("v.foot")}
-                <br />
-                defarm.net/v/{res.dfid}
-              </p>
+              <p className="mt-8 text-center font-mono text-[11px] text-muted-foreground">defarm.net/v/{res.dfid}</p>
             </>
           )}
         </div>

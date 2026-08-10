@@ -2239,6 +2239,8 @@
     }
   },
   "v": {
+    "how_t": "Como isto é provado?",
+    "honesty_short": "Isto prova existência, integridade e autoria do que foi assinado. Não prova o fato do mundo real (isso vem da autoridade do emissor) nem expõe dados privados do produtor.",
     "eyebrow": "Verificação pública",
     "title": "Confira este registro você mesmo",
     "sub": "Um registro rastreável, ancorado numa blockchain pública. Qualquer pessoa confere sem precisar confiar na DeFarm, inclusive você agora.",

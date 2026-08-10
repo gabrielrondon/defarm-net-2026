@@ -2239,6 +2239,8 @@
     }
   },
   "v": {
+    "how_t": "How is this proven?",
+    "honesty_short": "This proves existence, integrity and authorship of what was signed. It does not prove the real-world fact (that comes from the issuer's authority) nor expose the producer's private data.",
     "eyebrow": "Public verification",
     "title": "Check this record yourself",
     "sub": "A traceable record, anchored on a public blockchain. Anyone can verify it without trusting DeFarm, including you, right now.",
