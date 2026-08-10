@@ -251,6 +251,8 @@ function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
         <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/pres:rotate-180" />
       </summary>
       <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-300">
+        {/* Intro em linguagem de gente: o que a timeline PROVA, antes de qualquer hash. */}
+        <p className="mb-3 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.presence_intro")}</p>
         <ol className="space-y-1.5">
           {proofs.map((p) => {
             const st = statusMeta(p.status);
@@ -260,23 +262,31 @@ function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
                   <span className="flex items-center gap-2 text-[12.5px]">
                     <span className="font-medium text-foreground">{fmtDay(p.day)}</span>
-                    <span className="text-muted-foreground">{t("v.presence_asserted")}</span>
-                    <st.Icon className="h-3.5 w-3.5" style={{ color: st.color }} aria-label={st.label} />
+                    <span className="inline-flex items-center gap-1 font-medium" style={{ color: st.color }}>
+                      <st.Icon className="h-3.5 w-3.5" />
+                      {t("v.presence_asserted")}
+                    </span>
                   </span>
-                  <span className="flex items-center gap-1 font-mono text-[10.5px] text-muted-foreground">
-                    {shortHash(p.root_hash, 6, 4)}
-                    <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/day:rotate-180" />
-                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/day:rotate-180" />
                 </summary>
-                <div className="mt-2 space-y-1 border-t border-border/50 pt-2 font-mono text-[10.5px] leading-relaxed text-muted-foreground">
-                  <div className="break-all">
-                    {t("v.presence_root")}: {p.root_hash}
-                  </div>
-                  <div>
-                    {t("v.presence_inclusion")}:{" "}
-                    <span style={{ color: st.color }}>{st.label}</span> ({p.proof_path.length})
-                  </div>
-                  <div className="break-all">leaf: {shortHash(p.leaf_hash, 10, 8)}</div>
+                <div className="mt-2 space-y-2 border-t border-border/50 pt-2">
+                  {/* Primeiro a frase que explica por que isto é prova (não número solto). */}
+                  <p className="text-[11.5px] leading-relaxed text-foreground/80">{t("v.presence_day_plain")}</p>
+                  {/* Os hashes ROTULADos em nome de gente — "impressão digital", não "raiz". */}
+                  <dl className="space-y-1 font-mono text-[10.5px] leading-relaxed text-muted-foreground">
+                    <div className="break-all">
+                      <span className="text-foreground/60">{t("v.presence_fingerprint")}: </span>
+                      {shortHash(p.root_hash, 10, 8)}
+                    </div>
+                    <div className="break-all">
+                      <span className="text-foreground/60">{t("v.presence_leaf_label")}: </span>
+                      {shortHash(p.leaf_hash, 10, 8)}
+                    </div>
+                    <div>
+                      <span className="text-foreground/60">{t("v.presence_inclusion")}: </span>
+                      <span style={{ color: st.color }}>{st.label}</span> · {p.proof_path.length} {t("v.presence_steps")}
+                    </div>
+                  </dl>
                 </div>
               </details>
             </li>
