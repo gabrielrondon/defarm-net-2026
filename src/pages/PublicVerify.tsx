@@ -96,13 +96,38 @@ export default function PublicVerify() {
   const signed = events.filter((e) => e.signature_verified === true);
   const sigFailed = events.some((e) => e.signature_verified === false);
   const hasAnchor = !!anchor;
+  const eventsMaybeTruncated = events.length >= 200; // /verify limita a página de eventos (H5)
+  // Há material pra CONFERIR integridade? (não afirmamos "confere" — PR-A não recomputa; PR-B fará.)
+  const hasIntegrityMaterial = !!anchor?.snapshot_hash || events.some((e) => !!e.content_hash);
+  const hasRoots = !!(anchor?.anchor_content_root || anchor?.events_root || anchor?.commitments_root);
 
-  // Veredito honesto: verificado quando a âncora está confirmada e nenhuma assinatura falhou.
-  const verified = anchorState === "confirmed" && !sigFailed;
   const primary = "hsl(var(--primary))";
   const primaryDeep = "hsl(var(--primary-deep))";
   const amber = "hsl(38 92% 38%)";
+  const destructive = "hsl(var(--destructive))";
   const muted = "hsl(var(--muted-foreground))";
+
+  // Veredito HONESTO, derivado dos dados (nunca afirma o que não foi conferido):
+  //  attention  → alguma assinatura NÃO confere.
+  //  verified   → âncora confirmada E há assinatura válida (existência + autoria + integridade do assinado).
+  //  anchored   → âncora confirmada mas SEM assinatura (só existência/data provadas).
+  //  pending    → âncora ainda não confirmada.
+  const verdict: "attention" | "verified" | "anchored" | "pending" = sigFailed
+    ? "attention"
+    : anchorState === "confirmed" && signed.length > 0
+      ? "verified"
+      : anchorState === "confirmed"
+        ? "anchored"
+        : "pending";
+  const isGood = verdict === "verified" || verdict === "anchored";
+  const vAccent = verdict === "attention" ? destructive : verdict === "pending" ? amber : primary;
+  const vInk = verdict === "attention" ? destructive : verdict === "pending" ? amber : primaryDeep;
+  const vBg =
+    verdict === "attention"
+      ? "hsl(var(--destructive) / 0.1)"
+      : verdict === "pending"
+        ? "hsl(38 92% 50% / 0.13)"
+        : "hsl(var(--primary) / 0.12)";
 
   return (
     <div className="min-h-screen bg-background">
@@ -134,27 +159,21 @@ export default function PublicVerify() {
                 className="relative mt-6 overflow-hidden rounded-2xl border border-border bg-card p-6"
                 style={{ boxShadow: "0 8px 40px -18px hsl(var(--primary) / 0.35)" }}
               >
-                <span
-                  className="absolute inset-y-0 left-0 w-[5px]"
-                  style={{ background: verified ? primary : amber }}
-                  aria-hidden="true"
-                />
+                <span className="absolute inset-y-0 left-0 w-[5px]" style={{ background: vAccent }} aria-hidden="true" />
                 <span
                   className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-semibold"
-                  style={{
-                    color: verified ? primaryDeep : amber,
-                    background: verified ? "hsl(var(--primary) / 0.12)" : "hsl(38 92% 50% / 0.13)",
-                  }}
+                  style={{ color: vInk, background: vBg }}
                 >
-                  <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: verified ? primary : amber }} />
-                  {verified ? t("v.verdict_ok_t") : t("v.verdict_partial_t")}
+                  <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: vAccent }} />
+                  {t(`v.verdict_${verdict}_t`)}
                 </span>
                 <h2 className="mt-4 text-balance font-display text-[22px] font-semibold leading-snug tracking-tight sm:text-[25px]">
-                  {verified ? t("v.verdict_ok_h") : t("v.verdict_partial_h")}
+                  {t(`v.verdict_${verdict}_h`)}
                 </h2>
-                <p className="mt-2 max-w-[58ch] text-[14.5px] text-muted-foreground">
-                  {verified ? t("v.verdict_ok_d") : t("v.verdict_partial_d")}
-                </p>
+                <p className="mt-2 max-w-[58ch] text-[14.5px] text-muted-foreground">{t(`v.verdict_${verdict}_d`)}</p>
+                {eventsMaybeTruncated && (
+                  <p className="mt-2 text-[12.5px] text-muted-foreground">{t("v.events_sample")}</p>
+                )}
                 <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-dashed border-border pt-4">
                   <span className="break-all rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 font-mono text-[13.5px] font-semibold">
                     {res.dfid}
@@ -203,8 +222,8 @@ export default function PublicVerify() {
                 k={t("v.integrity_k")}
                 title={t("v.integrity_t")}
                 desc={t("v.integrity_d")}
-                status={t("v.st_ok")}
-                statusColor={primary}
+                status={hasIntegrityMaterial ? t("v.st_recomputable") : t("v.st_nodata")}
+                statusColor={muted}
               >
                 <p className="text-[14px] text-muted-foreground">{t("v.integrity_body")}</p>
                 {res.verification?.content_hash_canonicalization && (
@@ -224,8 +243,8 @@ export default function PublicVerify() {
                 k={t("v.who_k")}
                 title={t("v.who_t")}
                 desc={t("v.who_d")}
-                status={sigFailed ? t("v.st_attention") : signed.length > 0 ? t("v.st_signed") : t("v.st_none")}
-                statusColor={sigFailed ? "hsl(var(--destructive))" : signed.length > 0 ? primary : muted}
+                status={sigFailed ? t("v.st_attention") : signed.length > 0 ? t("v.st_signed") : t("v.st_unsigned")}
+                statusColor={sigFailed ? destructive : signed.length > 0 ? primary : muted}
               >
                 <p className="text-[14px] text-muted-foreground">{t("v.who_body")}</p>
                 {signed[0]?.signature_public_key_b64 && (
@@ -261,19 +280,39 @@ export default function PublicVerify() {
                     <div className="space-y-2">
                       <ProofRow label={t("v.tech_sig_canon")} value={res.verification.signature_canonicalization} />
                       <ProofRow label={t("v.tech_content_canon")} value={res.verification.content_hash_canonicalization} />
-                      {anchor?.anchor_content_root && (
-                        <ProofRow label={t("v.tech_root")} value={anchor.anchor_content_root} />
-                      )}
-                      {anchor?.events_root && <ProofRow label={t("v.tech_events_root")} value={anchor.events_root} />}
-                      {anchor?.commitments_root && (
-                        <ProofRow label={t("v.tech_commitments_root")} value={anchor.commitments_root} />
-                      )}
                     </div>
+                    {/* Flags de honestidade LIDAS de verdade (H3): o que está on-chain vs conveniência em DB. */}
                     {anchor && (
-                      <p className="rounded-xl px-3.5 py-3 text-[12.5px] leading-snug text-muted-foreground" style={{ background: "hsl(var(--muted) / 0.6)" }}>
-                        {t("v.tech_note")}
-                      </p>
+                      <div className="space-y-2">
+                        <ProofRow
+                          label={t("v.tech_binding")}
+                          value={anchor.onchain_content_binding ?? t("v.tech_binding_none")}
+                        />
+                        <ProofRow
+                          label={t("v.tech_root_onchain")}
+                          value={anchor.content_root_onchain ? t("v.yes") : t("v.tech_root_offchain")}
+                        />
+                      </div>
                     )}
+                    {/* Roots só quando existem (âncoras pós-PR2-B.2); sem valor visível, sem nota órfã. */}
+                    {hasRoots ? (
+                      <div className="space-y-2">
+                        {anchor?.anchor_content_root && (
+                          <ProofRow label={t("v.tech_root")} value={anchor.anchor_content_root} />
+                        )}
+                        {anchor?.events_root && <ProofRow label={t("v.tech_events_root")} value={anchor.events_root} />}
+                        {anchor?.commitments_root && (
+                          <ProofRow label={t("v.tech_commitments_root")} value={anchor.commitments_root} />
+                        )}
+                        <p className="rounded-xl px-3.5 py-3 text-[12.5px] leading-snug text-muted-foreground" style={{ background: "hsl(var(--muted) / 0.6)" }}>
+                          {anchor?.cid_onchain ? t("v.tech_note_cid") : t("v.tech_note_nocid")}
+                        </p>
+                      </div>
+                    ) : anchor ? (
+                      <p className="rounded-xl px-3.5 py-3 text-[12.5px] leading-snug text-muted-foreground" style={{ background: "hsl(var(--muted) / 0.6)" }}>
+                        {t("v.tech_roots_pending")}
+                      </p>
+                    ) : null}
                   </div>
                 </details>
               )}
