@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
@@ -204,6 +204,26 @@ export default function PublicVerify() {
   const [res, setRes] = useState<PublicVerifyResponse | null>(null);
   const [item, setItem] = useState<PublicItem | null>(null);
   const [error, setError] = useState(false);
+  // Dark mode ESCOPADO só a esta página (classe .dark no wrapper → tokens do index.css).
+  // Futuramente vira global da DeFarm; por ora, só o certificado. Lembra a escolha.
+  const [dark, setDark] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("defarm-v-theme") === "dark";
+    } catch {
+      return false;
+    }
+  });
+  const toggleDark = () => {
+    setDark((d) => {
+      const next = !d;
+      try {
+        localStorage.setItem("defarm-v-theme", next ? "dark" : "light");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -264,15 +284,27 @@ export default function PublicVerify() {
         : "hsl(var(--primary) / 0.13)";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${dark ? "dark" : ""}`}>
       <Header />
       <main className="relative pt-24 pb-20">
-        {/* Vinheta: escurece a página ao redor pra o cartão-documento ganhar destaque (centro fica limpo). */}
+        {/* Fundo um pouco mais escuro (light) + vinheta ao redor → o cartão-documento ganha destaque. */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
-          style={{ background: "radial-gradient(70% 50% at 50% 32%, transparent 42%, rgba(0,0,0,0.12) 100%)" }}
+          style={{
+            background:
+              "radial-gradient(72% 52% at 50% 32%, rgba(0,0,0,0.035) 38%, rgba(0,0,0,0.14) 100%)",
+          }}
         />
+        {/* Toggle de tema — discreto, só desta página por enquanto. */}
+        <button
+          type="button"
+          onClick={toggleDark}
+          aria-label={dark ? "Tema claro" : "Tema escuro"}
+          className="absolute right-4 top-4 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/70 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+        >
+          {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
         <div className="section-container relative max-w-xl">
           <div className="text-center text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             {t("v.eyebrow")}
