@@ -1293,7 +1293,6 @@ export interface PublicItemEvent {
   // "verifique você mesmo" (#106): recompor o content_hash no navegador.
   metadata?: Record<string, unknown> | null;
   content_hash?: string | null;
-  event_owner_workspace_id?: string | null;
   // Exposta pelo backend (engines#475) quando a chave era válida no momento da
   // assinatura — pro navegador refazer o Ed25519 sozinho.
   signature_public_key_b64?: string | null;

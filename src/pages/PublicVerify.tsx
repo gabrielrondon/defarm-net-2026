@@ -6,7 +6,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
-import { verifyInclusionInBrowser, verifyEventContentHashInBrowser } from "@/lib/verify-inclusion";
+import {
+  verifyInclusionInBrowser,
+  verifyEventContentHashInBrowser,
+  verifyEventSignatureInBrowser,
+} from "@/lib/verify-inclusion";
 import {
   verifyPublicItem,
   getPublicItem,
