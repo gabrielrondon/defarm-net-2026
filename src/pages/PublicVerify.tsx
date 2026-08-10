@@ -5,7 +5,11 @@ import { Loader2, AlertTriangle, ExternalLink, ChevronDown } from "lucide-react"
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
-import { verifyPublicItem, type PublicVerifyResponse } from "@/lib/defarm-api";
+import { verifyPublicItem, getPublicItem, type PublicVerifyResponse, type PublicItem } from "@/lib/defarm-api";
+
+// Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
+// pra visitante anônimo (privacidade). O /v só exibe o que vier mascarado.
+const SENSITIVE_IDS = ["sisbov", "chip", "rfid", "brinco", "ear_tag"] as const;
 
 // Página pública /v/:dfid (#8, Nível 0). Direção "selo minimalista": veredito + 1 ação;
 // todo o detalhe atrás de um único "Como isto é provado?". Sem login. Anti-AI #55: cor + texto.
@@ -21,22 +25,22 @@ function ChainMark({ chain }: { chain?: string }) {
   if ((chain || "").toUpperCase() !== "BEEF") return null;
   return (
     <svg
-      viewBox="0 0 200 140"
-      className="pointer-events-none absolute -bottom-6 -right-5 h-44 w-44 select-none"
-      style={{ color: "hsl(var(--primary))", opacity: 0.07 }}
+      viewBox="0 0 240 150"
+      className="pointer-events-none absolute -bottom-3 -right-2 h-44 w-60 select-none sm:h-52 sm:w-72"
+      style={{ color: "hsl(var(--primary))", opacity: 0.1 }}
       fill="none"
       stroke="currentColor"
-      strokeWidth={2.4}
+      strokeWidth={3}
       strokeLinejoin="round"
       strokeLinecap="round"
       aria-hidden="true"
     >
-      {/* corpo + cabeça + pernas (silhueta lateral, pastando) */}
-      <path d="M24,52 C28,40 44,36 62,38 C74,39 86,39 96,35 C101,26 104,16 113,18 C120,19 121,28 124,35 C133,33 143,36 146,45 C148,52 144,58 137,58 C132,58 127,56 123,53 C118,62 106,64 95,63 L95,104 L86,104 L86,63 C70,64 52,63 44,60 L44,104 L35,104 L35,57 C29,55 25,53 24,52 Z" />
-      {/* rabo */}
-      <path d="M24,52 C15,56 12,72 17,86" />
-      {/* orelha/chifre */}
-      <path d="M113,18 C110,11 115,8 119,13" />
+      {/* silhueta de bovino em contorno (corpo + 4 pernas + cabeça com chifres/orelha + rabo) */}
+      <path d="M30,84 C31,74 34,68 40,62 C46,56 52,54 60,55 C64,50 68,49 72,53 C78,50 84,52 88,58 C96,52 108,50 122,51 C144,52 162,53 176,58 C182,60 186,64 187,70 L187,80 L179,80 L179,124 L171,124 L171,82 C166,83 162,83 158,82 L158,124 L150,124 L150,80 C138,82 120,83 106,82 L106,124 L98,124 L98,80 C93,80 89,79 86,77 L86,124 L78,124 L78,74 C70,72 64,70 60,66 C54,72 46,78 40,82 C36,84 33,85 30,84 Z" />
+      <path d="M62,56 C60,49 65,46 68,50" />
+      <path d="M52,58 C50,51 55,48 57,52" />
+      <path d="M67,57 C75,57 81,63 79,71" />
+      <path d="M187,70 C194,74 197,92 194,108 C193,112 189,112 188,108" />
     </svg>
   );
 }
@@ -83,20 +87,32 @@ export default function PublicVerify() {
   const { dfid = "" } = useParams<{ dfid: string }>();
   const [loading, setLoading] = useState(true);
   const [res, setRes] = useState<PublicVerifyResponse | null>(null);
+  const [item, setItem] = useState<PublicItem | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setItem(null);
     verifyPublicItem(dfid)
       .then((r) => !cancelled && setRes(r))
       .catch(() => !cancelled && setError(true))
       .finally(() => !cancelled && setLoading(false));
+    // Metadata pública (best-effort) só pra exibir o identificador canônico mascarado.
+    getPublicItem(dfid)
+      .then((it) => !cancelled && setItem(it))
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, [dfid]);
+
+  // Identificador(es) canônico(s) do animal, já mascarados pelo backend (ex.: "SISBOV •••• 99002").
+  const meta = (item?.metadata ?? {}) as Record<string, unknown>;
+  const canonicalIds = SENSITIVE_IDS.map((k) => ({ k, v: typeof meta[k] === "string" ? (meta[k] as string) : null })).filter(
+    (x): x is { k: (typeof SENSITIVE_IDS)[number]; v: string } => !!x.v,
+  );
 
   const anchor = res?.anchor ?? null;
   const anchorState: AnchorState = anchorStateOf(anchor?.status);
@@ -175,9 +191,9 @@ export default function PublicVerify() {
 
                 <div className="mx-auto mt-6 max-w-[24rem] border-t border-dashed border-border pt-5">
                   <p className="break-all font-mono text-[13px] font-medium tracking-tight">{res.dfid}</p>
-                  {(res.identifiers?.length ?? 0) > 0 && (
-                    <p className="mt-1.5 break-all font-mono text-[11px] text-muted-foreground">
-                      {res.identifiers!.slice(0, 3).map((id) => `${id.identifier_type} ${id.value}`).join("  ·  ")}
+                  {canonicalIds.length > 0 && (
+                    <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">
+                      {canonicalIds.map((x) => `${x.k.toUpperCase()} ${x.v}`).join("   ·   ")}
                     </p>
                   )}
                   {anchor && (
