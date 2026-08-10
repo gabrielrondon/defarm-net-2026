@@ -2327,6 +2327,8 @@
     "presence_sub": "{{n}} dia(s) com prova",
     "presence_asserted": "Presente",
     "presence_intro": "Cada dia foi guardado num registro público. Se alguém mudar o que foi registrado, a mudança é detectada. Nós conferimos cada um. Toque num dia para ver.",
+    "presence_selfcheck": "Recalculado aqui no seu navegador, sem confiar no servidor: {{ok}}/{{total}} conferem.",
+    "presence_selfcheck_day": "recalculado no seu navegador",
     "presence_registered_by": "Registrado por",
     "presence_sealed_ok": "Guardado num registro público. Se alguém mudar o que foi registrado, a mudança é detectada. Conferimos: está intacto.",
     "presence_sealed_mismatch": "Atenção: a conferência não passou. Este registro não confere com o que foi guardado; pode ter sido alterado.",

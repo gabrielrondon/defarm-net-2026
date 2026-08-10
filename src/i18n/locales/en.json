@@ -2327,6 +2327,8 @@
     "presence_sub": "{{n}} day(s) with a proof",
     "presence_asserted": "Present",
     "presence_intro": "Each day was kept in a public record. If anyone changes what was recorded, the change is detected. We checked every one. Tap a day to see.",
+    "presence_selfcheck": "Recomputed here in your browser, without trusting the server: {{ok}}/{{total}} check out.",
+    "presence_selfcheck_day": "recomputed in your browser",
     "presence_registered_by": "Recorded by",
     "presence_sealed_ok": "Kept in a public record. If anyone changes what was recorded, the change is detected. We checked: it is intact.",
     "presence_sealed_mismatch": "Warning: the check did not pass. This record does not match what was kept; it may have been altered.",

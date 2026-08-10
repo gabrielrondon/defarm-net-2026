@@ -2464,6 +2464,8 @@
     "presence_sub": "{{n}} día(s) con prueba",
     "presence_asserted": "Presente",
     "presence_intro": "Cada día fue guardado en un registro público. Si alguien cambia lo registrado, el cambio se detecta. Verificamos cada uno. Toca un día para ver.",
+    "presence_selfcheck": "Recalculado aquí en tu navegador, sin confiar en el servidor: {{ok}}/{{total}} coinciden.",
+    "presence_selfcheck_day": "recalculado en tu navegador",
     "presence_registered_by": "Registrado por",
     "presence_sealed_ok": "Guardado en un registro público. Si alguien cambia lo registrado, el cambio se detecta. Verificamos: está intacto.",
     "presence_sealed_mismatch": "Atención: la verificación no pasó. Este registro no coincide con lo guardado; pudo haber sido alterado.",

@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
+import { verifyInclusionInBrowser } from "@/lib/verify-inclusion";
 import {
   verifyPublicItem,
   getPublicItem,
@@ -242,6 +243,10 @@ function PresenceTimeline({
   const amber = "hsl(38 92% 38%)";
   const muted = "hsl(var(--muted-foreground))";
   const loteDfid = proofs[0]?.lote_dfid;
+  // #106 — recomputa CADA prova aqui no navegador (não confia no `verified` do servidor).
+  const clientChecks = proofs.map(verifyInclusionInBrowser);
+  const selfCheckable = clientChecks.filter((x) => x !== null).length;
+  const selfOk = clientChecks.filter((x) => x === true).length;
   // Ícone/cor do estado. Sem rótulo aqui — o leigo lê a FRASE, não a etiqueta.
   const statusMeta = (s: PublicInclusionProof["status"]) => {
     if (s === "mismatch") return { color: amber, Icon: AlertTriangle };
@@ -266,9 +271,28 @@ function PresenceTimeline({
       </summary>
       <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-300">
         <p className="mb-3 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.presence_intro")}</p>
+        {/* #106 — o navegador recalculou, não confiou no servidor. O selo do "verifique você mesmo". */}
+        {selfCheckable > 0 && (
+          <div
+            className="mb-3 flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+            style={{
+              borderColor: selfOk === selfCheckable ? "hsl(var(--primary) / 0.35)" : amber,
+              background: selfOk === selfCheckable ? "hsl(var(--primary) / 0.06)" : "transparent",
+              color: selfOk === selfCheckable ? primaryDeep : amber,
+            }}
+          >
+            {selfOk === selfCheckable ? (
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            )}
+            <span>{t("v.presence_selfcheck", { ok: selfOk, total: selfCheckable })}</span>
+          </div>
+        )}
         <ol className="space-y-1.5">
-          {proofs.map((p) => {
+          {proofs.map((p, idx) => {
             const st = statusMeta(p.status);
+            const self = clientChecks[idx];
             return (
               <li key={`${p.lote_dfid}-${p.day}`}>
                 <details className="group/day rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
@@ -316,6 +340,14 @@ function PresenceTimeline({
                           <span style={{ color: st.color }}>{techLabel(p.status)}</span> · {p.proof_path.length}{" "}
                           {t("v.presence_steps")}
                         </div>
+                        {self !== null && (
+                          <div>
+                            <span className="text-foreground/60">{t("v.presence_selfcheck_day")}: </span>
+                            <span style={{ color: self ? primaryDeep : amber }}>
+                              {self ? t("v.presence_ok") : t("v.presence_fail")}
+                            </span>
+                          </div>
+                        )}
                       </dl>
                     </details>
                   </div>
