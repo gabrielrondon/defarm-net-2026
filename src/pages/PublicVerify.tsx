@@ -301,15 +301,15 @@ export default function PublicVerify() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(72% 52% at 50% 32%, rgba(0,0,0,0.035) 38%, rgba(0,0,0,0.14) 100%)",
+              "radial-gradient(74% 54% at 50% 32%, rgba(0,0,0,0.06) 34%, rgba(0,0,0,0.19) 100%)",
           }}
         />
-        {/* Toggle de tema — discreto, só desta página por enquanto. */}
+        {/* Toggle de tema — fixo no canto, discreto mas sempre visível. Só desta página por enquanto. */}
         <button
           type="button"
           onClick={toggleDark}
           aria-label={dark ? "Tema claro" : "Tema escuro"}
-          className="absolute right-4 top-4 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/70 text-muted-foreground backdrop-blur transition-colors hover:text-foreground"
+          className="fixed bottom-5 right-5 z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-md transition-colors hover:text-foreground"
         >
           {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
