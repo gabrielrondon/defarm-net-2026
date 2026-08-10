@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import neloreMark from "@/assets/nelore-mark.png";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
 import { verifyPublicItem, getPublicItem, type PublicVerifyResponse, type PublicItem } from "@/lib/defarm-api";
 
@@ -33,11 +34,28 @@ function fmtDate(s?: string | null): string {
 
 // Marca decorativa por value chain (contorno, transparente) — dá alma ao selo sem poluir.
 // BEEF = silhueta de bovino. Fácil de estender (soja, leite…) por value_chain.
-// Marca decorativa por value chain (contorno, transparente) no fundo do selo.
-// TODO: colar aqui o path do SVG profissional (BEEF = boi). Eu controlo a opacidade
-// e o posicionamento; o SVG vem só com os traços. Desativada até chegar o definitivo.
-function ChainMark({ chain: _chain }: { chain?: string }) {
-  return null;
+// Marca decorativa por value chain no fundo do selo. BEEF = Nelore (line-art gerado).
+// A imagem entra como MÁSCARA CSS: pinto com --primary e controlo a transparência aqui,
+// então ela acompanha o tema e some/bleed elegante atrás do conteúdo.
+function ChainMark({ chain }: { chain?: string }) {
+  if ((chain || "").toUpperCase() !== "BEEF") return null;
+  const mask = {
+    WebkitMaskImage: `url(${neloreMark})`,
+    maskImage: `url(${neloreMark})`,
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+  } as const;
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute -bottom-6 -right-8 h-60 w-60 sm:h-72 sm:w-72"
+      style={{ ...mask, background: "hsl(var(--primary))", opacity: 0.08 }}
+    />
+  );
 }
 
 // QR "diamante" da DeFarm (paridade com AssetQRCode da /i/:dfid): losango verde da
