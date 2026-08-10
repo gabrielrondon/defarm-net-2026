@@ -174,7 +174,7 @@ export default function PublicVerify() {
                 {/* QR escaneável (logo DeFarm no centro) → reabre/compartilha esta verificação. */}
                 <div className="mx-auto w-fit rounded-xl bg-white p-2 shadow-sm ring-1 ring-border">
                   <QRCodeSVG
-                    value={typeof window !== "undefined" ? window.location.href : `https://defarm.net/v/${res.dfid}`}
+                    value={`https://defarm.net/v/${res.dfid}`}
                     size={108}
                     level="H"
                     fgColor="#1a7a4f"
