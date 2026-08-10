@@ -229,20 +229,34 @@ function fmtDay(d: string): string {
 // (Gerbov) → nada. A EXISTÊNCIA de uma prova por dia = a asserção daquele dia; cada linha
 // abre a prova de inclusão (root do dia + folha + hashes irmãos), verificável de fora. A
 // âncora on-chain do dia vive no /verify do lote. Nunca mostra o roster do lote.
-function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
+function PresenceTimeline({
+  proofs,
+  issuerName,
+}: {
+  proofs: PublicInclusionProof[];
+  issuerName: string | null;
+}) {
   const { t } = useTranslation();
   if (!proofs.length) return null;
   const primaryDeep = "hsl(var(--primary-deep))";
   const amber = "hsl(38 92% 38%)";
   const muted = "hsl(var(--muted-foreground))";
   const loteDfid = proofs[0]?.lote_dfid;
-  // status da prova: verificada (confere) / não confere (adulterada-ou-velha) / indisponível
-  // (sem material) — pra um auditor "não confere" e "indisponível" são coisas opostas.
+  // Ícone/cor do estado. Sem rótulo aqui — o leigo lê a FRASE, não a etiqueta.
   const statusMeta = (s: PublicInclusionProof["status"]) => {
-    if (s === "mismatch") return { color: amber, Icon: AlertTriangle, label: t("v.presence_fail") };
-    if (s === "unavailable") return { color: muted, Icon: Minus, label: t("v.presence_unavailable") };
-    return { color: primaryDeep, Icon: Check, label: t("v.presence_ok") };
+    if (s === "mismatch") return { color: amber, Icon: AlertTriangle };
+    if (s === "unavailable") return { color: muted, Icon: Minus };
+    return { color: primaryDeep, Icon: Check };
   };
+  // A "matemática em português": o que o lacre garante, por estado.
+  const sealedLine = (s: PublicInclusionProof["status"]) =>
+    s === "mismatch"
+      ? t("v.presence_sealed_mismatch")
+      : s === "unavailable"
+        ? t("v.presence_sealed_unavailable")
+        : t("v.presence_sealed_ok");
+  const techLabel = (s: PublicInclusionProof["status"]) =>
+    s === "mismatch" ? t("v.presence_fail") : s === "unavailable" ? t("v.presence_unavailable") : t("v.presence_ok");
   return (
     <details className="group/pres mx-auto mt-4 max-w-[24rem] text-left">
       <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
@@ -251,45 +265,62 @@ function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
         <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/pres:rotate-180" />
       </summary>
       <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-300">
-        {/* Intro em linguagem de gente: o que a timeline PROVA, antes de qualquer hash. */}
         <p className="mb-3 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.presence_intro")}</p>
         <ol className="space-y-1.5">
           {proofs.map((p) => {
             const st = statusMeta(p.status);
             return (
-            <li key={`${p.lote_dfid}-${p.day}`}>
-              <details className="group/day rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center gap-2 text-[12.5px]">
-                    <span className="font-medium text-foreground">{fmtDay(p.day)}</span>
-                    <span className="inline-flex items-center gap-1 font-medium" style={{ color: st.color }}>
-                      <st.Icon className="h-3.5 w-3.5" />
-                      {t("v.presence_asserted")}
+              <li key={`${p.lote_dfid}-${p.day}`}>
+                <details className="group/day rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                    <span className="flex items-center gap-2 text-[12.5px]">
+                      <span className="font-medium text-foreground">{fmtDay(p.day)}</span>
+                      <span className="inline-flex items-center gap-1 font-medium" style={{ color: st.color }}>
+                        <st.Icon className="h-3.5 w-3.5" />
+                        {t("v.presence_asserted")}
+                      </span>
                     </span>
-                  </span>
-                  <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/day:rotate-180" />
-                </summary>
-                <div className="mt-2 space-y-2 border-t border-border/50 pt-2">
-                  {/* Primeiro a frase que explica por que isto é prova (não número solto). */}
-                  <p className="text-[11.5px] leading-relaxed text-foreground/80">{t("v.presence_day_plain")}</p>
-                  {/* Os hashes ROTULADos em nome de gente — "impressão digital", não "raiz". */}
-                  <dl className="space-y-1 font-mono text-[10.5px] leading-relaxed text-muted-foreground">
-                    <div className="break-all">
-                      <span className="text-foreground/60">{t("v.presence_fingerprint")}: </span>
-                      {shortHash(p.root_hash, 10, 8)}
-                    </div>
-                    <div className="break-all">
-                      <span className="text-foreground/60">{t("v.presence_leaf_label")}: </span>
-                      {shortHash(p.leaf_hash, 10, 8)}
-                    </div>
-                    <div>
-                      <span className="text-foreground/60">{t("v.presence_inclusion")}: </span>
-                      <span style={{ color: st.color }}>{st.label}</span> · {p.proof_path.length} {t("v.presence_steps")}
-                    </div>
-                  </dl>
-                </div>
-              </details>
-            </li>
+                    <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/day:rotate-180" />
+                  </summary>
+                  <div className="mt-2 space-y-2 border-t border-border/50 pt-2">
+                    {/* 1) A palavra de quem: registrado por [emissor]. */}
+                    {issuerName && (
+                      <p className="text-[12px] leading-relaxed text-foreground/85">
+                        {t("v.presence_registered_by")} <span className="font-medium">{issuerName}</span> · {fmtDay(p.day)}.
+                      </p>
+                    )}
+                    {/* 2) A matemática em português: lacrado, não dá pra alterar. */}
+                    <p
+                      className="text-[11.5px] leading-relaxed"
+                      style={{ color: p.status === "mismatch" ? amber : "hsl(var(--muted-foreground))" }}
+                    >
+                      {sealedLine(p.status)}
+                    </p>
+                    {/* 3) A cripto = material de auditoria, um clique a mais. */}
+                    <details className="group/tech">
+                      <summary className="flex cursor-pointer list-none items-center gap-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground/70 hover:text-foreground [&::-webkit-details-marker]:hidden">
+                        {t("v.presence_tech")}
+                        <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/tech:rotate-180" />
+                      </summary>
+                      <dl className="mt-1.5 space-y-1 font-mono text-[10.5px] leading-relaxed text-muted-foreground">
+                        <div className="break-all">
+                          <span className="text-foreground/60">{t("v.presence_fingerprint")}: </span>
+                          {shortHash(p.root_hash, 10, 8)}
+                        </div>
+                        <div className="break-all">
+                          <span className="text-foreground/60">{t("v.presence_leaf_label")}: </span>
+                          {shortHash(p.leaf_hash, 10, 8)}
+                        </div>
+                        <div>
+                          <span className="text-foreground/60">{t("v.presence_inclusion")}: </span>
+                          <span style={{ color: st.color }}>{techLabel(p.status)}</span> · {p.proof_path.length}{" "}
+                          {t("v.presence_steps")}
+                        </div>
+                      </dl>
+                    </details>
+                  </div>
+                </details>
+              </li>
             );
           })}
         </ol>
@@ -425,24 +456,37 @@ export default function PublicVerify() {
     };
   }, [dfid]);
 
-  // Emissor (N1): resolve o nome do workspace que assinou (auth-service, best-effort).
-  // Prioriza quem tem assinatura verificada; senão o 1º issuer. UUID nunca aparece cru.
+  // Emissor (N1): resolve o nome do workspace (auth-service, best-effort). Animais de
+  // PRESENÇA não têm evento público próprio (a presença é privada) → o emissor é o do LOTE
+  // (que tem os lote_presence_root públicos). UUID nunca aparece cru.
   useEffect(() => {
     let cancelled = false;
     setIssuer(null);
-    const id =
-      res?.events?.find((e) => e.signature_verified === true)?.issuer_workspace_id ??
-      res?.issuers?.[0] ??
-      res?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
-      null;
-    if (!id) return;
-    getPublicWorkspace(id)
-      .then((w) => !cancelled && setIssuer(w))
-      .catch(() => {});
+    (async () => {
+      let id =
+        res?.events?.find((e) => e.signature_verified === true)?.issuer_workspace_id ??
+        res?.issuers?.[0] ??
+        res?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
+        null;
+      if (!id && inclusion.length > 0) {
+        try {
+          const lote = await verifyPublicItem(inclusion[0].lote_dfid);
+          id =
+            lote?.issuers?.[0] ??
+            lote?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
+            null;
+        } catch {
+          /* ignore */
+        }
+      }
+      if (!id || cancelled) return;
+      const w = await getPublicWorkspace(id).catch(() => null);
+      if (!cancelled) setIssuer(w);
+    })();
     return () => {
       cancelled = true;
     };
-  }, [res]);
+  }, [res, inclusion]);
 
   // Identificador(es) canônico(s) do animal, já mascarados pelo backend (ex.: "SISBOV •••• 99002").
   const meta = (item?.metadata ?? {}) as Record<string, unknown>;
@@ -597,7 +641,7 @@ export default function PublicVerify() {
                     </p>
                   )}
                   {/* Presença (N1) — discreto, abaixo do DFID/PNIB. Só aparece se houver prova. */}
-                  <PresenceTimeline proofs={inclusion} />
+                  <PresenceTimeline proofs={inclusion} issuerName={issuer?.name ?? null} />
                   {/* Emissor + nível de assinatura (N1) — quem assinou e com que força. */}
                   <SignatureCard
                     issuer={issuer}
