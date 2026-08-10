@@ -52,11 +52,19 @@ function guillochePath(cx = 200, cy = 200, scale = 1, n = 1600): string {
   }
   return s;
 }
-function Guilloche({ className, opacity = 0.05 }: { className?: string; opacity?: number }) {
+function Guilloche({ className, opacity = 0.11 }: { className?: string; opacity?: number }) {
   const d = useMemo(() => guillochePath(200, 200, 1.32), []);
   return (
-    <svg viewBox="0 0 400 400" className={className} fill="none" stroke="currentColor" aria-hidden="true" style={{ opacity }}>
-      <path d={d} strokeWidth={0.6} />
+    <svg viewBox="0 0 400 400" className={className} fill="none" aria-hidden="true" style={{ opacity }}>
+      <defs>
+        {/* Sheen tipo engine-turned: escuro nas pontas, vivo no meio — tom varia ao longo da linha. */}
+        <linearGradient id="v-guilloche" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="hsl(var(--primary-deep))" />
+          <stop offset="50%" stopColor="hsl(var(--primary))" />
+          <stop offset="100%" stopColor="hsl(var(--primary-deep))" />
+        </linearGradient>
+      </defs>
+      <path d={d} stroke="url(#v-guilloche)" strokeWidth={0.7} />
     </svg>
   );
 }
@@ -280,7 +288,7 @@ export default function PublicVerify() {
               {/* SELO — veredito + 1 ação. O resto fica escondido. */}
               <section className="relative mt-6 overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center shadow-[0_1px_0_0_hsl(var(--primary)/0.06),0_10px_40px_-20px_hsl(var(--primary)/0.28)] sm:px-10">
                 {/* Camada de segurança (documento): guilloché central + Nelore, bem fracos. */}
-                <Guilloche className="pointer-events-none absolute left-1/2 top-[46%] h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 text-primary sm:h-[440px] sm:w-[440px]" opacity={0.05} />
+                <Guilloche className="pointer-events-none absolute left-1/2 top-[46%] h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 sm:h-[440px] sm:w-[440px]" opacity={0.11} />
                 <ChainMark chain={res.identity?.value_chain} />
                 {/* Moldura dupla + cantos + microtexto = ar de certificado. */}
                 <div className="pointer-events-none absolute inset-[10px] rounded-2xl border border-primary/15" aria-hidden="true" />
