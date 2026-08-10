@@ -12,7 +12,7 @@ import {
   getPublicItem,
   getPublicInclusionProofs,
   getPublicWorkspace,
-  getPublicItemEvents,
+  getPublicItemEventsLossless,
   type PublicVerifyResponse,
   type PublicItem,
   type PublicInclusionProof,
@@ -291,6 +291,12 @@ function PresenceTimeline({
             <span>{t("v.presence_selfcheck", { ok: selfOk, total: selfCheckable })}</span>
           </div>
         )}
+        {/* A2 #189 — o denominador acima é do servidor; se ele excluir dias, dizemos quantos. */}
+        {proofs.length - selfCheckable > 0 && (
+          <p className="mb-3 text-[11px] leading-relaxed text-muted-foreground">
+            {t("v.presence_selfcheck_skipped", { n: proofs.length - selfCheckable })}
+          </p>
+        )}
         <ol className="space-y-1.5">
           {proofs.map((p, idx) => {
             const st = statusMeta(p.status);
@@ -414,6 +420,12 @@ function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
           )}
           <span>{t("v.events_selfcheck", { ok, total: checkable })}</span>
         </div>
+        {/* A2 #189 — o denominador é do servidor; se ele excluir eventos, dizemos quantos. */}
+        {events.length - checkable > 0 && (
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {t("v.events_selfcheck_skipped", { n: events.length - checkable })}
+          </p>
+        )}
         {signed > 0 && (
           <div
             className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
@@ -576,7 +588,9 @@ export default function PublicVerify() {
   useEffect(() => {
     let cancelled = false;
     setPubEvents([]);
-    getPublicItemEvents(dfid)
+    // lossless: preserva literais numéricos pro recompute do content_hash bater com o
+    // serde_json do backend (390.0 não vira 390). Ver getPublicItemEventsLossless.
+    getPublicItemEventsLossless(dfid)
       .then((ev) => !cancelled && setPubEvents(ev))
       .catch(() => {});
     return () => {
