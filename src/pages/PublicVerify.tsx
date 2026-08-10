@@ -2,14 +2,28 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Loader2, AlertTriangle, ExternalLink, ChevronDown } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import logoIcon from "@/assets/logo-icon.png";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
 import { verifyPublicItem, getPublicItem, type PublicVerifyResponse, type PublicItem } from "@/lib/defarm-api";
 
 // Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
 // pra visitante anônimo (privacidade). O /v só exibe o que vier mascarado.
 const SENSITIVE_IDS = ["sisbov", "chip", "rfid", "brinco", "ear_tag"] as const;
+// Rótulo exibido. SISBOV é tratado hoje como PNIB (mesmo número, framing atual).
+const ID_LABELS: Record<string, string> = {
+  sisbov: "PNIB",
+  chip: "CHIP",
+  rfid: "RFID",
+  brinco: "BRINCO",
+  ear_tag: "BRINCO",
+};
+
+function shortHash(v: string, head = 8, tail = 6): string {
+  return v.length <= head + tail + 1 ? v : `${v.slice(0, head)}…${v.slice(-tail)}`;
+}
 
 // Página pública /v/:dfid (#8, Nível 0). Direção "selo minimalista": veredito + 1 ação;
 // todo o detalhe atrás de um único "Como isto é provado?". Sem login. Anti-AI #55: cor + texto.
@@ -21,28 +35,11 @@ function fmtDate(s?: string | null): string {
 
 // Marca decorativa por value chain (contorno, transparente) — dá alma ao selo sem poluir.
 // BEEF = silhueta de bovino. Fácil de estender (soja, leite…) por value_chain.
-function ChainMark({ chain }: { chain?: string }) {
-  if ((chain || "").toUpperCase() !== "BEEF") return null;
-  return (
-    <svg
-      viewBox="0 0 240 150"
-      className="pointer-events-none absolute -bottom-3 -right-2 h-44 w-60 select-none sm:h-52 sm:w-72"
-      style={{ color: "hsl(var(--primary))", opacity: 0.1 }}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={3}
-      strokeLinejoin="round"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      {/* silhueta de bovino em contorno (corpo + 4 pernas + cabeça com chifres/orelha + rabo) */}
-      <path d="M30,84 C31,74 34,68 40,62 C46,56 52,54 60,55 C64,50 68,49 72,53 C78,50 84,52 88,58 C96,52 108,50 122,51 C144,52 162,53 176,58 C182,60 186,64 187,70 L187,80 L179,80 L179,124 L171,124 L171,82 C166,83 162,83 158,82 L158,124 L150,124 L150,80 C138,82 120,83 106,82 L106,124 L98,124 L98,80 C93,80 89,79 86,77 L86,124 L78,124 L78,74 C70,72 64,70 60,66 C54,72 46,78 40,82 C36,84 33,85 30,84 Z" />
-      <path d="M62,56 C60,49 65,46 68,50" />
-      <path d="M52,58 C50,51 55,48 57,52" />
-      <path d="M67,57 C75,57 81,63 79,71" />
-      <path d="M187,70 C194,74 197,92 194,108 C193,112 189,112 188,108" />
-    </svg>
-  );
+// Marca decorativa por value chain (contorno, transparente) no fundo do selo.
+// TODO: colar aqui o path do SVG profissional (BEEF = boi). Eu controlo a opacidade
+// e o posicionamento; o SVG vem só com os traços. Desativada até chegar o definitivo.
+function ChainMark({ chain: _chain }: { chain?: string }) {
+  return null;
 }
 
 // Linha de prova em linguagem simples (dentro do disclosure). Estado = cor + palavra.
@@ -110,9 +107,11 @@ export default function PublicVerify() {
 
   // Identificador(es) canônico(s) do animal, já mascarados pelo backend (ex.: "SISBOV •••• 99002").
   const meta = (item?.metadata ?? {}) as Record<string, unknown>;
-  const canonicalIds = SENSITIVE_IDS.map((k) => ({ k, v: typeof meta[k] === "string" ? (meta[k] as string) : null })).filter(
-    (x): x is { k: (typeof SENSITIVE_IDS)[number]; v: string } => !!x.v,
-  );
+  const canonicalIds = SENSITIVE_IDS.map((k) => {
+    const v = typeof meta[k] === "string" ? (meta[k] as string) : null;
+    const commit = (meta[`${k}_commitment`] as { value?: string } | undefined)?.value ?? null;
+    return { k, v, commit };
+  }).filter((x): x is { k: (typeof SENSITIVE_IDS)[number]; v: string; commit: string | null } => !!x.v);
 
   const anchor = res?.anchor ?? null;
   const anchorState: AnchorState = anchorStateOf(anchor?.status);
@@ -172,13 +171,17 @@ export default function PublicVerify() {
               <section className="relative mt-6 overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center sm:px-10">
                 <ChainMark chain={res.identity?.value_chain} />
                 <div className="relative z-10">
-                <span
-                  className="mx-auto flex h-11 w-11 items-center justify-center rounded-full"
-                  style={{ background: vBg }}
-                  aria-hidden="true"
-                >
-                  <span className="h-3 w-3 rounded-[4px]" style={{ background: vAccent }} />
-                </span>
+                {/* QR escaneável (logo DeFarm no centro) → reabre/compartilha esta verificação. */}
+                <div className="mx-auto w-fit rounded-xl bg-white p-2 shadow-sm ring-1 ring-border">
+                  <QRCodeSVG
+                    value={typeof window !== "undefined" ? window.location.href : `https://defarm.net/v/${res.dfid}`}
+                    size={108}
+                    level="H"
+                    fgColor="#1a7a4f"
+                    bgColor="#ffffff"
+                    imageSettings={{ src: logoIcon, height: 24, width: 24, excavate: true }}
+                  />
+                </div>
                 <h1
                   className="mt-5 text-balance font-display text-[25px] font-semibold tracking-tight sm:text-[29px]"
                   style={{ color: vInk }}
@@ -192,9 +195,26 @@ export default function PublicVerify() {
                 <div className="mx-auto mt-6 max-w-[24rem] border-t border-dashed border-border pt-5">
                   <p className="break-all font-mono text-[13px] font-medium tracking-tight">{res.dfid}</p>
                   {canonicalIds.length > 0 && (
-                    <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">
-                      {canonicalIds.map((x) => `${x.k.toUpperCase()} ${x.v}`).join("   ·   ")}
-                    </p>
+                    <div className="mt-1.5 flex flex-wrap justify-center gap-x-5 gap-y-1">
+                      {canonicalIds.map((x) => (
+                        <details key={x.k} className="group/id">
+                          <summary
+                            className="flex cursor-pointer list-none items-center gap-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden"
+                            title={x.commit ? t("v.link_key") : undefined}
+                          >
+                            {ID_LABELS[x.k] ?? x.k.toUpperCase()} {x.v}
+                            {x.commit && (
+                              <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/id:rotate-180" />
+                            )}
+                          </summary>
+                          {x.commit && (
+                            <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                              {t("v.link_key")}: {shortHash(x.commit)}
+                            </div>
+                          )}
+                        </details>
+                      ))}
+                    </div>
                   )}
                   {anchor && (
                     <p className="mt-1 font-mono text-[11.5px] text-muted-foreground">
