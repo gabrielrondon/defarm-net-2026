@@ -1289,6 +1289,10 @@ export interface PublicItemEvent {
   // issuer's key valid at signing time; false = a signature was present but did not verify.
   signature_verified?: boolean | null;
   signature_key_id?: string | null;
+  // Presente na resposta do endpoint (o type era incompleto). Necessários pra o
+  // "verifique você mesmo" (#106): recompor o content_hash no navegador.
+  metadata?: Record<string, unknown> | null;
+  content_hash?: string | null;
 }
 
 /// Minimal public workspace fields for provenance resolution (the moat).

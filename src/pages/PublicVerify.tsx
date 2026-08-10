@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
-import { verifyInclusionInBrowser } from "@/lib/verify-inclusion";
+import { verifyInclusionInBrowser, verifyEventContentHashInBrowser } from "@/lib/verify-inclusion";
 import {
   verifyPublicItem,
   getPublicItem,
   getPublicInclusionProofs,
   getPublicWorkspace,
+  getPublicItemEvents,
   type PublicVerifyResponse,
   type PublicItem,
   type PublicInclusionProof,
   type PublicWorkspace,
+  type PublicItemEvent,
 } from "@/lib/defarm-api";
 
 // Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
@@ -371,6 +373,64 @@ function PresenceTimeline({
   );
 }
 
+// #106 parte 2 — "verifique os eventos você mesmo": o navegador recomputa o content_hash
+// (integridade) de cada evento público, sem confiar no servidor. Só aparece se houver
+// evento público (animal enriquecido; presença é privada). Autoria por assinatura (Ed25519)
+// entra quando o emissor assinar (EMISSÃO ainda é gap; a chave nem vem no events/public).
+function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
+  const { t } = useTranslation();
+  const primaryDeep = "hsl(var(--primary-deep))";
+  const amber = "hsl(38 92% 38%)";
+  const checks = events.map(verifyEventContentHashInBrowser);
+  const checkable = checks.filter((x) => x !== null).length;
+  if (!checkable) return null;
+  const ok = checks.filter((x) => x === true).length;
+  const allOk = ok === checkable;
+  return (
+    <details className="group/ev mx-auto mt-2.5 max-w-[24rem] text-left">
+      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <ShieldCheck className="h-3.5 w-3.5" style={{ color: "hsl(var(--primary))" }} />
+        {t("v.events_t")} · {t("v.events_sub", { n: checkable })}
+        <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/ev:rotate-180" />
+      </summary>
+      <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+        <div
+          className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+          style={{
+            borderColor: allOk ? "hsl(var(--primary) / 0.35)" : amber,
+            background: allOk ? "hsl(var(--primary) / 0.06)" : "transparent",
+            color: allOk ? primaryDeep : amber,
+          }}
+        >
+          {allOk ? (
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          )}
+          <span>{t("v.events_selfcheck", { ok, total: checkable })}</span>
+        </div>
+        <ul className="space-y-1">
+          {events.map((e, i) =>
+            checks[i] === null ? null : (
+              <li key={e.id} className="flex items-center justify-between gap-2 text-[11.5px]">
+                <span className="font-mono text-[11px] text-foreground/80">{e.event_type}</span>
+                <span
+                  className="inline-flex items-center gap-1 font-mono text-[10.5px]"
+                  style={{ color: checks[i] ? primaryDeep : amber }}
+                >
+                  {checks[i] ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                  {checks[i] ? t("v.events_intact") : t("v.events_fail")}
+                </span>
+              </li>
+            ),
+          )}
+        </ul>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{t("v.events_honesty")}</p>
+      </div>
+    </details>
+  );
+}
+
 // Card de EMISSOR + NÍVEL DE ASSINATURA (N1). "Quem assinou e com que força, sem mudar de
 // forma": hoje N0 (Ed25519 do workspace); o mesmo lugar carregará ICP-Brasil/gov.br depois.
 // Nome resolvido pelo auth-service; UUID nunca aparece cru.
@@ -433,6 +493,7 @@ export default function PublicVerify() {
   const [res, setRes] = useState<PublicVerifyResponse | null>(null);
   const [item, setItem] = useState<PublicItem | null>(null);
   const [inclusion, setInclusion] = useState<PublicInclusionProof[]>([]);
+  const [pubEvents, setPubEvents] = useState<PublicItemEvent[]>([]);
   const [issuer, setIssuer] = useState<PublicWorkspace | null>(null);
   const [error, setError] = useState(false);
   // Dark mode ESCOPADO só a esta página (classe .dark no wrapper → tokens do index.css).
@@ -482,6 +543,19 @@ export default function PublicVerify() {
     setInclusion([]);
     getPublicInclusionProofs(dfid)
       .then((p) => !cancelled && setInclusion(p))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [dfid]);
+
+  // Eventos públicos (com payload/metadata) pro "verifique você mesmo" (#106 parte 2).
+  // Best-effort; vazio (ex.: animal de presença) → sem seção de eventos.
+  useEffect(() => {
+    let cancelled = false;
+    setPubEvents([]);
+    getPublicItemEvents(dfid)
+      .then((ev) => !cancelled && setPubEvents(ev))
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -681,6 +755,8 @@ export default function PublicVerify() {
                     pubkey={issuerPubkey}
                     verified={signed.length > 0}
                   />
+                  {/* #106 parte 2 — verifique os eventos você mesmo (só p/ animal com eventos públicos). */}
+                  <EventSelfCheck events={pubEvents} />
                 </div>
 
                 {anchor?.explorer_url && (
