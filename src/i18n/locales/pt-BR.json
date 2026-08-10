@@ -2318,6 +2318,10 @@
     "notproves_2": "Dados sensíveis do produtor: ficam privados. O que é público aqui prova a existência sem expor o que é sigiloso.",
     "foot": "Verificação independente, sem login e sem confiar na DeFarm.",
     "link_key": "chave de ligação",
-    "link_key_info": "É a impressão digital do identificador do animal. Liga todos os registros ao mesmo bicho, sem revelar o número real."
+    "link_key_info": "É a impressão digital do identificador do animal. Liga todos os registros ao mesmo bicho, sem revelar o número real.",
+    "g_exists": "Existe numa rede pública",
+    "g_intact": "O conteúdo não mudou",
+    "g_who": "Quem assinou",
+    "g_other": "Outros passos"
   }
 }

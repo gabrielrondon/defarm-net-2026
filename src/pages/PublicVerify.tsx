@@ -24,6 +24,14 @@ function shortHash(v: string, head = 8, tail = 6): string {
   return v.length <= head + tail + 1 ? v : `${v.slice(0, head)}…${v.slice(-tail)}`;
 }
 
+// Agrupa os passos do auditor sob as 3 coisas do "em resumo". Os passos vêm do backend
+// como texto PT com um rótulo no início; casa pelo prefixo. Sobras caem em "outros".
+const STEP_GROUPS: { key: string; labelKey: string; match: RegExp }[] = [
+  { key: "exists", labelKey: "v.g_exists", match: /^(Existência|Ligação transação)/i },
+  { key: "intact", labelKey: "v.g_intact", match: /^(Material|Ligação CID|Integridade|Commitment)/i },
+  { key: "who", labelKey: "v.g_who", match: /^Autoria/i },
+];
+
 // Página pública /v/:dfid (#8, Nível 0). Direção "selo minimalista": veredito + 1 ação;
 // todo o detalhe atrás de um único "Como isto é provado?". Sem login. Anti-AI #55: cor + texto.
 
@@ -445,15 +453,36 @@ export default function PublicVerify() {
                       </summary>
                       <div className="mt-3 space-y-3">
                         <p className="text-[12px] leading-relaxed text-muted-foreground">{t("v.tech_d")}</p>
-                        {/* O CHECKLIST do auditor (o que fazer) — primeiro. */}
-                        <ol className="space-y-1.5">
-                          {res.verification.steps.map((s, i) => (
-                            <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed text-muted-foreground">
-                              <span className="font-mono text-[11px] font-semibold text-primary">{i + 1}.</span>
-                              <span>{s}</span>
-                            </li>
-                          ))}
-                        </ol>
+                        {/* Passos agrupados sob as 3 coisas do "em resumo" (Existe / Íntegro / Quem). */}
+                        {(() => {
+                          const steps = res.verification!.steps;
+                          const other: string[] = [];
+                          const buckets = STEP_GROUPS.map((g) => ({ g, items: [] as string[] }));
+                          steps.forEach((s) => {
+                            const b = buckets.find((b) => b.g.match.test(s));
+                            (b ? b.items : other).push(s);
+                          });
+                          const block = (key: string, label: string, items: string[]) =>
+                            items.length ? (
+                              <div key={key}>
+                                <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-primary">{label}</div>
+                                <ul className="mt-1.5 space-y-1.5">
+                                  {items.map((s, i) => (
+                                    <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed text-muted-foreground">
+                                      <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-primary/60" aria-hidden="true" />
+                                      <span>{s}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null;
+                          return (
+                            <div className="space-y-4">
+                              {buckets.map(({ g, items }) => block(g.key, t(g.labelKey), items))}
+                              {block("other", t("v.g_other"), other)}
+                            </div>
+                          );
+                        })()}
                         {/* As FÓRMULAS byte-exatas — um nível mais fundo, só pra quem vai reproduzir. */}
                         <details className="group/f">
                           <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
