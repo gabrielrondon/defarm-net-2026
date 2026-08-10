@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import neloreMark from "@/assets/nelore-mark.png";
+import { NeloreMark } from "@/components/NeloreMark";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
 import { verifyPublicItem, getPublicItem, type PublicVerifyResponse, type PublicItem } from "@/lib/defarm-api";
 
@@ -34,26 +34,62 @@ function fmtDate(s?: string | null): string {
 
 // Marca decorativa por value chain (contorno, transparente) — dá alma ao selo sem poluir.
 // BEEF = silhueta de bovino. Fácil de estender (soja, leite…) por value_chain.
-// Marca decorativa por value chain no fundo do selo. BEEF = Nelore (line-art gerado).
-// A imagem entra como MÁSCARA CSS: pinto com --primary e controlo a transparência aqui,
-// então ela acompanha o tema e some/bleed elegante atrás do conteúdo.
-function ChainMark({ chain }: { chain?: string }) {
-  if ((chain || "").toUpperCase() !== "BEEF") return null;
-  const mask = {
-    WebkitMaskImage: `url(${neloreMark})`,
-    maskImage: `url(${neloreMark})`,
-    WebkitMaskRepeat: "no-repeat",
-    maskRepeat: "no-repeat",
-    WebkitMaskSize: "contain",
-    maskSize: "contain",
-    WebkitMaskPosition: "center",
-    maskPosition: "center",
-  } as const;
+// ---- Estética de documento (segurança tipo passaporte/cédula) ----
+
+// Rosácea guilloché (hipotrocoide fechada) — o padrão de segurança. Path computado 1x.
+function guillochePath(cx = 200, cy = 200, scale = 1, n = 1600): string {
+  const Rf = 100,
+    rr = 64,
+    d = 90,
+    turns = 16,
+    k = (Rf - rr) / rr;
+  let s = "";
+  for (let i = 0; i <= n; i++) {
+    const t = (2 * Math.PI * turns * i) / n;
+    const x = cx + ((Rf - rr) * Math.cos(t) + d * Math.cos(k * t)) * scale;
+    const y = cy + ((Rf - rr) * Math.sin(t) - d * Math.sin(k * t)) * scale;
+    s += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
+  }
+  return s;
+}
+function Guilloche({ className, opacity = 0.05 }: { className?: string; opacity?: number }) {
+  const d = useMemo(() => guillochePath(200, 200, 1.32), []);
+  return (
+    <svg viewBox="0 0 400 400" className={className} fill="none" stroke="currentColor" aria-hidden="true" style={{ opacity }}>
+      <path d={d} strokeWidth={0.6} />
+    </svg>
+  );
+}
+// 4 cantos ornamentais (moldura de certificado).
+function CornerTicks() {
+  const base = "pointer-events-none absolute h-3.5 w-3.5 border-primary/30";
+  return (
+    <div aria-hidden="true">
+      <span className={`${base} left-4 top-4 rounded-tl-[3px] border-l border-t`} />
+      <span className={`${base} right-4 top-4 rounded-tr-[3px] border-r border-t`} />
+      <span className={`${base} bottom-4 left-4 rounded-bl-[3px] border-b border-l`} />
+      <span className={`${base} bottom-4 right-4 rounded-br-[3px] border-b border-r`} />
+    </div>
+  );
+}
+// Faixa de microtexto (lê como linha fina; texto no zoom) — toque de passaporte.
+function SecurityStrip({ label }: { label: string }) {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute -bottom-6 -right-8 h-60 w-60 sm:h-72 sm:w-72"
-      style={{ ...mask, background: "hsl(var(--primary))", opacity: 0.08 }}
+      className="pointer-events-none absolute inset-x-9 bottom-[15px] overflow-hidden whitespace-nowrap text-center text-[6px] font-medium uppercase leading-none tracking-[0.34em] text-primary/25"
+    >
+      {` ${label} · `.repeat(28)}
+    </div>
+  );
+}
+// Marca d'água do Nelore (BEEF) — vetor recolorível, sangrando discreta.
+function ChainMark({ chain }: { chain?: string }) {
+  if ((chain || "").toUpperCase() !== "BEEF") return null;
+  return (
+    <NeloreMark
+      className="pointer-events-none absolute -bottom-9 -right-10 h-56 w-56 text-primary sm:h-64 sm:w-64"
+      style={{ opacity: 0.06 }}
     />
   );
 }
@@ -242,8 +278,14 @@ export default function PublicVerify() {
           ) : (
             <>
               {/* SELO — veredito + 1 ação. O resto fica escondido. */}
-              <section className="relative mt-6 overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center sm:px-10">
+              <section className="relative mt-6 overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center shadow-[0_1px_0_0_hsl(var(--primary)/0.06),0_10px_40px_-20px_hsl(var(--primary)/0.28)] sm:px-10">
+                {/* Camada de segurança (documento): guilloché central + Nelore, bem fracos. */}
+                <Guilloche className="pointer-events-none absolute left-1/2 top-[46%] h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 text-primary sm:h-[440px] sm:w-[440px]" opacity={0.05} />
                 <ChainMark chain={res.identity?.value_chain} />
+                {/* Moldura dupla + cantos + microtexto = ar de certificado. */}
+                <div className="pointer-events-none absolute inset-[10px] rounded-2xl border border-primary/15" aria-hidden="true" />
+                <CornerTicks />
+                <SecurityStrip label={`DeFarm · ${t("v.eyebrow")}`} />
                 <div className="relative z-10">
                 {/* QR diamante da DeFarm → reabre/compartilha esta verificação. */}
                 <div className="mx-auto w-fit">
