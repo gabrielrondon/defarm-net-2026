@@ -179,6 +179,9 @@ export async function verifyPublicItem(
 // A EXISTÊNCIA de uma prova por dia = a asserção de presença daquele dia. Só a folha do
 // próprio animal + hashes irmãos → verifica o SEU animal sem enumerar o lote. O root é
 // ancorado on-chain via o /verify do `lote_dfid`.
+// status distingue "adulterada" (mismatch) de "material indisponível" (unavailable) —
+// pra um auditor são coisas opostas. `verified` = conveniência (== status "verified").
+export type InclusionStatus = "verified" | "mismatch" | "unavailable";
 export interface PublicInclusionProof {
   animal_dfid: string;
   lote_dfid: string;
@@ -187,6 +190,7 @@ export interface PublicInclusionProof {
   leaf_hash: string;
   proof_path: string[];
   proof_positions: number[];
+  status: InclusionStatus;
   verified: boolean;
 }
 

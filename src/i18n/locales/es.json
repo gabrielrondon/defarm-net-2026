@@ -2466,7 +2466,8 @@
     "presence_root": "raíz del día",
     "presence_inclusion": "prueba de inclusión",
     "presence_ok": "inclusión verificada",
-    "presence_fail": "no verificó",
+    "presence_fail": "no coincide",
+    "presence_unavailable": "prueba no disponible",
     "presence_open_lote": "ver el ancla del lote",
     "presence_honesty": "Aseverado por una lectura de presencia. Un día faltante no prueba la ausencia del animal; solo que no hubo lectura anclada en ese período."
   }

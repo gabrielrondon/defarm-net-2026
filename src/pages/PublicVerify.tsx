@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
@@ -232,7 +232,15 @@ function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
   if (!proofs.length) return null;
   const primaryDeep = "hsl(var(--primary-deep))";
   const amber = "hsl(38 92% 38%)";
+  const muted = "hsl(var(--muted-foreground))";
   const loteDfid = proofs[0]?.lote_dfid;
+  // status da prova: verificada (confere) / não confere (adulterada-ou-velha) / indisponível
+  // (sem material) — pra um auditor "não confere" e "indisponível" são coisas opostas.
+  const statusMeta = (s: PublicInclusionProof["status"]) => {
+    if (s === "mismatch") return { color: amber, Icon: AlertTriangle, label: t("v.presence_fail") };
+    if (s === "unavailable") return { color: muted, Icon: Minus, label: t("v.presence_unavailable") };
+    return { color: primaryDeep, Icon: Check, label: t("v.presence_ok") };
+  };
   return (
     <details className="group/pres mx-auto mt-4 max-w-[24rem] text-left">
       <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
@@ -242,19 +250,16 @@ function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
       </summary>
       <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-300">
         <ol className="space-y-1.5">
-          {proofs.map((p) => (
+          {proofs.map((p) => {
+            const st = statusMeta(p.status);
+            return (
             <li key={`${p.lote_dfid}-${p.day}`}>
               <details className="group/day rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
                   <span className="flex items-center gap-2 text-[12.5px]">
                     <span className="font-medium text-foreground">{fmtDay(p.day)}</span>
-                    <span
-                      className="inline-flex items-center gap-1 font-medium"
-                      style={{ color: p.verified ? primaryDeep : amber }}
-                    >
-                      {p.verified ? <Check className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-                      {t("v.presence_asserted")}
-                    </span>
+                    <span className="text-muted-foreground">{t("v.presence_asserted")}</span>
+                    <st.Icon className="h-3.5 w-3.5" style={{ color: st.color }} aria-label={st.label} />
                   </span>
                   <span className="flex items-center gap-1 font-mono text-[10.5px] text-muted-foreground">
                     {shortHash(p.root_hash, 6, 4)}
@@ -267,16 +272,14 @@ function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
                   </div>
                   <div>
                     {t("v.presence_inclusion")}:{" "}
-                    <span style={{ color: p.verified ? primaryDeep : amber }}>
-                      {p.verified ? t("v.presence_ok") : t("v.presence_fail")}
-                    </span>{" "}
-                    ({p.proof_path.length})
+                    <span style={{ color: st.color }}>{st.label}</span> ({p.proof_path.length})
                   </div>
                   <div className="break-all">leaf: {shortHash(p.leaf_hash, 10, 8)}</div>
                 </div>
               </details>
             </li>
-          ))}
+            );
+          })}
         </ol>
         {loteDfid && (
           <a
