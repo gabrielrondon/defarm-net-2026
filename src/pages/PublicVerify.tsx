@@ -206,7 +206,7 @@ function TechRow({ label, value }: { label: string; value: string }) {
 }
 
 export default function PublicVerify() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { dfid = "" } = useParams<{ dfid: string }>();
   const [loading, setLoading] = useState(true);
   const [res, setRes] = useState<PublicVerifyResponse | null>(null);
@@ -238,7 +238,9 @@ export default function PublicVerify() {
     setLoading(true);
     setError(false);
     setItem(null);
-    verifyPublicItem(dfid)
+    // Passa o idioma atual → backend devolve o recipe (steps/fórmulas) traduzido.
+    // Re-busca ao trocar de idioma (i18n.language nas deps).
+    verifyPublicItem(dfid, i18n.language)
       .then((r) => !cancelled && setRes(r))
       .catch(() => !cancelled && setError(true))
       .finally(() => !cancelled && setLoading(false));
@@ -249,7 +251,7 @@ export default function PublicVerify() {
     return () => {
       cancelled = true;
     };
-  }, [dfid]);
+  }, [dfid, i18n.language]);
 
   // Identificador(es) canônico(s) do animal, já mascarados pelo backend (ex.: "SISBOV •••• 99002").
   const meta = (item?.metadata ?? {}) as Record<string, unknown>;

@@ -162,8 +162,17 @@ export interface PublicVerifyResponse {
   verification?: VerifyMethod;
 }
 
-export async function verifyPublicItem(dfid: string): Promise<PublicVerifyResponse> {
-  return registryPublicRequest<PublicVerifyResponse>(`/verify/${encodeURIComponent(dfid)}`);
+// `lang` localiza só a PROSA reproduzível (verification.steps + *_canonicalization +
+// anchor_binding). Prefix-match no backend (pt|en|es, default pt); field names/hashes/
+// flags são idioma-neutros. Sem `lang` → PT (compat com backend anterior ao ?lang=).
+export async function verifyPublicItem(
+  dfid: string,
+  lang?: string
+): Promise<PublicVerifyResponse> {
+  const qs = lang ? buildQueryString({ lang }) : "";
+  return registryPublicRequest<PublicVerifyResponse>(
+    `/verify/${encodeURIComponent(dfid)}${qs}`
+  );
 }
 
 // Join Requests (JWT required)
