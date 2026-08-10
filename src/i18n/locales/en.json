@@ -2332,6 +2332,11 @@
     "presence_fail": "does not match",
     "presence_unavailable": "proof unavailable",
     "presence_open_lote": "see the lote's anchor",
-    "presence_honesty": "Asserted by a presence reading. A missing day does not prove the animal's absence; only that no reading was anchored in that period."
+    "presence_honesty": "Asserted by a presence reading. A missing day does not prove the animal's absence; only that no reading was anchored in that period.",
+    "sig_by": "Signed by",
+    "sig_emissor": "Issuer",
+    "sig_issuer_generic": "Issuing workspace",
+    "sig_ws_verified": "verified workspace",
+    "sig_pubkey": "Issuer public key (base64)"
   }
 }

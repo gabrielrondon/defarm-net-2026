@@ -2332,6 +2332,11 @@
     "presence_fail": "não confere",
     "presence_unavailable": "prova indisponível",
     "presence_open_lote": "ver a âncora do lote",
-    "presence_honesty": "Asseverado por leitura de presença. A ausência de um dia não prova ausência do animal; só que não houve leitura ancorada naquele período."
+    "presence_honesty": "Asseverado por leitura de presença. A ausência de um dia não prova ausência do animal; só que não houve leitura ancorada naquele período.",
+    "sig_by": "Assinado por",
+    "sig_emissor": "Emissor",
+    "sig_issuer_generic": "Workspace emissor",
+    "sig_ws_verified": "workspace verificado",
+    "sig_pubkey": "Chave pública do emissor (base64)"
   }
 }

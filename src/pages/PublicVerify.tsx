@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
@@ -10,9 +10,11 @@ import {
   verifyPublicItem,
   getPublicItem,
   getPublicInclusionProofs,
+  getPublicWorkspace,
   type PublicVerifyResponse,
   type PublicItem,
   type PublicInclusionProof,
+  type PublicWorkspace,
 } from "@/lib/defarm-api";
 
 // Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
@@ -296,6 +298,61 @@ function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
   );
 }
 
+// Card de EMISSOR + NÍVEL DE ASSINATURA (N1). "Quem assinou e com que força, sem mudar de
+// forma": hoje N0 (Ed25519 do workspace); o mesmo lugar carregará ICP-Brasil/gov.br depois.
+// Nome resolvido pelo auth-service; UUID nunca aparece cru.
+function SignatureCard({
+  issuer,
+  issuerId,
+  pubkey,
+  verified,
+}: {
+  issuer: PublicWorkspace | null;
+  issuerId: string | null;
+  pubkey: string | null;
+  verified: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!issuerId && !issuer) return null;
+  const primaryDeep = "hsl(var(--primary-deep))";
+  const muted = "hsl(var(--muted-foreground))";
+  const name = issuer?.name ?? t("v.sig_issuer_generic");
+  const label = (s: string) => (
+    <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{s}</div>
+  );
+  return (
+    <details className="group/sig mx-auto mt-2.5 max-w-[24rem] text-left">
+      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <BadgeCheck className="h-3.5 w-3.5" style={{ color: verified ? primaryDeep : muted }} />
+        <span>
+          {verified ? `${t("v.sig_by")} ${name}` : `${t("v.sig_emissor")}: ${name}`}
+        </span>
+        {verified && <Check className="h-3 w-3" style={{ color: primaryDeep }} />}
+        <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/sig:rotate-180" />
+      </summary>
+      <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+        <div>
+          {label(t("v.sig_emissor"))}
+          <div className="mt-0.5 text-[13px] font-medium text-foreground">
+            {name}
+            {issuer && <span className="text-muted-foreground"> · {t("v.sig_ws_verified")}</span>}
+          </div>
+        </div>
+        {pubkey && (
+          <div>
+            {label(t("v.sig_pubkey"))}
+            <div className="mt-0.5 break-all font-mono text-[11px] text-foreground/80">{pubkey}</div>
+          </div>
+        )}
+        <div>
+          {label(t("v.sig_level_k"))}
+          <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.sig_level_d")}</p>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 export default function PublicVerify() {
   const { t, i18n } = useTranslation();
   const { dfid = "" } = useParams<{ dfid: string }>();
@@ -303,6 +360,7 @@ export default function PublicVerify() {
   const [res, setRes] = useState<PublicVerifyResponse | null>(null);
   const [item, setItem] = useState<PublicItem | null>(null);
   const [inclusion, setInclusion] = useState<PublicInclusionProof[]>([]);
+  const [issuer, setIssuer] = useState<PublicWorkspace | null>(null);
   const [error, setError] = useState(false);
   // Dark mode ESCOPADO só a esta página (classe .dark no wrapper → tokens do index.css).
   // Futuramente vira global da DeFarm; por ora, só o certificado. Lembra a escolha.
@@ -357,6 +415,25 @@ export default function PublicVerify() {
     };
   }, [dfid]);
 
+  // Emissor (N1): resolve o nome do workspace que assinou (auth-service, best-effort).
+  // Prioriza quem tem assinatura verificada; senão o 1º issuer. UUID nunca aparece cru.
+  useEffect(() => {
+    let cancelled = false;
+    setIssuer(null);
+    const id =
+      res?.events?.find((e) => e.signature_verified === true)?.issuer_workspace_id ??
+      res?.issuers?.[0] ??
+      res?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
+      null;
+    if (!id) return;
+    getPublicWorkspace(id)
+      .then((w) => !cancelled && setIssuer(w))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [res]);
+
   // Identificador(es) canônico(s) do animal, já mascarados pelo backend (ex.: "SISBOV •••• 99002").
   const meta = (item?.metadata ?? {}) as Record<string, unknown>;
   const canonicalIds = SENSITIVE_IDS.map((k) => {
@@ -373,6 +450,14 @@ export default function PublicVerify() {
   const hasIntegrityMaterial = !!anchor?.snapshot_hash || events.some((e) => !!e.content_hash);
   const hasRoots = !!(anchor?.anchor_content_root || anchor?.events_root || anchor?.commitments_root);
   const eventsMaybeTruncated = events.length >= 200; // veredito sobre a amostra (H5)
+
+  // Emissor + chave pública pro card de assinatura (N1). issuerId só pra saber se há emissor.
+  const issuerId =
+    signed[0]?.issuer_workspace_id ??
+    res?.issuers?.[0] ??
+    events.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
+    null;
+  const issuerPubkey = signed[0]?.signature_public_key_b64 ?? null;
 
   const primary = "hsl(var(--primary))";
   const primaryDeep = "hsl(var(--primary-deep))";
@@ -503,6 +588,13 @@ export default function PublicVerify() {
                   )}
                   {/* Presença (N1) — discreto, abaixo do DFID/PNIB. Só aparece se houver prova. */}
                   <PresenceTimeline proofs={inclusion} />
+                  {/* Emissor + nível de assinatura (N1) — quem assinou e com que força. */}
+                  <SignatureCard
+                    issuer={issuer}
+                    issuerId={issuerId}
+                    pubkey={issuerPubkey}
+                    verified={signed.length > 0}
+                  />
                 </div>
 
                 {anchor?.explorer_url && (

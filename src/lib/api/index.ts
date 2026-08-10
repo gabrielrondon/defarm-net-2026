@@ -14,6 +14,7 @@ export * from "./admin";
 export * from "./health";
 export * from "./dfid";
 export * from "./join-requests";
+export * from "./workspaces";
 export * from "./circuit-adapters";
 export * from "./canonical-identifiers";
 export * from "./value-chains";

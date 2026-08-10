@@ -2469,6 +2469,11 @@
     "presence_fail": "no coincide",
     "presence_unavailable": "prueba no disponible",
     "presence_open_lote": "ver el ancla del lote",
-    "presence_honesty": "Aseverado por una lectura de presencia. Un día faltante no prueba la ausencia del animal; solo que no hubo lectura anclada en ese período."
+    "presence_honesty": "Aseverado por una lectura de presencia. Un día faltante no prueba la ausencia del animal; solo que no hubo lectura anclada en ese período.",
+    "sig_by": "Firmado por",
+    "sig_emissor": "Emisor",
+    "sig_issuer_generic": "Workspace emisor",
+    "sig_ws_verified": "workspace verificado",
+    "sig_pubkey": "Clave pública del emisor (base64)"
   }
 }
