@@ -1,4 +1,5 @@
-import { registryRequest, registryPublicRequest, buildQueryString } from "./client";
+import { registryRequest, registryPublicRequest, buildQueryString, REGISTRY_API_BASE } from "./client";
+import { parse as losslessParse } from "lossless-json";
 import type {
   JoinRequest,
   CreateJoinRequestRequest,
@@ -78,6 +79,18 @@ export async function getPublicItemEvents(
   return registryRequest<PublicItemEvent[]>(
     `/items/${dfid}/events/public${buildQueryString(params as Record<string, unknown>)}`
   );
+}
+
+// Mesma resposta do events/public, mas parseada com lossless-json: os literais numéricos
+// são preservados (390.0 NÃO vira 390). Necessário pro recompute client-side do content_hash
+// (#106), que espelha o serde_json do backend — onde f64 inteiro serializa com ".0". O
+// JSON.parse do fetch normal colapsa o ".0" e faria o hash acusar evento legítimo (Hetzner
+// #189 A1). Os números em payload/metadata saem como LosslessNumber (tratados em verify-inclusion).
+export async function getPublicItemEventsLossless(dfid: string): Promise<PublicItemEvent[]> {
+  const res = await fetch(`${REGISTRY_API_BASE}/items/${encodeURIComponent(dfid)}/events/public`);
+  if (!res.ok) return [];
+  const text = await res.text();
+  return losslessParse(text) as unknown as PublicItemEvent[];
 }
 
 export interface PublicSanitaryAttestation {

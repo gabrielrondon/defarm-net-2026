@@ -1,20 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
 import {
+  verifyInclusionInBrowser,
+  verifyEventContentHashInBrowser,
+  verifyEventSignatureInBrowser,
+} from "@/lib/verify-inclusion";
+import {
   verifyPublicItem,
   getPublicItem,
   getPublicInclusionProofs,
   getPublicWorkspace,
+  getPublicItemEventsLossless,
   type PublicVerifyResponse,
   type PublicItem,
   type PublicInclusionProof,
   type PublicWorkspace,
+  type PublicItemEvent,
 } from "@/lib/defarm-api";
 
 // Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
@@ -242,6 +249,10 @@ function PresenceTimeline({
   const amber = "hsl(38 92% 38%)";
   const muted = "hsl(var(--muted-foreground))";
   const loteDfid = proofs[0]?.lote_dfid;
+  // #106 — recomputa CADA prova aqui no navegador (não confia no `verified` do servidor).
+  const clientChecks = proofs.map(verifyInclusionInBrowser);
+  const selfCheckable = clientChecks.filter((x) => x !== null).length;
+  const selfOk = clientChecks.filter((x) => x === true).length;
   // Ícone/cor do estado. Sem rótulo aqui — o leigo lê a FRASE, não a etiqueta.
   const statusMeta = (s: PublicInclusionProof["status"]) => {
     if (s === "mismatch") return { color: amber, Icon: AlertTriangle };
@@ -266,9 +277,34 @@ function PresenceTimeline({
       </summary>
       <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-300">
         <p className="mb-3 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.presence_intro")}</p>
+        {/* #106 — o navegador recalculou, não confiou no servidor. O selo do "verifique você mesmo". */}
+        {selfCheckable > 0 && (
+          <div
+            className="mb-3 flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+            style={{
+              borderColor: selfOk === selfCheckable ? "hsl(var(--primary) / 0.35)" : amber,
+              background: selfOk === selfCheckable ? "hsl(var(--primary) / 0.06)" : "transparent",
+              color: selfOk === selfCheckable ? primaryDeep : amber,
+            }}
+          >
+            {selfOk === selfCheckable ? (
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            )}
+            <span>{t("v.presence_selfcheck", { ok: selfOk, total: selfCheckable })}</span>
+          </div>
+        )}
+        {/* A2 #189 — o denominador acima é do servidor; se ele excluir dias, dizemos quantos. */}
+        {proofs.length - selfCheckable > 0 && (
+          <p className="mb-3 text-[11px] leading-relaxed text-muted-foreground">
+            {t("v.presence_selfcheck_skipped", { n: proofs.length - selfCheckable })}
+          </p>
+        )}
         <ol className="space-y-1.5">
-          {proofs.map((p) => {
+          {proofs.map((p, idx) => {
             const st = statusMeta(p.status);
+            const self = clientChecks[idx];
             return (
               <li key={`${p.lote_dfid}-${p.day}`}>
                 <details className="group/day rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
@@ -316,6 +352,14 @@ function PresenceTimeline({
                           <span style={{ color: st.color }}>{techLabel(p.status)}</span> · {p.proof_path.length}{" "}
                           {t("v.presence_steps")}
                         </div>
+                        {self !== null && (
+                          <div>
+                            <span className="text-foreground/60">{t("v.presence_selfcheck_day")}: </span>
+                            <span style={{ color: self ? primaryDeep : amber }}>
+                              {self ? t("v.presence_ok") : t("v.presence_fail")}
+                            </span>
+                          </div>
+                        )}
                       </dl>
                     </details>
                   </div>
@@ -334,6 +378,92 @@ function PresenceTimeline({
           </a>
         )}
         <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{t("v.presence_honesty")}</p>
+      </div>
+    </details>
+  );
+}
+
+// #106 parte 2 — "verifique os eventos você mesmo": o navegador recomputa o content_hash
+// (integridade) de cada evento público, sem confiar no servidor. Só aparece se houver
+// evento público (animal enriquecido; presença é privada). Autoria por assinatura (Ed25519)
+// entra quando o emissor assinar (EMISSÃO ainda é gap; a chave nem vem no events/public).
+function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
+  const { t } = useTranslation();
+  const primaryDeep = "hsl(var(--primary-deep))";
+  const amber = "hsl(38 92% 38%)";
+  const checks = events.map(verifyEventContentHashInBrowser);
+  const checkable = checks.filter((x) => x !== null).length;
+  if (!checkable) return null;
+  const ok = checks.filter((x) => x === true).length;
+  const allOk = ok === checkable;
+  // Ed25519 (autoria) — quando o evento tem assinatura + pubkey pública (pós engines#475).
+  const sigChecks = events.map(verifyEventSignatureInBrowser);
+  const signed = sigChecks.filter((x) => x !== null).length;
+  const sigOk = sigChecks.filter((x) => x === true).length;
+  const sigAllOk = sigOk === signed;
+  return (
+    <details className="group/ev mx-auto mt-2.5 max-w-[24rem] text-left">
+      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <ShieldCheck className="h-3.5 w-3.5" style={{ color: "hsl(var(--primary))" }} />
+        {t("v.events_t")} · {t("v.events_sub", { n: checkable })}
+        <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/ev:rotate-180" />
+      </summary>
+      <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+        <div
+          className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+          style={{
+            borderColor: allOk ? "hsl(var(--primary) / 0.35)" : amber,
+            background: allOk ? "hsl(var(--primary) / 0.06)" : "transparent",
+            color: allOk ? primaryDeep : amber,
+          }}
+        >
+          {allOk ? (
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          )}
+          <span>{t("v.events_selfcheck", { ok, total: checkable })}</span>
+        </div>
+        {/* A2 #189 — o denominador é do servidor; se ele excluir eventos, dizemos quantos. */}
+        {events.length - checkable > 0 && (
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {t("v.events_selfcheck_skipped", { n: events.length - checkable })}
+          </p>
+        )}
+        {signed > 0 && (
+          <div
+            className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+            style={{
+              borderColor: sigAllOk ? "hsl(var(--primary) / 0.35)" : amber,
+              background: sigAllOk ? "hsl(var(--primary) / 0.06)" : "transparent",
+              color: sigAllOk ? primaryDeep : amber,
+            }}
+          >
+            {sigAllOk ? (
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            )}
+            <span>{t("v.events_sig_selfcheck", { ok: sigOk, total: signed })}</span>
+          </div>
+        )}
+        <ul className="space-y-1">
+          {events.map((e, i) =>
+            checks[i] === null ? null : (
+              <li key={e.id} className="flex items-center justify-between gap-2 text-[11.5px]">
+                <span className="font-mono text-[11px] text-foreground/80">{e.event_type}</span>
+                <span
+                  className="inline-flex items-center gap-1 font-mono text-[10.5px]"
+                  style={{ color: checks[i] ? primaryDeep : amber }}
+                >
+                  {checks[i] ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                  {checks[i] ? t("v.events_intact") : t("v.events_fail")}
+                </span>
+              </li>
+            ),
+          )}
+        </ul>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{t("v.events_honesty")}</p>
       </div>
     </details>
   );
@@ -401,6 +531,7 @@ export default function PublicVerify() {
   const [res, setRes] = useState<PublicVerifyResponse | null>(null);
   const [item, setItem] = useState<PublicItem | null>(null);
   const [inclusion, setInclusion] = useState<PublicInclusionProof[]>([]);
+  const [pubEvents, setPubEvents] = useState<PublicItemEvent[]>([]);
   const [issuer, setIssuer] = useState<PublicWorkspace | null>(null);
   const [error, setError] = useState(false);
   // Dark mode ESCOPADO só a esta página (classe .dark no wrapper → tokens do index.css).
@@ -450,6 +581,21 @@ export default function PublicVerify() {
     setInclusion([]);
     getPublicInclusionProofs(dfid)
       .then((p) => !cancelled && setInclusion(p))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [dfid]);
+
+  // Eventos públicos (com payload/metadata) pro "verifique você mesmo" (#106 parte 2).
+  // Best-effort; vazio (ex.: animal de presença) → sem seção de eventos.
+  useEffect(() => {
+    let cancelled = false;
+    setPubEvents([]);
+    // lossless: preserva literais numéricos pro recompute do content_hash bater com o
+    // serde_json do backend (390.0 não vira 390). Ver getPublicItemEventsLossless.
+    getPublicItemEventsLossless(dfid)
+      .then((ev) => !cancelled && setPubEvents(ev))
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -649,6 +795,8 @@ export default function PublicVerify() {
                     pubkey={issuerPubkey}
                     verified={signed.length > 0}
                   />
+                  {/* #106 parte 2 — verifique os eventos você mesmo (só p/ animal com eventos públicos). */}
+                  <EventSelfCheck events={pubEvents} />
                 </div>
 
                 {anchor?.explorer_url && (
