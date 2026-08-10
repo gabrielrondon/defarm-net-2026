@@ -57,12 +57,12 @@ function Guilloche({ className, opacity = 0.11 }: { className?: string; opacity?
   return (
     <svg viewBox="0 0 400 400" className={className} fill="none" aria-hidden="true" style={{ opacity }}>
       <defs>
-        {/* Sheen tipo engine-turned: escuro nas pontas, vivo no meio — tom varia ao longo da linha. */}
-        <linearGradient id="v-guilloche" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--primary-deep))" />
-          <stop offset="50%" stopColor="hsl(var(--primary))" />
+        {/* Radial = efeito MEDALHA: verde-vivo no miolo, escuro na borda. */}
+        <radialGradient id="v-guilloche" cx="50%" cy="50%" r="52%">
+          <stop offset="0%" stopColor="hsl(var(--primary))" />
+          <stop offset="60%" stopColor="hsl(var(--primary))" />
           <stop offset="100%" stopColor="hsl(var(--primary-deep))" />
-        </linearGradient>
+        </radialGradient>
       </defs>
       <path d={d} stroke="url(#v-guilloche)" strokeWidth={0.7} />
     </svg>
@@ -266,8 +266,14 @@ export default function PublicVerify() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-24 pb-20">
-        <div className="section-container max-w-xl">
+      <main className="relative pt-24 pb-20">
+        {/* Vinheta: escurece a página ao redor pra o cartão-documento ganhar destaque (centro fica limpo). */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(70% 50% at 50% 32%, transparent 42%, rgba(0,0,0,0.12) 100%)" }}
+        />
+        <div className="section-container relative max-w-xl">
           <div className="text-center text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
             {t("v.eyebrow")}
           </div>
@@ -286,7 +292,14 @@ export default function PublicVerify() {
           ) : (
             <>
               {/* SELO — veredito + 1 ação. O resto fica escondido. */}
-              <section className="relative mt-6 overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center shadow-[0_1px_0_0_hsl(var(--primary)/0.06),0_10px_40px_-20px_hsl(var(--primary)/0.28)] sm:px-10">
+              <div className="relative mt-6">
+              {/* Glow externo: halo esverdeado atrás do cartão pra dar destaque de "documento". */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-4 rounded-[32px] opacity-80 blur-2xl"
+                style={{ background: "radial-gradient(closest-side, hsl(var(--primary) / 0.22), transparent 78%)" }}
+              />
+              <section className="relative overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center shadow-[0_2px_4px_-2px_rgba(0,0,0,0.12),0_24px_64px_-28px_hsl(var(--primary)/0.4)] sm:px-10">
                 {/* Camada de segurança (documento): guilloché central + Nelore, bem fracos. */}
                 <Guilloche className="pointer-events-none absolute left-1/2 top-[46%] h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 sm:h-[440px] sm:w-[440px]" opacity={0.11} />
                 <ChainMark chain={res.identity?.value_chain} />
@@ -357,6 +370,7 @@ export default function PublicVerify() {
                 )}
                 </div>
               </section>
+              </div>
 
               {/* UM link discreto abre todo o detalhe */}
               <details className="group mt-6">
