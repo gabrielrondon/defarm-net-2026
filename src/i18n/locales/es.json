@@ -2454,6 +2454,7 @@
     "notproves_1": "Que el hecho del mundo real es verdadero: eso viene de la autoridad del emisor y de la firma, no de la matemática.",
     "notproves_2": "Los datos sensibles del productor: quedan privados. Lo que es público aquí prueba la existencia sin exponer lo confidencial.",
     "foot": "Verificación independiente, sin login y sin confiar en DeFarm.",
-    "link_key": "clave de enlace"
+    "link_key": "clave de enlace",
+    "link_key_info": "Es la huella del identificador del animal. Une todos los registros al mismo animal, sin revelar el número real."
   }
 }

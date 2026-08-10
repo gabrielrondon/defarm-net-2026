@@ -2317,6 +2317,7 @@
     "notproves_1": "That the real-world fact is true: that comes from the issuer's authority and signature, not from math.",
     "notproves_2": "The producer's sensitive data: it stays private. What is public here proves existence without exposing what is confidential.",
     "foot": "Independent verification, no login and no trust in DeFarm.",
-    "link_key": "link key"
+    "link_key": "link key",
+    "link_key_info": "It is a fingerprint of the animal identifier. It links all records to the same animal, without revealing the real number."
   }
 }

@@ -1,11 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import logoIcon from "@/assets/logo-icon.png";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
 import { verifyPublicItem, getPublicItem, type PublicVerifyResponse, type PublicItem } from "@/lib/defarm-api";
 
@@ -40,6 +38,64 @@ function fmtDate(s?: string | null): string {
 // e o posicionamento; o SVG vem só com os traços. Desativada até chegar o definitivo.
 function ChainMark({ chain: _chain }: { chain?: string }) {
   return null;
+}
+
+// QR "diamante" da DeFarm (paridade com AssetQRCode da /i/:dfid): losango verde da
+// marca + QR verde ao centro. Escaneia pra reabrir/compartilhar esta verificação.
+function brandedQrUrl(url: string, size = 480): string {
+  return `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=${size}&margin=0&dark=27C268&light=ffffff`;
+}
+function BrandedQR({ url, size = 116 }: { url: string; size?: number }) {
+  return (
+    <svg viewBox="0 0 120 120" width={size} height={size} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR">
+      <rect x="22" y="22" width="76" height="76" rx="18" fill="hsl(var(--primary))" transform="rotate(45 60 60)" />
+      <rect x="32" y="32" width="56" height="56" rx="14" fill="white" stroke="white" strokeWidth="6" transform="rotate(45 60 60) translate(5 -5)" />
+      <image x="34" y="34" width="52" height="52" href={brandedQrUrl(url, 480)} transform="rotate(45 60 60) translate(5 -5)" />
+    </svg>
+  );
+}
+
+// ⓘ ao lado da "chave de ligação": popup animado, explica em palavras fáceis (técnico + curioso).
+function LinkKeyInfo() {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  return (
+    <span ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen((o) => !o);
+        }}
+        aria-label={t("v.link_key")}
+        className="inline-flex text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <Info className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute left-1/2 top-full z-30 mt-2 w-60 -translate-x-1/2 rounded-xl border border-border bg-popover p-3 text-center font-sans text-[11.5px] font-normal leading-relaxed text-popover-foreground shadow-xl animate-in fade-in zoom-in-95 duration-150"
+        >
+          {t("v.link_key_info")}
+        </span>
+      )}
+    </span>
+  );
 }
 
 // Linha de prova em linguagem simples (dentro do disclosure). Estado = cor + palavra.
@@ -171,16 +227,9 @@ export default function PublicVerify() {
               <section className="relative mt-6 overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center sm:px-10">
                 <ChainMark chain={res.identity?.value_chain} />
                 <div className="relative z-10">
-                {/* QR escaneável (logo DeFarm no centro) → reabre/compartilha esta verificação. */}
-                <div className="mx-auto w-fit rounded-xl bg-white p-2 shadow-sm ring-1 ring-border">
-                  <QRCodeSVG
-                    value={`https://defarm.net/v/${res.dfid}`}
-                    size={108}
-                    level="H"
-                    fgColor="#1a7a4f"
-                    bgColor="#ffffff"
-                    imageSettings={{ src: logoIcon, height: 24, width: 24, excavate: true }}
-                  />
+                {/* QR diamante da DeFarm → reabre/compartilha esta verificação. */}
+                <div className="mx-auto w-fit">
+                  <BrandedQR url={`https://defarm.net/v/${res.dfid}`} size={116} />
                 </div>
                 <h1
                   className="mt-5 text-balance font-display text-[25px] font-semibold tracking-tight sm:text-[29px]"
@@ -208,8 +257,11 @@ export default function PublicVerify() {
                             )}
                           </summary>
                           {x.commit && (
-                            <div className="mt-1 font-mono text-[10px] text-muted-foreground">
-                              {t("v.link_key")}: {shortHash(x.commit)}
+                            <div className="mt-1 flex items-center justify-center gap-1.5 font-mono text-[10px] text-muted-foreground">
+                              <span>
+                                {t("v.link_key")}: {shortHash(x.commit)}
+                              </span>
+                              <LinkKeyInfo />
                             </div>
                           )}
                         </details>
