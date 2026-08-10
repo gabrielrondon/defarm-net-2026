@@ -2332,6 +2332,7 @@
     "events_t": "Events",
     "events_sub": "{{n}} public",
     "events_selfcheck": "I recomputed each event's integrity here in your browser, without trusting the server: {{ok}}/{{total}} intact.",
+    "events_sig_selfcheck": "Signature verified here in your browser (Ed25519), without trusting the server: {{ok}}/{{total}}.",
     "events_intact": "intact",
     "events_fail": "does not match",
     "events_honesty": "Recomputes that the event record has not changed. Authorship by signature (Ed25519) comes when the issuer signs.",

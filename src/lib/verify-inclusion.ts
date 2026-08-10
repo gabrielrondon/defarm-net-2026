@@ -9,7 +9,11 @@
 // no servidor".
 import { blake3 } from "@noble/hashes/blake3";
 import { bytesToHex } from "@noble/hashes/utils";
+import { ed25519 } from "@noble/curves/ed25519";
+import canonicalize from "canonicalize";
 import type { PublicInclusionProof, PublicItemEvent } from "@/lib/defarm-api";
+
+const b64ToBytes = (s: string): Uint8Array => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
 const enc = new TextEncoder();
 const hashPair = (a: string, b: string): string => bytesToHex(blake3(enc.encode(a + b)));
@@ -54,4 +58,33 @@ export function verifyEventContentHashInBrowser(e: PublicItemEvent): boolean | n
   delete md.signature; // metadata exclui .signature no content_hash
   const msg = `${e.item_id}:${e.event_type}:${compactSorted(e.payload)}:${compactSorted(md)}`;
   return bytesToHex(blake3(enc.encode(msg))) === e.content_hash;
+}
+
+// #106 parte 3 (Ed25519) — verifica a ASSINATURA do evento NO NAVEGADOR: reconstrói o
+// envelope JCS (signature_payload_v1) e roda Ed25519.verify com a pubkey pública. Espelha
+// o canonical_signing_bytes/verify_ed25519_b64 do backend, provado byte-a-byte contra um
+// evento assinado real (bate com o signature_verified do servidor). Precisa da pubkey no
+// events/public (engines#475). null quando não há assinatura+pubkey.
+export function verifyEventSignatureInBrowser(e: PublicItemEvent): boolean | null {
+  const md: Record<string, unknown> = { ...((e.metadata as Record<string, unknown>) || {}) };
+  const sig = md.signature as { value?: string } | undefined;
+  const sigVal = sig?.value;
+  const pub = e.signature_public_key_b64;
+  if (!sigVal || !pub) return null;
+  delete md.signature; // envelope usa metadata SEM .signature
+  const envelope = {
+    hash_version: "signature_payload_v1",
+    item_id: e.item_id ? String(e.item_id) : null,
+    event_type: e.event_type,
+    payload: e.payload ?? {},
+    metadata: md,
+    issuer_workspace_id: e.event_owner_workspace_id ? String(e.event_owner_workspace_id) : null,
+  };
+  const canon = canonicalize(envelope);
+  if (!canon) return false;
+  try {
+    return ed25519.verify(b64ToBytes(sigVal), new TextEncoder().encode(canon), b64ToBytes(pub));
+  } catch {
+    return false;
+  }
 }

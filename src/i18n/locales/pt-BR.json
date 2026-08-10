@@ -2332,6 +2332,7 @@
     "events_t": "Eventos",
     "events_sub": "{{n}} públicos",
     "events_selfcheck": "Recalculei a integridade de cada evento aqui no seu navegador, sem confiar no servidor: {{ok}}/{{total}} íntegros.",
+    "events_sig_selfcheck": "Assinatura conferida no seu navegador (Ed25519), sem confiar no servidor: {{ok}}/{{total}}.",
     "events_intact": "íntegro",
     "events_fail": "não bate",
     "events_honesty": "Recomputa que o registro do evento não mudou. A autoria por assinatura (Ed25519) entra quando o emissor assinar.",

@@ -386,6 +386,11 @@ function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
   if (!checkable) return null;
   const ok = checks.filter((x) => x === true).length;
   const allOk = ok === checkable;
+  // Ed25519 (autoria) — quando o evento tem assinatura + pubkey pública (pós engines#475).
+  const sigChecks = events.map(verifyEventSignatureInBrowser);
+  const signed = sigChecks.filter((x) => x !== null).length;
+  const sigOk = sigChecks.filter((x) => x === true).length;
+  const sigAllOk = sigOk === signed;
   return (
     <details className="group/ev mx-auto mt-2.5 max-w-[24rem] text-left">
       <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
@@ -409,6 +414,23 @@ function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
           )}
           <span>{t("v.events_selfcheck", { ok, total: checkable })}</span>
         </div>
+        {signed > 0 && (
+          <div
+            className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+            style={{
+              borderColor: sigAllOk ? "hsl(var(--primary) / 0.35)" : amber,
+              background: sigAllOk ? "hsl(var(--primary) / 0.06)" : "transparent",
+              color: sigAllOk ? primaryDeep : amber,
+            }}
+          >
+            {sigAllOk ? (
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            )}
+            <span>{t("v.events_sig_selfcheck", { ok: sigOk, total: signed })}</span>
+          </div>
+        )}
         <ul className="space-y-1">
           {events.map((e, i) =>
             checks[i] === null ? null : (

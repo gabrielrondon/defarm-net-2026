@@ -2469,6 +2469,7 @@
     "events_t": "Eventos",
     "events_sub": "{{n}} públicos",
     "events_selfcheck": "Recalculé la integridad de cada evento aquí en tu navegador, sin confiar en el servidor: {{ok}}/{{total}} íntegros.",
+    "events_sig_selfcheck": "Firma verificada aquí en tu navegador (Ed25519), sin confiar en el servidor: {{ok}}/{{total}}.",
     "events_intact": "íntegro",
     "events_fail": "no coincide",
     "events_honesty": "Recalcula que el registro del evento no cambió. La autoría por firma (Ed25519) llega cuando el emisor firme.",
