@@ -330,7 +330,8 @@ export default function PublicVerify() {
                   )}
                   {anchor && (
                     <p className="mt-1 font-mono text-[11.5px] text-muted-foreground">
-                      {fmtDate(anchor.anchored_at)} · {anchor.network}
+                      {fmtDate(anchor.anchored_at)}
+                      {anchor.network && anchor.network !== "public" ? ` · ${anchor.network}` : ""}
                     </p>
                   )}
                 </div>
