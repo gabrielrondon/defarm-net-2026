@@ -175,6 +175,33 @@ export async function verifyPublicItem(
   );
 }
 
+// ---- Prova de inclusão de presença por animal (N1, público) ----
+// A EXISTÊNCIA de uma prova por dia = a asserção de presença daquele dia. Só a folha do
+// próprio animal + hashes irmãos → verifica o SEU animal sem enumerar o lote. O root é
+// ancorado on-chain via o /verify do `lote_dfid`.
+export interface PublicInclusionProof {
+  animal_dfid: string;
+  lote_dfid: string;
+  day: string; // YYYY-MM-DD
+  root_hash: string;
+  leaf_hash: string;
+  proof_path: string[];
+  proof_positions: number[];
+  verified: boolean;
+}
+
+// Timeline completa (omitir `date`) ou um dia. Público, sem auth. Vazio = animal sem
+// prova de presença (ex.: item tradicional tipo Gerbov) → a seção não renderiza.
+export async function getPublicInclusionProofs(
+  dfid: string,
+  date?: string
+): Promise<PublicInclusionProof[]> {
+  const qs = date ? buildQueryString({ date }) : "";
+  return registryPublicRequest<PublicInclusionProof[]>(
+    `/items/${encodeURIComponent(dfid)}/inclusion-proofs/public${qs}`
+  );
+}
+
 // Join Requests (JWT required)
 export async function createJoinRequest(
   circuitId: string,

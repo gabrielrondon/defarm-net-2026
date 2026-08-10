@@ -2459,6 +2459,15 @@
     "g_exists": "Existe en una red pública",
     "g_intact": "El contenido no cambió",
     "g_who": "Quién firmó",
-    "g_other": "Otros pasos"
+    "g_other": "Otros pasos",
+    "presence_t": "Presencia",
+    "presence_sub": "{{n}} día(s) con prueba",
+    "presence_asserted": "Aseverado presente",
+    "presence_root": "raíz del día",
+    "presence_inclusion": "prueba de inclusión",
+    "presence_ok": "inclusión verificada",
+    "presence_fail": "no verificó",
+    "presence_open_lote": "ver el ancla del lote",
+    "presence_honesty": "Aseverado por una lectura de presencia. Un día faltante no prueba la ausencia del animal; solo que no hubo lectura anclada en ese período."
   }
 }

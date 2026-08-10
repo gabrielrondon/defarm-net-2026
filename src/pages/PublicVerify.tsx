@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
 import { anchorStateOf, type AnchorState } from "@/components/proof";
-import { verifyPublicItem, getPublicItem, type PublicVerifyResponse, type PublicItem } from "@/lib/defarm-api";
+import {
+  verifyPublicItem,
+  getPublicItem,
+  getPublicInclusionProofs,
+  type PublicVerifyResponse,
+  type PublicItem,
+  type PublicInclusionProof,
+} from "@/lib/defarm-api";
 
 // Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
 // pra visitante anônimo (privacidade). O /v só exibe o que vier mascarado.
@@ -205,12 +212,94 @@ function TechRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+// "YYYY-MM-DD" → data curta localizada, sem hora (a folha carrega o dia da consolidação).
+function fmtDay(d: string): string {
+  const [y, m, day] = d.split("-").map(Number);
+  if (!y) return d;
+  return new Date(y, (m || 1) - 1, day || 1).toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+// Timeline de PRESENÇA (N1). Só renderiza quando há prova (FinTag); animal tradicional
+// (Gerbov) → nada. A EXISTÊNCIA de uma prova por dia = a asserção daquele dia; cada linha
+// abre a prova de inclusão (root do dia + folha + hashes irmãos), verificável de fora. A
+// âncora on-chain do dia vive no /verify do lote. Nunca mostra o roster do lote.
+function PresenceTimeline({ proofs }: { proofs: PublicInclusionProof[] }) {
+  const { t } = useTranslation();
+  if (!proofs.length) return null;
+  const primaryDeep = "hsl(var(--primary-deep))";
+  const amber = "hsl(38 92% 38%)";
+  const loteDfid = proofs[0]?.lote_dfid;
+  return (
+    <details className="group/pres mx-auto mt-4 max-w-[24rem] text-left">
+      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <Activity className="h-3.5 w-3.5" style={{ color: "hsl(var(--primary))" }} />
+        {t("v.presence_t")} · {t("v.presence_sub", { n: proofs.length })}
+        <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/pres:rotate-180" />
+      </summary>
+      <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-300">
+        <ol className="space-y-1.5">
+          {proofs.map((p) => (
+            <li key={`${p.lote_dfid}-${p.day}`}>
+              <details className="group/day rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center gap-2 text-[12.5px]">
+                    <span className="font-medium text-foreground">{fmtDay(p.day)}</span>
+                    <span
+                      className="inline-flex items-center gap-1 font-medium"
+                      style={{ color: p.verified ? primaryDeep : amber }}
+                    >
+                      {p.verified ? <Check className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                      {t("v.presence_asserted")}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1 font-mono text-[10.5px] text-muted-foreground">
+                    {shortHash(p.root_hash, 6, 4)}
+                    <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/day:rotate-180" />
+                  </span>
+                </summary>
+                <div className="mt-2 space-y-1 border-t border-border/50 pt-2 font-mono text-[10.5px] leading-relaxed text-muted-foreground">
+                  <div className="break-all">
+                    {t("v.presence_root")}: {p.root_hash}
+                  </div>
+                  <div>
+                    {t("v.presence_inclusion")}:{" "}
+                    <span style={{ color: p.verified ? primaryDeep : amber }}>
+                      {p.verified ? t("v.presence_ok") : t("v.presence_fail")}
+                    </span>{" "}
+                    ({p.proof_path.length})
+                  </div>
+                  <div className="break-all">leaf: {shortHash(p.leaf_hash, 10, 8)}</div>
+                </div>
+              </details>
+            </li>
+          ))}
+        </ol>
+        {loteDfid && (
+          <a
+            href={`/v/${loteDfid}`}
+            className="mt-2.5 inline-block font-mono text-[10.5px] hover:underline"
+            style={{ color: primaryDeep }}
+          >
+            {t("v.presence_open_lote")} →
+          </a>
+        )}
+        <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{t("v.presence_honesty")}</p>
+      </div>
+    </details>
+  );
+}
+
 export default function PublicVerify() {
   const { t, i18n } = useTranslation();
   const { dfid = "" } = useParams<{ dfid: string }>();
   const [loading, setLoading] = useState(true);
   const [res, setRes] = useState<PublicVerifyResponse | null>(null);
   const [item, setItem] = useState<PublicItem | null>(null);
+  const [inclusion, setInclusion] = useState<PublicInclusionProof[]>([]);
   const [error, setError] = useState(false);
   // Dark mode ESCOPADO só a esta página (classe .dark no wrapper → tokens do index.css).
   // Futuramente vira global da DeFarm; por ora, só o certificado. Lembra a escolha.
@@ -252,6 +341,18 @@ export default function PublicVerify() {
       cancelled = true;
     };
   }, [dfid, i18n.language]);
+
+  // Prova de presença (N1, best-effort, independe do idioma). Vazio → sem seção de presença.
+  useEffect(() => {
+    let cancelled = false;
+    setInclusion([]);
+    getPublicInclusionProofs(dfid)
+      .then((p) => !cancelled && setInclusion(p))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [dfid]);
 
   // Identificador(es) canônico(s) do animal, já mascarados pelo backend (ex.: "SISBOV •••• 99002").
   const meta = (item?.metadata ?? {}) as Record<string, unknown>;
@@ -397,6 +498,8 @@ export default function PublicVerify() {
                       {anchor.network && anchor.network !== "public" ? ` · ${anchor.network}` : ""}
                     </p>
                   )}
+                  {/* Presença (N1) — discreto, abaixo do DFID/PNIB. Só aparece se houver prova. */}
+                  <PresenceTimeline proofs={inclusion} />
                 </div>
 
                 {anchor?.explorer_url && (
