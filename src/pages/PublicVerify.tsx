@@ -292,7 +292,7 @@ export default function PublicVerify() {
         : "hsl(var(--primary) / 0.13)";
 
   return (
-    <div className={`min-h-screen bg-background ${dark ? "dark" : ""}`}>
+    <div className={`min-h-screen bg-background text-foreground ${dark ? "dark" : ""}`}>
       <Header />
       <main className="relative pt-24 pb-20">
         {/* Fundo um pouco mais escuro (light) + vinheta ao redor → o cartão-documento ganha destaque. */}
