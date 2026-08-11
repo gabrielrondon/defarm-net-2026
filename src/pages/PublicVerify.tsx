@@ -863,15 +863,29 @@ export default function PublicVerify() {
                       ))}
                     </div>
                   )}
-                  {anchor && (
-                    <p className="mt-1 font-mono text-[11.5px] text-muted-foreground">
-                      {/* Data de EXISTÊNCIA (a alegação forte) = first_anchored_at, não a âncora de
-                          conteúdo mais recente — que num item re-ancorado seria "hoje" (Hetzner #483
-                          A2). Fallback pro anchored_at em respostas antigas sem o campo. */}
-                      {fmtDate(res?.first_anchored_at ?? anchor.anchored_at)}
-                      {anchor.network && anchor.network !== "public" ? ` · ${anchor.network}` : ""}
-                    </p>
-                  )}
+                  {anchor && (() => {
+                    // Data de EXISTÊNCIA (a alegação forte) = first_anchored_at, não a âncora de
+                    // conteúdo mais recente — que num item re-ancorado seria "hoje" (Hetzner #483 A2).
+                    // Fallback pro anchored_at em respostas antigas sem o campo.
+                    const first = res?.first_anchored_at ?? anchor.anchored_at;
+                    // Refresh = a âncora servida (conteúdo atual, pra onde o botão do explorer aponta)
+                    // é mais nova que a primeira. Mostrar as DUAS datas conta a história do C1d e
+                    // resolve a confusão "data de junho + tx de hoje" (Hetzner #483 minor). As datas
+                    // vêm em formatos diferentes (RFC3339 vs texto Postgres) — comparar por INSTANTE,
+                    // não string; >1s evita ruído de precisão.
+                    const refreshed =
+                      !!res?.first_anchored_at &&
+                      new Date(anchor.anchored_at).getTime() - new Date(first).getTime() > 1000;
+                    return (
+                      <p className="mt-1 font-mono text-[11.5px] text-muted-foreground">
+                        {fmtDate(first)}
+                        {refreshed
+                          ? ` · ${t("v.content_updated")} ${fmtDate(anchor.anchored_at)}`
+                          : ""}
+                        {anchor.network && anchor.network !== "public" ? ` · ${anchor.network}` : ""}
+                      </p>
+                    );
+                  })()}
                   {/* Presença (N1) — discreto, abaixo do DFID/PNIB. Só aparece se houver prova. */}
                   <PresenceTimeline proofs={inclusion} issuerName={issuer?.name ?? null} />
                   {/* Emissor + nível de assinatura (N1) — quem assinou e com que força. */}
