@@ -972,7 +972,11 @@ export default function PublicVerify() {
                                 value={anchor.onchain_content_binding ?? t("v.tech_binding_none")}
                               />
                             )}
-                            {hasRoots && anchor?.anchor_content_root && (
+                            {/* A2 (buraco D) — só mostra a content root quando ela está DE FATO
+                                ancorada on-chain. Enquanto content_root_onchain=false ela é uma
+                                promessa computada no DB, não prova; a linha de binding acima já
+                                diz "none". Volta a aparecer quando o C1 a mover pros args do contrato. */}
+                            {hasRoots && anchor?.anchor_content_root && anchor?.content_root_onchain && (
                               <TechRow label={t("v.tech_root")} value={anchor.anchor_content_root} />
                             )}
                             {hasRoots && anchor?.events_root && (
