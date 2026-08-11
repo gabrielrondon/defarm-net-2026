@@ -2341,6 +2341,7 @@
     "events_meta_selfcheck": "Recomputed in your browser: {{ok}}/{{total}} intact.",
     "events_selfcheck_skipped": "For {{n}} event(s) the server gave no material to recompute here (not counted above).",
     "events_sig_selfcheck": "Signature verified here in your browser (Ed25519), without trusting the server: {{ok}}/{{total}}.",
+    "events_sig_caveat": "This checks that the signature matches the public key provided — but the key still comes from DeFarm, without an independent anchor. Until it is anchored, this proves consistency, not third-party-proof authorship.",
     "events_intact": "intact",
     "events_fail": "does not match",
     "events_honesty": "Recomputes that the event record has not changed. Authorship by signature (Ed25519) comes when the issuer signs.",

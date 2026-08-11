@@ -499,6 +499,14 @@ function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
                 <span>{t("v.events_sig_selfcheck", { ok: sigOk, total: signed })}</span>
               </div>
             )}
+            {/* A3 (buraco A) — honestidade sobre a CIRCULARIDADE: o check prova que a
+                assinatura bate com a chave pública informada, mas essa chave ainda é
+                publicada pela própria DeFarm (sem âncora independente). Enquanto o C1 não
+                ancorar as fingerprints, isto é consistência interna, não autoria à prova
+                de terceiros. */}
+            {signed > 0 && (
+              <p className="text-[11px] leading-relaxed text-muted-foreground">{t("v.events_sig_caveat")}</p>
+            )}
             <EventIntegrityList events={domain} checks={domChecks} />
           </>
         ) : (

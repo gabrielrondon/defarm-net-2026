@@ -2341,6 +2341,7 @@
     "events_meta_note": "Estes são registros do PROCESSO (subida ao IPFS, ancoragem on-chain), não eventos de vida do animal.",
     "events_meta_selfcheck": "Recalculados no seu navegador: {{ok}}/{{total}} íntegros.",
     "events_sig_selfcheck": "Assinatura conferida no seu navegador (Ed25519), sem confiar no servidor: {{ok}}/{{total}}.",
+    "events_sig_caveat": "Confere que a assinatura bate com a chave pública informada — mas a chave ainda vem da DeFarm, sem âncora independente. Até ancorá-la, isto prova consistência, não autoria à prova de terceiros.",
     "events_intact": "íntegro",
     "events_fail": "não bate",
     "events_honesty": "Recomputa que o registro do evento não mudou. A autoria por assinatura (Ed25519) entra quando o emissor assinar.",

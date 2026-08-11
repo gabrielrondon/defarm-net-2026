@@ -2478,6 +2478,7 @@
     "events_meta_selfcheck": "Recalculados en tu navegador: {{ok}}/{{total}} íntegros.",
     "events_selfcheck_skipped": "{{n}} evento(s) el servidor no dio material para recalcular aquí (fuera de la cuenta anterior).",
     "events_sig_selfcheck": "Firma verificada aquí en tu navegador (Ed25519), sin confiar en el servidor: {{ok}}/{{total}}.",
+    "events_sig_caveat": "Confirma que la firma coincide con la clave pública informada — pero la clave aún viene de DeFarm, sin anclaje independiente. Hasta anclarla, esto prueba consistencia, no autoría a prueba de terceros.",
     "events_intact": "íntegro",
     "events_fail": "no coincide",
     "events_honesty": "Recalcula que el registro del evento no cambió. La autoría por firma (Ed25519) llega cuando el emisor firme.",
