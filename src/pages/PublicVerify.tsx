@@ -383,86 +383,158 @@ function PresenceTimeline({
   );
 }
 
+// A1 — eventos de PROCESSO (encanamento): subida ao IPFS + ancoragem on-chain. NÃO são vida
+// do animal; vão pra uma gaveta técnica separada. Sem isto, o "X/Y íntegros" somava uploads
+// como se fossem a biografia do boi (Hetzner mediu 87% meta; 62% dos itens só têm encanamento).
+const isMetaEvent = (type: string): boolean =>
+  type.startsWith("blockchain_") || type.startsWith("ipfs_") || type === "cid_update";
+
+// Lista compacta "tipo → íntegro/não bate" pra um grupo de eventos já recomputados.
+function EventIntegrityList({
+  events,
+  checks,
+}: {
+  events: PublicItemEvent[];
+  checks: (boolean | null)[];
+}) {
+  const { t } = useTranslation();
+  const primaryDeep = "hsl(var(--primary-deep))";
+  const amber = "hsl(38 92% 38%)";
+  return (
+    <ul className="space-y-1">
+      {events.map((e, i) =>
+        checks[i] === null ? null : (
+          <li key={e.id} className="flex items-center justify-between gap-2 text-[11.5px]">
+            <span className="font-mono text-[11px] text-foreground/80">{e.event_type}</span>
+            <span
+              className="inline-flex items-center gap-1 font-mono text-[10.5px]"
+              style={{ color: checks[i] ? primaryDeep : amber }}
+            >
+              {checks[i] ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+              {checks[i] ? t("v.events_intact") : t("v.events_fail")}
+            </span>
+          </li>
+        ),
+      )}
+    </ul>
+  );
+}
+
 // #106 parte 2 — "verifique os eventos você mesmo": o navegador recomputa o content_hash
-// (integridade) de cada evento público, sem confiar no servidor. Só aparece se houver
-// evento público (animal enriquecido; presença é privada). Autoria por assinatura (Ed25519)
-// entra quando o emissor assinar (EMISSÃO ainda é gap; a chave nem vem no events/public).
+// (integridade) de cada evento público, sem confiar no servidor. A frente conta só a
+// BIOGRAFIA (eventos de vida/domínio); o encanamento vai pra uma gaveta técnica. Autoria por
+// assinatura (Ed25519) vive nos eventos de vida.
 function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
   const { t } = useTranslation();
   const primaryDeep = "hsl(var(--primary-deep))";
   const amber = "hsl(38 92% 38%)";
-  const checks = events.map(verifyEventContentHashInBrowser);
-  const checkable = checks.filter((x) => x !== null).length;
-  if (!checkable) return null;
-  const ok = checks.filter((x) => x === true).length;
-  const allOk = ok === checkable;
-  // Ed25519 (autoria) — quando o evento tem assinatura + pubkey pública (pós engines#475).
-  const sigChecks = events.map(verifyEventSignatureInBrowser);
+
+  const domain = events.filter((e) => !isMetaEvent(e.event_type));
+  const meta = events.filter((e) => isMetaEvent(e.event_type));
+
+  const domChecks = domain.map(verifyEventContentHashInBrowser);
+  const domCheckable = domChecks.filter((x) => x !== null).length;
+  const domOk = domChecks.filter((x) => x === true).length;
+  const domAllOk = domOk === domCheckable;
+
+  const metaChecks = meta.map(verifyEventContentHashInBrowser);
+  const metaCheckable = metaChecks.filter((x) => x !== null).length;
+  const metaOk = metaChecks.filter((x) => x === true).length;
+  const metaAllOk = metaOk === metaCheckable;
+
+  // Ed25519 (autoria) — a assinatura do contribuinte vive nos eventos de vida.
+  const sigChecks = domain.map(verifyEventSignatureInBrowser);
   const signed = sigChecks.filter((x) => x !== null).length;
   const sigOk = sigChecks.filter((x) => x === true).length;
   const sigAllOk = sigOk === signed;
+
+  if (!domCheckable && !metaCheckable) return null;
+
   return (
     <details className="group/ev mx-auto mt-2.5 max-w-[24rem] text-left">
       <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
         <ShieldCheck className="h-3.5 w-3.5" style={{ color: "hsl(var(--primary))" }} />
-        {t("v.events_t")} · {t("v.events_sub", { n: checkable })}
+        {t("v.events_t")} ·{" "}
+        {domCheckable > 0 ? t("v.events_sub_domain", { n: domCheckable }) : t("v.events_sub_meta_only")}
         <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/ev:rotate-180" />
       </summary>
       <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
-        <div
-          className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
-          style={{
-            borderColor: allOk ? "hsl(var(--primary) / 0.35)" : amber,
-            background: allOk ? "hsl(var(--primary) / 0.06)" : "transparent",
-            color: allOk ? primaryDeep : amber,
-          }}
-        >
-          {allOk ? (
-            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          ) : (
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          )}
-          <span>{t("v.events_selfcheck", { ok, total: checkable })}</span>
-        </div>
-        {/* A2 #189 — o denominador é do servidor; se ele excluir eventos, dizemos quantos. */}
-        {events.length - checkable > 0 && (
-          <p className="text-[11px] leading-relaxed text-muted-foreground">
-            {t("v.events_selfcheck_skipped", { n: events.length - checkable })}
-          </p>
-        )}
-        {signed > 0 && (
-          <div
-            className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
-            style={{
-              borderColor: sigAllOk ? "hsl(var(--primary) / 0.35)" : amber,
-              background: sigAllOk ? "hsl(var(--primary) / 0.06)" : "transparent",
-              color: sigAllOk ? primaryDeep : amber,
-            }}
-          >
-            {sigAllOk ? (
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            ) : (
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        {domCheckable > 0 ? (
+          <>
+            <div
+              className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+              style={{
+                borderColor: domAllOk ? "hsl(var(--primary) / 0.35)" : amber,
+                background: domAllOk ? "hsl(var(--primary) / 0.06)" : "transparent",
+                color: domAllOk ? primaryDeep : amber,
+              }}
+            >
+              {domAllOk ? (
+                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              )}
+              <span>{t("v.events_selfcheck", { ok: domOk, total: domCheckable })}</span>
+            </div>
+            {/* A2 #189 — o denominador é do servidor; se ele excluir eventos, dizemos quantos. */}
+            {domain.length - domCheckable > 0 && (
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {t("v.events_selfcheck_skipped", { n: domain.length - domCheckable })}
+              </p>
             )}
-            <span>{t("v.events_sig_selfcheck", { ok: sigOk, total: signed })}</span>
-          </div>
+            {signed > 0 && (
+              <div
+                className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+                style={{
+                  borderColor: sigAllOk ? "hsl(var(--primary) / 0.35)" : amber,
+                  background: sigAllOk ? "hsl(var(--primary) / 0.06)" : "transparent",
+                  color: sigAllOk ? primaryDeep : amber,
+                }}
+              >
+                {sigAllOk ? (
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                ) : (
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                )}
+                <span>{t("v.events_sig_selfcheck", { ok: sigOk, total: signed })}</span>
+              </div>
+            )}
+            <EventIntegrityList events={domain} checks={domChecks} />
+          </>
+        ) : (
+          // 62% dos itens só têm encanamento — não fingir "0/0 íntegros" verde.
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{t("v.events_no_domain")}</p>
         )}
-        <ul className="space-y-1">
-          {events.map((e, i) =>
-            checks[i] === null ? null : (
-              <li key={e.id} className="flex items-center justify-between gap-2 text-[11.5px]">
-                <span className="font-mono text-[11px] text-foreground/80">{e.event_type}</span>
-                <span
-                  className="inline-flex items-center gap-1 font-mono text-[10.5px]"
-                  style={{ color: checks[i] ? primaryDeep : amber }}
-                >
-                  {checks[i] ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-                  {checks[i] ? t("v.events_intact") : t("v.events_fail")}
-                </span>
-              </li>
-            ),
-          )}
-        </ul>
+
+        {/* Encanamento: registros do PROCESSO de ancoragem, honestamente rotulados. */}
+        {metaCheckable > 0 && (
+          <details className="group/meta">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+              {t("v.events_meta_drawer", { n: metaCheckable })}
+              <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/meta:rotate-180" />
+            </summary>
+            <div className="mt-2 space-y-2">
+              <p className="text-[11px] leading-relaxed text-muted-foreground">{t("v.events_meta_note")}</p>
+              <div
+                className="flex items-start gap-1.5 rounded-lg border px-3 py-2 text-[11.5px] leading-relaxed"
+                style={{
+                  borderColor: metaAllOk ? "hsl(var(--primary) / 0.35)" : amber,
+                  background: metaAllOk ? "hsl(var(--primary) / 0.06)" : "transparent",
+                  color: metaAllOk ? primaryDeep : amber,
+                }}
+              >
+                {metaAllOk ? (
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                ) : (
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                )}
+                <span>{t("v.events_meta_selfcheck", { ok: metaOk, total: metaCheckable })}</span>
+              </div>
+              <EventIntegrityList events={meta} checks={metaChecks} />
+            </div>
+          </details>
+        )}
+
         <p className="text-[11px] leading-relaxed text-muted-foreground">{t("v.events_honesty")}</p>
       </div>
     </details>
