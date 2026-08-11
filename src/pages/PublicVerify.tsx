@@ -387,7 +387,10 @@ function PresenceTimeline({
 // do animal; vão pra uma gaveta técnica separada. Sem isto, o "X/Y íntegros" somava uploads
 // como se fossem a biografia do boi (Hetzner mediu 87% meta; 62% dos itens só têm encanamento).
 const isMetaEvent = (type: string): boolean =>
-  type.startsWith("blockchain_") || type.startsWith("ipfs_") || type === "cid_update";
+  type.startsWith("blockchain_") ||
+  type.startsWith("ipfs_") ||
+  type.startsWith("anchor_") || // ex.: anchor_retry — não deixar encanamento futuro contar como vida (Hetzner: fail-open na direção errada)
+  type === "cid_update";
 
 // Lista compacta "tipo → íntegro/não bate" pra um grupo de eventos já recomputados.
 function EventIntegrityList({
