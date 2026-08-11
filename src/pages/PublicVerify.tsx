@@ -865,7 +865,10 @@ export default function PublicVerify() {
                   )}
                   {anchor && (
                     <p className="mt-1 font-mono text-[11.5px] text-muted-foreground">
-                      {fmtDate(anchor.anchored_at)}
+                      {/* Data de EXISTÊNCIA (a alegação forte) = first_anchored_at, não a âncora de
+                          conteúdo mais recente — que num item re-ancorado seria "hoje" (Hetzner #483
+                          A2). Fallback pro anchored_at em respostas antigas sem o campo. */}
+                      {fmtDate(res?.first_anchored_at ?? anchor.anchored_at)}
                       {anchor.network && anchor.network !== "public" ? ` · ${anchor.network}` : ""}
                     </p>
                   )}

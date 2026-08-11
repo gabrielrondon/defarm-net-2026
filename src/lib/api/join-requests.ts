@@ -173,6 +173,10 @@ export interface PublicVerifyResponse {
   certificate_url?: string;
   links?: VerifyLinks;
   verification?: VerifyMethod;
+  // Data de EXISTÊNCIA original = min(anchored_at) da primeira âncora de conteúdo (C1d p2).
+  // `anchor.anchored_at` passou a ser o do conteúdo mais RECENTE (pode ser "hoje" num item
+  // re-ancorado); este campo preserva a alegação forte "o registro existe desde X".
+  first_anchored_at?: string | null;
 }
 
 // `lang` localiza só a PROSA reproduzível (verification.steps + *_canonicalization +
