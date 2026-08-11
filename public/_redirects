@@ -1,1 +1,5 @@
+# A3 (buraco A) — a chave pública do certificado da DeFarm precisa resolver no domínio
+# PRIMÁRIO, senão o passo de verificação independente cai no SPA (HTML). Proxy pro gateway,
+# ANTES do catch-all (primeira regra que casa vence).
+/.well-known/defarm-cert-signing-key  https://gateway.defarm.net/.well-known/defarm-cert-signing-key  200
 /*    /index.html   200
