@@ -73,6 +73,7 @@ import { getCarGeoJSON, getCarMetadata, type CarGeoJSON, type CarMetadata } from
 import { verifyEudrPublic } from "@/lib/api/products";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { getPrivateItemLocation } from "@/lib/api/join-requests";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import {
   Area,
@@ -1525,6 +1526,18 @@ export default function PublicItem() {
     retry: 1,
   });
 
+  // G3 (Gerbov): localização PRECISA pra quem tem ACESSO. O backend gateia por visibility.can_read()
+  // (ItemVisibilityPolicy — acesso ao item via circuito/role, NÃO só estar logado); devolve 403 sem
+  // acesso. Só busca se autenticado; falha silenciosa (retry:false) → cai no coarse público. O
+  // polígono preciso e a coordenada NUNCA vão pro certificado público — só aqui, pra quem pode ver.
+  const { data: privateLoc } = useQuery({
+    queryKey: ["private-item-location", resolvedDfid],
+    queryFn: () => getPrivateItemLocation(resolvedDfid!),
+    enabled: isAuthenticated && !!resolvedDfid,
+    retry: false,
+  });
+  const privatePolygon = privateLoc?.property_polygon?.geojson ?? null;
+
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["public-item-events", resolvedDfid],
     queryFn: () => getPublicItemEvents(resolvedDfid!, { limit: 50 }),
@@ -2520,7 +2533,42 @@ export default function PublicItem() {
           </div>
         )}
 
-        {publicLocation && (
+        {privatePolygon ? (
+          /* G3 (Gerbov): PRECISO pra quem tem ACESSO — inline, substitui o coarse. Marcado como
+             visualização privada; a coordenada/polígono exato NÃO vão pro certificado público. */
+          <section className="rounded-xl bg-white border border-emerald-200/60 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">
+                    {localized(metadataLocale, "Localização", "Location", "Ubicación")}
+                  </p>
+                </div>
+                <p className="text-[11px] text-emerald-700/80 mb-2">
+                  {localized(
+                    metadataLocale,
+                    "Visualização privada. Não aparece no certificado público.",
+                    "Private view. Not shown on the public certificate.",
+                    "Vista privada. No aparece en el certificado público.",
+                  )}
+                </p>
+                {privateLoc?.private_location?.municipio || privateLoc?.private_location?.uf ? (
+                  <p className="text-sm font-semibold text-foreground">
+                    {[privateLoc?.private_location?.municipio, privateLoc?.private_location?.uf].filter(Boolean).join(" / ")}
+                  </p>
+                ) : null}
+                {privateLoc?.private_location?.car ? (
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">CAR: {privateLoc.private_location.car}</p>
+                ) : null}
+              </div>
+              <MapPinned className="h-5 w-5 text-emerald-600 shrink-0" />
+            </div>
+            <div className="mt-4">
+              <PropertyMap geojson={privatePolygon as unknown as CarGeoJSON} className="h-64 w-full" />
+            </div>
+          </section>
+        ) : publicLocation ? (
           <section className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -2548,7 +2596,7 @@ export default function PublicItem() {
               </div>
             ) : null}
           </section>
-        )}
+        ) : null}
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {currentProperty?.car && (
