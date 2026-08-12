@@ -1051,8 +1051,13 @@ function PublicLocationMap({ location }: { location: PublicLocationProjection })
         doubleClickZoom: false,
         touchZoom: false,
       });
-      L_.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 12,
+      // View válido GARANTIDO já no init: o card ainda pode estar com tamanho 0 quando
+      // o effect roda, e aí o fitBounds estourava (zoom NaN) e era engolido pelo catch,
+      // deixando o mapa sem zoom → nenhum tile pedido (o buraco do "só o círculo").
+      map.setView([center.lat, center.lon], 8);
+      // Mesmo basemap (satélite) que todos os outros mapas do app usam.
+      L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 18,
       }).addTo(map);
       const circle = L_.circle([center.lat, center.lon], {
         radius: radiusMeters,
@@ -1061,8 +1066,18 @@ function PublicLocationMap({ location }: { location: PublicLocationProjection })
         fillColor: "#10b981",
         fillOpacity: 0.18,
       }).addTo(map);
-      map.fitBounds(circle.getBounds(), { padding: [12, 12] });
       mapInstance.current = map;
+      // Depois do layout assentar: recalcula o tamanho e enquadra o raio. Se o fitBounds
+      // falhar por qualquer motivo, o setView(8) acima mantém o basemap visível.
+      requestAnimationFrame(() => {
+        if (cancelled || !mapInstance.current) return;
+        map.invalidateSize();
+        try {
+          map.fitBounds(circle.getBounds(), { padding: [12, 12] });
+        } catch {
+          /* mantém o setView(8) */
+        }
+      });
     }).catch(() => {});
 
     return () => {
@@ -1078,9 +1093,6 @@ function PublicLocationMap({ location }: { location: PublicLocationProjection })
   return (
     <div className="relative h-40 w-full overflow-hidden rounded-lg border border-emerald-200/60 bg-[linear-gradient(135deg,#ecfdf5_0%,#f8fafc_55%,#d1fae5_100%)]">
       <div ref={mapRef} className="absolute inset-0" />
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="h-28 w-28 rounded-full border-2 border-emerald-500/60 bg-emerald-400/20 shadow-[0_0_0_26px_rgba(16,185,129,0.08)]" />
-      </div>
       <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-white/85 px-2 py-1 text-[11px] font-medium text-emerald-800 shadow-sm">
         {location.approximate_radius_km
           ? `raio aprox. ${Math.round(location.approximate_radius_km)} km`
