@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -94,6 +95,32 @@ const STATUS_BADGE: Record<
   retrying: { variant: "secondary", icon: RefreshCw },
 };
 
+const splitIdentifiers = (value: string): string[] =>
+  value
+    .split(/[\s,;]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+const isAbortError = (err: unknown): boolean =>
+  err instanceof DOMException
+    ? err.name === "AbortError"
+    : err instanceof Error && err.name === "AbortError";
+
+const errorMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : "Erro inesperado";
+
+const fetchPublicXlmBalance = async (account: string): Promise<number | null> => {
+  const response = await fetch(`https://horizon.stellar.org/accounts/${account}`);
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as {
+    balances?: Array<{ asset_type?: string; balance?: string }>;
+  };
+  const native = data.balances?.find((balance) => balance.asset_type === "native");
+  const parsed = native?.balance ? Number(native.balance) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 export default function AdminJobs() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -123,7 +150,9 @@ export default function AdminJobs() {
   const [batchAdapter, setBatchAdapter] = useState("");
   const [batchQuality, setBatchQuality] = useState("all");
   const [batchPriority, setBatchPriority] = useState("2");
-  const [batchLimit, setBatchLimit] = useState("200");
+  const [batchLimit, setBatchLimit] = useState("25");
+  const [batchDfids, setBatchDfids] = useState("");
+  const [batchItemIds, setBatchItemIds] = useState("");
   const [retryConfirmJob, setRetryConfirmJob] = useState<AdapterJob | null>(null);
 
   useEffect(() => {
@@ -206,6 +235,18 @@ export default function AdminJobs() {
     refetchInterval: 15000,
   });
 
+  const stellarSourceAccount = queueQuery.data?.stellar_source_account ?? null;
+  const publicXlmBalanceQuery = useQuery({
+    queryKey: ["admin-public-xlm-balance", stellarSourceAccount],
+    queryFn: () => fetchPublicXlmBalance(stellarSourceAccount as string),
+    enabled:
+      !!stellarSourceAccount &&
+      queueQuery.data?.xlm_balance == null &&
+      pipelineStatusQuery.data?.xlm.balance == null,
+    refetchInterval: 30000,
+    retry: 1,
+  });
+
   const ingestionsSummaryQuery = useQuery({
     queryKey: ["admin-ingestions-summary"],
     queryFn: getAdminIngestionsSummary,
@@ -226,13 +267,13 @@ export default function AdminJobs() {
       invalidateAll(queryClient);
       toast({ title: "Job reenfileirado com sucesso" });
     },
-    onError: (err: any) =>
+    onError: (err: unknown) =>
       toast({
         title: "Erro ao reprocessar job",
         description:
-          err.name === "AbortError"
+          isAbortError(err)
             ? "Timeout no retry de job (30s). Tente novamente."
-            : err.message,
+            : errorMessage(err),
         variant: "destructive",
       }),
   });
@@ -246,13 +287,13 @@ export default function AdminJobs() {
         description: `${data.queued} job(s) -> ${data.queue}`,
       });
     },
-    onError: (err: any) =>
+    onError: (err: unknown) =>
       toast({
         title: "Erro no retry em lote",
         description:
-          err.name === "AbortError"
-            ? "Timeout no retry em lote (30s). Tente novamente com limite menor."
-            : err.message,
+          isAbortError(err)
+            ? "Timeout no retry em lote (180s). Verifique a fila antes de tentar novamente."
+            : errorMessage(err),
         variant: "destructive",
       }),
   });
@@ -268,6 +309,20 @@ export default function AdminJobs() {
     [queueQuery.data?.active_queues]
   );
   const summary = summaryQuery.data?.summary;
+  const xlmBalance =
+    queueQuery.data?.xlm_balance ??
+    pipelineStatusQuery.data?.xlm.balance ??
+    publicXlmBalanceQuery.data ??
+    null;
+  const xlmBalanceSource =
+    queueQuery.data?.xlm_balance != null || pipelineStatusQuery.data?.xlm.balance != null
+      ? "monitor/cache do adapter"
+      : publicXlmBalanceQuery.data != null
+        ? "Horizon público"
+        : null;
+  const retryScopeCount =
+    splitIdentifiers(batchDfids).length + splitIdentifiers(batchItemIds).length;
+  const isUnscopedBatchRetry = retryScopeCount === 0;
 
   const handleRetryJob = (job: AdapterJob) => {
     const status = job.status ?? "pending";
@@ -574,20 +629,6 @@ export default function AdminJobs() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    retryBatchMutation.mutate({
-                      filter: { status: "completed", has_errors: true },
-                      priority: 4,
-                      limit: 500,
-                    })
-                  }
-                  disabled={retryBatchMutation.isPending}
-                >
-                  Reenfileirar completos com erro (P4)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => {
                     setStatusFilter("completed");
                     setQualityFilter("has_errors");
@@ -627,9 +668,9 @@ export default function AdminJobs() {
                 <KeyValue
                   label="Saldo XLM"
                   value={
-                    queueQuery.data?.xlm_balance == null
+                    xlmBalance == null
                       ? "N/D"
-                      : Number(queueQuery.data.xlm_balance).toFixed(6)
+                      : Number(xlmBalance).toFixed(6)
                   }
                 />
                 <KeyValue
@@ -663,6 +704,10 @@ export default function AdminJobs() {
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground">
+                {xlmBalanceSource
+                  ? `Saldo lido de ${xlmBalanceSource}.`
+                  : "Saldo indisponível; use a carteira acima para conferir no Horizon."}
+                {" · "}
                 Atualizado em {queueQuery.dataUpdatedAt ? formatTs(new Date(queueQuery.dataUpdatedAt).toISOString()) : "-"}
               </p>
             </>
@@ -714,6 +759,10 @@ export default function AdminJobs() {
           <CardTitle className="text-base">Retry em lote</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div className="md:col-span-5 rounded-md border border-amber-400/40 bg-amber-50/40 p-3 text-xs text-amber-900">
+            Use DFIDs ou item_ids para escopar retries de parceiro. Sem escopo, o lote pega os
+            jobs mais antigos que batem nos filtros globais.
+          </div>
           <div>
             <Label className="text-xs text-muted-foreground">Status</Label>
             <Select value={batchStatus} onValueChange={setBatchStatus}>
@@ -766,6 +815,44 @@ export default function AdminJobs() {
               placeholder="200"
             />
           </div>
+          <div className="md:col-span-3">
+            <Label className="text-xs text-muted-foreground">DFIDs específicos</Label>
+            <Textarea
+              value={batchDfids}
+              onChange={(e) => setBatchDfids(e.target.value)}
+              placeholder="DFID-BEEF-BR-2026-..."
+              rows={3}
+              className="font-mono text-xs"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <Label className="text-xs text-muted-foreground">Item IDs específicos</Label>
+            <Textarea
+              value={batchItemIds}
+              onChange={(e) => setBatchItemIds(e.target.value)}
+              placeholder="uuid-1 uuid-2"
+              rows={3}
+              className="font-mono text-xs"
+            />
+          </div>
+          <div className="md:col-span-3 flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setBatchStatus(statusFilter === "all" ? "failed" : statusFilter);
+                setBatchAdapter(adapterFilter);
+                setBatchQuality(qualityFilter === "clean" ? "all" : qualityFilter);
+                setBatchPriority(priorityFilter === "all" ? "2" : priorityFilter);
+              }}
+            >
+              Usar filtros atuais
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Escopo explícito: {retryScopeCount || 0} identificador(es)
+            </span>
+          </div>
           <div className="flex items-end">
             <Button
               className="w-full"
@@ -777,12 +864,14 @@ export default function AdminJobs() {
                     has_errors: batchQuality === "has_errors" ? true : undefined,
                     missing_stellar: batchQuality === "missing_stellar" ? true : undefined,
                     missing_ipfs: batchQuality === "missing_ipfs" ? true : undefined,
+                    dfids: splitIdentifiers(batchDfids),
+                    item_ids: splitIdentifiers(batchItemIds),
                   },
                   priority: Number(batchPriority),
-                  limit: Number(batchLimit) || 200,
+                  limit: Number(batchLimit) || 25,
                 })
               }
-              disabled={retryBatchMutation.isPending}
+              disabled={retryBatchMutation.isPending || isUnscopedBatchRetry}
             >
               {retryBatchMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -792,6 +881,11 @@ export default function AdminJobs() {
               Reenfileirar lote
             </Button>
           </div>
+          {isUnscopedBatchRetry && (
+            <p className="md:col-span-5 text-xs text-muted-foreground">
+              Informe ao menos um DFID ou item_id para habilitar o retry em lote.
+            </p>
+          )}
         </CardContent>
       </Card>
 

@@ -20,10 +20,10 @@ export interface AdapterJob {
   next_retry_at: string | null;
   error_message: string | null;
   result: {
-    blockchain_anchors?: Array<Record<string, any>>;
-    storage_refs?: Array<Record<string, any>>;
+    blockchain_anchors?: Array<Record<string, unknown>>;
+    storage_refs?: Array<Record<string, unknown>>;
     errors?: string[];
-    [k: string]: any;
+    [k: string]: unknown;
   } | null;
   created_at: string | null;
   updated_at: string | null;
@@ -66,6 +66,7 @@ export interface RetryBatchRequest {
     adapter?: string;
     has_errors?: boolean;
     item_ids?: string[];
+    dfids?: string[];
     missing_stellar?: boolean;
     missing_ipfs?: boolean;
   };
@@ -250,7 +251,7 @@ export async function retryAdminJobsBatch(
   body: RetryBatchRequest
 ): Promise<RetryBatchResponse> {
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+  const timeoutId = window.setTimeout(() => controller.abort(), 180000);
   try {
     return await registryRequest<RetryBatchResponse>(
       "/adapter/admin/jobs/retry-batch",
