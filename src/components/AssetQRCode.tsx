@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Download, Share2, ExternalLink, Copy } from "lucide-react";
+import { X, Download, Share2, ExternalLink, Copy, BadgeCheck, Check, Clock3, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { NeloreMark } from "@/components/NeloreMark";
 
 interface AssetQRCodeProps {
   dfid: string;
+  locale?: string;
+  valueChain?: string;
+  statusLabel?: string;
+  verificationState?: "confirmed" | "pending" | "unknown";
   canonicalIdLabel?: string;
   canonicalIdValue?: string;
   identityHash?: string;
@@ -32,6 +37,72 @@ function DiamondQR({ dfid, size = 120 }: { dfid: string; size?: number }) {
 function shorten(value: string, head = 10, tail = 8) {
   if (value.length <= head + tail + 3) return value;
   return `${value.slice(0, head)}...${value.slice(-tail)}`;
+}
+
+function guillochePath(cx = 200, cy = 200, scale = 1, n = 1600): string {
+  const Rf = 100;
+  const rr = 64;
+  const d = 90;
+  const turns = 16;
+  const k = (Rf - rr) / rr;
+  let path = "";
+  for (let i = 0; i <= n; i++) {
+    const t = (2 * Math.PI * turns * i) / n;
+    const x = cx + ((Rf - rr) * Math.cos(t) + d * Math.cos(k * t)) * scale;
+    const y = cy + ((Rf - rr) * Math.sin(t) - d * Math.sin(k * t)) * scale;
+    path += `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return path;
+}
+
+const GUILLOCHE_PATH = guillochePath(200, 200, 1.32);
+
+function Guilloche({ className, opacity = 0.1 }: { className?: string; opacity?: number }) {
+  return (
+    <svg viewBox="0 0 400 400" className={className} fill="none" aria-hidden="true" style={{ opacity }}>
+      <defs>
+        <radialGradient id="asset-guilloche" cx="50%" cy="50%" r="52%">
+          <stop offset="0%" stopColor="hsl(var(--primary))" />
+          <stop offset="65%" stopColor="hsl(var(--primary))" />
+          <stop offset="100%" stopColor="hsl(var(--primary-deep))" />
+        </radialGradient>
+      </defs>
+      <path d={GUILLOCHE_PATH} stroke="url(#asset-guilloche)" strokeWidth={0.7} />
+    </svg>
+  );
+}
+
+function CornerTicks() {
+  const base = "pointer-events-none absolute h-4 w-4 border-primary/30";
+  return (
+    <div aria-hidden="true">
+      <span className={`${base} left-4 top-4 rounded-tl-[3px] border-l border-t`} />
+      <span className={`${base} right-4 top-4 rounded-tr-[3px] border-r border-t`} />
+      <span className={`${base} bottom-4 left-4 rounded-bl-[3px] border-b border-l`} />
+      <span className={`${base} bottom-4 right-4 rounded-br-[3px] border-b border-r`} />
+    </div>
+  );
+}
+
+function SecurityStrip({ label }: { label: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-8 bottom-3 overflow-hidden whitespace-nowrap text-center text-[6px] font-medium uppercase leading-none tracking-[0.34em] text-primary/25"
+    >
+      {` ${label} · `.repeat(24)}
+    </div>
+  );
+}
+
+function ChainMark({ chain }: { chain?: string }) {
+  if ((chain || "").toUpperCase() !== "BEEF") return null;
+  return (
+    <NeloreMark
+      className="pointer-events-none absolute -right-10 top-4 h-40 w-40 text-primary/8 sm:-right-8 sm:h-48 sm:w-48"
+      title=""
+    />
+  );
 }
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -61,6 +132,9 @@ async function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
 
 export function AssetQRCode({
   dfid,
+  valueChain,
+  statusLabel,
+  verificationState = "unknown",
   canonicalIdLabel,
   canonicalIdValue,
   identityHash,
@@ -88,6 +162,28 @@ export function AssetQRCode({
   const identityHashUrl = identityHash
     ? `https://stellar.expert/explorer/public/tx/${identityHash}`
     : null;
+  const proofTone =
+    verificationState === "confirmed"
+      ? {
+          label: L("Prova on-chain confirmada", "On-chain proof confirmed", "Prueba on-chain confirmada"),
+          help: L("A identidade pública tem âncora confirmada.", "The public identity has a confirmed anchor.", "La identidad pública tiene un anclaje confirmado."),
+          Icon: Check,
+          className: "border-primary/25 bg-primary/10 text-primary",
+        }
+      : verificationState === "pending"
+        ? {
+            label: L("Prova on-chain pendente", "On-chain proof pending", "Prueba on-chain pendiente"),
+            help: L("O DFID existe; a confirmação pode terminar em segundo plano.", "The DFID exists; confirmation may finish in the background.", "El DFID existe; la confirmación puede terminar en segundo plano."),
+            Icon: Clock3,
+            className: "border-amber-300/50 bg-amber-50 text-amber-800",
+          }
+        : {
+            label: L("Registro público encontrado", "Public record found", "Registro público encontrado"),
+            help: L("Mostrando os dados públicos disponíveis para auditoria.", "Showing public data available for audit.", "Mostrando los datos públicos disponibles para auditoría."),
+            Icon: ShieldCheck,
+            className: "border-stone-200 bg-stone-50 text-stone-700",
+          };
+  const ProofIcon = proofTone.Icon;
 
   const handleCopy = async (value: string, label: string) => {
     try {
@@ -260,21 +356,35 @@ export function AssetQRCode({
   return (
     <>
       <div
-        className={`group relative rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-primary/3 p-6 cursor-pointer transition-all hover:shadow-lg hover:border-primary/20 ${className}`}
+        className={`group relative overflow-hidden rounded-[20px] border border-border bg-card px-5 py-6 text-center shadow-[0_2px_4px_-2px_rgba(0,0,0,0.10),0_20px_52px_-30px_hsl(var(--primary)/0.36)] cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-xl hover:border-primary/25 sm:px-7 sm:py-7 ${className}`}
         onClick={() => setFullscreen(true)}
       >
-        <div className="flex flex-col items-center gap-4">
+        <Guilloche className="pointer-events-none absolute left-1/2 top-[44%] h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2" />
+        <ChainMark chain={valueChain} />
+        <div className="pointer-events-none absolute inset-[10px] rounded-2xl border border-primary/15" aria-hidden="true" />
+        <CornerTicks />
+        <SecurityStrip label="DeFarm · Public animal page" />
+
+        <div className="relative z-10 flex flex-col items-center gap-4">
           <div className="transition-transform group-hover:scale-105">
             <DiamondQR dfid={dfid} size={140} />
           </div>
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">{L("Escaneie para rastrear", "Scan to trace", "Escanea para rastrear")}</p>
-            <p className="text-xs font-mono text-foreground/70 mt-1 break-all">{dfid}</p>
+          <div className="text-center space-y-2">
+            <div className={`mx-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${proofTone.className}`}>
+              <ProofIcon className="h-3.5 w-3.5" />
+              {proofTone.label}
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">{L("Página pública do animal", "Public animal page", "Página pública del animal")}</p>
+              <p className="mt-1 text-xs font-mono text-foreground/80 break-all">{dfid}</p>
+            </div>
             {canonicalIdLabel && canonicalIdValue ? (
               <p className="text-[11px] text-muted-foreground mt-1 break-all">
                 {canonicalIdLabel}: <span className="font-mono text-foreground/80">{canonicalIdValue}</span>
               </p>
             ) : null}
+            <p className="mx-auto max-w-[28rem] text-[12px] leading-relaxed text-muted-foreground">{proofTone.help}</p>
+            {statusLabel ? <p className="text-[11px] text-muted-foreground">{statusLabel}</p> : null}
           </div>
         </div>
         <div className="absolute inset-0 rounded-2xl bg-foreground/0 group-hover:bg-foreground/[0.02] transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -304,13 +414,22 @@ export function AssetQRCode({
               <X className="h-6 w-6" />
             </button>
 
-            <div className="rounded-3xl border border-border bg-gradient-to-b from-primary/8 via-background to-background p-8 shadow-2xl">
-              <div className="flex flex-col items-center gap-6">
+            <div className="relative overflow-hidden rounded-[24px] border border-border bg-card p-8 shadow-2xl">
+              <Guilloche className="pointer-events-none absolute left-1/2 top-[42%] h-[390px] w-[390px] -translate-x-1/2 -translate-y-1/2" opacity={0.12} />
+              <ChainMark chain={valueChain} />
+              <div className="pointer-events-none absolute inset-[10px] rounded-[20px] border border-primary/15" aria-hidden="true" />
+              <CornerTicks />
+              <SecurityStrip label="DeFarm · Traceability certificate" />
+              <div className="relative z-10 flex flex-col items-center gap-6">
                 <DiamondQR dfid={dfid} size={220} />
 
                 <div className="text-center space-y-1">
+                  <div className={`mx-auto mb-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${proofTone.className}`}>
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    {proofTone.label}
+                  </div>
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">
-                    {L("Certificado de Rastreabilidade", "Traceability Certificate", "Certificado de Trazabilidad")}
+                    {L("Certificado público de rastreabilidade", "Public traceability certificate", "Certificado público de trazabilidad")}
                   </p>
                   <p className="text-sm font-mono text-foreground font-medium break-all">{dfid}</p>
                   {canonicalIdLabel && canonicalIdValue ? (

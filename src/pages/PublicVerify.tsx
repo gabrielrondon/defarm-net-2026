@@ -643,11 +643,22 @@ export default function PublicVerify() {
     setLoading(true);
     setError(false);
     setItem(null);
+    setRes(null);
     // Passa o idioma atual → backend devolve o recipe (steps/fórmulas) traduzido.
     // Re-busca ao trocar de idioma (i18n.language nas deps).
     verifyPublicItem(dfid, i18n.language)
       .then((r) => !cancelled && setRes(r))
-      .catch(() => !cancelled && setError(true))
+      .catch(() =>
+        // Um DFID recém-criado pode existir publicamente antes da verificação on-chain
+        // estar pronta. O /v continua apresentável, mas sem alegar "verificado".
+        getPublicItem(dfid)
+          .then((it) => {
+            if (cancelled) return;
+            setItem(it);
+            setError(false);
+          })
+          .catch(() => !cancelled && setError(true))
+      )
       .finally(() => !cancelled && setLoading(false));
     // Metadata pública (best-effort) só pra exibir o identificador canônico mascarado.
     getPublicItem(dfid)
@@ -725,6 +736,8 @@ export default function PublicVerify() {
     return { k, v, commit };
   }).filter((x): x is { k: (typeof SENSITIVE_IDS)[number]; v: string; commit: string | null } => !!x.v);
 
+  const displayDfid = res?.dfid ?? item?.dfid ?? dfid;
+  const displayChain = res?.identity?.value_chain ?? item?.value_chain;
   const anchor = res?.anchor ?? null;
   const anchorState: AnchorState = anchorStateOf(anchor?.status);
   const events = res?.events ?? [];
@@ -749,7 +762,9 @@ export default function PublicVerify() {
   const muted = "hsl(var(--muted-foreground))";
 
   // Veredito honesto, derivado dos dados (ver notas nos 4 estados).
-  const verdict: "attention" | "verified" | "anchored" | "pending" = sigFailed
+  const verdict: "attention" | "verified" | "anchored" | "pending" = !res
+    ? "pending"
+    : sigFailed
     ? "attention"
     : anchorState === "confirmed" && signed.length > 0
       ? "verified"
@@ -796,7 +811,7 @@ export default function PublicVerify() {
             <div className="mt-16 flex items-center justify-center gap-3 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" /> {t("v.loading")}
             </div>
-          ) : error || !res ? (
+          ) : error || (!res && !item) ? (
             <div className="mt-10 rounded-2xl border border-dashed border-border bg-card p-12 text-center">
               <AlertTriangle className="mx-auto mb-3 h-7 w-7 text-muted-foreground" />
               <p className="text-[15px] font-semibold">{t("v.notfound_t")}</p>
@@ -816,7 +831,7 @@ export default function PublicVerify() {
               <section className="relative overflow-hidden rounded-[20px] border border-border bg-card px-7 py-10 text-center shadow-[0_2px_4px_-2px_rgba(0,0,0,0.12),0_24px_64px_-28px_hsl(var(--primary)/0.4)] sm:px-10">
                 {/* Camada de segurança (documento): guilloché central + Nelore, bem fracos. */}
                 <Guilloche className="pointer-events-none absolute left-1/2 top-[46%] h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 sm:h-[440px] sm:w-[440px]" opacity={0.11} />
-                <ChainMark chain={res.identity?.value_chain} />
+                <ChainMark chain={displayChain} />
                 {/* Moldura dupla + cantos + microtexto = ar de certificado. */}
                 <div className="pointer-events-none absolute inset-[10px] rounded-2xl border border-primary/15" aria-hidden="true" />
                 <CornerTicks />
@@ -824,7 +839,7 @@ export default function PublicVerify() {
                 <div className="relative z-10">
                 {/* QR diamante da DeFarm → reabre/compartilha esta verificação. */}
                 <div className="mx-auto w-fit">
-                  <BrandedQR url={`https://defarm.net/v/${res.dfid}`} size={116} />
+                  <BrandedQR url={`https://defarm.net/v/${displayDfid}`} size={116} />
                 </div>
                 <h1
                   className="mt-5 text-balance font-display text-[25px] font-semibold tracking-tight sm:text-[29px]"
@@ -837,7 +852,7 @@ export default function PublicVerify() {
                 </p>
 
                 <div className="mx-auto mt-6 max-w-[24rem] border-t border-dashed border-border pt-5">
-                  <p className="break-all font-mono text-[13px] font-medium tracking-tight">{res.dfid}</p>
+                    <p className="break-all font-mono text-[13px] font-medium tracking-tight">{displayDfid}</p>
                   {canonicalIds.length > 0 && (
                     <div className="mt-1.5 flex flex-wrap justify-center gap-x-5 gap-y-1">
                       {canonicalIds.map((x) => (
@@ -947,7 +962,7 @@ export default function PublicVerify() {
                   </ProofLine>
 
                   {/* Técnico: aninhado, pra sumir de quem não quer */}
-                  {res.verification && (
+                  {res?.verification && (
                     <details className="group/tech border-t border-border/60 pt-4">
                       <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
                         {t("v.tech_t")}
@@ -1028,7 +1043,7 @@ export default function PublicVerify() {
                 </div>
               </details>
 
-              <p className="mt-8 text-center font-mono text-[11px] text-muted-foreground">defarm.net/v/{res.dfid}</p>
+              <p className="mt-8 text-center font-mono text-[11px] text-muted-foreground">defarm.net/v/{displayDfid}</p>
             </>
           )}
         </div>
