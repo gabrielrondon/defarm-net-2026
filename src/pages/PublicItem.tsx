@@ -235,9 +235,11 @@ const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
     aliases: [
       "inscricao_estadual_centro_custo",
       "inscricao_estadual_do_centro_de_custo",
+      "inscricao_estadual_do_centro_custo",
       "ie_cc",
       "state_registration_cost_center",
       "inscricaeo_estadual_do_centro_de_custo",
+      "inscricaeo_estadual_do_centro_custo",
     ],
     label: { "pt-BR": "Inscrição estadual (centro de custo)", en: "State registration (cost center)", es: "Registro estatal (centro de costo)" },
   },
@@ -248,8 +250,13 @@ const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
   },
   {
     canonical: "animal_id",
-    aliases: ["animal_id", "animalid", "id_animal"],
+    aliases: ["animal_id", "animalid", "id_animal", "numero_do_animal", "numero_animal"],
     label: { "pt-BR": "ID do animal", en: "Animal ID", es: "ID del animal" },
+  },
+  {
+    canonical: "animal_code",
+    aliases: ["animal_code", "codigo_animal", "codigo_do_animal"],
+    label: { "pt-BR": "Código do animal", en: "Animal code", es: "Código del animal" },
   },
   { canonical: "country", aliases: ["country", "pais", "país"], label: { "pt-BR": "País", en: "Country", es: "País" } },
   { canonical: "weight_kg", aliases: ["weight_kg", "peso_kg", "weight", "peso"], label: { "pt-BR": "Peso (kg)", en: "Weight (kg)", es: "Peso (kg)" } },
@@ -258,14 +265,24 @@ const METADATA_FIELD_DEFINITIONS: MetadataFieldDefinition[] = [
     aliases: ["data_peso", "weight_date", "data_pesagem", "date"],
     label: { "pt-BR": "Data da pesagem", en: "Weighing date", es: "Fecha de pesaje" },
   },
-  { canonical: "document_type", aliases: ["document_type", "tipo_documento"], label: { "pt-BR": "Tipo de documento", en: "Document type", es: "Tipo de documento" } },
-  { canonical: "document_number", aliases: ["document_number", "numero_documento"], label: { "pt-BR": "Número do documento", en: "Document number", es: "Número de documento" } },
-  { canonical: "document_date", aliases: ["document_date", "data_documento"], label: { "pt-BR": "Data do documento", en: "Document date", es: "Fecha del documento" } },
-  { canonical: "movement_type", aliases: ["movement_type", "tipo_movimento"], label: { "pt-BR": "Tipo de movimento", en: "Movement type", es: "Tipo de movimiento" } },
-  { canonical: "stock_motive", aliases: ["stock_motive", "motivo_estoque"], label: { "pt-BR": "Motivo", en: "Motive", es: "Motivo" } },
+  { canonical: "document_type", aliases: ["document_type", "tipo_documento", "tipo_do_documento"], label: { "pt-BR": "Tipo de documento", en: "Document type", es: "Tipo de documento" } },
+  { canonical: "document_number", aliases: ["document_number", "numero_documento", "numero_do_documento"], label: { "pt-BR": "Número do documento", en: "Document number", es: "Número de documento" } },
+  { canonical: "document_date", aliases: ["document_date", "data_documento", "data_do_documento"], label: { "pt-BR": "Data do documento", en: "Document date", es: "Fecha del documento" } },
+  { canonical: "movement_date", aliases: ["movement_date", "data_movimentacao", "data_da_movimentacao", "data"], label: { "pt-BR": "Data da movimentação", en: "Movement date", es: "Fecha del movimiento" } },
+  { canonical: "movement_type", aliases: ["movement_type", "tipo_movimento", "tipo_da_movimentacao", "tipo_movimentacao"], label: { "pt-BR": "Tipo de movimento", en: "Movement type", es: "Tipo de movimiento" } },
+  { canonical: "stock_motive", aliases: ["stock_motive", "motivo_estoque", "motivo"], label: { "pt-BR": "Motivo", en: "Motive", es: "Motivo" } },
   { canonical: "supplier", aliases: ["supplier", "fornecedor"], label: { "pt-BR": "Fornecedor", en: "Supplier", es: "Proveedor" } },
   { canonical: "description", aliases: ["description", "descricao"], label: { "pt-BR": "Descrição", en: "Description", es: "Descripción" } },
-  { canonical: "stock_location", aliases: ["stock_location", "location", "fazenda", "farm"], label: { "pt-BR": "Local do estoque", en: "Stock location", es: "Ubicación del inventario" } },
+  { canonical: "stock_location", aliases: ["stock_location", "location", "fazenda", "farm", "local_de_estoque"], label: { "pt-BR": "Local do estoque", en: "Stock location", es: "Ubicación del inventario" } },
+  { canonical: "cost_center_name", aliases: ["cost_center_name", "nome_centro_de_custo", "centro_de_custo"], label: { "pt-BR": "Centro de custo", en: "Cost center", es: "Centro de costo" } },
+  { canonical: "mapa_code", aliases: ["mapa_code", "codigo_mapa", "codigo_mapa_estabelecimento"], label: { "pt-BR": "Código MAPA", en: "MAPA code", es: "Código MAPA" } },
+  { canonical: "municipality", aliases: ["municipality", "municipio", "município"], label: { "pt-BR": "Município", en: "Municipality", es: "Municipio" } },
+  { canonical: "state", aliases: ["state", "uf"], label: { "pt-BR": "UF", en: "State", es: "Estado" } },
+  { canonical: "species", aliases: ["species", "especie", "espécie"], label: { "pt-BR": "Espécie", en: "Species", es: "Especie" } },
+  { canonical: "sex", aliases: ["sex", "sexo"], label: { "pt-BR": "Sexo", en: "Sex", es: "Sexo" } },
+  { canonical: "birth_date", aliases: ["birth_date", "data_nascimento", "data_de_nascimento"], label: { "pt-BR": "Data de nascimento", en: "Birth date", es: "Fecha de nacimiento" } },
+  { canonical: "sisbov_registration_date", aliases: ["sisbov_registration_date", "data_registro_sisbov", "data_de_registro_sisbov"], label: { "pt-BR": "Registro SISBOV", en: "SISBOV registration", es: "Registro SISBOV" } },
+  { canonical: "identification_date", aliases: ["identification_date", "data_identificacao", "data_de_identificacao"], label: { "pt-BR": "Data de identificação", en: "Identification date", es: "Fecha de identificación" } },
   { canonical: "batch", aliases: ["batch", "lote"], label: { "pt-BR": "Lote", en: "Batch", es: "Lote" } },
   { canonical: "category", aliases: ["category", "categoria"], label: { "pt-BR": "Categoria", en: "Category", es: "Categoría" } },
   { canonical: "breed", aliases: ["breed", "raca"], label: { "pt-BR": "Raça", en: "Breed", es: "Raza" } },
@@ -385,6 +402,11 @@ function getMetadataLabel(canonicalKey: string, locale: MetadataLocale): string 
   return METADATA_LABELS.get(canonicalKey)?.[locale] || formatFallbackMetadataLabel(canonicalKey);
 }
 
+function getMetadataAliases(canonicalKey: string): string[] {
+  const definition = METADATA_FIELD_DEFINITIONS.find((def) => def.canonical === canonicalKey);
+  return definition ? [definition.canonical, ...definition.aliases] : [canonicalKey];
+}
+
 function normalizeMetadataLocale(language?: string): MetadataLocale {
   if (language?.startsWith("en")) return "en";
   if (language?.startsWith("es")) return "es";
@@ -442,6 +464,50 @@ const PAYLOAD_KEY_LABELS: Record<string, string> = {
   state: "UF",
   nota: "Observação",
 };
+
+type PartnerSummaryField = {
+  key: string;
+  value: unknown;
+};
+
+const PARTNER_SUMMARY_KEYS = [
+  "movement_type",
+  "movement_date",
+  "stock_motive",
+  "description",
+  "document_type",
+  "document_number",
+  "document_date",
+  "stock_location",
+  "cost_center_name",
+  "municipality",
+  "state",
+  "batch",
+  "category",
+  "breed",
+  "species",
+  "sex",
+  "animal_id",
+  "animal_code",
+  "mapa_code",
+  "sisbov_registration_date",
+  "identification_date",
+] as const;
+
+function formatMetadataDisplayValue(key: string, value: unknown, locale: MetadataLocale): string {
+  if (value === null || value === undefined || value === "") return "-";
+  if (key === "sex" && typeof value === "string") {
+    const normalized = normalizeFieldKey(value);
+    if (normalized === "male" || normalized === "macho") return localized(locale, "Macho", "Male", "Macho");
+    if (normalized === "female" || normalized === "femea") return localized(locale, "Fêmea", "Female", "Hembra");
+  }
+  if (key === "weight_kg") {
+    const weight = typeof value === "number" ? value : Number(value);
+    if (Number.isFinite(weight)) return `${weight.toFixed(1)} kg`;
+  }
+  if (typeof value === "object") return compactJson(value);
+  return String(value);
+}
 
 const CAR_REGEX = /^[A-Z]{2}-\d{5,7}-[A-F0-9]{32}$/i;
 
@@ -1774,6 +1840,13 @@ export default function PublicItem() {
     })).filter((section) => section.entries.length > 0);
   }, [visibleMetadataEntries]);
 
+  const partnerSummaryFields = useMemo<PartnerSummaryField[]>(() => {
+    return PARTNER_SUMMARY_KEYS.map((key) => ({
+      key,
+      value: readAliasValue(metadata, getMetadataAliases(key)),
+    })).filter(({ value }) => value !== undefined && value !== null && value !== "");
+  }, [metadata]);
+
   const fallbackCanonicalIdentifier = useMemo(() => detectCanonicalIdentifier(metadata), [metadata]);
 
   const canonicalIdentifier = canonicalFromDb
@@ -2823,6 +2896,42 @@ export default function PublicItem() {
           </section>
         )}
 
+        {partnerSummaryFields.length > 0 && (
+          <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                  <h2 className="text-sm font-semibold text-stone-800">
+                    {localized(metadataLocale, "Dados da movimentação", "Movement data", "Datos del movimiento")}
+                  </h2>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {localized(
+                    metadataLocale,
+                    "Campos públicos recebidos na integração do parceiro.",
+                    "Public fields received through the partner integration.",
+                    "Campos públicos recibidos por la integración del socio."
+                  )}
+                </p>
+              </div>
+              <FileText className="h-5 w-5 text-emerald-600 shrink-0" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {partnerSummaryFields.map(({ key, value }) => (
+                <div key={key} className="rounded-lg bg-stone-50/80 border border-stone-100 px-3 py-2.5">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {getMetadataLabel(key, metadataLocale)}
+                  </p>
+                  <p className="text-sm font-medium text-foreground mt-1 break-words">
+                    {formatMetadataDisplayValue(key, value, metadataLocale)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {visibleMetadataEntries.length > 0 && (
           <section className="border-t border-stone-200/40 pt-8">
             <div className="mb-4">
@@ -2833,7 +2942,33 @@ export default function PublicItem() {
             <div className="space-y-6">
               {groupedMetadataEntries.map(g => ({
                     ...g,
-                    entries: g.entries.filter(e => !["weight_kg", "data_pesagem", "breed", "sex", "birth_date", "category", "fazenda", "stock_location"].includes(e.canonicalKey))
+                    entries: g.entries.filter(e => ![
+                      "weight_kg",
+                      "data_pesagem",
+                      "movement_type",
+                      "movement_date",
+                      "stock_motive",
+                      "description",
+                      "document_type",
+                      "document_number",
+                      "document_date",
+                      "stock_location",
+                      "cost_center_name",
+                      "municipality",
+                      "state",
+                      "batch",
+                      "category",
+                      "breed",
+                      "species",
+                      "sex",
+                      "birth_date",
+                      "animal_id",
+                      "animal_code",
+                      "mapa_code",
+                      "sisbov_registration_date",
+                      "identification_date",
+                      "fazenda",
+                    ].includes(e.canonicalKey))
                   })).filter(g => g.entries.length > 0).map(({ group, entries }) => (
                 <div key={group} className="space-y-2.5">
                   <div className="inline-flex items-center gap-1.5 border-b border-stone-200/60 pb-1.5 mb-1">
