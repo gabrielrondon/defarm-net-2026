@@ -74,6 +74,7 @@ import { verifyEudrPublic } from "@/lib/api/products";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPrivateItemLocation } from "@/lib/api/join-requests";
+import { getItem } from "@/lib/api/items";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
 import {
   Area,
@@ -1647,15 +1648,31 @@ export default function PublicItem() {
     enabled: !!resolvedDfid,
     retry: 1,
   });
+
+  // G3.2 (Gerbov): quando logado, o get_item autenticado devolve os identificadores
+  // CRUS pro workspace contribuinte (SISBOV etc.) — mascarados pros demais tenants (o
+  // backend decide via mask_sensitive_identifier). O endpoint público barra o SISBOV
+  // por inteiro, então essa é a única fonte do valor cru pro dono / quem tem acesso.
+  const { data: privateItemDetail } = useQuery({
+    queryKey: ["private-item-detail", resolvedDfid],
+    queryFn: () => getItem(resolvedDfid!),
+    enabled: isAuthenticated && !!resolvedDfid,
+    retry: false,
+  });
+  const privateIdentifiers = privateItemDetail?.identifiers ?? [];
+
   const identifierBadges = useMemo(() => {
     const labels: Record<string, string> = { sisbov: "SISBOV", chip: "RFID", rfid: "RFID", car: "CAR" };
-    return (publicIdentifiers?.identifiers ?? []).map((i) => ({
+    // Preferir os identificadores autenticados (crus pro contribuinte) quando logado;
+    // cair pro público (barra SISBOV) quando deslogado ou sem acesso.
+    const source = privateIdentifiers.length > 0 ? privateIdentifiers : (publicIdentifiers?.identifiers ?? []);
+    return source.map((i) => ({
       key: `${i.identifier_type}:${i.value}`,
       label: labels[i.identifier_type.toLowerCase()] ?? i.identifier_type.toUpperCase(),
       value: i.value,
       canonical: i.is_canonical,
     }));
-  }, [publicIdentifiers]);
+  }, [publicIdentifiers, privateIdentifiers]);
 
   const itemDeprecated = useMemo(() => {
     if (resolveDeprecated) return true;
@@ -1862,9 +1879,14 @@ export default function PublicItem() {
 
   const fallbackCanonicalIdentifier = useMemo(() => detectCanonicalIdentifier(metadata), [metadata]);
 
-  const canonicalIdentifier = canonicalFromDb
-    ? { label: canonicalFromDb.identifier_type.toUpperCase(), value: canonicalFromDb.value }
-    : fallbackCanonicalIdentifier;
+  // G3.2: pro contribuinte logado, o canônico autenticado (cru) tem prioridade — o
+  // público barra o SISBOV, então sem isto o QR do dono cairia no fallback do metadata.
+  const authedCanonical = privateItemDetail?.canonical_identifier;
+  const canonicalIdentifier = authedCanonical
+    ? { label: authedCanonical.identifier_type.toUpperCase(), value: authedCanonical.value }
+    : canonicalFromDb
+      ? { label: canonicalFromDb.identifier_type.toUpperCase(), value: canonicalFromDb.value }
+      : fallbackCanonicalIdentifier;
 
   const carValue = useMemo(() => {
     const direct = metadata.car;
