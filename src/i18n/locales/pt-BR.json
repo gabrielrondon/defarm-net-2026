@@ -2269,6 +2269,7 @@
     "when_body": "A prova de quando não fica com a DeFarm; fica numa rede que a DeFarm não controla. Confira direto na fonte:",
     "when_none": "Ainda sem âncora on-chain confirmada para este registro.",
     "open_explorer": "Ver a transação no explorador público",
+    "content_updated": "conteúdo atualizado",
     "tx": "Transação on-chain",
     "cid": "Conteúdo (CID IPFS)",
     "st_confirmed": "confirmado",

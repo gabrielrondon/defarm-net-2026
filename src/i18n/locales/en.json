@@ -2269,6 +2269,7 @@
     "when_body": "The proof of when does not live with DeFarm; it lives on a network DeFarm does not control. Check it at the source:",
     "when_none": "No confirmed on-chain anchor yet for this record.",
     "open_explorer": "View the transaction on the public explorer",
+    "content_updated": "content updated",
     "tx": "On-chain transaction",
     "cid": "Content (IPFS CID)",
     "st_confirmed": "confirmed",
