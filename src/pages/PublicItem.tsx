@@ -2430,6 +2430,15 @@ export default function PublicItem() {
             <AssetQRCode
               dfid={item.dfid}
               locale={metadataLocale}
+              valueChain={item.value_chain}
+              statusLabel={localized(metadataLocale, st.text[0], st.text[1], st.text[2])}
+              verificationState={
+                proofs?.identity_anchor?.status === "confirmed"
+                  ? "confirmed"
+                  : proofs?.identity_anchor
+                    ? "pending"
+                    : "unknown"
+              }
               canonicalIdLabel={canonicalIdentifier?.label}
               canonicalIdValue={canonicalIdentifier ? maskPublicValue(canonicalIdentifier.label, canonicalIdentifier.value, isAuthenticated) : undefined}
               identityHash={proofs?.identity_anchor?.transaction_hash || undefined}
