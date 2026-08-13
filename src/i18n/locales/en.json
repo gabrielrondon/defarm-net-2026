@@ -2366,6 +2366,8 @@
     "sig_emissor": "Issuer",
     "sig_issuer_generic": "Issuing workspace",
     "sig_ws_verified": "verified workspace",
-    "sig_pubkey": "Issuer public key (base64)"
+    "sig_pubkey": "Issuer public key (base64)",
+    "sig_proves": "What this proves",
+    "sig_limits": "What it does NOT prove"
   }
 }

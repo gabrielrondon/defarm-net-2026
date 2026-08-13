@@ -2503,6 +2503,8 @@
     "sig_emissor": "Emisor",
     "sig_issuer_generic": "Workspace emisor",
     "sig_ws_verified": "workspace verificado",
-    "sig_pubkey": "Clave pública del emisor (base64)"
+    "sig_pubkey": "Clave pública del emisor (base64)",
+    "sig_proves": "Lo que esto prueba",
+    "sig_limits": "Lo que NO prueba"
   }
 }
