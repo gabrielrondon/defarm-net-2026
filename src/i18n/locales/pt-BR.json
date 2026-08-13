@@ -2368,6 +2368,19 @@
     "sig_ws_verified": "workspace verificado",
     "sig_pubkey": "Chave pública do emissor (base64)",
     "sig_proves": "O que isto prova",
-    "sig_limits": "O que NÃO prova"
+    "sig_limits": "O que NÃO prova",
+    "ts_title": "Carimbo de tempo independente",
+    "ts_title_pending": "Carimbo de tempo (pendente)",
+    "ts_axis": "Prova ANTERIORIDADE: a assinatura existia até a data carimbada por uma autoridade de tempo independente. É um eixo separado — não prova a identidade legal de quem assinou nem a veracidade do fato.",
+    "ts_pending_note": "O carimbo é diário: uma assinatura recém-registrada fica pendente por até ~48h, até a raiz do dia ser carimbada. É o fluxo normal, não uma falha.",
+    "ts_signatures": "assinaturas",
+    "ts_howto": "Como conferir você mesmo →",
+    "ts_ca_note": "A raiz (CA) da autoridade de tempo, para o -CAfile, está dentro do manifesto no CID acima.",
+    "ts_stamped_on": "carimbada em",
+    "ts_legal_test": "prova técnica de tempo (não ICP-Brasil)",
+    "ts_legal_icp": "carimbo ICP-Brasil",
+    "ts_revoked_after": "chave revogada depois — o carimbo prova que existia no ato",
+    "ts_pending": "carimbo pendente",
+    "ts_none": "sem carimbo ainda"
   }
 }

@@ -2505,6 +2505,19 @@
     "sig_ws_verified": "workspace verificado",
     "sig_pubkey": "Clave pública del emisor (base64)",
     "sig_proves": "Lo que esto prueba",
-    "sig_limits": "Lo que NO prueba"
+    "sig_limits": "Lo que NO prueba",
+    "ts_title": "Sello de tiempo independiente",
+    "ts_title_pending": "Sello de tiempo (pendiente)",
+    "ts_axis": "Prueba ANTERIORIDAD: la firma existía hasta la fecha sellada por una autoridad de tiempo independiente. Es un eje separado — no prueba la identidad legal del firmante ni la veracidad del hecho.",
+    "ts_pending_note": "El sellado es diario: una firma recién registrada queda pendiente hasta ~48h, hasta que se sella la raíz del día. Es el flujo normal, no una falla.",
+    "ts_signatures": "firmas",
+    "ts_howto": "Compruébelo usted mismo →",
+    "ts_ca_note": "La raíz (CA) de la autoridad de tiempo, para el -CAfile, está dentro del manifiesto en el CID de arriba.",
+    "ts_stamped_on": "sellada el",
+    "ts_legal_test": "prueba técnica de tiempo (no ICP-Brasil)",
+    "ts_legal_icp": "sello ICP-Brasil",
+    "ts_revoked_after": "clave revocada después — el sello prueba que existía en el momento",
+    "ts_pending": "sello pendiente",
+    "ts_none": "sin sello aún"
   }
 }
