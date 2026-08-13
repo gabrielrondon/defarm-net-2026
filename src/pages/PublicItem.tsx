@@ -73,7 +73,10 @@ import { getCarGeoJSON, getCarMetadata, type CarGeoJSON, type CarMetadata } from
 import { verifyEudrPublic } from "@/lib/api/products";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { PropertyMap } from "@/components/onboarding/PropertyMap";
+import { getPrivateItemLocation } from "@/lib/api/join-requests";
+import { getItem } from "@/lib/api/items";
+import { PropertyMap, isRenderableGeoJson } from "@/components/onboarding/PropertyMap";
+import type { GeoJsonObject } from "geojson";
 import {
   Area,
   Line,
@@ -974,8 +977,15 @@ function PropertyMapMini({ car }: { car: string }) {
       });
       L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18 }).addTo(map);
       const layer = L_.geoJSON(geo as any, { style: { color: "#22c55e", weight: 2, fillColor: "#22c55e", fillOpacity: 0.2 } }).addTo(map);
-      map.fitBounds(layer.getBounds(), { padding: [10, 10] });
+      const bounds = layer.getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [10, 10] });
       mapInstance.current = map;
+      // Recupera do container que nasce 0×0 (sem isto, o mapa fica quebrado pra sempre).
+      requestAnimationFrame(() => {
+        if (cancelled || !mapInstance.current) return;
+        map.invalidateSize();
+        if (bounds.isValid()) { try { map.fitBounds(bounds, { padding: [10, 10] }); } catch { /* mantém view */ } }
+      });
     }).catch(() => {});
 
     return () => { cancelled = true; if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; } };
@@ -1049,8 +1059,13 @@ function PublicLocationMap({ location }: { location: PublicLocationProjection })
         doubleClickZoom: false,
         touchZoom: false,
       });
-      L_.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 12,
+      // View válido GARANTIDO já no init: o card ainda pode estar com tamanho 0 quando
+      // o effect roda, e aí o fitBounds estourava (zoom NaN) e era engolido pelo catch,
+      // deixando o mapa sem zoom → nenhum tile pedido (o buraco do "só o círculo").
+      map.setView([center.lat, center.lon], 8);
+      // Mesmo basemap (satélite) que todos os outros mapas do app usam.
+      L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 18,
       }).addTo(map);
       const circle = L_.circle([center.lat, center.lon], {
         radius: radiusMeters,
@@ -1059,8 +1074,18 @@ function PublicLocationMap({ location }: { location: PublicLocationProjection })
         fillColor: "#10b981",
         fillOpacity: 0.18,
       }).addTo(map);
-      map.fitBounds(circle.getBounds(), { padding: [12, 12] });
       mapInstance.current = map;
+      // Depois do layout assentar: recalcula o tamanho e enquadra o raio. Se o fitBounds
+      // falhar por qualquer motivo, o setView(8) acima mantém o basemap visível.
+      requestAnimationFrame(() => {
+        if (cancelled || !mapInstance.current) return;
+        map.invalidateSize();
+        try {
+          map.fitBounds(circle.getBounds(), { padding: [12, 12] });
+        } catch {
+          /* mantém o setView(8) */
+        }
+      });
     }).catch(() => {});
 
     return () => {
@@ -1076,9 +1101,6 @@ function PublicLocationMap({ location }: { location: PublicLocationProjection })
   return (
     <div className="relative h-40 w-full overflow-hidden rounded-lg border border-emerald-200/60 bg-[linear-gradient(135deg,#ecfdf5_0%,#f8fafc_55%,#d1fae5_100%)]">
       <div ref={mapRef} className="absolute inset-0" />
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="h-28 w-28 rounded-full border-2 border-emerald-500/60 bg-emerald-400/20 shadow-[0_0_0_26px_rgba(16,185,129,0.08)]" />
-      </div>
       <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-white/85 px-2 py-1 text-[11px] font-medium text-emerald-800 shadow-sm">
         {location.approximate_radius_km
           ? `raio aprox. ${Math.round(location.approximate_radius_km)} km`
@@ -1253,12 +1275,19 @@ function JourneyMapInline({ points, locale }: { points: JourneyPointDef[]; local
 
       // Fit bounds
       const allCoords: [number, number][] = points.map((p) => [p.lat, p.lon]);
-      if (allCoords.length > 0) {
-        map.fitBounds(L_.latLngBounds(allCoords), { padding: [50, 50], maxZoom: 13 });
+      const bounds = allCoords.length > 0 ? L_.latLngBounds(allCoords) : null;
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
       }
 
       mapInstance.current = map;
       setMapReady(true);
+      // Recupera do container que nasce 0×0 (sem isto, o mapa fica quebrado pra sempre).
+      requestAnimationFrame(() => {
+        if (cancelled || !mapInstance.current) return;
+        map.invalidateSize();
+        if (bounds && bounds.isValid()) { try { map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 }); } catch { /* mantém view */ } }
+      });
 
       // Fetch CAR polygons asynchronously AFTER markers are placed
       for (const [car] of propertyCars) {
@@ -1525,6 +1554,22 @@ export default function PublicItem() {
     retry: 1,
   });
 
+  // G3 (Gerbov): localização PRECISA pra quem tem ACESSO. O backend gateia por visibility.can_read()
+  // (ItemVisibilityPolicy — acesso ao item via circuito/role, NÃO só estar logado); devolve 403 sem
+  // acesso. Só busca se autenticado; falha silenciosa (retry:false) → cai no coarse público. O
+  // polígono preciso e a coordenada NUNCA vão pro certificado público — só aqui, pra quem pode ver.
+  const { data: privateLoc } = useQuery({
+    queryKey: ["private-item-location", resolvedDfid],
+    queryFn: () => getPrivateItemLocation(resolvedDfid!),
+    enabled: isAuthenticated && !!resolvedDfid,
+    retry: false,
+  });
+  // Aceita Feature / FeatureCollection / geometria crua (o property_polygons.geojson é
+  // Value arbitrário; o {} vazio mata a página, e exigir só Feature dropava geometria
+  // crua/FeatureCollection em silêncio). isRenderableGeoJson cobre as três e rejeita o vazio.
+  const rawPolygon = privateLoc?.property_polygon?.geojson;
+  const privatePolygon: GeoJsonObject | null = isRenderableGeoJson(rawPolygon) ? rawPolygon : null;
+
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["public-item-events", resolvedDfid],
     queryFn: () => getPublicItemEvents(resolvedDfid!, { limit: 50 }),
@@ -1634,15 +1679,31 @@ export default function PublicItem() {
     enabled: !!resolvedDfid,
     retry: 1,
   });
+
+  // G3.2 (Gerbov): quando logado, o get_item autenticado devolve os identificadores
+  // CRUS pro workspace contribuinte (SISBOV etc.) — mascarados pros demais tenants (o
+  // backend decide via mask_sensitive_identifier). O endpoint público barra o SISBOV
+  // por inteiro, então essa é a única fonte do valor cru pro dono / quem tem acesso.
+  const { data: privateItemDetail } = useQuery({
+    queryKey: ["private-item-detail", resolvedDfid],
+    queryFn: () => getItem(resolvedDfid!),
+    enabled: isAuthenticated && !!resolvedDfid,
+    retry: false,
+  });
+  const privateIdentifiers = privateItemDetail?.identifiers ?? [];
+
   const identifierBadges = useMemo(() => {
     const labels: Record<string, string> = { sisbov: "SISBOV", chip: "RFID", rfid: "RFID", car: "CAR" };
-    return (publicIdentifiers?.identifiers ?? []).map((i) => ({
+    // Preferir os identificadores autenticados (crus pro contribuinte) quando logado;
+    // cair pro público (barra SISBOV) quando deslogado ou sem acesso.
+    const source = privateIdentifiers.length > 0 ? privateIdentifiers : (publicIdentifiers?.identifiers ?? []);
+    return source.map((i) => ({
       key: `${i.identifier_type}:${i.value}`,
       label: labels[i.identifier_type.toLowerCase()] ?? i.identifier_type.toUpperCase(),
       value: i.value,
       canonical: i.is_canonical,
     }));
-  }, [publicIdentifiers]);
+  }, [publicIdentifiers, privateIdentifiers]);
 
   const itemDeprecated = useMemo(() => {
     if (resolveDeprecated) return true;
@@ -1849,9 +1910,14 @@ export default function PublicItem() {
 
   const fallbackCanonicalIdentifier = useMemo(() => detectCanonicalIdentifier(metadata), [metadata]);
 
-  const canonicalIdentifier = canonicalFromDb
-    ? { label: canonicalFromDb.identifier_type.toUpperCase(), value: canonicalFromDb.value }
-    : fallbackCanonicalIdentifier;
+  // G3.2: pro contribuinte logado, o canônico autenticado (cru) tem prioridade — o
+  // público barra o SISBOV, então sem isto o QR do dono cairia no fallback do metadata.
+  const authedCanonical = privateItemDetail?.canonical_identifier;
+  const canonicalIdentifier = authedCanonical
+    ? { label: authedCanonical.identifier_type.toUpperCase(), value: authedCanonical.value }
+    : canonicalFromDb
+      ? { label: canonicalFromDb.identifier_type.toUpperCase(), value: canonicalFromDb.value }
+      : fallbackCanonicalIdentifier;
 
   const carValue = useMemo(() => {
     const direct = metadata.car;
@@ -2520,7 +2586,42 @@ export default function PublicItem() {
           </div>
         )}
 
-        {publicLocation && (
+        {privatePolygon ? (
+          /* G3 (Gerbov): PRECISO pra quem tem ACESSO — inline, substitui o coarse. Marcado como
+             visualização privada; a coordenada/polígono exato NÃO vão pro certificado público. */
+          <section className="rounded-xl bg-white border border-emerald-200/60 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1 h-4 rounded-full bg-emerald-400" />
+                  <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">
+                    {localized(metadataLocale, "Localização", "Location", "Ubicación")}
+                  </p>
+                </div>
+                <p className="text-[11px] text-emerald-700/80 mb-2">
+                  {localized(
+                    metadataLocale,
+                    "Visualização privada. Não aparece no certificado público.",
+                    "Private view. Not shown on the public certificate.",
+                    "Vista privada. No aparece en el certificado público.",
+                  )}
+                </p>
+                {privateLoc?.private_location?.municipio || privateLoc?.private_location?.uf ? (
+                  <p className="text-sm font-semibold text-foreground">
+                    {[privateLoc?.private_location?.municipio, privateLoc?.private_location?.uf].filter(Boolean).join(" / ")}
+                  </p>
+                ) : null}
+                {privateLoc?.private_location?.car ? (
+                  <p className="text-xs text-muted-foreground mt-1 font-mono">CAR: {privateLoc.private_location.car}</p>
+                ) : null}
+              </div>
+              <MapPinned className="h-5 w-5 text-emerald-600 shrink-0" />
+            </div>
+            <div className="mt-4">
+              <PropertyMap geojson={privatePolygon} className="h-64 w-full" />
+            </div>
+          </section>
+        ) : publicLocation ? (
           <section className="rounded-xl bg-white border border-stone-200/70 shadow p-4 sm:p-5 overflow-hidden relative z-0 isolate">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -2548,7 +2649,7 @@ export default function PublicItem() {
               </div>
             ) : null}
           </section>
-        )}
+        ) : null}
 
         {/* === BETA: Propriedade atual + Sanidade + Peso inline === */}
         {currentProperty?.car && (

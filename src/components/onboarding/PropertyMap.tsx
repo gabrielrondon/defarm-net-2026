@@ -1,10 +1,36 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { CarGeoJSON } from "@/lib/check-api/car";
+import type { GeoJsonObject } from "geojson";
+
+// Aceita TODAS as formas que o L.geoJSON renderiza — Feature, FeatureCollection e
+// geometria crua (Polygon/MultiPolygon…). O property_polygons.geojson do backend é
+// Value arbitrário (o PUT grava o cru do Check, que é geometria SEM .geometry), então
+// exigir só Feature dropava o polígono real em silêncio. Rejeita só o vazio/sem-type.
+export function isRenderableGeoJson(v: unknown): v is GeoJsonObject {
+  if (!v || typeof v !== "object") return false;
+  const o = v as { type?: unknown; geometry?: unknown; features?: unknown; coordinates?: unknown; geometries?: unknown };
+  switch (o.type) {
+    case "Feature":
+      return !!o.geometry;
+    case "FeatureCollection":
+      return Array.isArray(o.features) && o.features.length > 0;
+    case "GeometryCollection":
+      return Array.isArray(o.geometries) && o.geometries.length > 0;
+    case "Point":
+    case "MultiPoint":
+    case "LineString":
+    case "MultiLineString":
+    case "Polygon":
+    case "MultiPolygon":
+      return Array.isArray(o.coordinates) && o.coordinates.length > 0;
+    default:
+      return false;
+  }
+}
 
 interface PropertyMapProps {
-  geojson: CarGeoJSON;
+  geojson: GeoJsonObject;
   className?: string;
   compact?: boolean;
 }
@@ -14,7 +40,7 @@ export function PropertyMap({ geojson, className = "", compact = false }: Proper
   const mapInstance = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || !geojson) return;
+    if (!mapRef.current || !isRenderableGeoJson(geojson)) return;
 
     if (mapInstance.current) {
       mapInstance.current.remove();
@@ -34,7 +60,7 @@ export function PropertyMap({ geojson, className = "", compact = false }: Proper
       maxZoom: 18,
     }).addTo(map);
 
-    const geoLayer = L.geoJSON(geojson as any, {
+    const geoLayer = L.geoJSON(geojson, {
       style: {
         color: "#22c55e",
         weight: 3,
@@ -44,8 +70,27 @@ export function PropertyMap({ geojson, className = "", compact = false }: Proper
       },
     }).addTo(map);
 
-    map.fitBounds(geoLayer.getBounds(), { padding: compact ? [15, 15] : [40, 40] });
+    const padding: [number, number] = compact ? [15, 15] : [40, 40];
+    const bounds = geoLayer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding });
+    } else {
+      map.setView([-15, -55], 4); // fallback Brasil — mantém o basemap visível
+    }
     mapInstance.current = map;
+    // Recupera do caso em que o container nasce 0×0 (o mapa ficaria quebrado pra sempre
+    // sem um invalidateSize posterior): recalcula o tamanho e re-enquadra após o layout.
+    requestAnimationFrame(() => {
+      if (!mapInstance.current) return;
+      map.invalidateSize();
+      if (bounds.isValid()) {
+        try {
+          map.fitBounds(bounds, { padding });
+        } catch {
+          /* mantém a view atual */
+        }
+      }
+    });
 
     return () => {
       if (mapInstance.current) {
