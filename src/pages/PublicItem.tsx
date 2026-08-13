@@ -976,8 +976,15 @@ function PropertyMapMini({ car }: { car: string }) {
       });
       L_.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 18 }).addTo(map);
       const layer = L_.geoJSON(geo as any, { style: { color: "#22c55e", weight: 2, fillColor: "#22c55e", fillOpacity: 0.2 } }).addTo(map);
-      map.fitBounds(layer.getBounds(), { padding: [10, 10] });
+      const bounds = layer.getBounds();
+      if (bounds.isValid()) map.fitBounds(bounds, { padding: [10, 10] });
       mapInstance.current = map;
+      // Recupera do container que nasce 0×0 (sem isto, o mapa fica quebrado pra sempre).
+      requestAnimationFrame(() => {
+        if (cancelled || !mapInstance.current) return;
+        map.invalidateSize();
+        if (bounds.isValid()) { try { map.fitBounds(bounds, { padding: [10, 10] }); } catch { /* mantém view */ } }
+      });
     }).catch(() => {});
 
     return () => { cancelled = true; if (mapInstance.current) { mapInstance.current.remove(); mapInstance.current = null; } };
@@ -1267,12 +1274,19 @@ function JourneyMapInline({ points, locale }: { points: JourneyPointDef[]; local
 
       // Fit bounds
       const allCoords: [number, number][] = points.map((p) => [p.lat, p.lon]);
-      if (allCoords.length > 0) {
-        map.fitBounds(L_.latLngBounds(allCoords), { padding: [50, 50], maxZoom: 13 });
+      const bounds = allCoords.length > 0 ? L_.latLngBounds(allCoords) : null;
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
       }
 
       mapInstance.current = map;
       setMapReady(true);
+      // Recupera do container que nasce 0×0 (sem isto, o mapa fica quebrado pra sempre).
+      requestAnimationFrame(() => {
+        if (cancelled || !mapInstance.current) return;
+        map.invalidateSize();
+        if (bounds && bounds.isValid()) { try { map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 }); } catch { /* mantém view */ } }
+      });
 
       // Fetch CAR polygons asynchronously AFTER markers are placed
       for (const [car] of propertyCars) {
@@ -1549,7 +1563,13 @@ export default function PublicItem() {
     enabled: isAuthenticated && !!resolvedDfid,
     retry: false,
   });
-  const privatePolygon = privateLoc?.property_polygon?.geojson ?? null;
+  // Só é polígono válido se tiver geometry — o backend às vezes devolve {} (sem
+  // geometria), que é truthy e passaria pelo ?? null, matando a página (tela branca).
+  const rawPolygon = privateLoc?.property_polygon?.geojson;
+  const privatePolygon: CarGeoJSON | null =
+    rawPolygon && typeof rawPolygon === "object" && (rawPolygon as { geometry?: unknown }).geometry
+      ? (rawPolygon as unknown as CarGeoJSON)
+      : null;
 
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["public-item-events", resolvedDfid],
@@ -2599,7 +2619,7 @@ export default function PublicItem() {
               <MapPinned className="h-5 w-5 text-emerald-600 shrink-0" />
             </div>
             <div className="mt-4">
-              <PropertyMap geojson={privatePolygon as unknown as CarGeoJSON} className="h-64 w-full" />
+              <PropertyMap geojson={privatePolygon} className="h-64 w-full" />
             </div>
           </section>
         ) : publicLocation ? (

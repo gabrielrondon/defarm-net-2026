@@ -14,7 +14,9 @@ export function PropertyMap({ geojson, className = "", compact = false }: Proper
   const mapInstance = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    if (!mapRef.current || !geojson) return;
+    // Guard contra geojson vazio/inválido ({} passa por checagens de truthiness mas
+    // não tem geometry → L.geoJSON gera bounds inválido → fitBounds estoura → tela branca).
+    if (!mapRef.current || !geojson || !(geojson as any).geometry) return;
 
     if (mapInstance.current) {
       mapInstance.current.remove();
@@ -44,8 +46,27 @@ export function PropertyMap({ geojson, className = "", compact = false }: Proper
       },
     }).addTo(map);
 
-    map.fitBounds(geoLayer.getBounds(), { padding: compact ? [15, 15] : [40, 40] });
+    const padding: [number, number] = compact ? [15, 15] : [40, 40];
+    const bounds = geoLayer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding });
+    } else {
+      map.setView([-15, -55], 4); // fallback Brasil — mantém o basemap visível
+    }
     mapInstance.current = map;
+    // Recupera do caso em que o container nasce 0×0 (o mapa ficaria quebrado pra sempre
+    // sem um invalidateSize posterior): recalcula o tamanho e re-enquadra após o layout.
+    requestAnimationFrame(() => {
+      if (!mapInstance.current) return;
+      map.invalidateSize();
+      if (bounds.isValid()) {
+        try {
+          map.fitBounds(bounds, { padding });
+        } catch {
+          /* mantém a view atual */
+        }
+      }
+    });
 
     return () => {
       if (mapInstance.current) {
