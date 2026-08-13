@@ -594,6 +594,11 @@ function SignatureCard({
   const accent = style.strong ? primaryDeep : muted;
   const verified = level !== "n0";
   // Título: a label do resumo (backend-owned, "AO MENOS UM …"); fallback ao emissor se não vier.
+  // ATENÇÃO (nit Hetzner #196): `defaultValue` só cai no texto do backend porque essas chaves NÃO
+  // existem nos locales. No dia em que alguém adicionar `summary.label_key` a um locale, o front passa
+  // a PREFERIR a tradução local e o texto backend-owned vira fallback silencioso — invertendo o
+  // princípio D1.1 (a copy honesta é do backend) sem quebrar teste nenhum. Se formos traduzir
+  // label/claim/limits, o backend tem que emitir a chave i18n E a fonte, não o front sobrepor.
   const headline = summary
     ? t(summary.label_key, { defaultValue: summary.label })
     : verified
@@ -744,18 +749,25 @@ export default function PublicVerify() {
     let cancelled = false;
     setIssuer(null);
     (async () => {
-      let id =
-        res?.events?.find((e) => e.signature_verified === true)?.issuer_workspace_id ??
-        res?.issuers?.[0] ??
-        res?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
-        null;
+      // O EMISSOR é o autor do FATO, nunca o atestador. O E2 signature_attached é servido primeiro
+      // (ORDER BY created_at DESC; anexar é depois), então resolver de res.events cru pegava a
+      // FAZENDA_QUE_ANEXOU e a colava ao lado de "assinatura verificada" — a exata conflação
+      // signer≠attester que o D1 separou. Resolve só dos fatos (filtra o E2); res.issuers cru é
+      // dropado porque inclui o workspace do E2.
+      const factIssuer = (evs?: PublicVerifyResponse["events"]): string | null => {
+        const facts = (evs ?? []).filter((e) => e.event_type !== "signature_attached");
+        return (
+          facts.find((e) => e.signature_verified === true)?.issuer_workspace_id ??
+          facts.find((e) => (e.signature_assurance?.level ?? "n0") !== "n0")?.issuer_workspace_id ??
+          facts.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
+          null
+        );
+      };
+      let id = factIssuer(res?.events);
       if (!id && inclusion.length > 0) {
         try {
           const lote = await verifyPublicItem(inclusion[0].lote_dfid);
-          id =
-            lote?.issuers?.[0] ??
-            lote?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
-            null;
+          id = factIssuer(lote?.events) ?? lote?.issuers?.[0] ?? null;
         } catch {
           /* ignore */
         }
@@ -794,9 +806,10 @@ export default function PublicVerify() {
   const eventsMaybeTruncated = events.length >= 200; // veredito sobre a amostra (H5)
 
   // Emissor + chave pública pro card de assinatura (N1). issuerId só pra saber se há emissor.
+  // `events` e `signed` já estão filtrados (sem o E2); `res.issuers` cru é dropado porque inclui o
+  // workspace de quem anexou (mesma conflação signer≠attester do F1).
   const issuerId =
     signed[0]?.issuer_workspace_id ??
-    res?.issuers?.[0] ??
     events.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
     null;
   const issuerPubkey = signed[0]?.signature_public_key_b64 ?? null;
