@@ -136,6 +136,32 @@ export interface VerifyAnchor {
   cid_onchain: boolean;
   anchor_content_root_location?: string | null;
 }
+// N1: força de assinatura de UM evento, DERIVADA dos primitivos (backend-owned). `level` n0..n3;
+// `claim` = o que ESTE nível prova; `limits` = o que NÃO prova (o limite honesto). `code`
+// distingue a origem: `key_verified` (embutida) vs `key_verified_attached` (assinatura anexada
+// DEPOIS do fato). `binding`/`proofs` ficam preenchidos só em N2/N3.
+export interface SignatureAssurance {
+  level: "n0" | "n1" | "n2" | "n3";
+  code: string;
+  verified: boolean;
+  signer_key_id?: string | null;
+  binding?: unknown | null;
+  proofs?: unknown[];
+  label_key: string;
+  label: string;
+  claim: string;
+  limits: string;
+}
+// Resumo por-item = badge do topo. `max_level` é o MAIOR nível entre os eventos; a copy é
+// enquadrada "AO MENOS UM" (nunca "tudo") pra não overclaim.
+export interface SignatureAssuranceSummary {
+  max_level: "n0" | "n1" | "n2" | "n3";
+  counts: { n0: number; n1: number; n2: number; n3: number };
+  label_key: string;
+  label: string;
+  claim: string;
+  limits: string;
+}
 export interface VerifyEvent {
   event_type: string;
   source_type: string;
@@ -147,6 +173,9 @@ export interface VerifyEvent {
   signature_key_id?: string | null;
   signature_public_key_b64?: string | null;
   content_hash?: string | null;
+  // N1 D2: o selo derivado por-evento (fonte de verdade do nível; `signature_verified` acima
+  // descreve só a assinatura EMBUTIDA e pode ser null num evento elevado a n1 por anexada).
+  signature_assurance?: SignatureAssurance | null;
 }
 export interface VerifyMethod {
   event_hash_alg: string;
@@ -173,6 +202,8 @@ export interface PublicVerifyResponse {
   certificate_url?: string;
   links?: VerifyLinks;
   verification?: VerifyMethod;
+  // N1 D2: resumo da força de assinatura do item = o badge do topo (max_level + counts + copy honesta).
+  signature_assurance_summary?: SignatureAssuranceSummary | null;
   // Data de EXISTÊNCIA original = min(anchored_at) da primeira âncora de conteúdo (C1d p2).
   // `anchor.anchored_at` passou a ser o do conteúdo mais RECENTE (pode ser "hoje" num item
   // re-ancorado); este campo preserva a alegação forte "o registro existe desde X".

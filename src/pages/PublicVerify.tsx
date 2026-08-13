@@ -22,6 +22,7 @@ import {
   type PublicInclusionProof,
   type PublicWorkspace,
   type PublicItemEvent,
+  type SignatureAssuranceSummary,
 } from "@/lib/defarm-api";
 
 // Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
@@ -552,35 +553,65 @@ function EventSelfCheck({ events }: { events: PublicItemEvent[] }) {
   );
 }
 
-// Card de EMISSOR + NÍVEL DE ASSINATURA (N1). "Quem assinou e com que força, sem mudar de
-// forma": hoje N0 (Ed25519 do workspace); o mesmo lugar carregará ICP-Brasil/gov.br depois.
+// Tratamento visual POR NÍVEL (D2): a UI muda de forma conforme a força — n0 (sem/inválida) é
+// discreto/cinza; n1 (chave verificada) ganha o primário; n2/n3 (identidade externa / qualificada)
+// vêm com o escudo. O ícone e o acento mudam; o texto é o do BACKEND (label/claim/limits), não
+// inventado no front.
+const ASSURANCE_STYLE: Record<
+  "n0" | "n1" | "n2" | "n3",
+  { icon: typeof BadgeCheck; strong: boolean }
+> = {
+  n0: { icon: Minus, strong: false },
+  n1: { icon: BadgeCheck, strong: true },
+  n2: { icon: ShieldCheck, strong: true },
+  n3: { icon: ShieldCheck, strong: true },
+};
+
+// Card de EMISSOR + NÍVEL DE ASSINATURA (N1). "Quem assinou e com que força": o selo é DERIVADO
+// dos primitivos pelo backend (D2), e a copy de prova/não-prova vem de lá (honesta, sem overclaim).
 // Nome resolvido pelo auth-service; UUID nunca aparece cru.
 function SignatureCard({
   issuer,
   issuerId,
   pubkey,
-  verified,
+  summary,
 }: {
   issuer: PublicWorkspace | null;
   issuerId: string | null;
   pubkey: string | null;
-  verified: boolean;
+  summary: SignatureAssuranceSummary | null;
 }) {
   const { t } = useTranslation();
-  if (!issuerId && !issuer) return null;
+  const level = summary?.max_level ?? "n0";
+  // O backend sempre manda o resumo (mesmo n0), então só mostramos o card quando há algo a dizer:
+  // um emissor conhecido, OU um nível de assinatura verificada (n1+). n0 sem emissor → nada.
+  if (!issuerId && !issuer && level === "n0") return null;
   const primaryDeep = "hsl(var(--primary-deep))";
   const muted = "hsl(var(--muted-foreground))";
   const name = issuer?.name ?? t("v.sig_issuer_generic");
+  const style = ASSURANCE_STYLE[level] ?? ASSURANCE_STYLE.n0;
+  const Icon = style.icon;
+  const accent = style.strong ? primaryDeep : muted;
+  const verified = level !== "n0";
+  // Título: a label do resumo (backend-owned, "AO MENOS UM …"); fallback ao emissor se não vier.
+  // ATENÇÃO (nit Hetzner #196): `defaultValue` só cai no texto do backend porque essas chaves NÃO
+  // existem nos locales. No dia em que alguém adicionar `summary.label_key` a um locale, o front passa
+  // a PREFERIR a tradução local e o texto backend-owned vira fallback silencioso — invertendo o
+  // princípio D1.1 (a copy honesta é do backend) sem quebrar teste nenhum. Se formos traduzir
+  // label/claim/limits, o backend tem que emitir a chave i18n E a fonte, não o front sobrepor.
+  const headline = summary
+    ? t(summary.label_key, { defaultValue: summary.label })
+    : verified
+      ? `${t("v.sig_by")} ${name}`
+      : `${t("v.sig_emissor")}: ${name}`;
   const label = (s: string) => (
     <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{s}</div>
   );
   return (
     <details className="group/sig mx-auto mt-2.5 max-w-[24rem] text-left">
       <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
-        <BadgeCheck className="h-3.5 w-3.5" style={{ color: verified ? primaryDeep : muted }} />
-        <span>
-          {verified ? `${t("v.sig_by")} ${name}` : `${t("v.sig_emissor")}: ${name}`}
-        </span>
+        <Icon className="h-3.5 w-3.5" style={{ color: accent }} />
+        <span className={style.strong ? "text-foreground" : undefined}>{headline}</span>
         {verified && <Check className="h-3 w-3" style={{ color: primaryDeep }} />}
         <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/sig:rotate-180" />
       </summary>
@@ -598,10 +629,25 @@ function SignatureCard({
             <div className="mt-0.5 break-all font-mono text-[11px] text-foreground/80">{pubkey}</div>
           </div>
         )}
-        <div>
-          {label(t("v.sig_level_k"))}
-          <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.sig_level_d")}</p>
-        </div>
+        {/* PROVA / NÃO-PROVA — o limite honesto, vindo do backend por nível (substitui o texto
+            estático que dizia "sem a página mudar de forma"). */}
+        {summary ? (
+          <>
+            <div>
+              {label(t("v.sig_proves"))}
+              <p className="mt-0.5 text-[11.5px] leading-relaxed text-foreground/85">{summary.claim}</p>
+            </div>
+            <div>
+              {label(t("v.sig_limits"))}
+              <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">{summary.limits}</p>
+            </div>
+          </>
+        ) : (
+          <div>
+            {label(t("v.sig_level_k"))}
+            <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.sig_level_d")}</p>
+          </div>
+        )}
       </div>
     </details>
   );
@@ -703,18 +749,25 @@ export default function PublicVerify() {
     let cancelled = false;
     setIssuer(null);
     (async () => {
-      let id =
-        res?.events?.find((e) => e.signature_verified === true)?.issuer_workspace_id ??
-        res?.issuers?.[0] ??
-        res?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
-        null;
+      // O EMISSOR é o autor do FATO, nunca o atestador. O E2 signature_attached é servido primeiro
+      // (ORDER BY created_at DESC; anexar é depois), então resolver de res.events cru pegava a
+      // FAZENDA_QUE_ANEXOU e a colava ao lado de "assinatura verificada" — a exata conflação
+      // signer≠attester que o D1 separou. Resolve só dos fatos (filtra o E2); res.issuers cru é
+      // dropado porque inclui o workspace do E2.
+      const factIssuer = (evs?: PublicVerifyResponse["events"]): string | null => {
+        const facts = (evs ?? []).filter((e) => e.event_type !== "signature_attached");
+        return (
+          facts.find((e) => e.signature_verified === true)?.issuer_workspace_id ??
+          facts.find((e) => (e.signature_assurance?.level ?? "n0") !== "n0")?.issuer_workspace_id ??
+          facts.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
+          null
+        );
+      };
+      let id = factIssuer(res?.events);
       if (!id && inclusion.length > 0) {
         try {
           const lote = await verifyPublicItem(inclusion[0].lote_dfid);
-          id =
-            lote?.issuers?.[0] ??
-            lote?.events?.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
-            null;
+          id = factIssuer(lote?.events) ?? lote?.issuers?.[0] ?? null;
         } catch {
           /* ignore */
         }
@@ -740,17 +793,23 @@ export default function PublicVerify() {
   const displayChain = res?.identity?.value_chain ?? item?.value_chain;
   const anchor = res?.anchor ?? null;
   const anchorState: AnchorState = anchorStateOf(anchor?.status);
-  const events = res?.events ?? [];
-  const signed = events.filter((e) => e.signature_verified === true);
+  // D2 "prova dobrada": o E2 signature_attached NÃO é um fato de biografia — o nível que ele produz
+  // já aparece NO fato-alvo (via signature_assurance). Filtra o envelope pra ele não virar um
+  // "fato sem assinatura" (o nit do D1).
+  const events = (res?.events ?? []).filter((e) => e.event_type !== "signature_attached");
+  // Fonte de verdade do "assinado" = o SELO DERIVADO (conta a embutida E a elevação por anexada),
+  // não só o signature_verified (que descreve só a embutida).
+  const signed = events.filter((e) => (e.signature_assurance?.level ?? "n0") !== "n0");
   const sigFailed = events.some((e) => e.signature_verified === false);
   const hasIntegrityMaterial = !!anchor?.snapshot_hash || events.some((e) => !!e.content_hash);
   const hasRoots = !!(anchor?.anchor_content_root || anchor?.events_root || anchor?.commitments_root);
   const eventsMaybeTruncated = events.length >= 200; // veredito sobre a amostra (H5)
 
   // Emissor + chave pública pro card de assinatura (N1). issuerId só pra saber se há emissor.
+  // `events` e `signed` já estão filtrados (sem o E2); `res.issuers` cru é dropado porque inclui o
+  // workspace de quem anexou (mesma conflação signer≠attester do F1).
   const issuerId =
     signed[0]?.issuer_workspace_id ??
-    res?.issuers?.[0] ??
     events.find((e) => !!e.issuer_workspace_id)?.issuer_workspace_id ??
     null;
   const issuerPubkey = signed[0]?.signature_public_key_b64 ?? null;
@@ -908,10 +967,11 @@ export default function PublicVerify() {
                     issuer={issuer}
                     issuerId={issuerId}
                     pubkey={issuerPubkey}
-                    verified={signed.length > 0}
+                    summary={res?.signature_assurance_summary ?? null}
                   />
-                  {/* #106 parte 2 — verifique os eventos você mesmo (só p/ animal com eventos públicos). */}
-                  <EventSelfCheck events={pubEvents} />
+                  {/* #106 parte 2 — verifique os eventos você mesmo (só p/ animal com eventos públicos).
+                      O E2 signature_attached é filtrado: não é fato de biografia (prova dobrada no alvo). */}
+                  <EventSelfCheck events={pubEvents.filter((e) => e.event_type !== "signature_attached")} />
                 </div>
 
                 {anchor?.explorer_url && (
