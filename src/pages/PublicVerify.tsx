@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck, ShieldCheck } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck, ShieldCheck, Clock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
@@ -23,6 +23,7 @@ import {
   type PublicWorkspace,
   type PublicItemEvent,
   type SignatureAssuranceSummary,
+  type AttachedSignature,
 } from "@/lib/defarm-api";
 
 // Identificadores sensíveis do animal — o backend JÁ os entrega MASCARADOS ("•••• 1234")
@@ -653,6 +654,147 @@ function SignatureCard({
   );
 }
 
+// N1 D3 PR3b — o CARIMBO DE TEMPO (ACT) por assinatura anexada. Eixo timestamp-assurance (prova
+// ANTERIORIDADE), SEPARADO do nível de identidade do SignatureCard acima. Estado sempre explícito:
+// carimbada (prova de tempo independente) / pendente (até ~48h, normal) / sem carimbo.
+function shortHex(h: string): string {
+  return h.length > 16 ? `${h.slice(0, 8)}…${h.slice(-6)}` : h;
+}
+function TimestampRow({ sig }: { sig: AttachedSignature }) {
+  const { t } = useTranslation();
+  const ts = sig.trusted_timestamp;
+  const state = ts?.state ?? "not_timestamped";
+  const revokedAfter = sig.key_status === "valid_at_act_revoked_after";
+  const primaryDeep = "hsl(var(--primary-deep))";
+  const muted = "hsl(var(--muted-foreground))";
+  const key = shortHex(sig.signer_key_id);
+  if (state === "timestamped" && ts?.proof) {
+    const p = ts.proof;
+    const legalNote =
+      p.act.legal_profile === "icp_brasil"
+        ? t("v.ts_legal_icp", { defaultValue: "carimbo ICP-Brasil" })
+        : t("v.ts_legal_test", { defaultValue: "prova técnica de tempo (não ICP-Brasil)" });
+    return (
+      <details className="rounded-md border border-border/60 px-2.5 py-1.5">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-[11px] [&::-webkit-details-marker]:hidden">
+          <Check className="h-3 w-3 shrink-0" style={{ color: primaryDeep }} />
+          <span className="text-foreground">
+            {t("v.ts_stamped_on", { defaultValue: "carimbada em" })} {fmtDate(p.act.issued_at)}
+          </span>
+          <span className="text-muted-foreground">· {legalNote}</span>
+          <ChevronDown className="ml-auto h-3 w-3 opacity-50" />
+        </summary>
+        <div className="mt-1.5 space-y-1 font-mono text-[10.5px] text-muted-foreground">
+          <div>
+            <span className="text-foreground/70">signer</span> {key}
+            {revokedAfter && (
+              <span className="text-muted-foreground">
+                {" "}
+                · {t("v.ts_revoked_after", { defaultValue: "chave revogada depois — o carimbo prova que existia no ato" })}
+              </span>
+            )}
+          </div>
+          <div>
+            <span className="text-foreground/70">root</span> {shortHex(p.root_hash_sha256)}{" "}
+            <span className="text-foreground/70">· pos</span> {p.inclusion_proof.position}
+          </div>
+          <div>
+            <span className="text-foreground/70">TSA</span> {p.act.provider}
+          </div>
+          <div className="break-all">
+            <span className="text-foreground/70">manifest (IPFS)</span> {p.act.timestamp_token_cid}
+          </div>
+        </div>
+      </details>
+    );
+  }
+  // pendente / sem carimbo — sem prova, mas o estado é DIZÍVEL (nunca "vazio lido como pronto").
+  const isPending = state === "materialized_pending_stamp";
+  return (
+    <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px]">
+      {isPending ? (
+        <Clock className="h-3 w-3 shrink-0" style={{ color: muted }} />
+      ) : (
+        <Minus className="h-3 w-3 shrink-0" style={{ color: muted }} />
+      )}
+      <span className="text-muted-foreground">
+        {isPending
+          ? t("v.ts_pending", { defaultValue: "carimbo pendente" })
+          : t("v.ts_none", { defaultValue: "sem carimbo ainda" })}
+      </span>
+      <span className="ml-auto font-mono text-[10px] text-muted-foreground/70">{key}</span>
+    </div>
+  );
+}
+function AttachedTimestamps({
+  events,
+  recipe,
+}: {
+  events: PublicVerifyResponse["events"];
+  recipe?: string;
+}) {
+  const { t } = useTranslation();
+  const sigs = (events ?? []).flatMap((e) => e.attached_signatures ?? []);
+  if (sigs.length === 0) return null;
+  const primaryDeep = "hsl(var(--primary-deep))";
+  const muted = "hsl(var(--muted-foreground))";
+  const nStamped = sigs.filter((s) => s.trusted_timestamp?.state === "timestamped").length;
+  const nPending = sigs.length - nStamped;
+  const headline =
+    nStamped > 0
+      ? t("v.ts_title", { defaultValue: "Carimbo de tempo independente" })
+      : t("v.ts_title_pending", { defaultValue: "Carimbo de tempo (pendente)" });
+  const label = (s: string) => (
+    <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{s}</div>
+  );
+  return (
+    <details className="group/ts mx-auto mt-2 max-w-[24rem] text-left">
+      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <Clock className="h-3.5 w-3.5" style={{ color: nStamped > 0 ? primaryDeep : muted }} />
+        <span className={nStamped > 0 ? "text-foreground" : undefined}>{headline}</span>
+        {nStamped > 0 && <Check className="h-3 w-3" style={{ color: primaryDeep }} />}
+        <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/ts:rotate-180" />
+      </summary>
+      <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-300">
+        <p className="text-[11.5px] leading-relaxed text-foreground/85">
+          {t("v.ts_axis", {
+            defaultValue:
+              "Prova ANTERIORIDADE: a assinatura existia até a data carimbada por uma autoridade de tempo independente. É um eixo separado — não prova a identidade legal de quem assinou nem a veracidade do fato.",
+          })}
+        </p>
+        {nPending > 0 && (
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            {t("v.ts_pending_note", {
+              defaultValue:
+                "O carimbo é diário: uma assinatura recém-registrada fica pendente por até ~48h, até a raiz do dia ser carimbada. É o fluxo normal, não uma falha.",
+            })}
+          </p>
+        )}
+        <div className="space-y-1.5">
+          {label(t("v.ts_signatures", { defaultValue: "assinaturas" }))}
+          {sigs.map((s, i) => (
+            <TimestampRow key={`${s.source_event_id}-${i}`} sig={s} />
+          ))}
+        </div>
+        {nStamped > 0 && recipe && (
+          <details className="text-left">
+            <summary className="cursor-pointer list-none text-[11px] font-medium text-foreground/80 hover:text-foreground [&::-webkit-details-marker]:hidden">
+              {t("v.ts_howto", { defaultValue: "Como conferir você mesmo →" })}
+            </summary>
+            <p className="mt-1.5 whitespace-pre-line text-[11px] leading-relaxed text-muted-foreground">{recipe}</p>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+              {t("v.ts_ca_note", {
+                defaultValue:
+                  "A raiz (CA) da autoridade de tempo, para o -CAfile, está dentro do manifesto no CID acima.",
+              })}
+            </p>
+          </details>
+        )}
+      </div>
+    </details>
+  );
+}
+
 export default function PublicVerify() {
   const { t, i18n } = useTranslation();
   const { dfid = "" } = useParams<{ dfid: string }>();
@@ -968,6 +1110,11 @@ export default function PublicVerify() {
                     issuerId={issuerId}
                     pubkey={issuerPubkey}
                     summary={res?.signature_assurance_summary ?? null}
+                  />
+                  {/* N1 D3 — carimbo de tempo (ACT) por assinatura anexada. Só aparece se houver anexada. */}
+                  <AttachedTimestamps
+                    events={res?.events}
+                    recipe={res?.verification?.attached_signature_timestamp_verification}
                   />
                   {/* #106 parte 2 — verifique os eventos você mesmo (só p/ animal com eventos públicos).
                       O E2 signature_attached é filtrado: não é fato de biografia (prova dobrada no alvo). */}
