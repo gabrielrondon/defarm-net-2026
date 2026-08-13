@@ -2368,6 +2368,19 @@
     "sig_ws_verified": "verified workspace",
     "sig_pubkey": "Issuer public key (base64)",
     "sig_proves": "What this proves",
-    "sig_limits": "What it does NOT prove"
+    "sig_limits": "What it does NOT prove",
+    "ts_title": "Independent timestamp",
+    "ts_title_pending": "Timestamp (pending)",
+    "ts_axis": "Proves ANTERIORITY: the signature existed by the date stamped by an independent time authority. It is a separate axis — it does not prove the signer's legal identity nor the truth of the fact.",
+    "ts_pending_note": "Stamping is daily: a freshly registered signature stays pending for up to ~48h, until the day's root is stamped. This is the normal flow, not a failure.",
+    "ts_signatures": "signatures",
+    "ts_howto": "Check it yourself →",
+    "ts_ca_note": "The time authority's root (CA), for the -CAfile, is inside the manifest at the CID above.",
+    "ts_stamped_on": "stamped on",
+    "ts_legal_test": "technical time proof (not ICP-Brasil)",
+    "ts_legal_icp": "ICP-Brasil stamp",
+    "ts_revoked_after": "key revoked afterwards — the stamp proves it existed at the time",
+    "ts_pending": "timestamp pending",
+    "ts_none": "no timestamp yet"
   }
 }

@@ -162,6 +162,48 @@ export interface SignatureAssuranceSummary {
   claim: string;
   limits: string;
 }
+// N1 D3 PR3 — o carimbo de tempo (ACT/RFC 3161) de UMA assinatura anexada. `state` sempre explícito
+// (a ausência é dizível, não um array vazio lido como "pronto"):
+//   not_timestamped | materialized_pending_stamp | timestamped.
+export interface TrustedTimestampAct {
+  provider: string;
+  legal_profile: string;
+  issued_at: string;
+  timestamp_token_cid: string;
+  timestamp_token_sha256: string;
+  message_imprint_alg: string;
+  provider_policy_oid?: string | null;
+  tsa_cert_fingerprint?: string | null;
+}
+export interface InclusionProofView {
+  position: number;
+  siblings: string[];
+}
+export interface TrustedTimestampProof {
+  root_domain: string;
+  root_alg: string;
+  root_hash_sha256: string;
+  leaf_schema: string;
+  leaf_hash: string;
+  inclusion_proof: InclusionProofView;
+  act: TrustedTimestampAct;
+}
+export interface TrustedTimestamp {
+  state: "not_timestamped" | "materialized_pending_stamp" | "timestamped";
+  proof?: TrustedTimestampProof | null;
+}
+// N1 D2.2/D3 — uma assinatura ANEXADA (E2) verificada que se refere a um evento. Só os campos que a
+// UI usa hoje; o backend manda mais (statement, public_key_b64, …) pra reprodução independente.
+export interface AttachedSignature {
+  source_event_id: string;
+  signer_key_id: string;
+  verified: boolean;
+  verified_at?: string | null;
+  attached_created_at: string;
+  // valid_and_current (eleva n1) | valid_at_act_revoked_after (não eleva; carimbo prova anterioridade).
+  key_status: string;
+  trusted_timestamp?: TrustedTimestamp | null;
+}
 export interface VerifyEvent {
   event_type: string;
   source_type: string;
@@ -176,6 +218,8 @@ export interface VerifyEvent {
   // N1 D2: o selo derivado por-evento (fonte de verdade do nível; `signature_verified` acima
   // descreve só a assinatura EMBUTIDA e pode ser null num evento elevado a n1 por anexada).
   signature_assurance?: SignatureAssurance | null;
+  // N1 D2.2/D3 — assinaturas anexadas verificadas que se referem a ESTE evento (com o carimbo de tempo).
+  attached_signatures?: AttachedSignature[] | null;
 }
 export interface VerifyMethod {
   event_hash_alg: string;
@@ -184,6 +228,10 @@ export interface VerifyMethod {
   signature_canonicalization: string;
   anchor_binding: string;
   anchor_content_root_canonicalization: string;
+  // N1 D2.2/D3 — receitas auto-contidas (backend-owned, 3 idiomas) de como conferir por conta própria
+  // a assinatura anexada e o seu carimbo de tempo.
+  attached_signature_verification?: string;
+  attached_signature_timestamp_verification?: string;
   steps: string[];
 }
 export interface VerifyLinks {
