@@ -75,7 +75,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPrivateItemLocation } from "@/lib/api/join-requests";
 import { getItem } from "@/lib/api/items";
-import { PropertyMap } from "@/components/onboarding/PropertyMap";
+import { PropertyMap, isRenderableGeoJson } from "@/components/onboarding/PropertyMap";
+import type { GeoJsonObject } from "geojson";
 import {
   Area,
   Line,
@@ -1563,13 +1564,11 @@ export default function PublicItem() {
     enabled: isAuthenticated && !!resolvedDfid,
     retry: false,
   });
-  // Só é polígono válido se tiver geometry — o backend às vezes devolve {} (sem
-  // geometria), que é truthy e passaria pelo ?? null, matando a página (tela branca).
+  // Aceita Feature / FeatureCollection / geometria crua (o property_polygons.geojson é
+  // Value arbitrário; o {} vazio mata a página, e exigir só Feature dropava geometria
+  // crua/FeatureCollection em silêncio). isRenderableGeoJson cobre as três e rejeita o vazio.
   const rawPolygon = privateLoc?.property_polygon?.geojson;
-  const privatePolygon: CarGeoJSON | null =
-    rawPolygon && typeof rawPolygon === "object" && (rawPolygon as { geometry?: unknown }).geometry
-      ? (rawPolygon as unknown as CarGeoJSON)
-      : null;
+  const privatePolygon: GeoJsonObject | null = isRenderableGeoJson(rawPolygon) ? rawPolygon : null;
 
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["public-item-events", resolvedDfid],
