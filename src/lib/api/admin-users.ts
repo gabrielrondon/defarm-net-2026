@@ -9,6 +9,8 @@ export interface AdminUser {
   role: string;
   is_active: boolean;
   is_admin: boolean;
+  /** #549: se o email foi verificado. O login não depende disto; é só o status pro admin ver. */
+  email_verified?: boolean;
   workspace_id?: string | null;
   workspace_name?: string | null;
   workspace_slug?: string | null;
@@ -57,6 +59,15 @@ export interface UpdateUserStatusRequest {
 
 export interface UpdateUserAdminRequest {
   is_admin: boolean;
+}
+
+// #549: destravar o admin sem depender de email
+export interface UpdateUserEmailRequest {
+  email: string;
+}
+
+export interface SetUserPasswordRequest {
+  password: string;
 }
 
 export interface AdminWorkspace {
@@ -177,6 +188,22 @@ export async function listAdmins(): Promise<AdminUser[]> {
 export async function updateUserAdmin(userId: string, data: UpdateUserAdminRequest): Promise<void> {
   return authRequest<void>(`/api/admin/users/${userId}/admin`, {
     method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/** #549: troca o email do usuário (reseta email_verified no backend). 409 se o email já estiver em uso. */
+export async function updateUserEmail(userId: string, data: UpdateUserEmailRequest): Promise<void> {
+  return authRequest<void>(`/api/admin/users/${userId}/email`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/** #549: seta/reseta a senha do usuário direto (sem email). Após isto o usuário loga na hora. */
+export async function setUserPassword(userId: string, data: SetUserPasswordRequest): Promise<void> {
+  return authRequest<void>(`/api/admin/users/${userId}/set-password`, {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }

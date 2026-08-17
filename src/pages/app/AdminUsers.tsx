@@ -20,8 +20,10 @@ import {
   listAdminUsers,
   listWorkspaces,
   updateUserAdmin,
+  updateUserEmail,
   updateUserRole,
   updateUserStatus,
+  setUserPassword,
   updateWorkspace,
   type AdminUser,
   type AdminWorkspace,
@@ -409,6 +411,56 @@ export default function AdminUsers() {
     }
   };
 
+  // #549: trocar o email do usuário (reseta email_verified). Destrava quando o email de convite
+  // nunca chegou (domínio não catch-all).
+  const handleEditEmail = async (user: AdminUser) => {
+    const input = window.prompt(`Novo email para "${user.email}":`, user.email);
+    if (input === null) return; // cancelou
+    const email = input.trim();
+    if (!email || email === user.email) return;
+    try {
+      await updateUserEmail(user.id, { email });
+      toast({
+        title: "Email atualizado",
+        description: `${user.email} → ${email}. O novo email volta a NÃO verificado.`,
+      });
+      await loadAll();
+    } catch (err) {
+      toast({
+        title: "Falha ao atualizar email",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // #549: setar/resetar a senha direto (sem email). Após isto o usuário loga na hora.
+  const handleSetPassword = async (user: AdminUser) => {
+    const password = window.prompt(`Nova senha para "${user.email}" (mín. 8 caracteres):`);
+    if (password === null) return; // cancelou
+    if (password.length < 8) {
+      toast({
+        title: "Senha muito curta",
+        description: "Mínimo 8 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      await setUserPassword(user.id, { password });
+      toast({
+        title: "Senha definida",
+        description: `${user.email} já pode entrar com a nova senha.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Falha ao definir senha",
+        description: err instanceof Error ? err.message : "Erro inesperado.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleWorkspaceType = async (ws: AdminWorkspace, workspace_type: AdminWorkspace["workspace_type"]) => {
     try {
       await updateWorkspace(ws.id, { workspace_type });
@@ -556,13 +608,22 @@ export default function AdminUsers() {
             <Label>Tornar usuário administrador do sistema</Label>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={newUser.send_set_password_email}
-              onChange={(e) => setNewUser((p) => ({ ...p, send_set_password_email: e.target.checked }))}
-            />
-            <Label>Enviar link por e-mail para definir senha (recomendado)</Label>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={newUser.send_set_password_email}
+                onChange={(e) => setNewUser((p) => ({ ...p, send_set_password_email: e.target.checked }))}
+              />
+              <Label>Enviar link por e-mail para definir senha</Label>
+            </div>
+            {/* #549: torna explícito o efeito — a escolha silenciosa (default = email) já criou conta
+                inutilizável quando o link não chegou (domínio sem catch-all). */}
+            <p className="text-xs text-muted-foreground">
+              {newUser.send_set_password_email
+                ? "O usuário recebe um link por e-mail. Se o e-mail não chegar (domínio sem catch-all), a conta só entra depois de você definir a senha manualmente (botão “Definir senha” na lista)."
+                : "Você define a senha agora, no campo acima. O usuário entra imediatamente, sem depender de e-mail."}
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
@@ -778,6 +839,11 @@ export default function AdminUsers() {
                   <Badge variant="outline">{user.workspace_type || "sem-workspace"}</Badge>
                   {user.is_admin && <Badge>admin</Badge>}
                   <Badge variant={user.is_active ? "default" : "secondary"}>{user.is_active ? "ativo" : "inativo"}</Badge>
+                  {user.email_verified !== undefined && (
+                    <Badge variant={user.email_verified ? "outline" : "destructive"}>
+                      {user.email_verified ? "email validado" : "email não validado"}
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -789,6 +855,12 @@ export default function AdminUsers() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button variant="outline" onClick={() => handleEditEmail(user)}>
+                  Editar email
+                </Button>
+                <Button variant="outline" onClick={() => handleSetPassword(user)}>
+                  Definir senha
+                </Button>
                 <Button variant="outline" onClick={() => handleToggleActive(user)}>
                   {user.is_active ? "Desativar" : "Ativar"}
                 </Button>
