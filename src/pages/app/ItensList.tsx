@@ -264,24 +264,19 @@ export default function ItensList() {
         </DropdownMenu>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-background border border-border rounded-xl p-4">
-          <p className="text-2xl font-bold text-foreground">{items.length}</p>
-          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsTotal")}</p>
-        </div>
-        <div className="bg-background border border-border rounded-xl p-4">
-          <p className="text-2xl font-bold text-foreground">{tokenizedCount}</p>
-          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsTokenized")}</p>
-        </div>
-        <div className="bg-background border border-border rounded-xl p-4">
-          <p className="text-2xl font-bold text-foreground">{activeCount}</p>
-          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsActive")}</p>
-        </div>
-        <div className="bg-background border border-border rounded-xl p-4">
-          <p className="text-2xl font-bold text-foreground">{circuits.length}</p>
-          <p className="text-sm text-muted-foreground">{t("portal.items.list.statsCircuits")}</p>
-        </div>
+      {/* Stats — barra compacta inline (não 4 cards) pra reduzir peso visual */}
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-2 rounded-xl border border-border bg-background px-5 py-3">
+        {([
+          [items.length, t("portal.items.list.statsTotal")],
+          [tokenizedCount, t("portal.items.list.statsTokenized")],
+          [activeCount, t("portal.items.list.statsActive")],
+          [circuits.length, t("portal.items.list.statsCircuits")],
+        ] as const).map(([value, label], i) => (
+          <div key={i} className="flex items-baseline gap-1.5">
+            <span className="text-xl font-semibold text-foreground tabular-nums">{value}</span>
+            <span className="text-sm text-muted-foreground">{label}</span>
+          </div>
+        ))}
       </div>
 
       {/* Table */}
