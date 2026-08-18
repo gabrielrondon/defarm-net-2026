@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getItem, getItemEvents, getItemAnchors, getItemVersions } from "@/lib/defarm-api";
-import { ItemHeader, ItemIdentifiers, ItemTimeline } from "@/components/item-detail";
+import { ItemHeader, ItemFacts, ItemTimeline } from "@/components/item-detail";
 
 export default function ItemDetail() {
   const { t } = useTranslation();
@@ -81,18 +81,19 @@ export default function ItemDetail() {
     <div className="max-w-5xl mx-auto space-y-6">
       <ItemHeader item={item} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ItemIdentifiers
-          item={item}
-          identifiers={identifiers}
-          canonicalIdentifier={canonicalIdentifier}
-          blockchainAnchors={anchorsData?.blockchain_anchors}
-          storageRefs={anchorsData?.storage_refs}
-          versions={versionsData?.versions}
-          provenance={itemDetails?.provenance}
-        />
-        <ItemTimeline events={allEvents} isLoading={isLoadingEvents} />
-      </div>
+      {/* #201: uma coluna. O rail de 1/3 empilhava 5 cards (Informações, Identificadores,
+          Tokenização, Metadados, Dados Adicionais) e espremia o histórico em 2/3. Agora:
+          identidade → fatos/prova (um bloco) → histórico, cada dado uma vez. */}
+      <ItemFacts
+        item={item}
+        identifiers={identifiers}
+        canonicalIdentifier={canonicalIdentifier}
+        blockchainAnchors={anchorsData?.blockchain_anchors}
+        storageRefs={anchorsData?.storage_refs}
+        versions={versionsData?.versions}
+        provenance={itemDetails?.provenance}
+      />
+      <ItemTimeline events={allEvents} isLoading={isLoadingEvents} />
     </div>
   );
 }

@@ -40,6 +40,7 @@ export function ItemHeader({ item }: ItemHeaderProps) {
   const [isDeprecateOpen, setIsDeprecateOpen] = useState(false);
   const dfid = item?.dfid ?? "";
   const isTokenized = dfid.startsWith("DFID-");
+  const isAlive = item.status === "Active" || item.status === "active";
   const pres = getArtifactPresentation(item.artifact_type);
   const ArtifactIcon = pres.icon;
 
@@ -63,92 +64,71 @@ export function ItemHeader({ item }: ItemHeaderProps) {
         </button>
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-3">
             <div
               className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0",
+                "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
                 pres.known ? pres.accent : isTokenized ? "bg-primary/10" : "bg-muted"
               )}
             >
               {pres.known ? (
-                <ArtifactIcon className="h-7 w-7" />
+                <ArtifactIcon className="h-5 w-5" />
               ) : isTokenized ? (
-                <QrCode className="h-7 w-7 text-primary" />
+                <QrCode className="h-5 w-5 text-primary" />
               ) : (
-                <Package className="h-7 w-7 text-muted-foreground" />
+                <Package className="h-5 w-5 text-muted-foreground" />
               )}
             </div>
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-xl font-bold text-foreground font-mono">
-                  {dfid.length > 30 ? `${dfid.slice(0, 30)}...` : dfid}
-                </h1>
+            <div className="min-w-0">
+              {/* DFID inteiro (era truncado em 30 chars) + copiar como ícone: o identificador
+                  é o título, não um botão à parte com rótulo. */}
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-foreground font-mono break-all">{dfid}</h1>
+                <button
+                  onClick={handleCopyDfid}
+                  aria-label={t("portal.items.detail.header.copyDfid")}
+                  title={t("portal.items.detail.header.copyDfid")}
+                  className="text-muted-foreground hover:text-foreground flex-shrink-0"
+                >
+                  {copied ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-              <div className="flex items-center gap-3 mb-2">
+              {/* Uma linha de estado, texto — não três pílulas. "Tokenizado" saiu: todo item
+                  com DFID- é tokenizado, então a pílula estava sempre acesa (zero informação);
+                  só o caso informativo (item local, sem DFID) continua sendo dito. */}
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    item.status === "Active" || item.status === "active"
-                      ? "bg-primary/10 text-primary"
-                      : item.status === "archived" || item.status === "deprecated"
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-muted text-muted-foreground"
+                    "inline-flex items-center gap-1",
+                    isAlive ? "text-primary" : "text-muted-foreground"
                   )}
                 >
-                  {item.status === "Active" || item.status === "active" ? (
-                    <CheckCircle2 className="h-3 w-3" />
-                  ) : (
-                    <XCircle className="h-3 w-3" />
-                  )}
-                  {item.status === "Active" || item.status === "active"
+                  {isAlive ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+                  {isAlive
                     ? t("portal.items.detail.header.statusAlive")
-                    : item.status === "archived"
-                    ? t("portal.enums.itemStatus.archived")
-                    : item.status}
+                    : item.status
+                    ? t(`portal.enums.itemStatus.${String(item.status).toLowerCase()}`, {
+                        defaultValue: item.status,
+                      })
+                    : "—"}
                 </span>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    isTokenized
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {isTokenized ? (
-                    <>
-                      <QrCode className="h-3 w-3" />
-                      {t("portal.items.detail.header.tokenized")}
-                    </>
-                  ) : (
-                    <>
-                      <Package className="h-3 w-3" />
-                      {t("portal.items.detail.header.local")}
-                    </>
-                  )}
-                </span>
-                {pres.known ? (
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                      pres.accent
-                    )}
-                  >
-                    <ArtifactIcon className="h-3 w-3" />
-                    {pres.label}
-                  </span>
-                ) : null}
-              </div>
-              <button
-                onClick={handleCopyDfid}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground font-mono bg-muted px-2 py-1 rounded"
-              >
-                {copied ? (
-                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                ) : (
-                  <Copy className="h-3 w-3" />
+                {pres.known && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{pres.label}</span>
+                  </>
                 )}
-                {t("portal.items.detail.header.copyDfid")}
-              </button>
+                {!isTokenized && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{t("portal.items.detail.header.local")}</span>
+                  </>
+                )}
+              </p>
             </div>
           </div>
 
