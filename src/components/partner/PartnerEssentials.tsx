@@ -52,7 +52,7 @@ export function PartnerUsageInline() {
     <p className="text-xs text-muted-foreground text-right">
       {t("portal.home.usageLine", { total: u.tokenizations_total })}
       {" · "}
-      {unlimited ? t("portal.home.usageUnlimited") : t("portal.home.usageBalance", { n: u.balance_in_animals })}
+      {unlimited ? t("portal.home.usageUnlimited") : t("portal.home.usageBalance", { n: u.balance_remaining })}
       {u.holds_pending > 0 && (
         <>
           {" · "}

@@ -10,10 +10,10 @@ import { getMyUsage } from "@/lib/api/partner-entitlements";
  * Read-only usage + balance widget for the partner portal.
  * Renders nothing if the workspace has no entitlement / metering (request fails).
  *
- * #340: lê em linguagem humana — "saldo: N animais · X em espera · Y precisam de
- * atenção" — em vez de créditos crus. O saldo em animais vem derivado do servidor
- * (balance_in_animals); quando o workspace não é metrado (entitlement_provisioned=false)
- * o gate tokeniza sem limite, então exibimos "ilimitado" em vez de "0 animais".
+ * Manchete = CRÉDITOS (balance_remaining), com a equivalência em tokenizações como detalhe.
+ * "animais" foi trocado por "créditos" (o termo neutro): pra um integrador, "saldo em animais"
+ * infere inventário de produtor, que é sensível e confuso. Workspace não metrado
+ * (entitlement_provisioned=false) → o gate tokeniza sem limite → exibimos "ilimitado".
  */
 export function PartnerUsageCard() {
   const { t } = useTranslation();
@@ -47,7 +47,7 @@ export function PartnerUsageCard() {
               </span>
             ) : (
               <>
-                <span className="text-2xl font-semibold text-primary">{u.balance_in_animals}</span>
+                <span className="text-2xl font-semibold text-primary">{u.balance_remaining}</span>
                 <span className="text-sm text-muted-foreground">{t("portal.usage.animals")}</span>
               </>
             )}
@@ -56,7 +56,7 @@ export function PartnerUsageCard() {
             {unlimited
               ? t("portal.usage.unlimitedDetail")
               : t("portal.usage.balanceDetail", {
-                  credits: u.balance_remaining,
+                  n: u.balance_in_animals,
                   cost: u.credit_cost_creation,
                 })}
           </div>
