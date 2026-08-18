@@ -1840,6 +1840,18 @@
           "editMetadata": "Editar metadatos",
           "deprecateItem": "Depreciar ítem"
         },
+        "facts": {
+          "canonicalOf": "Identificador canónico · {{type}}",
+          "copy": "Copiar",
+          "originYear": "Origen · Año",
+          "anchor": "Ancla on-chain",
+          "content": "Contenido (IPFS)",
+          "otherIdentifiers": "Otros identificadores",
+          "technical": "Detalles técnicos",
+          "technicalCount": "({{count}} campos)",
+          "legacyNote": "{{count}} campos sin procedencia declarada (origen legado).",
+          "proofHistory": "Historial de pruebas"
+        },
         "identifiers": {
           "stellarConfirming": "Confirmando…",
           "notAnchored": "Sin anclar",
@@ -1873,6 +1885,7 @@
       },
       "timeline": {
         "title": "Historial",
+        "onlyOperational": "{{count}} evento(s) técnico(s) (ancla/IPFS) y ningún evento de manejo todavía.",
         "eventsCount": "{{count}} evento(s) de manejo",
         "operationalCount": "· {{count}} operativos",
         "hideOperational": "Ocultar técnicos",

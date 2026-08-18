@@ -1,5 +1,5 @@
 export { ItemHeader } from "./ItemHeader";
-export { ItemIdentifiers } from "./ItemIdentifiers";
+export { ItemFacts } from "./ItemFacts";
 export { ItemTimeline } from "./ItemTimeline";
 export { PushToCircuitDialog } from "./PushToCircuitDialog";
 export { EditMetadataDialog } from "./EditMetadataDialog";

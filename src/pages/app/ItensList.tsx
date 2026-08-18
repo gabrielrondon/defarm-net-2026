@@ -56,6 +56,13 @@ import type { AdapterAnchorsResponse, ItemDetailsResponse } from "@/lib/api/type
 // items_status_check: active/inactive/archived/pending) + "local" (pseudo-status de UI,
 // item otimista antes de sincronizar) via portal.items.list.localStatus.
 
+/** O DFID é `DFID-<cadeia>-<país>-<ano>-<serial>-<hash>`; repetir esses segmentos em
+ *  pílulas ao lado do próprio DFID não acrescenta informação. */
+function dfidEncodes(dfid: string | undefined, value: string | number | undefined) {
+  if (!dfid || value === undefined || value === null || value === "") return false;
+  return dfid.split("-").includes(String(value));
+}
+
 export default function ItensList() {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
@@ -335,8 +342,11 @@ export default function ItensList() {
                             <QrCode className={cn("h-4 w-4", isTokenized ? "text-primary" : "text-muted-foreground")} />
                           )}
                         </div>
-                        <p className="font-mono text-sm font-medium text-foreground">
-                          {(item.dfid || "").length > 20 ? `${item.dfid.slice(0, 20)}...` : item.dfid}
+                        {/* DFID inteiro: o corte em 20 chars caía exatamente no fim do prefixo
+                            (`DFID-DEFARM-BR-2026-`), então TODAS as linhas da mesma cadeia/ano
+                            renderizavam a mesma string e a coluna não distinguia item nenhum (#201). */}
+                        <p className="font-mono text-sm font-medium text-foreground break-all">
+                          {item.dfid}
                         </p>
                       </div>
                     </TableCell>
@@ -380,12 +390,15 @@ export default function ItensList() {
                             {pres.label}
                           </span>
                         )}
-                        {item.value_chain && (
+                        {/* Cadeia e país só quando NÃO estão codificados no DFID da coluna ao lado
+                            (`DFID-<cadeia>-<país>-<ano>-…`): nos itens reais isso bate em 12/12 e as
+                            duas pílulas eram eco puro do identificador (#201). */}
+                        {item.value_chain && !dfidEncodes(item.dfid, item.value_chain) && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
                             {item.value_chain}
                           </span>
                         )}
-                        {item.country && (
+                        {item.country && !dfidEncodes(item.dfid, item.country) && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted text-muted-foreground">
                             {item.country}
                           </span>

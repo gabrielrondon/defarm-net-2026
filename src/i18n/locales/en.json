@@ -1703,6 +1703,18 @@
           "editMetadata": "Edit metadata",
           "deprecateItem": "Deprecate item"
         },
+        "facts": {
+          "canonicalOf": "Canonical identifier · {{type}}",
+          "copy": "Copy",
+          "originYear": "Origin · Year",
+          "anchor": "On-chain anchor",
+          "content": "Content (IPFS)",
+          "otherIdentifiers": "Other identifiers",
+          "technical": "Technical details",
+          "technicalCount": "({{count}} fields)",
+          "legacyNote": "{{count}} fields with no declared provenance (legacy origin).",
+          "proofHistory": "Proof history"
+        },
         "identifiers": {
           "stellarConfirming": "Confirming…",
           "notAnchored": "Not anchored",
@@ -1736,6 +1748,7 @@
       },
       "timeline": {
         "title": "History",
+        "onlyOperational": "{{count}} technical event(s) (anchor/IPFS) and no husbandry event yet.",
         "eventsCount": "{{count}} management event(s)",
         "operationalCount": "· {{count}} operational",
         "hideOperational": "Hide technical",
