@@ -538,9 +538,9 @@ export default function AdminPartnerEntitlements() {
                 <Usage label="Mês" value={selectedSummary.usage.tokenizations_month} />
                 <Usage label="Total" value={selectedSummary.usage.tokenizations_total} />
                 <Usage
-                  label="Saldo"
+                  label="Créditos"
                   value={selectedSummary.usage.balance_remaining}
-                  hint={`${selectedSummary.usage.balance_in_animals} animais`}
+                  hint={`≈ ${selectedSummary.usage.balance_in_animals} tokenizações`}
                 />
               </div>
             )}
