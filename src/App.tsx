@@ -71,6 +71,7 @@ import PublicItem from "./pages/PublicItem";
 import PublicPayloadReceipt from "./pages/PublicPayloadReceipt";
 import PublicEudrVerify from "./pages/PublicEudrVerify";
 import PublicVerify from "./pages/PublicVerify";
+import Selagem from "./pages/Selagem";
 import CompareItems from "./pages/CompareItems";
 import EmbedPortfolio from "./pages/EmbedPortfolio";
 import AdminMetrics from "./pages/app/AdminMetrics";
@@ -246,6 +247,10 @@ const App = () => (
             <Route path="/eudr" element={<EudrScreen />} />
             <Route path="/eudr/v/:dfid" element={<PublicEudrVerify />} />
             <Route path="/v/:dfid" element={<PublicVerify />} />
+            {/* Página de feature, deliberadamente FORA da nav/home e NÃO indexada
+                (meta robots na página + Disallow no robots.txt). Link aberto para
+                demonstrar pontualmente. */}
+            <Route path="/selagem" element={<Selagem />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/privacy" element={<Privacidade />} />
             <Route path="/termos" element={<Termos />} />
