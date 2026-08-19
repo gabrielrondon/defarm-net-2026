@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck, ShieldCheck, Clock } from "lucide-react";
+import { Loader2, AlertTriangle, ExternalLink, ChevronDown, Info, Moon, Sun, Activity, Check, Minus, BadgeCheck, ShieldCheck, Clock, Lock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { NeloreMark } from "@/components/NeloreMark";
@@ -657,6 +657,80 @@ function SignatureCard({
 // N1 D3 PR3b — o CARIMBO DE TEMPO (ACT) por assinatura anexada. Eixo timestamp-assurance (prova
 // ANTERIORIDADE), SEPARADO do nível de identidade do SignatureCard acima. Estado sempre explícito:
 // carimbada (prova de tempo independente) / pendente (até ~48h, normal) / sem carimbo.
+
+// N2 — CAMPO SELADO. O verificador público mostra que o campo EXISTE, quem o selou e que a
+// autoria fecha; o valor não está aqui nem no banco da DeFarm (envelope cego HPKE, aberto só
+// pela chave do destinatário). Primeira classe: um selo escondido dentro de "item_updated"
+// não comunica nada — o ponto da vitrine é justamente o que NÃO se pode ler.
+function SealedFieldsCard({
+  fields,
+  sealerName,
+}: {
+  fields: VerifySealedField[];
+  sealerName: string | null;
+}) {
+  const { t } = useTranslation();
+  if (!fields.length) return null;
+  const label = (x: string) => (
+    <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{x}</div>
+  );
+  return (
+    <details className="group/sealed mx-auto mt-2.5 max-w-[24rem] text-left">
+      <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 font-mono text-[11.5px] text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <Lock className="h-3.5 w-3.5 text-[hsl(var(--primary-deep))]" />
+        <span>{t("v.sealed_t", { n: fields.length })}</span>
+        <ChevronDown className="h-3 w-3 opacity-50 transition-transform group-open/sealed:rotate-180" />
+      </summary>
+      <div className="mt-2 space-y-3 rounded-xl border border-border bg-muted/30 px-4 py-3">
+        <p className="text-[11.5px] leading-relaxed text-foreground/85">{t("v.sealed_lead")}</p>
+        {fields.map((f, i) => {
+          const verified = f.authorship_verified === true;
+          return (
+            <div key={i} className="space-y-2 border-t border-border/70 pt-3 first:border-t-0 first:pt-0">
+              <div>
+                {label(t("v.sealed_field_k"))}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px] font-medium text-foreground">
+                  <span className="font-mono">{f.field_path}</span>
+                  <span className="rounded bg-background px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
+                    {t("v.sealed_value_private")}
+                  </span>
+                </div>
+              </div>
+              <div>
+                {label(t("v.sealed_by_k"))}
+                <div className="mt-0.5 text-[13px] text-foreground">
+                  {sealerName ?? t("v.sealed_by_generic")}
+                  {verified ? (
+                    <span className="text-[hsl(var(--primary-deep))]"> · {t("v.sealed_author_ok")}</span>
+                  ) : (
+                    <span className="text-muted-foreground"> · {t("v.sealed_author_unknown")}</span>
+                  )}
+                </div>
+                {f.sealer_key_id && (
+                  <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">{f.sealer_key_id}</div>
+                )}
+              </div>
+              <div>
+                {label(t("v.sealed_commitment_k"))}
+                <div className="mt-0.5 break-all font-mono text-[11px] text-foreground/80">{f.commitment_value}</div>
+                <div className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">{f.commitment_alg}</div>
+              </div>
+              <div>
+                {label(t("v.sealed_proves_k"))}
+                <p className="mt-0.5 text-[11.5px] leading-relaxed text-foreground/85">{t("v.sealed_proves_d")}</p>
+              </div>
+              <div>
+                {label(t("v.sealed_limits_k"))}
+                <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted-foreground">{t("v.sealed_limits_d")}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
 function shortHex(h: string): string {
   return h.length > 16 ? `${h.slice(0, 8)}…${h.slice(-6)}` : h;
 }
@@ -804,6 +878,9 @@ export default function PublicVerify() {
   const [inclusion, setInclusion] = useState<PublicInclusionProof[]>([]);
   const [pubEvents, setPubEvents] = useState<PublicItemEvent[]>([]);
   const [issuer, setIssuer] = useState<PublicWorkspace | null>(null);
+  // Nome do workspace que SELOU (N2): o /verify traz só o id; resolver aqui evita
+  // mostrar UUID cru no verificador público.
+  const [sealer, setSealer] = useState<PublicWorkspace | null>(null);
   const [error, setError] = useState(false);
   // Dark mode ESCOPADO só a esta página (classe .dark no wrapper → tokens do index.css).
   // Futuramente vira global da DeFarm; por ora, só o certificado. Lembra a escolha.
@@ -890,6 +967,7 @@ export default function PublicVerify() {
   useEffect(() => {
     let cancelled = false;
     setIssuer(null);
+    setSealer(null);
     (async () => {
       // O EMISSOR é o autor do FATO, nunca o atestador. O E2 signature_attached é servido primeiro
       // (ORDER BY created_at DESC; anexar é depois), então resolver de res.events cru pegava a
@@ -922,6 +1000,22 @@ export default function PublicVerify() {
       cancelled = true;
     };
   }, [res, inclusion]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const id = (res?.sealed_fields ?? []).find((f) => f?.sealer_workspace_id)?.sealer_workspace_id ?? null;
+    if (!id) {
+      setSealer(null);
+      return;
+    }
+    getPublicWorkspace(id)
+      .then((w) => !cancelled && setSealer(w))
+      .catch(() => !cancelled && setSealer(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [res]);
+  const sealerName = sealer?.name ?? null;
 
   // Identificador(es) canônico(s) do animal, já mascarados pelo backend (ex.: "SISBOV •••• 99002").
   const meta = (item?.metadata ?? {}) as Record<string, unknown>;
@@ -1110,6 +1204,12 @@ export default function PublicVerify() {
                     issuerId={issuerId}
                     pubkey={issuerPubkey}
                     summary={res?.signature_assurance_summary ?? null}
+                  />
+
+                  {/* N2 — o campo selado como cidadão de primeira classe (net#203). */}
+                  <SealedFieldsCard
+                    fields={(res?.sealed_fields ?? []).filter(Boolean)}
+                    sealerName={sealerName}
                   />
                   {/* N1 D3 — carimbo de tempo (ACT) por assinatura anexada. Só aparece se houver anexada. */}
                   <AttachedTimestamps

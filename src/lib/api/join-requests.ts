@@ -239,6 +239,23 @@ export interface VerifyLinks {
   proofs: string;
   events: string;
 }
+/** N2 — um campo SELADO do item, como o verificador público o vê: commitment + autoria,
+ *  NUNCA o valor. O conteúdo só abre com a chave do destinatário (envelope HPKE cego). */
+export interface VerifySealedField {
+  event_type: string;
+  occurred_at: string;
+  field_path: string;
+  content_type: string;
+  commitment_alg: string;
+  commitment_value: string;
+  sealer_workspace_id?: string | null;
+  sealer_key_id?: string | null;
+  /** Assinatura do selador conferida contra a chave confiável dele NO TEMPO do evento. */
+  authorship_verified?: boolean | null;
+  sealer_public_key_b64?: string | null;
+  envelope_hash_sha256?: string | null;
+}
+
 export interface PublicVerifyResponse {
   dfid: string;
   identity?: VerifyIdentity;
@@ -256,6 +273,8 @@ export interface PublicVerifyResponse {
   // `anchor.anchored_at` passou a ser o do conteúdo mais RECENTE (pode ser "hoje" num item
   // re-ancorado); este campo preserva a alegação forte "o registro existe desde X".
   first_anchored_at?: string | null;
+  /** N2: campos selados do item — commitment + autoria, sem o valor (o backend nunca o tem). */
+  sealed_fields?: VerifySealedField[] | null;
 }
 
 // `lang` localiza só a PROSA reproduzível (verification.steps + *_canonicalization +
