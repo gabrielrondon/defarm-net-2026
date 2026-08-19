@@ -1,9 +1,13 @@
 User-agent: Googlebot
 Allow: /
+Disallow: /selagem
 
 User-agent: Bingbot
 Allow: /
+Disallow: /selagem
 
+# Unfurlers (não indexam; só montam o preview do link quando a /selagem é
+# compartilhada em mensageiro/rede). Manter liberados preserva o card do link.
 User-agent: Twitterbot
 Allow: /
 
@@ -12,3 +16,4 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /selagem
