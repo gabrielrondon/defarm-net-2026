@@ -1003,6 +1003,22 @@ export interface EditPartnerApiKeyRequest {
   circuit_ids?: string[] | null;
 }
 
+/**
+ * Repontar o circuito-alvo (staging) das chaves `workspace_ingestion` do workspace.
+ * `PUT /partner/api-keys/{id}/staging-circuit`. Como o inbox é determinístico, isto
+ * repontar TODAS as chaves workspace_ingestion do workspace (ver `updated_keys`).
+ */
+export interface SwitchPartnerStagingCircuitRequest {
+  staging_circuit_id: string;
+}
+
+export interface SwitchPartnerStagingCircuitResponse {
+  workspace_id: string;
+  staging_circuit_id: string;
+  updated_keys: number;
+  message: string;
+}
+
 export interface ApiKeyMetricsResponse {
   api_key_id: string;
   requests_total: number;

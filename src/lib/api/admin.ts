@@ -8,6 +8,7 @@ import type {
   EditPartnerApiKeyRequest,
   PartnerApiKeyResponse,
   ApiKeyMetricsResponse,
+  SwitchPartnerStagingCircuitResponse,
 } from "./types";
 
 // --- Admin API Keys (requires x-admin-key) ---
@@ -90,5 +91,24 @@ export async function getPartnerApiKeyMetrics(
 ): Promise<ApiKeyMetricsResponse> {
   return registryRequest<ApiKeyMetricsResponse>(
     `/partner/api-keys/${keyId}/metrics`
+  );
+}
+
+/**
+ * Repontar o circuito-alvo (staging) das chaves `workspace_ingestion`. O inbox é
+ * determinístico: isto move TODAS as chaves workspace_ingestion do workspace para o
+ * novo circuito (`updated_keys` na resposta). Aponte para um circuito público+staging
+ * para que a ingestão por X-API-Key alcance as rotas públicas (/public, /verify).
+ */
+export async function switchPartnerApiKeyStagingCircuit(
+  keyId: string,
+  stagingCircuitId: string
+): Promise<SwitchPartnerStagingCircuitResponse> {
+  return registryRequest<SwitchPartnerStagingCircuitResponse>(
+    `/partner/api-keys/${keyId}/staging-circuit`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ staging_circuit_id: stagingCircuitId }),
+    }
   );
 }

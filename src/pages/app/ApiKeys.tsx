@@ -44,6 +44,7 @@ import {
   Zap,
   ShieldAlert,
   Pencil,
+  Crosshair,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -53,6 +54,7 @@ import {
   revokePartnerApiKey,
   editPartnerApiKey,
   getPartnerApiKeyMetrics,
+  switchPartnerApiKeyStagingCircuit,
 } from "@/lib/api/admin";
 import { getCircuits } from "@/lib/api/circuits";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -124,6 +126,12 @@ export default function ApiKeys() {
   const [editScope, setEditScope] = useState<PartnerApiKeyScope>("circuit");
   const [editCircuit, setEditCircuit] = useState("");
   const [editCircuits, setEditCircuits] = useState<string[]>([]);
+
+  // Repontar o circuito-alvo (staging) das chaves workspace_ingestion
+  const [repointOpen, setRepointOpen] = useState(false);
+  const [repointTarget, setRepointTarget] = useState<PartnerApiKeyResponse | null>(null);
+  const [repointCircuit, setRepointCircuit] = useState("");
+  const [repointing, setRepointing] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -356,6 +364,57 @@ export default function ApiKeys() {
     return circuits.find((c) => c.id === circuitId)?.name || circuitId.slice(0, 8);
   };
 
+  const getCircuit = (circuitId: string) => circuits.find((c) => c.id === circuitId);
+
+  // Visibilidade do circuito-alvo de uma chave. Público → ingestão por X-API-Key
+  // aparece nas rotas públicas (/public, /verify). Privado → /verify público dá 404.
+  const circuitPublicInfo = (circuitId?: string | null) => {
+    if (!circuitId) return null;
+    const c = getCircuit(circuitId);
+    if (!c) return null;
+    const isPublic = c.visibility === "public";
+    const isStaging =
+      (c.metadata as { partner_staging?: unknown } | null | undefined)?.partner_staging === true ||
+      (c.metadata as { partner_staging?: unknown } | null | undefined)?.partner_staging === "true";
+    return { circuit: c, isPublic, isStaging };
+  };
+
+  // Alvos válidos para /verify público imediato: circuito público + partner_staging.
+  const publicStagingCircuits = circuits.filter((c) => {
+    const isStaging =
+      (c.metadata as { partner_staging?: unknown } | null | undefined)?.partner_staging === true ||
+      (c.metadata as { partner_staging?: unknown } | null | undefined)?.partner_staging === "true";
+    return c.visibility === "public" && isStaging;
+  });
+
+  const openRepoint = (key: PartnerApiKeyResponse) => {
+    setRepointTarget(key);
+    setRepointCircuit(key.staging_circuit_id ?? "");
+    setRepointOpen(true);
+  };
+
+  const submitRepoint = async () => {
+    if (!repointTarget || !repointCircuit) return;
+    setRepointing(true);
+    try {
+      const res = await switchPartnerApiKeyStagingCircuit(repointTarget.id, repointCircuit);
+      toast({
+        title: t("portal.apikeys.repoint.doneTitle"),
+        description: t("portal.apikeys.repoint.doneDesc", { count: res.updated_keys }),
+      });
+      setRepointOpen(false);
+      await fetchData();
+    } catch (err) {
+      toast({
+        title: t("portal.apikeys.repoint.errorTitle"),
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setRepointing(false);
+    }
+  };
+
   const getDefaultStagingCircuit = () => {
     const tagged = circuits.find((c: any) => c?.metadata?.partner_staging === true || c?.metadata?.partner_staging === "true");
     // Only pin a genuinely-tagged staging circuit. Dropping the circuits[0] fallback
@@ -505,10 +564,39 @@ export default function ApiKeys() {
                       <div className="space-y-1">
                         <Badge variant="secondary" className="text-xs">{t("portal.apikeys.scopeBadge.workspace_ingestion")}</Badge>
                         {key.staging_circuit_id ? (
-                          <p className="text-xs text-muted-foreground">
-                            {t("portal.apikeys.receivesIn", { name: getCircuitName(key.staging_circuit_id) })}
-                          </p>
-                        ) : null}
+                          <>
+                            <p className="text-xs text-muted-foreground">
+                              {t("portal.apikeys.receivesIn", { name: getCircuitName(key.staging_circuit_id) })}
+                            </p>
+                            {(() => {
+                              const info = circuitPublicInfo(key.staging_circuit_id);
+                              if (!info) return null;
+                              // O backend só grava aqui se o circuito é público E partner_staging
+                              // (resolve_source_circuit_for_workspace_ingestion_key). Sem as duas,
+                              // a ingestão cai no staging padrão em silêncio — nada de badge verde.
+                              if (info.isPublic && info.isStaging) {
+                                return (
+                                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                                    {t("portal.apikeys.target.public")}
+                                  </Badge>
+                                );
+                              }
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[10px] text-destructive">
+                                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                                  {info.isPublic
+                                    ? t("portal.apikeys.target.publicNotStaging")
+                                    : t("portal.apikeys.target.privateWarn")}
+                                </span>
+                              );
+                            })()}
+                          </>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                            {t("portal.apikeys.target.none")}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-1">
@@ -540,6 +628,17 @@ export default function ApiKeys() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {key.is_active && key.scope === "workspace_ingestion" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openRepoint(key)}
+                          title={t("portal.apikeys.repoint.rowAction")}
+                          aria-label={t("portal.apikeys.repoint.rowAction")}
+                        >
+                          <Crosshair className="h-4 w-4" />
+                        </Button>
+                      )}
                       {key.is_active && (
                         <Button
                           variant="ghost"
@@ -755,6 +854,51 @@ export default function ApiKeys() {
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               {t("portal.apikeys.create.submit")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Repoint dialog — apontar as chaves workspace_ingestion para outro circuito */}
+      <Dialog open={repointOpen} onOpenChange={setRepointOpen}>
+        <DialogContent aria-modal="true">
+          <DialogHeader>
+            <DialogTitle>{t("portal.apikeys.repoint.title")}</DialogTitle>
+            <DialogDescription>{t("portal.apikeys.repoint.desc")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>{t("portal.apikeys.repoint.selectLabel")}</Label>
+              <Select value={repointCircuit} onValueChange={setRepointCircuit}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("portal.apikeys.repoint.selectPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {publicStagingCircuits.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {publicStagingCircuits.length === 0 && (
+                <p className="text-xs text-destructive">
+                  {t("portal.apikeys.repoint.noPublic")}
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                {t("portal.apikeys.repoint.deterministicNote")}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRepointOpen(false)}>
+              {t("portal.common.cancel")}
+            </Button>
+            <Button onClick={submitRepoint} disabled={repointing || !repointCircuit}>
+              {repointing
+                ? t("portal.apikeys.repoint.submitting")
+                : t("portal.apikeys.repoint.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>

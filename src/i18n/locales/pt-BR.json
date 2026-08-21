@@ -1976,6 +1976,26 @@
         "circuit": "Circuito específico"
       },
       "receivesIn": "Recebe em: {{name}}",
+      "target": {
+        "public": "Circuito público",
+        "privateWarn": "Circuito privado — /verify público retorna 404",
+        "publicNotStaging": "Público, mas não é staging — a ingestão vai para o staging padrão, não para cá",
+        "none": "Sem circuito-alvo — a ingestão cai no staging padrão"
+      },
+      "repoint": {
+        "rowAction": "Apontar para outro circuito",
+        "title": "Apontar a chave para um circuito",
+        "desc": "Escolha o circuito público para onde a ingestão por X-API-Key vai gravar. Para o /verify público funcionar, o circuito precisa ser público + partner_staging.",
+        "selectLabel": "Circuito de destino (público)",
+        "selectPlaceholder": "Selecione um circuito público",
+        "noPublic": "Nenhum circuito público+staging disponível. Crie um circuito público (com partner_staging) antes de apontar.",
+        "deterministicNote": "O inbox é determinístico: isto aponta TODAS as chaves de recepção do workspace para este circuito.",
+        "submit": "Apontar",
+        "submitting": "Apontando…",
+        "doneTitle": "Circuito atualizado",
+        "doneDesc": "{{count}} chave(s) agora gravam neste circuito.",
+        "errorTitle": "Falha ao apontar o circuito"
+      },
       "statusActive": "Ativa",
       "statusRevoked": "Revogada",
       "rowEdit": "Editar",
