@@ -1976,6 +1976,25 @@
         "circuit": "Specific circuit"
       },
       "receivesIn": "Receives in: {{name}}",
+      "target": {
+        "public": "Public circuit",
+        "privateWarn": "Private circuit — public /verify returns 404",
+        "none": "No target circuit — ingestion falls to the default staging"
+      },
+      "repoint": {
+        "rowAction": "Point to another circuit",
+        "title": "Point the key at a circuit",
+        "desc": "Choose the public circuit where X-API-Key ingestion will write. For public /verify to work, the circuit must be public + partner_staging.",
+        "selectLabel": "Destination circuit (public)",
+        "selectPlaceholder": "Select a public circuit",
+        "noPublic": "No public+staging circuit available. Create a public circuit (with partner_staging) before pointing.",
+        "deterministicNote": "The inbox is deterministic: this points ALL of the workspace's ingestion keys at this circuit.",
+        "submit": "Point",
+        "submitting": "Pointing…",
+        "doneTitle": "Circuit updated",
+        "doneDesc": "{{count}} key(s) now write to this circuit.",
+        "errorTitle": "Failed to point the circuit"
+      },
       "statusActive": "Active",
       "statusRevoked": "Revoked",
       "rowEdit": "Edit",
