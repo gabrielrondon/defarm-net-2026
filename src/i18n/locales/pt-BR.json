@@ -1979,6 +1979,7 @@
       "target": {
         "public": "Circuito público",
         "privateWarn": "Circuito privado — /verify público retorna 404",
+        "publicNotStaging": "Público, mas não é staging — a ingestão vai para o staging padrão, não para cá",
         "none": "Sem circuito-alvo — a ingestão cai no staging padrão"
       },
       "repoint": {

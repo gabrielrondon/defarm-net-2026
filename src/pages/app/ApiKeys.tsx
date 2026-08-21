@@ -571,14 +571,22 @@ export default function ApiKeys() {
                             {(() => {
                               const info = circuitPublicInfo(key.staging_circuit_id);
                               if (!info) return null;
-                              return info.isPublic ? (
-                                <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-                                  {t("portal.apikeys.target.public")}
-                                </Badge>
-                              ) : (
+                              // O backend só grava aqui se o circuito é público E partner_staging
+                              // (resolve_source_circuit_for_workspace_ingestion_key). Sem as duas,
+                              // a ingestão cai no staging padrão em silêncio — nada de badge verde.
+                              if (info.isPublic && info.isStaging) {
+                                return (
+                                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                                    {t("portal.apikeys.target.public")}
+                                  </Badge>
+                                );
+                              }
+                              return (
                                 <span className="inline-flex items-center gap-1 text-[10px] text-destructive">
                                   <AlertTriangle className="h-3 w-3 shrink-0" />
-                                  {t("portal.apikeys.target.privateWarn")}
+                                  {info.isPublic
+                                    ? t("portal.apikeys.target.publicNotStaging")
+                                    : t("portal.apikeys.target.privateWarn")}
                                 </span>
                               );
                             })()}
