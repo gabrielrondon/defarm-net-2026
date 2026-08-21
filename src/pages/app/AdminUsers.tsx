@@ -72,7 +72,13 @@ async function provisionInitialPartnerEntitlement(workspaceId: string) {
     quota_total: 500,
     balance_remaining: INITIAL_PARTNER_BALANCE_CREDITS,
     credit_costs: { creation: 100, enrichment: 1 },
-    auto_release: false,
+    // Onboarding entrega o produto completo: o parceiro ANCORA on-chain desde o
+    // primeiro animal (mesmo default do fluxo de ingestão, partner_keys.rs). Com
+    // false, o entitlement nascia em manual_gate e os animais NÃO ancoravam em
+    // silêncio (badge "Provisionado" verde, /verify sem âncora) — só se descobria
+    // medindo (engines#616). Quem quiser revisar antes de ancorar desliga em
+    // Entitlements (auto_release=false é opt-in ao gate manual, não default).
+    auto_release: true,
     is_active: true,
     notes: `Saldo inicial automático: ${INITIAL_PARTNER_TOKENIZATIONS} tokenizações novas (${INITIAL_PARTNER_BALANCE_CREDITS} créditos).`,
   });
