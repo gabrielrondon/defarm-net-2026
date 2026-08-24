@@ -128,7 +128,7 @@ const StellarTranche2 = () => {
                 <Badge className="bg-primary text-primary-foreground">Tranche 2 — Testnet</Badge>
                 <Badge variant="outline">Month 4-6</Badge>
                 <Badge variant="outline">Budget US $36,000</Badge>
-                <Badge className="bg-primary text-primary-foreground">Ready for SCF review</Badge>
+                <Badge className="bg-primary text-primary-foreground">Verified by SCF — Jun 2026</Badge>
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-black leading-tight">

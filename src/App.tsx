@@ -31,6 +31,7 @@ import DemoDashboard from "./pages/DemoDashboard";
 import StellarOverview from "./pages/StellarOverview";
 import StellarTranche1 from "./pages/StellarTranche1";
 import StellarTranche2 from "./pages/StellarTranche2";
+import StellarTranche3 from "./pages/StellarTranche3";
 
 // App pages
 
@@ -284,6 +285,7 @@ const App = () => (
             <Route path="/stellar" element={<StellarOverview />} />
             <Route path="/stellar/tranche1" element={<StellarTranche1 />} />
             <Route path="/stellar/tranche2" element={<StellarTranche2 />} />
+            <Route path="/stellar/tranche3" element={<StellarTranche3 />} />
             
             {/* App routes (protected) */}
             <Route path="/app" element={<AppLayout><WorkspaceHome /></AppLayout>} />

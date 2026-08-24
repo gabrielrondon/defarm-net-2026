@@ -55,19 +55,19 @@ const tranches = [
     title: "Tranche 2 — Testnet",
     budget: "$36,000",
     month: "Month 6",
-    status: "In progress",
-    goal: "Selective disclosure, on-chain receipts, and Soroban governance on testnet",
+    status: "Completed",
+    goal: "Selective disclosure, on-chain receipts, and Soroban anchoring (delivered directly on mainnet)",
     href: "/stellar/tranche2",
-    highlights: ["Soroban contract deployment", "Selective disclosure engine", "Testnet anchoring pipeline"],
+    highlights: ["Soroban contract deployment", "Selective disclosure engine", "Mainnet anchoring pipeline"],
   },
   {
     title: "Tranche 3 — Mainnet",
     budget: "$30,000",
     month: "Month 9",
-    status: "Planned",
+    status: "In review",
     goal: "Go-live on mainnet, miniapp framework, and institutional partner onboarding",
-    href: "/stellar",
-    highlights: ["Mainnet deployment", "Miniapp framework for partners", "Institutional onboarding flow"],
+    href: "/stellar/tranche3",
+    highlights: ["Mainnet at scale (2,239 NFT mints)", "Miniapp framework in TS + Rust", "Institutional partners in production"],
   },
 ];
 
@@ -99,7 +99,10 @@ const StellarOverview = () => {
                   </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild className="btn-offset">
-                  <Link to="/stellar/tranche2">Tranche 2 deliverables <ArrowRight className="h-4 w-4" /></Link>
+                  <Link to="/stellar/tranche3">Tranche 3 deliverables <ArrowRight className="h-4 w-4" /></Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/stellar/tranche2">Tranche 2 (completed)</Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/stellar/tranche1">Tranche 1 (completed)</Link>
@@ -155,13 +158,13 @@ const StellarOverview = () => {
                 <CardContent className="pt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <p className="text-sm font-semibold uppercase tracking-wide text-primary">Start here</p>
-                    <h2 className="text-2xl font-bold">Want to see the completed MVP?</h2>
+                    <h2 className="text-2xl font-bold">Want to see the final deliverables?</h2>
                     <p className="text-sm text-muted-foreground">
-                      Open the Tranche 1 page to view the shipped CLI, SDK, live workflow, and recorded demo.
+                      Open the Tranche 3 page for the mainnet production snapshot, the miniapp framework, and how to verify everything on-chain.
                     </p>
                   </div>
                   <Button asChild className="btn-offset shrink-0">
-                    <Link to="/stellar/tranche1">See Tranche 1 <ArrowRight className="h-4 w-4" /></Link>
+                    <Link to="/stellar/tranche3">See Tranche 3 <ArrowRight className="h-4 w-4" /></Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -219,8 +222,8 @@ const StellarOverview = () => {
                     <CardHeader>
                       <div className="flex items-center justify-between mb-1">
                         <Badge
-                          variant={tranche.status === "In progress" ? "default" : "outline"}
-                          className={tranche.status === "In progress" ? "bg-primary text-primary-foreground" : tranche.status === "Completed" ? "border-emerald-500 text-emerald-700" : ""}
+                          variant={tranche.status === "In review" ? "default" : "outline"}
+                          className={tranche.status === "In review" ? "bg-primary text-primary-foreground" : tranche.status === "Completed" ? "border-emerald-500 text-emerald-700" : ""}
                         >
                           {tranche.status}
                         </Badge>
