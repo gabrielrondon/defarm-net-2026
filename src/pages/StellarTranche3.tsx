@@ -23,7 +23,7 @@ import {
 import { toast } from "sonner";
 
 const deliverables = [
-  { label: "Platform live on Stellar mainnet — IPCM update + NFT mint in a single atomic Soroban transaction", done: true },
+  { label: "Platform live on Stellar mainnet — tokenization via the IPCM contract's mint_and_update, one atomic Soroban transaction", done: true },
   { label: "Miniapp framework published: @defarm/miniapp on npm (TypeScript) + Rust workspace, both wrapping the SDK", done: true },
   { label: "Example miniapps shipped in both stacks: tokenization + marketplace, verified against the production gateway", done: true },
   { label: "Institutional partners connected in production (beef supply chain BR/UY + livestock ERP integrator)", done: true },
@@ -34,7 +34,7 @@ const deliverables = [
 
 const snapshot = [
   { metric: "Items registered", value: "8,837", note: "8,000+ in the largest circuit alone" },
-  { metric: "Circuits with items", value: "138", note: "31 circuits hold 10+ items" },
+  { metric: "Circuits with 10+ items", value: "31", note: "138 circuits hold at least one item" },
   { metric: "Typed events recorded", value: "57,013", note: "movement, weighing, vaccination, custody…" },
   { metric: "Anchor jobs processed", value: "11,925", note: "11,265 completed by the adapter pipeline" },
   { metric: "On-chain anchors confirmed", value: "5,063", note: "creation + CID updates + NFT mints" },
@@ -61,7 +61,7 @@ const steps = [
   {
     title: "Read verified data",
     goal: "Use the framework helpers to list items and inspect one verifiable identity.",
-    commands: `import { DefarmMiniapp } from '@defarm/miniapp';\n\nconst app = new DefarmMiniapp({\n  gateway: process.env.DEFARM_GATEWAY,\n  apiKey: process.env.DEFARM_API_KEY,\n});\n\nconst items = await app.items.list({ circuitId: '<circuit_id>', limit: 50 });\nconst item = await app.items.show(items[0].id);`,
+    commands: `import { DefarmMiniapp } from '@defarm/miniapp';\n\nconst app = new DefarmMiniapp({\n  gateway: process.env.DEFARM_GATEWAY,\n  apiKey: process.env.DEFARM_API_KEY,\n});\n\nconst items = await app.items.list({ circuitId: '<circuit_id>' });\nconst item = await app.items.show(items[0].id);`,
     expected: "Items returned from your circuit with DFIDs and event history.",
     nextAction: "Run the tokenization flow.",
   },
@@ -89,17 +89,17 @@ const app = new DefarmMiniapp({
 });
 
 // list items in a circuit
-const items = await app.items.list({ circuitId: '<circuit_id>', limit: 50 });
+const items = await app.items.list({ circuitId: '<circuit_id>' });
 
 // create a disclosure for a finance audience
 const disclosure = await app.disclosures.create({
-  itemId: items[0].id,
+  item_id: items[0].id,
   preset: 'finance_basic',
   audience: 'investor',
 });
 
 // receipts are the audit trail
-const receipts = await app.receipts.list({ circuitId: '<circuit_id>' });`;
+const receipts = await app.receipts.list({ circuit_id: '<circuit_id>', limit: 50 });`;
 
 const rustSnippet = `# Rust framework mirrors the TypeScript surface
 # tooling/rust: defarm-sdk + defarm-miniapp
@@ -154,7 +154,7 @@ const StellarTranche3 = () => {
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-wrap items-center gap-3 mb-5">
                 <Badge className="bg-primary text-primary-foreground">Tranche 3 — Mainnet</Badge>
-                <Badge variant="outline">Final tranche</Badge>
+                <Badge variant="outline">Month 9 — Final tranche</Badge>
                 <Badge variant="outline">Budget US $30,000</Badge>
                 <Badge className="bg-primary text-primary-foreground">Ready for SCF review</Badge>
               </div>
@@ -210,9 +210,9 @@ const StellarTranche3 = () => {
             <div className="max-w-5xl mx-auto">
               <h2 className="text-3xl font-bold mb-2">Production snapshot — 2026-08-24</h2>
               <p className="text-muted-foreground mb-8">
-                Numbers below are real production traffic measured directly from the live registry and the
-                Stellar mainnet contracts — not a synthetic benchmark. The SCF target was 1,000+ items across
-                10+ circuits.
+                Numbers below are real production traffic measured directly from the live production registry —
+                not a synthetic benchmark. On-chain results are independently checkable on the mainnet contracts
+                linked below. The SCF target was 1,000+ items across 10+ circuits.
               </p>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {snapshot.map((s) => (
@@ -253,8 +253,9 @@ const StellarTranche3 = () => {
                       </a>
                     </div>
                     <p className="text-muted-foreground">
-                      Each anchor pins the item snapshot to IPFS and updates the IPCM contract — with NFT mint —
-                      in one atomic Soroban transaction.
+                      Tokenized anchors pin the item snapshot to IPFS and call the IPCM contract's
+                      <code className="mx-1">mint_and_update</code> — contract update and NFT mint in one atomic
+                      Soroban transaction. Subsequent changes ship as lightweight CID updates.
                     </p>
                   </CardContent>
                 </Card>
