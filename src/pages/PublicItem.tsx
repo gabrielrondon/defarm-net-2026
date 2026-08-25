@@ -529,6 +529,38 @@ function compactJson(value: unknown): string {
   }
 }
 
+function ipfsGatewayUrl(cid: string, gateway: "pinata" | "ipfsio" = "pinata"): string {
+  const cleanCid = cid.trim();
+  if (gateway === "ipfsio") return `https://ipfs.io/ipfs/${cleanCid}`;
+  return `https://gateway.pinata.cloud/ipfs/${cleanCid}`;
+}
+
+function ipfsGatewayCandidates(cid: string, primaryUrl?: string | null): string[] {
+  const urls = [
+    primaryUrl?.trim(),
+    ipfsGatewayUrl(cid, "pinata"),
+    ipfsGatewayUrl(cid, "ipfsio"),
+  ].filter((url): url is string => Boolean(url));
+
+  return [...new Set(urls)];
+}
+
+async function fetchIpfsJson(cid: string, primaryUrl?: string | null): Promise<unknown | null> {
+  for (const url of ipfsGatewayCandidates(cid, primaryUrl)) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8_000);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (response.ok) return await response.json();
+    } catch {
+      // Try the next public gateway when the current one is slow or unavailable.
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+  return null;
+}
+
 function readCommitment(value: unknown): { alg?: string; domain?: string; version?: string; value?: string } | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
@@ -1646,17 +1678,9 @@ export default function PublicItem() {
 
       await Promise.all(
         versions.map(async (version) => {
-          const url = version.gateway_url || `https://gateway.pinata.cloud/ipfs/${version.cid}`;
-          if (!url) return;
-          try {
-            const resp = await fetch(url);
-            if (!resp.ok) return;
-            const json = await resp.json();
-            const point = parseWeightPointFromSnapshot(json, version.uploaded_at);
-            if (point) points.push(point);
-          } catch {
-            // Ignore CID fetch failures in public UI and keep timeline best-effort.
-          }
+          const json = await fetchIpfsJson(version.cid, version.gateway_url);
+          const point = json ? parseWeightPointFromSnapshot(json, version.uploaded_at) : null;
+          if (point) points.push(point);
         })
       );
 
@@ -3435,7 +3459,7 @@ export default function PublicItem() {
                     {latestContentVersion ? (
                       <>
                         <a
-                          href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
+                          href={ipfsGatewayCandidates(latestContentVersion.cid, latestContentVersion.gateway_url)[0]}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-sm font-mono text-primary hover:underline break-all inline-flex items-center gap-1"
@@ -3456,6 +3480,14 @@ export default function PublicItem() {
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCidDialog(true)}>
                             {localized(metadataLocale, "Ver versões", "View versions", "Ver versiones")}
                           </Button>
+                          <a
+                            href={ipfsGatewayUrl(latestContentVersion.cid, "ipfsio")}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-7 items-center rounded-md border border-input px-2 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          >
+                            ipfs.io
+                          </a>
                         </div>
                       </>
                     ) : (
@@ -4161,40 +4193,49 @@ export default function PublicItem() {
 
           <div className="space-y-3 text-sm">
             {latestContentVersion ? (
-              <div className="rounded border p-3 space-y-2">
-                <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Último CID", "Latest CID", "Último CID")} (v{latestContentVersion.version})</p>
-                <p className="font-mono text-xs text-foreground break-all">{latestContentVersion.cid}</p>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    {localized(metadataLocale, "Ver registro original", "View original record", "Ver registro original")} <ExternalLink className="h-3 w-3" />
-                  </a>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs"
-                    onClick={async () => {
-                      const url = latestContentVersion.gateway_url || `https://gateway.pinata.cloud/ipfs/${latestContentVersion.cid}`;
-                      setCidViewLoading(true);
-                      try {
-                        const res = await fetch(url);
-                        const data = await res.json();
-                        setCidViewContent({ cid: latestContentVersion.cid, data });
-                      } catch {
-                        setCidViewContent(null);
-                      } finally {
-                        setCidViewLoading(false);
-                      }
-                    }}
-                  >
-                    {cidViewLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : localized(metadataLocale, "Visualizar", "View", "Visualizar")}
-                  </Button>
-                </div>
-              </div>
+	              <div className="rounded border p-3 space-y-2">
+	                <p className="text-xs text-muted-foreground">{localized(metadataLocale, "Último CID", "Latest CID", "Último CID")} (v{latestContentVersion.version})</p>
+	                <p className="font-mono text-xs text-foreground break-all">{latestContentVersion.cid}</p>
+	                <div className="flex items-center gap-2">
+	                  <a
+	                    href={ipfsGatewayCandidates(latestContentVersion.cid, latestContentVersion.gateway_url)[0]}
+	                    target="_blank"
+	                    rel="noopener noreferrer"
+	                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+	                  >
+	                    {localized(metadataLocale, "Ver registro original", "View original record", "Ver registro original")} <ExternalLink className="h-3 w-3" />
+	                  </a>
+	                  <a
+	                    href={ipfsGatewayUrl(latestContentVersion.cid, "ipfsio")}
+	                    target="_blank"
+	                    rel="noopener noreferrer"
+	                    className="text-xs text-muted-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
+	                  >
+	                    ipfs.io <ExternalLink className="h-3 w-3" />
+	                  </a>
+	                  <Button
+	                    size="sm"
+	                    variant="outline"
+	                    className="h-7 text-xs"
+	                    onClick={async () => {
+	                      setCidViewLoading(true);
+	                      try {
+	                        const data = await fetchIpfsJson(latestContentVersion.cid, latestContentVersion.gateway_url);
+	                        setCidViewContent(data && typeof data === "object" && !Array.isArray(data)
+	                          ? { cid: latestContentVersion.cid, data: data as Record<string, unknown> }
+	                          : null
+	                        );
+	                      } catch {
+	                        setCidViewContent(null);
+	                      } finally {
+	                        setCidViewLoading(false);
+	                      }
+	                    }}
+	                  >
+	                    {cidViewLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : localized(metadataLocale, "Visualizar", "View", "Visualizar")}
+	                  </Button>
+	                </div>
+	              </div>
             ) : (
               <p className="text-muted-foreground">{localized(metadataLocale, "Nenhum CID disponível.", "No CID available.", "No hay CID disponible.")}</p>
             )}
@@ -4205,14 +4246,14 @@ export default function PublicItem() {
                 <p className="text-muted-foreground">{localized(metadataLocale, "Sem versões anteriores.", "No previous versions.", "Sin versiones anteriores.")}</p>
               ) : (
                 <div className="space-y-2">
-                  {olderContentVersions.map((v) => (
-                    <div key={`${v.version}-${v.cid}`} className="flex items-center justify-between gap-2">
-                      <a
-                        href={v.gateway_url || `https://gateway.pinata.cloud/ipfs/${v.cid}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-primary hover:underline break-all text-xs"
-                      >
+	                  {olderContentVersions.map((v) => (
+	                    <div key={`${v.version}-${v.cid}`} className="flex items-center justify-between gap-2">
+	                      <a
+	                        href={ipfsGatewayCandidates(v.cid, v.gateway_url)[0]}
+	                        target="_blank"
+	                        rel="noopener noreferrer"
+	                        className="font-mono text-primary hover:underline break-all text-xs"
+	                      >
                         v{v.version} · {shortHash(v.cid, 14, 10)}
                       </a>
                       <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void copyText(v.cid, "CID") }> {localized(metadataLocale, "Copiar", "Copy", "Copiar")}</Button>

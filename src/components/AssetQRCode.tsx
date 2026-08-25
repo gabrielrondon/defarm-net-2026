@@ -39,6 +39,10 @@ function shorten(value: string, head = 10, tail = 8) {
   return `${value.slice(0, head)}...${value.slice(-tail)}`;
 }
 
+function ipfsIoUrl(cid: string): string {
+  return `https://ipfs.io/ipfs/${cid.trim()}`;
+}
+
 function guillochePath(cx = 200, cy = 200, scale = 1, n = 1600): string {
   const Rf = 100;
   const rr = 64;
@@ -158,7 +162,7 @@ export function AssetQRCode({
   }, [fullscreen]);
 
   const publicUrl = `https://defarm.net/i/${dfid}`;
-  const latestCidUrl = latestCid ? `https://gateway.pinata.cloud/ipfs/${latestCid}` : null;
+  const latestCidUrl = latestCid ? ipfsIoUrl(latestCid) : null;
   const identityHashUrl = identityHash
     ? `https://stellar.expert/explorer/public/tx/${identityHash}`
     : null;
