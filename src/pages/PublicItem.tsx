@@ -535,30 +535,63 @@ function ipfsGatewayUrl(cid: string, gateway: "pinata" | "ipfsio" = "pinata"): s
   return `https://gateway.pinata.cloud/ipfs/${cleanCid}`;
 }
 
+// Public IPFS gateways, most-reliable first. The content is content-addressed (the CID), so
+// ANY gateway that holds the block serves the same bytes — the page never depends on a single
+// one. Pinata pins the content but has been slow/intermittent, so it is not raced first.
+const IPFS_GATEWAY_PREFIXES = [
+  "https://ipfs.io/ipfs/",
+  "https://dweb.link/ipfs/",
+  "https://w3s.link/ipfs/",
+  "https://gateway.pinata.cloud/ipfs/",
+];
+
 function ipfsGatewayCandidates(cid: string, primaryUrl?: string | null): string[] {
+  const cleanCid = cid.trim();
   const urls = [
+    ...IPFS_GATEWAY_PREFIXES.map((prefix) => `${prefix}${cleanCid}`),
     primaryUrl?.trim(),
-    ipfsGatewayUrl(cid, "pinata"),
-    ipfsGatewayUrl(cid, "ipfsio"),
   ].filter((url): url is string => Boolean(url));
 
   return [...new Set(urls)];
 }
 
-async function fetchIpfsJson(cid: string, primaryUrl?: string | null): Promise<unknown | null> {
-  for (const url of ipfsGatewayCandidates(cid, primaryUrl)) {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 8_000);
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      if (response.ok) return await response.json();
-    } catch {
-      // Try the next public gateway when the current one is slow or unavailable.
-    } finally {
-      window.clearTimeout(timeout);
-    }
+async function fetchIpfsJsonFromGateway(url: string): Promise<unknown> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 10_000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`ipfs gateway ${response.status}`);
+    return await response.json();
+  } finally {
+    window.clearTimeout(timeout);
   }
-  return null;
+}
+
+async function fetchIpfsJson(cid: string, primaryUrl?: string | null): Promise<unknown | null> {
+  const candidates = ipfsGatewayCandidates(cid, primaryUrl);
+  if (candidates.length === 0) return null;
+  // RACE the gateways instead of trying them in sequence (Promise.any is ES2021; this project
+  // targets ES2020, so the race is by hand): resolve with the FIRST gateway that returns ok
+  // JSON, so one slow/down gateway (Pinata is the flaky one) never makes a reader wait on it
+  // before a healthy one. Resolve null only when EVERY gateway failed — best-effort, the core
+  // proof (identity/nft anchor, from the DeFarm API) does not depend on IPFS.
+  return new Promise<unknown | null>((resolve) => {
+    let remaining = candidates.length;
+    let settled = false;
+    for (const url of candidates) {
+      fetchIpfsJsonFromGateway(url)
+        .then((json) => {
+          if (!settled) {
+            settled = true;
+            resolve(json);
+          }
+        })
+        .catch(() => {
+          remaining -= 1;
+          if (remaining === 0 && !settled) resolve(null);
+        });
+    }
+  });
 }
 
 function readCommitment(value: unknown): { alg?: string; domain?: string; version?: string; value?: string } | null {
