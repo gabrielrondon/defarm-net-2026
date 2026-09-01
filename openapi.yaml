@@ -10104,6 +10104,18 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: Idempotency-Key
+        in: header
+        description: >-
+          Opt-in idempotency (engines#637). Provide a unique key per logical request
+          and reuse the same key on retries: a retry with the same key and the same
+          request replays the original response and status instead of re-ingesting.
+          A key reused with a different request is rejected (400); a key whose first
+          request is still in flight returns 409.
+        required: false
+        schema:
+          type: string
+          maxLength: 128
       requestBody:
         required: true
         content:
