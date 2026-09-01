@@ -68,7 +68,7 @@ const steps = [
   {
     title: "Run the tokenization example",
     goal: "Turn a verified item into a tokenized representation with an auditable disclosure.",
-    commands: `# inside tooling/packages/miniapp/examples/tokenization\nnpm install && npm run dev\n\n# the example exposes provenance over HTTP\ncurl http://localhost:3000/token/<DFID>`,
+    commands: `# inside tooling/packages/miniapp/examples/tokenization\nnpm install\nDEFARM_API_KEY=<your_partner_key> npm start\n\n# the server prints a ready-to-run curl for a sample DFID:\ncurl http://localhost:3000/token/<DFID>`,
     expected: "Disclosure receipt + IPCM anchor reference returned for the DFID.",
     nextAction: "Verify the anchor independently on Stellar mainnet.",
   },
