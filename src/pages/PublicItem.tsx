@@ -23,7 +23,6 @@ import {
   Scale,
   Lock,
   TrendingUp,
-  Network,
   Languages,
   Info,
   Tag,
@@ -1541,7 +1540,6 @@ export default function PublicItem() {
   const [showCidDialog, setShowCidDialog] = useState(false);
   const [cidViewContent, setCidViewContent] = useState<{ cid: string; data: Record<string, unknown> } | null>(null);
   const [cidViewLoading, setCidViewLoading] = useState(false);
-  const [showCircuitsDialog, setShowCircuitsDialog] = useState(false);
   const [showProofOfLifeDialog, setShowProofOfLifeDialog] = useState(false);
   const [showJourneyDialog, setShowJourneyDialog] = useState(false);
   const [showEmbedPreview, setShowEmbedPreview] = useState(false);
@@ -2003,13 +2001,6 @@ export default function PublicItem() {
   }, [proofs?.content_versions, latestContentVersion]);
 
   const visibleEvents = isAuthenticated && showOperational ? events : realEvents;
-
-  const associatedCircuitIds = useMemo(() => {
-    const ids = events
-      .map((event) => event.circuit_id)
-      .filter((value): value is string => typeof value === "string" && value.length > 0);
-    return Array.from(new Set(ids));
-  }, [events]);
 
   const proofOfLifeEvents = useMemo<ProofOfLifeEvent[]>(() => {
     return events
@@ -2608,15 +2599,6 @@ export default function PublicItem() {
               <span>{new Date(item.updated_at || item.created_at).toLocaleDateString(metadataLocale, { day: "2-digit", month: "short", year: "numeric" })}</span>
               <span>·</span>
               <span>{chainLabel(metadataLocale, item.value_chain)}</span>
-              {associatedCircuitIds.length > 0 && (
-                <>
-                  <span>·</span>
-                  <button onClick={() => setShowCircuitsDialog(true)} className="hover:text-emerald-600 inline-flex items-center gap-1 transition-colors">
-                    <Network className="h-3 w-3" />
-                    {associatedCircuitIds.length} {localized(metadataLocale, "rede", "network", "red")}{associatedCircuitIds.length !== 1 ? (metadataLocale === "en" ? "s" : "s") : ""}
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -2895,22 +2877,6 @@ export default function PublicItem() {
           </section>
         )}
 
-        {false && (
-        <section className="rounded-xl bg-white border border-stone-200/70 shadow-sm p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Redes de rastreabilidade</h2>
-              <p className="text-xs text-muted-foreground">
-                {associatedCircuitIds.length} circuito{associatedCircuitIds.length !== 1 ? "s" : ""} detectado{associatedCircuitIds.length !== 1 ? "s" : ""}.
-              </p>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setShowCircuitsDialog(true)}>
-              <Network className="h-4 w-4 mr-1.5" />
-              Ver circuitos
-            </Button>
-          </div>
-        </section>
-        )}
 
         {latestProofOfLife && (
           <section className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/60 p-5">
@@ -3981,36 +3947,6 @@ export default function PublicItem() {
           </DialogHeader>
           {showJourneyDialog && journeyPoints.length > 0 && (
             <JourneyMapInline points={journeyPoints} locale={metadataLocale} />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showCircuitsDialog} onOpenChange={setShowCircuitsDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{localized(metadataLocale, "Redes de rastreabilidade", "Traceability networks", "Redes de trazabilidad")}</DialogTitle>
-            <DialogDescription>
-              {localized(metadataLocale, "Se o circuito for privado/seletivo, a página de destino poderá exigir autenticação.", "If the circuit is private/selective, the destination page may require authentication.", "Si el circuito es privado/selectivo, la página de destino puede exigir autenticación.")}
-            </DialogDescription>
-          </DialogHeader>
-
-          {associatedCircuitIds.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {localized(metadataLocale, "Nenhum circuito associado foi identificado nos eventos públicos deste item.", "No associated circuit was identified in this item public events.", "No se identificó ningún circuito asociado en los eventos públicos de este animal.")}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {associatedCircuitIds.map((circuitId) => (
-                <a
-                  key={circuitId}
-                  href={`/c/${circuitId}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 hover:bg-muted/40"
-                >
-                  <span className="font-mono text-xs break-all">{circuitId}</span>
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                </a>
-              ))}
-            </div>
           )}
         </DialogContent>
       </Dialog>
