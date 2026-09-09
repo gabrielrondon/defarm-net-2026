@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2, GitBranch, Globe, Eye } from "lucide-react";
+import { ArrowLeft, Save, Loader2, GitBranch, Globe, Eye, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getCircuit, updateCircuit } from "@/lib/defarm-api";
 import type { UpdateCircuitRequest } from "@/lib/api/types";
@@ -44,6 +44,8 @@ export default function EditarCircuito() {
   const [publicBannerUrl, setPublicBannerUrl] = useState("");
   const [publicLogoUrl, setPublicLogoUrl] = useState("");
   const [publicShowCompliance, setPublicShowCompliance] = useState(false);
+  // Opt-in: expõe os itens (mascarados) nas páginas /i/ mesmo com o circuito privado.
+  const [itemsPubliclyVisible, setItemsPubliclyVisible] = useState(false);
 
   // Fetch circuit data
   const { data: circuit, isLoading: isLoadingCircuit } = useQuery({
@@ -70,6 +72,7 @@ export default function EditarCircuito() {
       setPublicLogoUrl(circuit.public_logo_url || "");
       const showCompliance = (circuit.settings as Record<string, unknown> | null | undefined)?.public_show_compliance;
       setPublicShowCompliance(showCompliance === true);
+      setItemsPubliclyVisible(circuit.items_publicly_visible ?? false);
     }
   }, [circuit]);
 
@@ -114,6 +117,9 @@ export default function EditarCircuito() {
       public_website: visibility === "public" ? publicWebsite : null,
       public_banner_url: publicBannerUrl.trim() || null,
       public_logo_url: publicLogoUrl.trim() || null,
+      // Só relevante quando o circuito NÃO é público (privado/restrito): expõe os itens
+      // mascarados sem abrir o circuito. Quando público, os itens já são públicos.
+      items_publicly_visible: visibility === "public" ? false : itemsPubliclyVisible,
     });
   };
 
@@ -241,6 +247,34 @@ export default function EditarCircuito() {
                 : t("portal.circuits.edit.statusHint.inactive")}
             </p>
           </div>
+
+          {/* Opt-in: itens públicos (mascarados) sem abrir o circuito. Só faz sentido
+              quando o circuito NÃO é público — se for público, os itens já são públicos. */}
+          {!isCircuitPublic(visibility) && (
+            <div className="space-y-3 pt-4 border-t border-border">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>{t("portal.circuits.edit.itemsPublic.label")}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("portal.circuits.edit.itemsPublic.hint")}
+                  </p>
+                </div>
+                <Switch
+                  checked={itemsPubliclyVisible}
+                  onCheckedChange={setItemsPubliclyVisible}
+                  aria-label={t("portal.circuits.edit.itemsPublic.label")}
+                />
+              </div>
+              {itemsPubliclyVisible && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 dark:border-amber-800/60 dark:bg-amber-950/30">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    {t("portal.circuits.edit.itemsPublic.disclosure")}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Discovery & Public Profile */}

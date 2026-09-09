@@ -1441,6 +1441,11 @@
           "active": "Active: the circuit appears as operational and enters the default flows.",
           "inactive": "Inactive: keeps history, but leaves the main operational flows."
         },
+        "itemsPublic": {
+          "label": "Show items to the public (even with the circuit private)",
+          "hint": "Each animal's page (/i/) becomes visible to the public, with identifiers masked (SISBOV, map). The circuit page stays private. Useful to share a single animal's link without opening the whole circuit.",
+          "disclosure": "Once enabled, your workspace name will appear as the author on every public event in this circuit."
+        },
         "discoveryTitle": "Discovery & Public Profile",
         "discoveryDesc": "Configure how your circuit appears to the public",
         "enableDiscovery": "Enable discovery",
