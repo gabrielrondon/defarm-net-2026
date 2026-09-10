@@ -138,6 +138,11 @@ export interface Circuit {
   public_website?: string | null;
   allow_join_requests?: boolean | null;
   requires_terms_acceptance?: boolean;
+  /** Opt-in do dono: expõe os itens deste circuito (mascarados) nas páginas /i/{dfid}
+   *  mesmo com o circuito privado. A página do circuito (/c/) segue respeitando `visibility`. */
+  items_publicly_visible?: boolean;
+  /** Tenant workspace do circuito (exposto no detalhe autenticado — engines #645). */
+  workspace_id?: string | null;
 }
 
 export interface ListCircuitsResponse {
@@ -259,6 +264,8 @@ export interface UpdateCircuitRequest {
   public_logo_url?: string | null;
   public_banner_url?: string | null;
   requires_terms_acceptance?: boolean | null;
+  /** Opt-in do dono: expõe os itens (mascarados) nas páginas /i/ sem abrir o circuito. */
+  items_publicly_visible?: boolean | null;
   user_id?: string | null;
   ip_address?: string | null;
 }
