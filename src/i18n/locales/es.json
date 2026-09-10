@@ -1581,7 +1581,7 @@
         "itemsPublic": {
           "label": "Mostrar los ítems al público (aunque el circuito sea privado)",
           "hint": "La página de cada animal (/i/) queda visible al público, con los identificadores enmascarados (SISBOV, mapa). La página del circuito sigue privada. Útil para compartir el enlace de un animal sin abrir todo el circuito.",
-          "disclosure": "Al activarlo, el nombre de tu workspace aparecerá como autor en cada evento público de este circuito."
+          "disclosure": "Mientras esté activado, el nombre de tu workspace aparece como autor en cada evento público de este circuito."
         },
         "discoveryTitle": "Descubrimiento y perfil público",
         "discoveryDesc": "Configura cómo aparece tu circuito ante el público",
