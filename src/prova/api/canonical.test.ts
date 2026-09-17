@@ -49,3 +49,21 @@ describe("commitment da Proof (blake3-jcs-v1)", () => {
     expect(jcs).toBe('{"10":2,"2":1,"a":390,"s":"é\\n"}');
   });
 });
+
+/* Vetor de conformidade do backend (engines#652, `tests/fixtures/proof_conformance_v1.json`,
+   commit eb4c48ed): o JSON exato servido + o commitment que o `serde_jcs` + BLAKE3 do Rust
+   produz. Cópia literal; regenerar copiando o arquivo do engines quando mudar. Se um caso
+   falhar aqui, frontend e backend divergiram em bytes e a página vai acusar prova legítima. */
+import vector from "./__fixtures__/proof_conformance_v1.json";
+
+describe("vetor de conformidade Rust ↔ TS", () => {
+  const v = vector as { commitmentAlg: string; excludedFromCommitment: string[]; cases: { name: string; served: Record<string, unknown>; expectedCommitment: string }[] };
+  it("mesmo algoritmo e mesmas exclusões", () => {
+    expect(v.commitmentAlg).toBe("blake3-jcs-v1");
+    expect([...v.excludedFromCommitment].sort()).toEqual(["commitment", "commitmentAlg", "state"]);
+  });
+  it.each(v.cases.map((c) => [c.name, c] as const))("caso %s bate byte a byte", (_name, c) => {
+    expect(commitmentOf(c.served)).toBe(c.expectedCommitment);
+    expect(c.served.commitment).toBe(c.expectedCommitment);
+  });
+});
