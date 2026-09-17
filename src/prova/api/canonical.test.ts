@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { commitmentJcs, commitmentOf } from "./canonical";
-import lacunas from "../mocks/lacunas.json";
+import example from "./__fixtures__/proof_view_example.json";
 import type { Proof } from "./types";
 
 /* O check "Ninguém alterou o conteúdo" só vale se tudo o que o destinatário lê como afirmação
@@ -8,7 +8,7 @@ import type { Proof } from "./types";
    Mutações = as da review do Hetzner no net#221 (expiresAt e legalBasis.purpose passavam
    verdes na primeira versão) + assinante, nível, modo, asOf, campo, DFID, selado, título.
    O vetor de conformidade byte a byte com o Rust entra quando o #652 o publicar. */
-const base = (lacunas as { L1: { view: Proof } }).L1.view as unknown as Record<string, unknown>;
+const base = example as unknown as Record<string, unknown>;
 const clone = (): Proof => JSON.parse(JSON.stringify(base));
 const hash = (p: Proof) => commitmentOf(p as unknown as Record<string, unknown>);
 

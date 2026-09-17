@@ -3,7 +3,7 @@ import { anchorStateOf } from "@/components/proof";
 import { verifyEventSignatureInBrowser } from "@/lib/verify-inclusion";
 import { COMMITMENT_ALG, type Proof } from "./types";
 import { commitmentOf } from "./canonical";
-import { getProof, ProofNotFound, USE_API } from "./proofs";
+import { getProof, ProofNotFound } from "./proofs";
 import { copy } from "../copy";
 import { fmtDateTime } from "../format";
 
@@ -15,7 +15,7 @@ import { fmtDateTime } from "../format";
              refeito no navegador (verifyEventSignatureInBrowser). signer "defarm" = chave operada
              pela plataforma; passa, mas o selo diz "irretratabilidade limitada".
    - revoke: relê GET /api/proofs/{id} agora; 200 = continua válida, 404 uniforme = cortada.
-   Com o mock ligado (VITE_PROOFS_API ausente) anchor e sig não têm rede para consultar e avisam. */
+   Tudo real desde que a Proof entrou em produção (engines#652/#653, 17/09/2026). */
 
 export type CheckKey = "hash" | "anchor" | "sig" | "revoke";
 export interface CheckResult { ok: boolean; detail: string }
@@ -35,11 +35,6 @@ export const CHECKS: Record<CheckKey, (input: CheckInput) => Promise<CheckResult
   },
 
   async anchor({ proof }) {
-    if (!USE_API) {
-      console.warn("[mock L1] check anchor: sem rede no modo mock; em produção consulta /items/{dfid}/proofs/public por DFID");
-      await wait(900);
-      return { ok: true, detail: copy.kit.verify.checkDetail.anchor(proof.dfids.length, fmtDateTime(proof.issuedAt)) };
-    }
     const results = await Promise.all(proof.dfids.map(async (dfid) => {
       try {
         const p = await getPublicItemProofs(dfid);
@@ -60,11 +55,6 @@ export const CHECKS: Record<CheckKey, (input: CheckInput) => Promise<CheckResult
     if (proof.issuer.signer !== "own") {
       await wait(500);
       return { ok: true, detail: copy.kit.verify.checkDetail.sigDefarm };
-    }
-    if (!USE_API) {
-      console.warn("[mock L1] check sig: sem rede no modo mock; em produção refaz Ed25519 dos eventos por DFID");
-      await wait(800);
-      return { ok: true, detail: copy.kit.verify.checkDetail.sig(proof.issuer.name) };
     }
     let verified = 0; let failed = 0;
     for (const dfid of proof.dfids) {
