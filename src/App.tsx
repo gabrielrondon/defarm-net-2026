@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
@@ -72,6 +72,9 @@ import PublicItem from "./pages/PublicItem";
 import PublicPayloadReceipt from "./pages/PublicPayloadReceipt";
 import PublicEudrVerify from "./pages/PublicEudrVerify";
 import PublicVerify from "./pages/PublicVerify";
+// Portal novo (design system "a Prova"): superfícies entram rota a rota ao lado do portal atual.
+// Lazy para que tokens/CSS do design system só carreguem nessas rotas. Ver DEC-028.
+const ProofPage = lazy(() => import("./prova/ProofPage"));
 import Selagem from "./pages/Selagem";
 import CompareItems from "./pages/CompareItems";
 import EmbedPortfolio from "./pages/EmbedPortfolio";
@@ -248,6 +251,8 @@ const App = () => (
             <Route path="/eudr" element={<EudrScreen />} />
             <Route path="/eudr/v/:dfid" element={<PublicEudrVerify />} />
             <Route path="/v/:dfid" element={<PublicVerify />} />
+            {/* /p/:id · prova pública, o que o banco abre. Primeiro corte do portal novo (mock L1 até engines#650). */}
+            <Route path="/p/:id" element={<Suspense fallback={null}><ProofPage /></Suspense>} />
             {/* Página de feature, deliberadamente FORA da nav/home e NÃO indexada
                 (meta robots na página + Disallow no robots.txt). Link aberto para
                 demonstrar pontualmente. */}
