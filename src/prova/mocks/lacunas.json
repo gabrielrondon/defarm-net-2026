@@ -25,7 +25,7 @@
     "state": "valid",
     "legalBasis": { "key": "credit", "purpose": "garantia de safra 2026", "fields": ["inventário", "CAR", "GTA", "laudo sanitário"] },
     "dfids": ["DFID-BEEF-BR-2026-004471-9f2311"],
-    "commitment": "blake3:20c8e9d93c8cbf163220530bd1a1ca89bedf4938a5dff6bc64afe83eed23ce55",
+    "commitment": "blake3:3dae308fd3dbf02509e5f186535ea8acb4e33c277e0cc43fbb66bf08a0317178",
     "txHash": "a41f0c8b7a2e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0",
     "signingKey": "ed25519_pub_7c41ab90d2e5f8114c",
     "mode": "frozen",
