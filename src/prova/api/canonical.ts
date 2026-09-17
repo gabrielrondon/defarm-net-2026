@@ -1,45 +1,28 @@
 import { blake3 } from "@noble/hashes/blake3";
 import { bytesToHex } from "@noble/hashes/utils";
-import type { Proof } from "./types";
+import canonicalize from "canonicalize";
 
-/* O que a prova afirma, em forma canônica: chaves ordenadas, JSON compacto, UTF-8.
-   O commitment é blake3 disto. Proposta do frontend; o backend fecha a canonicalização em engines#650.
-   Limite conhecido: `Object.keys().sort()` + JSON.stringify não é JCS (RFC 8785): chaves inteiras
-   ("10", "2") saem em ordem numérica, não textual. Hoje não há chave assim; se o backend adotar
-   JCS, trocar aqui por uma implementação RFC 8785. */
-function sortKeys(v: unknown): unknown {
-  if (Array.isArray(v)) return v.map(sortKeys);
-  if (v && typeof v === "object") {
-    return Object.fromEntries(Object.keys(v as Record<string, unknown>).sort().map((k) => [k, sortKeys((v as Record<string, unknown>)[k])]));
-  }
-  return v;
+/* Receita do commitment da Proof (engines#652, `commitment_of_view`): pega o JSON servido por
+   GET /api/proofs/{id}, remove `state`, `commitment` e `commitmentAlg`, canoniza em JCS
+   (RFC 8785) e faz BLAKE3 em hex. O mesmo `canonicalize` que o portal já usa para o envelope
+   Ed25519 (`verify-inclusion.ts`), o mesmo `serde_jcs` que o backend usa para assinar.
+
+   Hashear o objeto RECEBIDO, nunca um objeto reconstruído: as strings de data vêm truncadas
+   a microssegundos do Postgres e têm de entrar exatamente como foram servidas. Números
+   passam pelo JSON.parse do navegador e o JCS normaliza os dois lados igual (390.0 → 390). */
+
+export const COMMITMENT_EXCLUDED = ["state", "commitment", "commitmentAlg"] as const;
+
+const enc = new TextEncoder();
+
+export function commitmentJcs(served: Record<string, unknown>): string {
+  const v: Record<string, unknown> = { ...served };
+  for (const k of COMMITMENT_EXCLUDED) delete v[k];
+  const jcs = canonicalize(v);
+  if (typeof jcs !== "string") throw new Error("JCS falhou");
+  return jcs;
 }
 
-/* Tudo o que o destinatário lê como afirmação entra no hash: validade, base legal, quem assinou,
-   modo e data da foto (achado do Hetzner no net#221: expiresAt/legalBasis/signer fora do hash
-   passavam no check "Ninguém alterou o conteúdo"). Fora do hash só o e-mail do destinatário
-   (dado pessoal de baixa entropia num commitment público) e o próprio commitment/txHash/id. */
-export function proofPayload(p: Proof) {
-  return {
-    asOf: p.asOf,
-    audience: p.audience,
-    dfids: p.dfids,
-    expiresAt: p.expiresAt,
-    fields: p.fields,
-    issuedAt: p.issuedAt,
-    issuer: { name: p.issuer.name, level: p.issuer.level, signer: p.issuer.signer },
-    legalBasis: p.legalBasis,
-    mode: p.mode,
-    recipient: p.recipient ? p.recipient.name : null,
-    scope: p.scope,
-    sealed: p.sealed,
-  };
-}
-
-export function canonicalJson(v: unknown): string {
-  return JSON.stringify(sortKeys(v));
-}
-
-export function commitmentOf(p: Proof): string {
-  return bytesToHex(blake3(new TextEncoder().encode(canonicalJson(proofPayload(p)))));
+export function commitmentOf(served: Record<string, unknown>): string {
+  return bytesToHex(blake3(enc.encode(commitmentJcs(served))));
 }

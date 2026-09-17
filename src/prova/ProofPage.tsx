@@ -66,10 +66,10 @@ export default function ProofPage() {
     );
   }
 
-  return <ProofView proof={load.proof} />;
+  return <ProofView id={id} proof={load.proof} />;
 }
 
-function ProofView({ proof }: { proof: Proof }) {
+function ProofView({ id, proof }: { id: string; proof: Proof }) {
   const [state, setState] = useState<"idle" | "running" | "done">("idle");
   const [results, setResults] = useState<Partial<Record<CheckKey, CheckResult>>>({});
   const [tech, setTech] = useState(false);
@@ -78,7 +78,7 @@ function ProofView({ proof }: { proof: Proof }) {
     if (state === "running") return;
     setState("running"); setResults({});
     for (const key of CHECK_ORDER) {
-      const r = await CHECKS[key](proof);
+      const r = await CHECKS[key]({ id, proof });
       setResults((prev) => ({ ...prev, [key]: r }));
     }
     setState("done");
@@ -86,17 +86,17 @@ function ProofView({ proof }: { proof: Proof }) {
 
   const done = CHECK_ORDER.filter((k) => results[k]);
   const all = state === "done" && CHECK_ORDER.every((k) => results[k]?.ok);
-  const sealedLabel = proof.sealed.join(" e ");
-  const basis = copy.legal.bases[proof.legalBasis.key];
-  const signerOk = proof.issuer.signer === "owner";
-  const tail = copy.kit.verify.headlineTail[proof.issuer.level];
-  const stateTone = proof.state === "valid" ? undefined : proof.state;
+  /* Selados são commitments N2, nunca o valor; o rótulo vem em `label`/`field` quando o emissor o deu. */
+  const sealedLabels = proof.sealed.map((e) => e.label ?? e.field).filter((x): x is string => !!x);
+  const lb = proof.legalBasis;
+  const signerOk = proof.issuer.signer === "own";
+  const tail = copy.kit.verify.headlineTail[proof.issuer.level] ?? copy.kit.verify.headlineTail[1];
 
-  const legalReveal = (
+  const legalReveal = lb && (
     <InlineReveal term={copy.legal.basis} width={340}>
       <span style={{ display: "grid", gap: 6, font: "var(--fw-medium) var(--fs-sm)/1.45 var(--font-ui)", color: "var(--text-body)" }}>
-        <strong style={{ color: "var(--text-strong)" }}>{basis}</strong>
-        <span>{copy.legal.record(proof.legalBasis.purpose, proof.recipient?.name ?? "qualquer pessoa com o link", proof.legalBasis.fields.join(", "), fmtDateTime(proof.issuedAt))}</span>
+        <strong style={{ color: "var(--text-strong)" }}>{copy.legal.bases[lb.key] ?? lb.key}</strong>
+        <span>{copy.legal.record(lb.purpose, proof.recipient ?? "qualquer pessoa com o link", lb.fields.join(", "), fmtDateTime(proof.issuedAt))}</span>
       </span>
     </InlineReveal>
   );
@@ -105,7 +105,7 @@ function ProofView({ proof }: { proof: Proof }) {
 
   return (
     <PublicShell
-      route={`/p/${proof.id}`}
+      route={`/p/${id}`}
       kicker={copy.verify.kicker}
       cta={<>
         {legalReveal}
@@ -114,22 +114,23 @@ function ProofView({ proof }: { proof: Proof }) {
     >
       {/* ---- o que é isto, para quem ---- */}
       <div style={{ display: "grid", gap: "var(--s-3)" }}>
-        {proof.recipient && <span style={{ font: "var(--text-label)", letterSpacing: "var(--ls-caps)", textTransform: "uppercase", color: "var(--text-muted)" }}>{copy.kit.verify.to(proof.recipient.name)}</span>}
+        {proof.recipient && <span style={{ font: "var(--text-label)", letterSpacing: "var(--ls-caps)", textTransform: "uppercase", color: "var(--text-muted)" }}>{copy.kit.verify.to(proof.recipient)}</span>}
         <h1 style={{ font: "var(--fw-bold) var(--fs-h1)/1.1 var(--font-display)", letterSpacing: "var(--ls-tight)", maxWidth: 640 }}>
           {copy.kit.verify.headline(proof.issuer.name)}{" "}
-          <InlineReveal term={proof.scope.label} width={320}>
-            <span style={{ display: "grid", gap: 6, font: "var(--fw-medium) var(--fs-sm)/1.45 var(--font-ui)", color: "var(--text-body)" }}>
-              <strong style={{ font: "var(--fw-bold) var(--fs-body)/1.2 var(--font-display)", color: "var(--text-strong)" }}>{copy.kit.verify.scopeTitle}</strong>
-              {proof.scope.breakdown.map((b) => <span key={b.label}>{b.label} · {fmtNum(b.count)}</span>)}
-              <span style={{ color: "var(--text-muted)" }}>{copy.kit.verify.scopeNote}</span>
-            </span>
-          </InlineReveal>{" "}
+          {proof.scope ? (
+            <InlineReveal term={proof.scope.label} width={320}>
+              <span style={{ display: "grid", gap: 6, font: "var(--fw-medium) var(--fs-sm)/1.45 var(--font-ui)", color: "var(--text-body)" }}>
+                <strong style={{ font: "var(--fw-bold) var(--fs-body)/1.2 var(--font-display)", color: "var(--text-strong)" }}>{copy.kit.verify.scopeTitle}</strong>
+                {proof.scope.breakdown.map((b) => <span key={b.label}>{b.label} · {fmtNum(b.count)}</span>)}
+                <span style={{ color: "var(--text-muted)" }}>{copy.kit.verify.scopeNote}</span>
+              </span>
+            </InlineReveal>
+          ) : (proof.title ?? "")}{" "}
           {tail}
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--s-3)", flexWrap: "wrap" }}>
           <IdentityLevel level={proof.issuer.level} />
-          {stateTone && <Tag>{copy.proof.status[proof.state]}</Tag>}
-          {proof.expiresAt && proof.state === "valid" && <Tag>{copy.kit.verify.validUntil(fmtDate(proof.expiresAt))}</Tag>}
+          {proof.expiresAt && <Tag>{copy.kit.verify.validUntil(fmtDate(proof.expiresAt))}</Tag>}
           {proof.mode === "frozen" ? (
             <Tooltip content={copy.kit.verify.frozenTip(fmtDate(proof.asOf))}>
               <Tag icon={<Icon name="camera" size={13} />}>{copy.kit.verify.frozen(fmtDate(proof.asOf))}</Tag>
@@ -198,13 +199,12 @@ function ProofView({ proof }: { proof: Proof }) {
             {tech && (
               <div style={{ display: "grid", gap: "var(--s-3)", animation: "df-slide-up var(--dur-base) var(--ease-spring) both" }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <DfidChip label="BLAKE3" tone="anchor" value={proof.commitment.replace(/^blake3:/, "")} head={10} tail={8} />
-                  {proof.txHash && <DfidChip label="Stellar tx" tone="anchor" value={proof.txHash} head={8} tail={6} />}
-                  <DfidChip label="Chave pública" tone="ok" value={proof.signingKey} head={14} tail={6} />
+                  <DfidChip label={proof.commitmentAlg} tone="anchor" value={proof.commitment} head={10} tail={8} />
                   {proof.dfids.map((d) => <DfidChip key={d} value={d} />)}
+                  {proof.sealed.map((e, i) => e.commitment ? <DfidChip key={i} label={e.label ?? e.field ?? "selado"} tone="sealed" value={e.commitment} head={12} tail={6} /> : null)}
                 </div>
                 <span style={{ font: "var(--fw-medium) var(--fs-xs)/1.5 var(--font-ui)", color: "var(--text-muted)" }}>
-                  {copy.kit.verify.techId(proof.id)}
+                  {copy.kit.verify.techId(id)}
                 </span>
               </div>
             )}
@@ -247,11 +247,11 @@ function ProofView({ proof }: { proof: Proof }) {
                 <Icon name="lock" size={15} />
                 <span style={{ font: "var(--fw-bold) var(--fs-micro)/1 var(--font-ui)", letterSpacing: "var(--ls-caps)", textTransform: "uppercase" }}>{copy.kit.verify.hidden}</span>
               </span>
-              <span style={{ font: "var(--fw-medium) var(--fs-sm)/1.45 var(--font-ui)", color: "var(--purple-700)" }}>{copy.kit.verify.hiddenBody(sealedLabel)}</span>
+              <span style={{ font: "var(--fw-medium) var(--fs-sm)/1.45 var(--font-ui)", color: "var(--purple-700)" }}>{sealedLabels.length === proof.sealed.length ? copy.kit.verify.hiddenBody(sealedLabels.join(" e ")) : copy.kit.verify.hiddenBodyCount(proof.sealed.length)}</span>
             </div>
           )}
 
-          <Button className="df-no-print" variant="secondary" fullWidth iconLeft={<Icon name="download" size={17} />} as="a" href={json} download={`prova-${proof.id}.json`}>{copy.kit.verify.download}</Button>
+          <Button className="df-no-print" variant="secondary" fullWidth iconLeft={<Icon name="download" size={17} />} as="a" href={json} download={`prova-${id}.json`}>{copy.kit.verify.download}</Button>
         </div>
       </div>
     </PublicShell>

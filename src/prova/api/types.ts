@@ -1,41 +1,50 @@
-/* Contrato mínimo da Prova (lacuna L1 de guidelines/lacunas-api.md, prefixo /api).
-   Enquanto engines#650 não nasce, o shape abaixo é o que o frontend assume; backend implementa
-   contra ele ou propõe outro na issue. Nomes de campo seguem rotas-e-dados.md. */
+/* Contrato da Proof, fechado em engines#650 e implementado no engines#652 (`PublicProofView`,
+   `proofs.rs`). Este é o JSON que `GET /api/proofs/{id}` serve, em camelCase, e é sobre ELE
+   (menos `state`, `commitment`, `commitmentAlg`) que o commitment é calculado. O `id` não
+   vem no corpo: é a capability na URL. */
 
-export type IdentityLevelValue = 1 | 2 | 3;
-export type ProofState = "valid" | "revoked" | "expired";
-export type ProofMode = "live" | "frozen";
+export type ProofState = "active";
+export type ProofMode = "frozen" | "live";
+export type ProofAudience = "link" | "named";
 export type LegalBasisKey = "credit" | "contract" | "consent";
+/** "own" = chave própria do emissor ativa (nível 2); "defarm" = chave operada pela plataforma (nível 1). */
+export type ProofSigner = "own" | "defarm";
 
 export interface ProofField { label: string; value: string }
 
-export interface Proof {
-  id: string;
-  issuer: {
-    name: string;
-    level: IdentityLevelValue;
-    /** Meses sem cortes; null quando a conta ainda não tem histórico. */
-    trustMonths: number | null;
-    /** Quem assinou: chave própria do emissor ou chave operada pela plataforma (irretratabilidade limitada). */
-    signer: "owner" | "defarm";
-  };
-  audience: "link" | "named";
-  /** Presente quando audience = "named". */
-  recipient: { name: string; email?: string } | null;
-  scope: { label: string; breakdown: { label: string; count: number }[] };
-  fields: ProofField[];
-  /** Rótulos dos campos que ficaram selados (o conteúdo nunca sai). */
-  sealed: string[];
-  issuedAt: string;
-  expiresAt: string | null;
-  state: ProofState;
-  legalBasis: { key: LegalBasisKey; purpose: string; fields: string[] };
-  dfids: string[];
-  /** blake3 hex do payload canônico (ver `canonical.ts`). */
-  commitment: string;
-  txHash: string | null;
-  signingKey: string;
-  mode: ProofMode;
-  /** Para provas vivas: timestamp da última entrada refletida. Para congeladas: data da foto. */
-  asOf: string;
+/** Campo selado N2: sempre commitment/handle, nunca o valor. `label` é o nome de exibição. */
+export interface SealedEntry { field?: string; label?: string; commitment?: string; [k: string]: unknown }
+
+export interface ProofIssuer {
+  name: string;
+  /** 1 = atribuição (workspace sem chave própria); 2 = assinatura técnica verificável (Ed25519 própria).
+      Não existe "validade legal" hoje (Lei 14.063); nível 3 fica para a wallet + vínculo de certificado. */
+  level: 1 | 2 | 3;
+  signer: ProofSigner;
 }
+
+export interface Proof {
+  audience: ProofAudience;
+  dfids: string[];
+  expiresAt: string | null;
+  fields: ProofField[];
+  issuedAt: string;
+  /** frozen: igual a issuedAt (a foto). */
+  asOf: string;
+  issuer: ProofIssuer;
+  legalBasis: { key: LegalBasisKey; purpose: string; fields: string[] } | null;
+  mode: ProofMode;
+  /** Nome de exibição do destinatário (o e-mail nunca é servido nem entra no commitment). */
+  recipient: string | null;
+  scope: { label: string; breakdown: { label: string; count: number }[] } | null;
+  sealed: SealedEntry[];
+  title: string | null;
+  /** Sempre "active" num 200; revogada cai no 404 uniforme. Fora do commitment. */
+  state: ProofState;
+  /** BLAKE3 hex sobre JCS (RFC 8785) desta vista, menos os 3 campos meta. */
+  commitment: string;
+  /** "blake3-jcs-v1" */
+  commitmentAlg: string;
+}
+
+export const COMMITMENT_ALG = "blake3-jcs-v1";

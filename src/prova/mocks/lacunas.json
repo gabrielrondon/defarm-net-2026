@@ -1,34 +1,39 @@
 {
-  "_": "Mocks das lacunas da API (guidelines/lacunas-api.md do design system). Uma chave por lacuna. Cada uso loga console.warn('[mock Lx] ...'). Quando o endpoint nasce, apaga-se a chave. L1: engines#650. O commitment é blake3 do payload canônico (src/prova/api/canonical.ts), calculado com @noble/hashes.",
+  "_": "Mocks das lacunas da API (guidelines/lacunas-api.md do design system). Uma chave por lacuna; cada uso loga console.warn('[mock Lx] ...'). L1 = GET /api/proofs/{id} no shape do PublicProofView do engines#652; `_id` é a capability (UUIDv4) da URL, `view` é o corpo servido. `commitment` = BLAKE3 hex sobre JCS de `view` menos state/commitment/commitmentAlg (src/prova/api/canonical.ts). Apagar a chave quando o #652 estiver em produção.",
   "L1": {
-    "id": "9f2311ac",
-    "issuer": { "name": "Fazenda Boa Vista", "level": 3, "trustMonths": 14, "signer": "owner" },
-    "audience": "named",
-    "recipient": { "name": "Banco Santander", "email": "credito.agro@santander.com.br" },
-    "scope": {
-      "label": "4.500 cabeças",
-      "breakdown": [
-        { "label": "Confinamento MT-5103403", "count": 3180 },
-        { "label": "Pasto Sede MT-5103403", "count": 1320 }
-      ]
-    },
-    "fields": [
-      { "label": "Cabeças no escopo", "value": "4.500" },
-      { "label": "Estabelecimento", "value": "MT-5103403" },
-      { "label": "Titular", "value": "Agropecuária Boa Vista Ltda" },
-      { "label": "GTAs no período", "value": "12" },
-      { "label": "Última pesagem", "value": "8 set 2026" }
-    ],
-    "sealed": ["Preço de compra", "CPF do produtor"],
-    "issuedAt": "2026-09-12T09:41:00-03:00",
-    "expiresAt": "2027-03-12T09:41:00-03:00",
-    "state": "valid",
-    "legalBasis": { "key": "credit", "purpose": "garantia de safra 2026", "fields": ["inventário", "CAR", "GTA", "laudo sanitário"] },
-    "dfids": ["DFID-BEEF-BR-2026-004471-9f2311"],
-    "commitment": "blake3:3dae308fd3dbf02509e5f186535ea8acb4e33c277e0cc43fbb66bf08a0317178",
-    "txHash": "a41f0c8b7a2e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0",
-    "signingKey": "ed25519_pub_7c41ab90d2e5f8114c",
-    "mode": "frozen",
-    "asOf": "2026-09-12T09:41:00-03:00"
+    "_id": "2f1e8c7a-5b6d-4c3e-9a1f-0d2b4e6c8a9f",
+    "view": {
+      "audience": "link",
+      "dfids": ["DFID-BEEF-BR-2026-004471-9f2311"],
+      "expiresAt": "2027-03-12T12:41:00.000000Z",
+      "fields": [
+        { "label": "Cabeças no escopo", "value": "4.500" },
+        { "label": "Estabelecimento", "value": "MT-5103403" },
+        { "label": "Titular", "value": "Agropecuária Boa Vista Ltda" },
+        { "label": "GTAs no período", "value": "12" },
+        { "label": "Última pesagem", "value": "8 set 2026" }
+      ],
+      "issuedAt": "2026-09-12T12:41:00.314159Z",
+      "asOf": "2026-09-12T12:41:00.314159Z",
+      "issuer": { "name": "Fazenda Boa Vista", "level": 2, "signer": "own" },
+      "legalBasis": { "key": "credit", "purpose": "garantia de safra 2026", "fields": ["inventário", "CAR", "GTA", "laudo sanitário"] },
+      "mode": "frozen",
+      "recipient": "Banco Santander",
+      "scope": {
+        "label": "4.500 cabeças",
+        "breakdown": [
+          { "label": "Confinamento MT-5103403", "count": 3180 },
+          { "label": "Pasto Sede MT-5103403", "count": 1320 }
+        ]
+      },
+      "sealed": [
+        { "field": "preco_compra", "label": "Preço de compra", "commitment": "hmac-sha256:7c41ab90d2e5f8114c0f9e2b6a3d5c8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c" },
+        { "field": "cpf_produtor", "label": "CPF do produtor", "commitment": "hmac-sha256:2b6a3d5c8e1f4a7b0c3d6e9f2a5b8c1d4e7f0a3b6c7c41ab90d2e5f8114c0f9e" }
+      ],
+      "title": "Comprovação de inventário",
+      "state": "active",
+      "commitment": "c9e3887e3306be4af536b4e408dbe58b0df2f5f48ed8b2fd796ebf8e12bb0480",
+      "commitmentAlg": "blake3-jcs-v1"
+    }
   }
 }
