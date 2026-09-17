@@ -32,7 +32,7 @@ export default function ProofPage() {
         else setLoad({ status: "error", kind: "server", ref: e instanceof ProofServerError ? e.ref : undefined });
       });
   };
-  useEffect(fetchProof, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(fetchProof, [id]);
 
   useEffect(() => { document.title = `${copy.verify.kicker}`; }, []);
 
