@@ -21,6 +21,7 @@ import {
   Database,
   Link2,
   LogOut,
+  RotateCcw,
   BadgeCheck,
   ShieldCheck,
   type LucideIcon,
@@ -51,6 +52,7 @@ export const eventTypeLabels: Record<string, string> = {
   item_slaughtered: "Abate",
   item_movement: "Movimentação",
   item_terminated: "Baixa",
+  item_reactivated: "Reativação",
   item_transferred: "Transferência",
   attestation_issued: "Atestação",
   seal_granted: "Selo Concedido",
@@ -90,6 +92,7 @@ export const eventTypeColors: Record<string, string> = {
   item_slaughtered: "bg-rose-500/10 text-rose-700",
   item_movement: "bg-indigo-500/10 text-indigo-700",
   item_terminated: "bg-stone-500/10 text-stone-700",
+  item_reactivated: "bg-emerald-500/10 text-emerald-700",
   item_transferred: "bg-indigo-500/10 text-indigo-700",
   attestation_issued: "bg-emerald-500/10 text-emerald-700",
   seal_granted: "bg-violet-500/10 text-violet-700",
@@ -130,6 +133,7 @@ export const eventTypeIcons: Record<string, LucideIcon> = {
   item_slaughtered: Beef,
   item_movement: Truck,
   item_terminated: LogOut,
+  item_reactivated: RotateCcw,
   item_transferred: ArrowRightLeft,
   attestation_issued: BadgeCheck,
   seal_granted: ShieldCheck,
@@ -173,6 +177,8 @@ export const REAL_LIFE_EVENT_TYPES = new Set([
   "seal_granted",
   "item_transferred",
   "item_terminated",
+  // PNIB Reaparecimento: animal com baixa que reapareceu (engines #673).
+  "item_reactivated",
 ]);
 
 export const formatTime = (timestamp?: string | null): string => {
