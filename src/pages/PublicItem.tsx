@@ -911,6 +911,10 @@ const EVENT_ICON_COLORS: Record<string, string> = {
   item_classified: "#f59e0b",
   item_slaughtered: "#ef4444",
   item_movement: "#6366f1",
+  item_terminated: "#78716c",
+  item_transferred: "#6366f1",
+  attestation_issued: "#10b981",
+  seal_granted: "#8b5cf6",
   item_property_linked: "#3b82f6",
   item_property_unlinked: "#f43f5e",
 };
