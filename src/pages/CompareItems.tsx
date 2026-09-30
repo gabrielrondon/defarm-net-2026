@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getPublicItem, getPublicItemEvents } from "@/lib/defarm-api";
+import { getPublicItem, getAllPublicItemEvents } from "@/lib/defarm-api";
 import logoIcon from "@/assets/logo-icon.png";
 import {
   Line,
@@ -86,7 +86,7 @@ export default function CompareItems() {
 function CompareTable({ dfids }: { dfids: string[] }) {
   const queries = dfids.map((dfid) => ({
     item: useQuery({ queryKey: ["compare-item", dfid], queryFn: () => getPublicItem(dfid), retry: 1 }),
-    events: useQuery({ queryKey: ["compare-events", dfid], queryFn: () => getPublicItemEvents(dfid, { limit: 50 }), retry: 1 }),
+    events: useQuery({ queryKey: ["compare-events", dfid], queryFn: () => getAllPublicItemEvents(dfid), retry: 1 }),
   }));
 
   const isLoading = queries.some((q) => q.item.isLoading || q.events.isLoading);
@@ -168,7 +168,7 @@ function CompareTable({ dfids }: { dfids: string[] }) {
 
 function CompareWeightChart({ dfids }: { dfids: string[] }) {
   const eventQueries = dfids.map((dfid) =>
-    useQuery({ queryKey: ["compare-events", dfid], queryFn: () => getPublicItemEvents(dfid, { limit: 50 }), retry: 1 })
+    useQuery({ queryKey: ["compare-events", dfid], queryFn: () => getAllPublicItemEvents(dfid), retry: 1 })
   );
 
   const isLoading = eventQueries.some((q) => q.isLoading);

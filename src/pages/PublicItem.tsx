@@ -48,7 +48,7 @@ import {
   getPublicItem,
   getPublicItemCanonicalIdentifier,
   getPublicItemIdentifiers,
-  getPublicItemEvents,
+  getAllPublicItemEvents,
   getPublicItemProofs,
   resolvePublicItemByIdentifier,
   verifyPublicItem,
@@ -1667,7 +1667,7 @@ export default function PublicItem() {
 
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ["public-item-events", resolvedDfid],
-    queryFn: () => getPublicItemEvents(resolvedDfid!, { limit: 50 }),
+    queryFn: () => getAllPublicItemEvents(resolvedDfid!),
     enabled: !!resolvedDfid,
     retry: 1,
   });

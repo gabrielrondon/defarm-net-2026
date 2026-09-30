@@ -72,6 +72,32 @@ export async function resolvePublicItemByIdentifier(
   );
 }
 
+/** Teto por página do events/public no backend (engines clampa `limit` em 1..100; padrão 50). */
+const PUBLIC_EVENTS_PAGE_SIZE = 100;
+/** Trava contra laço infinito se o backend ignorar o offset: 50 páginas = 5000 eventos. */
+const PUBLIC_EVENTS_MAX_PAGES = 50;
+
+async function fetchAllPublicEventPages<T>(fetchPage: (offset: number) => Promise<T[]>): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 0; page < PUBLIC_EVENTS_MAX_PAGES; page++) {
+    const batch = await fetchPage(page * PUBLIC_EVENTS_PAGE_SIZE);
+    all.push(...batch);
+    if (batch.length < PUBLIC_EVENTS_PAGE_SIZE) break;
+  }
+  return all;
+}
+
+/**
+ * TODOS os eventos públicos do item, paginando até o fim. O events/public devolve 50 por padrão
+ * e no máximo 100 por página: sem paginar, a página pública perdia os fatos mais antigos conforme
+ * as âncoras técnicas se acumulavam (o Nascimento do DFID da Miltec sumiu assim).
+ */
+export function getAllPublicItemEvents(dfid: string): Promise<PublicItemEvent[]> {
+  return fetchAllPublicEventPages((offset) =>
+    getPublicItemEvents(dfid, { limit: PUBLIC_EVENTS_PAGE_SIZE, offset }),
+  );
+}
+
 export async function getPublicItemEvents(
   dfid: string,
   params?: { event_type?: string; limit?: number; offset?: number }
@@ -87,10 +113,19 @@ export async function getPublicItemEvents(
 // JSON.parse do fetch normal colapsa o ".0" e faria o hash acusar evento legítimo (Hetzner
 // #189 A1). Os números em payload/metadata saem como LosslessNumber (tratados em verify-inclusion).
 export async function getPublicItemEventsLossless(dfid: string): Promise<PublicItemEvent[]> {
-  const res = await fetch(`${REGISTRY_API_BASE}/items/${encodeURIComponent(dfid)}/events/public`);
-  if (!res.ok) return [];
-  const text = await res.text();
-  return losslessParse(text) as unknown as PublicItemEvent[];
+  return fetchAllPublicEventPages(async (offset) => {
+    const res = await fetch(
+      `${REGISTRY_API_BASE}/items/${encodeURIComponent(dfid)}/events/public?limit=${PUBLIC_EVENTS_PAGE_SIZE}&offset=${offset}`,
+    );
+    if (!res.ok) {
+      // Primeira página: mesmo comportamento de antes (lista vazia). Página seguinte: erro, pra
+      // não devolver uma lista parcial como se fosse o histórico inteiro.
+      if (offset === 0) return [];
+      throw new Error(`events/public falhou na página offset=${offset} (HTTP ${res.status})`);
+    }
+    const text = await res.text();
+    return losslessParse(text) as unknown as PublicItemEvent[];
+  });
 }
 
 export interface PublicSanitaryAttestation {
