@@ -448,6 +448,20 @@ function monthPrecisionDate(
   };
 }
 
+/** Motivo PNIB como vem do e-Saniagro ("ABATE", "MorteNatural", "MORTE_NATURAL") → "Abate", "Morte natural". */
+function humanizeReason(raw: string): string {
+  const words = raw
+    .trim()
+    .replace(/([a-zà-ÿ])([A-ZÀ-Þ])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length === 0) return raw;
+  const text = words.join(" ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 const PAYLOAD_KEY_LABELS: Record<string, string> = {
   occurred_at: "Data",
   birth_date_precision: "Precisão da data",
@@ -461,6 +475,8 @@ const PAYLOAD_KEY_LABELS: Record<string, string> = {
   treatment: "Tratamento",
   dose_ml: "Dose (ml)",
   reason: "Motivo",
+  motivo_baixa: "Motivo",
+  reactivation_reason: "Motivo",
   classification: "Classificação",
   category: "Categoria",
   frame_score: "Frame",
@@ -785,6 +801,12 @@ function eventSummary(event: PublicItemEvent): string | null {
   if (event.event_type === "item_classified" && typeof p.classification === "string") {
     return p.classification;
   }
+  if (event.event_type === "item_terminated" && typeof p.motivo_baixa === "string") {
+    return `Motivo: ${humanizeReason(p.motivo_baixa)}`;
+  }
+  if (event.event_type === "item_reactivated" && typeof p.reactivation_reason === "string") {
+    return `Motivo: ${humanizeReason(p.reactivation_reason)}`;
+  }
   return null;
 }
 
@@ -912,6 +934,7 @@ const EVENT_ICON_COLORS: Record<string, string> = {
   item_slaughtered: "#ef4444",
   item_movement: "#6366f1",
   item_terminated: "#78716c",
+  item_reactivated: "#10b981",
   item_transferred: "#6366f1",
   attestation_issued: "#10b981",
   seal_granted: "#8b5cf6",
