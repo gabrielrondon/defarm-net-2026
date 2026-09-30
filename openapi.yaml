@@ -2492,7 +2492,14 @@ components:
         dry_run:
           type: boolean
           nullable: true
-          description: Present and true when response comes from preview simulation.
+          description: Present and true when response comes from preview simulation (preview endpoint or `dry_run=true` in the envelope).
+        ingestion_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Present when the ingestion is processed asynchronously (more than 200 rows).
+            The response is `202 Accepted` with `summary.status = accepted`; poll
+            `GET /v1/partner/ingestions/{id}/status` with this id for progress and the final result.'
         summary:
           $ref: '#/components/schemas/PartnerIntakeSummary'
         items:
@@ -2587,6 +2594,50 @@ components:
           description: Operational warnings for the integrator.
           items:
             type: string
+    IngestionStatusResponse:
+      type: object
+      description: Status of an asynchronous ingestion.
+      required:
+      - ingestion_id
+      - status
+      properties:
+        ingestion_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: >-
+            Open set. `processing` while running; then the final summary status
+            (`completed`, `partial`, `failed`). (`accepted` only appears in the body of the
+            `202` ingestion response, not here.) Treat unknown values as still running
+            unless `result_summary` is present.
+        progress:
+          allOf:
+          - $ref: '#/components/schemas/IngestionProgress'
+          nullable: true
+        result_summary:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Final counters (same fields as `summary` of the ingestion response) once finished.
+        error_message:
+          type: string
+          nullable: true
+    IngestionProgress:
+      type: object
+      required:
+      - chunks_total
+      - chunks_completed
+      - percent_complete
+      properties:
+        chunks_total:
+          type: integer
+        chunks_completed:
+          type: integer
+        percent_complete:
+          type: integer
+          minimum: 0
+          maximum: 100
     PartnerUploadJsonEnvelope:
       type: object
       title: JSON Envelope with Controls
@@ -2630,6 +2681,14 @@ components:
           type: boolean
           description: When unresolved, optionally fallback to source circuit.
           default: true
+        dry_run:
+          type: boolean
+          description: 'When true, validates and simulates the ingestion exactly like
+            `POST /v1/partner/ingestions/preview` (same identifier, event and routing rules):
+            no payload, item, event, identifier or credit is written, and the response carries
+            `dry_run: true`. Exception: with a JWT and no `source_circuit_id`, a workspace that
+            has no staging circuit yet gets its default one configured, as on any first ingestion.'
+          default: false
     PartnerUploadJsonRequest:
       description: 'JSON body for ingestion. Two formats accepted: (1) a direct array
         of row objects for simplicity, or (2) a JSON envelope when you need control
@@ -2773,13 +2832,33 @@ components:
           description: 'Value of partner_internal_id from the failed row, for reconciliation.'
         reason_code:
           type: string
-          description: 'Machine-readable error code for this row.'
-          enum:
+          description: >-
+            Machine-readable error code for this row. This is an OPEN set (see the v1
+            compatibility policy): new codes are added without a version change, so clients
+            must handle unknown codes as a generic row error and show `message`.
+            Known codes: `missing_value_chain`, `invalid_value_chain`, `missing_trackable_identifier`
+            (no canonical identifier: sisbov/numeroElementoIdentificacao or ISO 11784 chip),
+            `missing_identifier`, `empty_after_normalization`, `no_routing_rule`,
+            `canonical_conflict` (the row's identifiers point to different animals),
+            `ambiguous_identifier` (two different animal numbers in one row, e.g. sisbov and
+            numeroElementoIdentificacao), `tag_replacement_missing_old`,
+            `tag_replacement_old_not_found`, `tag_replacement_conflict` (tag replacement:
+            substituto=1 with numeroElementoIdentificacaoSubstituido), `reactivation_conflict`,
+            `batch_processing_failed`.
+          x-extensible-enum:
           - missing_value_chain
+          - invalid_value_chain
           - missing_trackable_identifier
           - missing_identifier
           - empty_after_normalization
           - no_routing_rule
+          - canonical_conflict
+          - ambiguous_identifier
+          - tag_replacement_missing_old
+          - tag_replacement_old_not_found
+          - tag_replacement_conflict
+          - reactivation_conflict
+          - batch_processing_failed
         message:
           type: string
           description: 'Human-readable error description with suggested next step.'
@@ -10104,6 +10183,18 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: Idempotency-Key
+        in: header
+        description: >-
+          Opt-in idempotency (engines#637). Provide a unique key per logical request
+          and reuse the same key on retries: a retry with the same key and the same
+          request replays the original response and status instead of re-ingesting.
+          A key reused with a different request is rejected (400); a key whose first
+          request is still in flight returns 409.
+        required: false
+        schema:
+          type: string
+          maxLength: 128
       requestBody:
         required: true
         content:
@@ -10171,6 +10262,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerIntakeResponse'
+        '202':
+          description: 'Accepted for asynchronous processing (more than 200 rows). `ingestion_id`
+            is set; poll `GET /v1/partner/ingestions/{id}/status`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartnerIntakeResponse'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
+  /api/partner/ingestions/{id}/status:
+    get:
+      tags:
+      - Partner Upload
+      summary: Asynchronous ingestion status
+      description: >-
+        Progress and final result of an ingestion accepted for asynchronous processing
+        (`202 Accepted`, more than 200 rows). Scoped to the caller: a partner JWT or a
+        `workspace_ingestion` key sees its workspace's ingestions; a circuit-scoped key sees
+        only the ingestions it sent. An ingestion outside that scope returns 404, the same as
+        one that does not exist.
+      operationId: get_partner_ingestion_status
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: The `ingestion_id` returned by the ingestion call.
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Ingestion status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionStatusResponse'
+        '401':
+          description: Missing or invalid credentials
+        '403':
+          description: Authenticated with a JWT whose workspace is not a partner workspace
+        '404':
+          description: Not found, or not visible to the caller
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10439,6 +10573,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/proofs:
+    post:
+      tags:
+      - Proofs
+      summary: POST /api/proofs — cria uma Proof (prova curada aberta em /p/:id)
+      description: |
+        Cria uma Proof: escopo de N DFIDs, campos divulgados, base legal e emissor,
+        aberta por link. NÃO é ancorada on-chain (a confiança vem dos DFIDs já
+        ancorados; a página compõe /api/items/{dfid}/proofs/public por DFID). O `id`
+        é o token de capability (a URL é o segredo). O `commitment` é BLAKE3 (hex)
+        sobre o JSON canônico JCS (RFC 8785, `serde_jcs`) da afirmação congelada; o
+        destinatário recompõe e confere. Primeiro corte: audience=link, mode=frozen.
+      operationId: create_proof
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - dfids
+              properties:
+                dfids:
+                  type: array
+                  items:
+                    type: string
+                fields:
+                  type: array
+                  description: Campos divulgados (o que o banco lê). Default [].
+                  items:
+                    type: object
+                sealed:
+                  type: array
+                  description: Commitments/handles dos campos selados N2, NUNCA plaintext.
+                  items:
+                    type: object
+                scope:
+                  type: object
+                  nullable: true
+                legalBasis:
+                  type: object
+                  nullable: true
+                title:
+                  type: string
+                  nullable: true
+                recipientName:
+                  type: string
+                  nullable: true
+                  description: Nome de exibição; o email não entra no commitment.
+                audience:
+                  type: string
+                  enum:
+                  - link
+                  default: link
+                mode:
+                  type: string
+                  enum:
+                  - frozen
+                  default: frozen
+                until:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '201':
+          description: Proof criada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  url:
+                    type: string
+                  commitment:
+                    type: string
+                  commitmentAlg:
+                    type: string
+                  issuedAt:
+                    type: string
+                    format: date-time
+                  mode:
+                    type: string
+                  audience:
+                    type: string
+        '400':
+          description: Pedido inválido
+    get:
+      tags:
+      - Proofs
+      summary: GET /api/proofs?issuer=me — lista as Proofs ativas do emissor
+      operationId: list_proofs
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Proofs do emissor
+  /api/proofs/{id}/public:
+    get:
+      tags:
+      - Proofs
+      summary: GET /api/proofs/{id}/public — vista pública (sem auth); o que um banco abre em /p/:id
+      description: |
+        Vista pública da Proof. 404 UNIFORME para revogada e inexistente (mesmo corpo
+        e status; anti-oráculo). O `commitment` cobre a afirmação servida (menos
+        `state` e o email); o navegador recompõe o BLAKE3 sobre o JCS e confere que
+        ninguém alterou o conteúdo. A verificação on-chain é por DFID via
+        /api/items/{dfid}/proofs/public.
+      operationId: get_proof_public
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Proof pública
+        '404':
+          description: Não encontrada (ou revogada — 404 uniforme)
+  /api/proofs/{id}/revoke:
+    post:
+      tags:
+      - Proofs
+      summary: POST /api/proofs/{id}/revoke — revoga (204); só o workspace emissor
+      description: |
+        Revoga a Proof. Depois disso GET /api/proofs/{id} devolve o 404 uniforme.
+        Não-é-do-emissor / já-revogada / inexistente devolvem o mesmo 404.
+      operationId: revoke_proof
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Revogada
+        '404':
+          description: Não encontrada (404 uniforme)
   /api/audit/verify:
     get:
       tags:
