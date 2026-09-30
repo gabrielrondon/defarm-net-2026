@@ -421,8 +421,36 @@ function localized(locale: MetadataLocale, ptBR: string, en: string, es: string)
   return ptBR;
 }
 
+/**
+ * Nascimento informado só com mês e ano (formato PNIB) chega como `YYYY-MM-01` com
+ * `birth_date_precision: "month"` (engines#659). O dia 01 é convenção de registro, não fato:
+ * mostra mês/ano e explica no tooltip, nunca apresenta o dia como exato.
+ */
+function monthPrecisionDate(
+  payload: Record<string, unknown>,
+  locale: MetadataLocale,
+): { text: string; title: string } | null {
+  if (payload.birth_date_precision !== "month" || typeof payload.occurred_at !== "string") return null;
+  const m = /^(\d{4})-(\d{2})/.exec(payload.occurred_at);
+  if (!m) return null;
+  const text = new Intl.DateTimeFormat(locale, { month: "short", year: "numeric", timeZone: "UTC" }).format(
+    new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 1)),
+  );
+  const stored = payload.occurred_at.slice(0, 10);
+  return {
+    text,
+    title: localized(
+      locale,
+      `Informado com precisão de mês (mês e ano de nascimento). Registrado como ${stored} por convenção.`,
+      `Reported to month precision (birth month and year). Stored as ${stored} by convention.`,
+      `Informado con precisión de mes (mes y año de nacimiento). Registrado como ${stored} por convención.`,
+    ),
+  };
+}
+
 const PAYLOAD_KEY_LABELS: Record<string, string> = {
   occurred_at: "Data",
+  birth_date_precision: "Precisão da data",
   weight_kg: "Peso (kg)",
   location: "Local",
   source: "Origem",
@@ -746,7 +774,7 @@ function eventSummary(event: PublicItemEvent): string | null {
     return `${p.weight_kg} kg${typeof p.occurred_at === "string" ? ` · ${p.occurred_at}` : ""}`;
   }
   if (event.event_type === "item_born" && typeof p.occurred_at === "string") {
-    return `Nascimento em ${p.occurred_at}`;
+    return `Nascimento em ${monthPrecisionDate(p, "pt-BR")?.text ?? p.occurred_at}`;
   }
   if (event.event_type === "item_vaccinated" && typeof p.vaccine === "string") {
     return p.vaccine;
@@ -3629,7 +3657,8 @@ export default function PublicItem() {
                               const label = eventTypeLabels[event.event_type] || event.event_type;
                               const summary = eventSummary(event);
                               const p = (event.payload || {}) as Record<string, unknown>;
-                              const date = typeof p.occurred_at === "string" ? p.occurred_at : formatDateShort(event.created_at);
+                              const monthDate = monthPrecisionDate(p, metadataLocale);
+                              const date = monthDate?.text ?? (typeof p.occurred_at === "string" ? p.occurred_at : formatDateShort(event.created_at));
                               const isExp = expandedEvents.has(event.id);
                               const hasPayload = event.payload && Object.keys(event.payload).length > 0;
 
@@ -3645,7 +3674,12 @@ export default function PublicItem() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-baseline gap-2">
                                       <span className="text-xs font-medium text-foreground">{label}</span>
-                                      <span className="text-[10px] text-muted-foreground tabular-nums">{date}</span>
+                                      <span
+                                        className={`text-[10px] text-muted-foreground tabular-nums ${monthDate ? "underline decoration-dotted underline-offset-2 cursor-help" : ""}`}
+                                        title={monthDate?.title}
+                                      >
+                                        {date}
+                                      </span>
                                         <SignedBadge signatureVerified={event.signature_verified} signatureKeyId={event.signature_key_id} />
                                         {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
                                     </div>
@@ -3728,7 +3762,8 @@ export default function PublicItem() {
                                       {group.events.map((event) => {
                                         const evtSummary = eventSummary(event);
                                         const ep = (event.payload || {}) as Record<string, unknown>;
-                                        const evtDate = typeof ep.occurred_at === "string" ? ep.occurred_at.slice(0, 10) : formatDateShort(event.created_at);
+                                        const evtMonthDate = monthPrecisionDate(ep, metadataLocale);
+                                        const evtDate = evtMonthDate?.text ?? (typeof ep.occurred_at === "string" ? ep.occurred_at.slice(0, 10) : formatDateShort(event.created_at));
                                         return (
                                           <button
                                             key={event.id}
@@ -3736,7 +3771,12 @@ export default function PublicItem() {
                                             className={`relative flex gap-2 py-1.5 w-full text-left rounded transition-colors text-xs ${event.payload && Object.keys(event.payload).length > 0 ? "hover:bg-stone-50 cursor-pointer" : ""} ${expandedEvents.has(event.id) ? "bg-stone-50" : ""}`}
                                           >
                                             <span className="text-foreground">{evtSummary || label}</span>
-                                            <span className="text-muted-foreground tabular-nums">· {evtDate}</span>
+                                            <span
+                                              className={`text-muted-foreground tabular-nums ${evtMonthDate ? "underline decoration-dotted underline-offset-2 cursor-help" : ""}`}
+                                              title={evtMonthDate?.title}
+                                            >
+                                              · {evtDate}
+                                            </span>
                                             {event.event_owner_workspace_id && issuerMap[event.event_owner_workspace_id] && (
                                               <span className="text-muted-foreground">
                                                 · por {issuerMap[event.event_owner_workspace_id].name}
