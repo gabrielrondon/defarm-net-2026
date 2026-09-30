@@ -448,7 +448,7 @@ function monthPrecisionDate(
   };
 }
 
-/** Motivo PNIB como vem do e-Saniagro ("ABATE", "MorteNatural", "MORTE_NATURAL") → "Abate", "Morte natural". */
+/** Motivo no formato PNIB ("ABATE", "MorteNatural", "MORTE_NATURAL") → "Abate", "Morte natural". */
 function humanizeReason(raw: string): string {
   const words = raw
     .trim()

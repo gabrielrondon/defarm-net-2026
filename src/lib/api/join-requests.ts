@@ -90,7 +90,7 @@ async function fetchAllPublicEventPages<T>(fetchPage: (offset: number) => Promis
 /**
  * TODOS os eventos públicos do item, paginando até o fim. O events/public devolve 50 por padrão
  * e no máximo 100 por página: sem paginar, a página pública perdia os fatos mais antigos conforme
- * as âncoras técnicas se acumulavam (o Nascimento do DFID da Miltec sumiu assim).
+ * as âncoras técnicas se acumulavam (o Nascimento de um DFID real sumiu assim).
  */
 export function getAllPublicItemEvents(dfid: string): Promise<PublicItemEvent[]> {
   return fetchAllPublicEventPages((offset) =>
