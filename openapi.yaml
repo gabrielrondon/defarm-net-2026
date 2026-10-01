@@ -117,7 +117,11 @@ components:
       type: apiKey
       in: header
       name: x-api-key
-      description: Partner API key (`scope=circuit` or `scope=workspace_ingestion`).
+      description: >-
+        Partner API key (`scope=circuit` or `scope=workspace_ingestion`). No credential at
+        all returns 401 `missing_token`. A key that is invalid, revoked or expired returns
+        403 `invalid_api_key`; a key whose scope does not allow the route returns 403
+        `api_key_scope_forbidden`.
   schemas:
     Error:
       description: Standard error response with error code and message.
@@ -2188,17 +2192,20 @@ components:
           description: Expiration timestamp (RFC3339)
           nullable: true
     CreatePartnerApiKeyResponse:
-      description: API response containing new partner API key.
+      description: >-
+        The new API key: the key metadata fields at the top level (same fields as
+        PartnerApiKeyResponse, with `api_key` present only here) plus `message`.
       type: object
-      required:
-      - key
-      - message
-      properties:
-        key:
-          $ref: '#/components/schemas/PartnerApiKeyResponse'
-        message:
-          type: string
-          description: Important security message
+      allOf:
+      - $ref: '#/components/schemas/PartnerApiKeyResponse'
+      - type: object
+        required:
+        - api_key
+        - message
+        properties:
+          message:
+            type: string
+            description: Reminder that the key value is shown only once.
     SwitchPartnerStagingCircuitRequest:
       description: Switch workspace staging inbox circuit for workspace_ingestion keys.
       type: object
@@ -2538,11 +2545,17 @@ components:
       properties:
         status:
           type: string
-          description: 'Overall ingestion outcome.'
-          enum:
+          description: >-
+            Overall ingestion outcome. OPEN set (v1 compatibility policy): handle unknown values
+            as a generic outcome. `completed`, `partial` and `failed` come from a synchronous
+            ingestion; `accepted` from the 202 asynchronous path (poll the status endpoint);
+            `preview` from `/preview` or `dry_run=true`.
+          x-extensible-enum:
           - completed
           - partial
           - failed
+          - accepted
+          - preview
         total_rows:
           type: integer
           format: int32
@@ -2591,7 +2604,10 @@ components:
           description: 'Present only when the batch resolves to a single unique partner reference. Shortcut for reconciliation.'
         warnings:
           type: array
-          description: Operational warnings for the integrator.
+          description: >-
+            Operational warnings for the integrator. Free text, not a closed list. Includes,
+            for example, a notice when the ingested items are not publicly visible because
+            their circuit is private and does not expose its items.
           items:
             type: string
     IngestionStatusResponse:
@@ -2625,6 +2641,10 @@ components:
           nullable: true
     IngestionProgress:
       type: object
+      description: >-
+        Progress while `status` is `processing`, in chunks of 200 rows. Present from the `202`
+        on (0 of N at acceptance), only moves forward, and reaches 100% before the final status
+        is written.
       required:
       - chunks_total
       - chunks_completed
@@ -2844,7 +2864,8 @@ components:
             numeroElementoIdentificacao), `tag_replacement_missing_old`,
             `tag_replacement_old_not_found`, `tag_replacement_conflict` (tag replacement:
             substituto=1 with numeroElementoIdentificacaoSubstituido), `reactivation_conflict`,
-            `batch_processing_failed`.
+            `batch_processing_failed`, `row_processing_failed` (the row passed validation but
+            could not be written; resend it, the rest of the batch is not affected).
           x-extensible-enum:
           - missing_value_chain
           - invalid_value_chain
@@ -2859,6 +2880,7 @@ components:
           - tag_replacement_conflict
           - reactivation_conflict
           - batch_processing_failed
+          - row_processing_failed
         message:
           type: string
           description: 'Human-readable error description with suggested next step.'
@@ -3343,27 +3365,46 @@ components:
             $ref: '#/components/schemas/PropertyComplianceResponse'
     CreateEmbedTokenRequest:
       type: object
-      description: 'Request to create a short-lived embed token for a circuit.'
+      description: 'Request to create a short-lived embed token scoped to specific items of a circuit.'
       required:
       - circuit_id
+      - item_ids
       properties:
         circuit_id:
           type: string
           format: uuid
-          description: 'Circuit to generate the embed token for.'
+          description: 'Circuit the items belong to. Requires read access to it.'
+        item_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: >-
+            Items the link exposes (and nothing else). Each entry is the item id (UUID) or its
+            DFID, as returned by the ingestion. A malformed entry returns 400 naming the expected
+            format; every item must belong to `circuit_id`, otherwise 400.
         expires_in_minutes:
           type: integer
           format: int64
           nullable: true
-          description: 'Token lifetime in minutes. Defaults to 60 if not specified.'
+          description: 'Token lifetime in minutes. Default 15; values outside 1..240 are clamped into that range.'
+        audience:
+          type: string
+          nullable: true
+          description: 'Optional label for the access log (e.g. who receives the link).'
     CreateEmbedTokenResponse:
       type: object
       description: 'Response with the generated embed token and its URL.'
       required:
+      - id
       - token
       - expires_at
       - embed_url
       properties:
+        id:
+          type: string
+          format: uuid
+          description: 'Embed token id (use it to revoke the token).'
         token:
           type: string
           description: 'The embed token value. Pass as ?token= to the embed portfolio endpoint.'
@@ -3408,17 +3449,40 @@ components:
       type: object
       description: 'Portfolio data resolved from an embed token, for end-client visualization.'
       required:
-      - portfolio
-      - recent_event_proofs
+      - circuit
+      - items
+      - event_proofs
       properties:
-        portfolio:
-          type: object
-          additionalProperties: true
-          description: 'Circuit portfolio data including items, metadata, and summary counts. Structure varies by circuit configuration.'
-        recent_event_proofs:
+        circuit:
+          $ref: '#/components/schemas/EmbedCircuitHeader'
+        items:
           type: array
+          description: 'Only the items the token is scoped to.'
+          items:
+            $ref: '#/components/schemas/ItemSummary'
+        event_proofs:
+          type: array
+          description: 'Up to 30 most recent events of those items in the circuit, newest first.'
           items:
             $ref: '#/components/schemas/EmbedEventProof'
+    EmbedCircuitHeader:
+      type: object
+      description: 'Circuit header shown in the embed. Carries no counts.'
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        public_logo_url:
+          type: string
+          nullable: true
+        public_banner_url:
+          type: string
+          nullable: true
     CreateCanonicalIdentifierRequest:
       description: Request payload to create a canonical identifier type.
       type: object
@@ -9819,7 +9883,7 @@ paths:
           format: uuid
       responses:
         '204':
-          description: API key revoked successfully
+          description: API key revoked. Idempotent, revoking an already revoked key also returns 204.
         '401':
           description: Unauthorized
         '403':
@@ -9930,6 +9994,18 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RoutingRuleResponse'
+        '401':
+          description: 'Missing credentials (`missing_token`), or a JWT that is malformed or expired (`invalid_token_format`, `token_expired`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'An `x-api-key` that is invalid, revoked or expired (`invalid_api_key`); a key whose scope does not allow this route (`api_key_scope_forbidden`); or a JWT whose workspace is not a partner workspace (`workspace_not_partner`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -9952,6 +10028,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoutingRuleResponse'
+        '403':
+          description: circuit_id is not a circuit of your workspace (unknown circuits get the same answer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
   /api/partner/routing-rules/{id}:
@@ -9999,6 +10081,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListRawPayloadsResponse'
+        '401':
+          description: 'Missing credentials (`missing_token`), or a JWT that is malformed or expired (`invalid_token_format`, `token_expired`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'An `x-api-key` that is invalid, revoked or expired (`invalid_api_key`); a key whose scope does not allow this route (`api_key_scope_forbidden`); or a JWT whose workspace is not a partner workspace (`workspace_not_partner`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10026,6 +10120,18 @@ paths:
             application/json:
               schema:
                 type: string
+        '401':
+          description: 'Missing credentials (`missing_token`), or a JWT that is malformed or expired (`invalid_token_format`, `token_expired`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'An `x-api-key` that is invalid, revoked or expired (`invalid_api_key`); a key whose scope does not allow this route (`api_key_scope_forbidden`); or a JWT whose workspace is not a partner workspace (`workspace_not_partner`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10043,6 +10149,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoutingIssuesResponse'
+        '401':
+          description: 'Missing credentials (`missing_token`), or a JWT that is malformed or expired (`invalid_token_format`, `token_expired`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'An `x-api-key` that is invalid, revoked or expired (`invalid_api_key`); a key whose scope does not allow this route (`api_key_scope_forbidden`); or a JWT whose workspace is not a partner workspace (`workspace_not_partner`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10249,6 +10367,9 @@ paths:
                 fallback_to_source_circuit:
                   type: boolean
                   description: When no routing rule matches and auto_create_circuit is false, route unresolved rows to the source staging circuit instead of returning an error. Default true.
+                dry_run:
+                  type: boolean
+                  description: When true, simulates the ingestion exactly like `/preview` and writes nothing. Omit for a normal ingestion; values other than true/false return 400.
       responses:
         '200':
           description: Ingestion failed with actionable errors
@@ -10269,6 +10390,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerIntakeResponse'
+        '400':
+          description: >-
+            Request rejected before any row is processed: invalid body (`validation_error`,
+            `no_data_rows`), or `missing_staging_circuit` when the partner workspace has no
+            circuit yet to receive the data: create a circuit with `POST /v1/circuits` (partner JWT) or in the partner portal; the
+            first circuit becomes the staging circuit on the next ingestion, or choose it with
+            `PUT /v1/partner/api-keys/{id}/staging-circuit`. `GET /v1/partner/readiness` reports
+            this precondition as the `staging_circuit` check.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'Missing credentials (`missing_token`), or a JWT that is malformed or expired (`invalid_token_format`, `token_expired`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'An `x-api-key` that is invalid, revoked or expired (`invalid_api_key`); a key whose scope does not allow this route (`api_key_scope_forbidden`); or a JWT whose workspace is not a partner workspace (`workspace_not_partner`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10299,12 +10444,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IngestionStatusResponse'
-        '401':
-          description: Missing or invalid credentials
-        '403':
-          description: Authenticated with a JWT whose workspace is not a partner workspace
         '404':
           description: Not found, or not visible to the caller
+        '401':
+          description: 'Missing credentials (`missing_token`), or a JWT that is malformed or expired (`invalid_token_format`, `token_expired`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'An `x-api-key` that is invalid, revoked or expired (`invalid_api_key`); a key whose scope does not allow this route (`api_key_scope_forbidden`); or a JWT whose workspace is not a partner workspace (`workspace_not_partner`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10380,6 +10533,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerIntakeResponse'
+        '400':
+          description: >-
+            Request rejected before any row is processed: invalid body (`validation_error`,
+            `no_data_rows`), or `missing_staging_circuit` when the partner workspace has no
+            circuit yet to receive the data: create a circuit with `POST /v1/circuits` (partner JWT) or in the partner portal; the
+            first circuit becomes the staging circuit on the next ingestion, or choose it with
+            `PUT /v1/partner/api-keys/{id}/staging-circuit`. `GET /v1/partner/readiness` reports
+            this precondition as the `staging_circuit` check.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'Missing credentials (`missing_token`), or a JWT that is malformed or expired (`invalid_token_format`, `token_expired`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'An `x-api-key` that is invalid, revoked or expired (`invalid_api_key`); a key whose scope does not allow this route (`api_key_scope_forbidden`); or a JWT whose workspace is not a partner workspace (`workspace_not_partner`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10402,6 +10579,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateEmbedTokenResponse'
+        '400':
+          description: '`item_ids` missing or empty, or an item that does not belong to `circuit_id`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'No read access to `circuit_id`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
   /api/embed/portfolio:
@@ -10423,6 +10612,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmbedPortfolioResponse'
+        '400':
+          description: 'Missing `token` query parameter.'
+        '403':
+          description: 'Token unknown, revoked or expired.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/audit:
     get:
       tags:
