@@ -72,7 +72,7 @@ npx @defarm/cli circuits members <circuit_id>`,
   --country BR \\
   --year 2026 \\
   --circuit-id <circuit_id> \\
-  --metadata '{"canonical_type":"sisbov","canonical_id":"105500497219983","source":"partner_demo"}'
+  --metadata '{"canonical_type":"sisbov","canonical_id":"076000000019983","source":"partner_demo"}'
 
 npx @defarm/cli items list --circuit <circuit_id>`,
     expected: "A new DFID item appears in the circuit. Metadata contains canonical info.",
@@ -108,7 +108,7 @@ npx @defarm/cli events list --circuit <circuit_id>`,
         "value_chain":"BEEF",
         "country":"BR",
         "year":"2026",
-        "sisbov":"105500497219983",
+        "sisbov":"076000000019983",
         "source":"partner_bulk"
       }
     ]
@@ -142,7 +142,7 @@ npx @defarm/cli items list --circuit <circuit_id>
 npx @defarm/cli items new \\
   --value-chain BEEF --country BR --year 2026 \\
   --circuit-id <circuit_id> \\
-  --metadata '{"canonical_type":"sisbov","canonical_id":"105500497219983"}'
+  --metadata '{"canonical_type":"sisbov","canonical_id":"076000000019983"}'
 
 # Add an event
 npx @defarm/cli events add \\
@@ -182,7 +182,7 @@ const apiSnippet = `curl -X POST "https://gateway.defarm.net/v1/partner/ingestio
         "value_chain": "BEEF",
         "country": "BR",
         "year": "2026",
-        "sisbov": "105500497219983",
+        "sisbov": "076000000019983",
         "source": "partner",
         "lot": "Calves - Serra"
       }
@@ -215,7 +215,7 @@ const ingestion = await sdk.items.createViaIngestion({
     value_chain: "BEEF",
     country: "BR",
     year: "2026",
-    sisbov: "105500497219983",
+    sisbov: "076000000019983",
     source: "partner",
   }],
 });
@@ -253,7 +253,7 @@ npx @defarm/cli items new \\
   --country BR \\
   --year 2026 \\
   --circuit-id "$DEFARM_CIRCUIT_ID" \\
-  --metadata '{"canonical_type":"sisbov","canonical_id":"105500497219983","source":"quickstart"}'
+  --metadata '{"canonical_type":"sisbov","canonical_id":"076000000019983","source":"quickstart"}'
 
 # 5) list items in circuit
 npx @defarm/cli items list --circuit "$DEFARM_CIRCUIT_ID"

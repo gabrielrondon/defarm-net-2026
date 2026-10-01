@@ -26,8 +26,8 @@ import {
 import type { IngestionReceipt, IngestionTemplate } from "@/lib/api/types";
 
 const CSV_TEMPLATE = `value_chain,country,year,sisbov,chip,lote,raca,peso,data_nasc,data_entrada,fazenda
-BEEF,BR,2026,105500497219983,900264000319233,Bezerros serra,Brangus,210,10/12/2025,09/01/2026,Faz. Santa Fé
-BEEF,BR,2026,105500497219984,900264000319234,Bezerros serra,Nelore,230,12/12/2025,10/01/2026,Faz. Santa Fé`;
+BEEF,BR,2026,076000000019983,900264000319233,Bezerros serra,Brangus,210,10/12/2025,09/01/2026,Faz. Santa Fé
+BEEF,BR,2026,076000000019984,900264000319234,Bezerros serra,Nelore,230,12/12/2025,10/01/2026,Faz. Santa Fé`;
 
 const JSON_TEMPLATE = JSON.stringify(
   [
@@ -36,7 +36,7 @@ const JSON_TEMPLATE = JSON.stringify(
       country: "BR",
       year: 2026,
       metadata: {
-        sisbov: "105500497219983",
+        sisbov: "076000000019983",
         chip: "900264000319233",
         lote: "Bezerros serra",
         raca: "Brangus",
