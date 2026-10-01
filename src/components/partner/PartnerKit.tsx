@@ -8,7 +8,7 @@ import { CheckCircle2, Copy, ExternalLink, FileText, Link2 } from "lucide-react"
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 const KIT_TEMPLATE = `value_chain,country,year,sisbov,chip,ear_tag,birth_date,sex,lot_name,zone_name,source_system
-BEEF,BR,2026,105500497219983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,parceiro_a
+BEEF,BR,2026,076000000019983,900264000319233,721998,2025-12-10,female,Bezerros serra,PASTO 15,parceiro_a
 BEEF,UY,2026,,982000000000001,UY000004,2022-11-09,female,Vacas cria,C3,parceiro_b`;
 
 const CURL_EXAMPLE = `curl -X POST "https://gateway.defarm.net/v1/partner/ingestions" \\
@@ -27,7 +27,7 @@ const JSON_DIRECT_EXAMPLE = `curl -X POST "https://gateway.defarm.net/v1/partner
   -d '{
     "auto_create_circuit": true,
     "items": [
-      { "sisbov": "105500497219983", "car": "MT-1234.56789.0000.00", "value_chain": "BEEF", "breed": "Nelore" }
+      { "sisbov": "076000000019983", "car": "MT-1234.56789.0000.00", "value_chain": "BEEF", "breed": "Nelore" }
     ]
   }'`;
 
@@ -47,7 +47,7 @@ const RESPONSE_EXAMPLE = `{
       "dfid": "DFID-BEEF-BR-2026-000123-abc123",
       "url": "https://defarm.net/i/DFID-BEEF-BR-2026-000123-abc123",
       "partner_reference": "cowpro-0001",
-      "asset_reference": { "identifier_type": "sisbov", "value": "105500497219983" }
+      "asset_reference": { "identifier_type": "sisbov", "value": "076000000019983" }
     }
   ],
   "errors": [],

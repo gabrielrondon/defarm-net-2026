@@ -86,7 +86,7 @@ const RECENT_EVENTS: DemoEvent[] = [
 const CERTS: DemoCert[] = [
   {
     dfid: "DFID-BEEF-BR-2026-004050",
-    sisbov: "105500497219983",
+    sisbov: "076000000019983",
     mapCode: "5100250-0001",
     valueChain: "BEEF",
     status: "Ativo",
@@ -97,7 +97,7 @@ const CERTS: DemoCert[] = [
   },
   {
     dfid: "DFID-BEEF-BR-2026-003911",
-    sisbov: "105500497210217",
+    sisbov: "076000000010217",
     mapCode: "5100250-0002",
     valueChain: "BEEF",
     status: "Ativo",
@@ -229,7 +229,7 @@ export default function DemoDashboard() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && runSearch(query)}
-                  placeholder="DFID-BEEF-BR-2026-004050  ·  105500497219983  ·  5100250-0001"
+                  placeholder="DFID-BEEF-BR-2026-004050  ·  076000000019983  ·  5100250-0001"
                   className="w-full rounded-md border border-input bg-background pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
