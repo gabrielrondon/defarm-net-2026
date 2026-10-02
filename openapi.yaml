@@ -2102,15 +2102,28 @@ components:
           description: Human-readable name for the API key
         scope:
           type: string
-          description: API key scope (`circuit` for direct circuit ops, `workspace_ingestion` for intelligent intake)
+          description: >-
+            API key scope. Default `circuit`. `circuit`: direct operations in one circuit
+            (`circuit_id`). `circuits`: the same over an explicit set (`circuit_ids`, you need
+            key-management permission in each). `workspace`: the caller's whole workspace.
+            `workspace_ingestion`: intelligent intake with workspace routing (`staging_circuit_id`).
           enum:
           - circuit
+          - circuits
+          - workspace
           - workspace_ingestion
           nullable: true
         circuit_id:
           type: string
           format: uuid
           description: Circuit ID for scope=circuit
+          nullable: true
+        circuit_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Circuit IDs for scope=circuits (required and non-empty for that scope)
           nullable: true
         staging_circuit_id:
           type: string
@@ -2591,7 +2604,10 @@ components:
         items_enriched:
           type: integer
           format: int32
-          description: 'Existing items updated with new data from this ingestion.'
+          description: >-
+            Existing animals this ingestion changed (a new event or a merged field). Billed as
+            enrichments. Resending facts already recorded changes nothing, is not counted here and
+            is not billed. Rows that failed count in neither `items_created` nor `items_enriched`.
         events_detected:
           type: integer
           format: int32
@@ -2636,6 +2652,17 @@ components:
           nullable: true
           additionalProperties: true
           description: Final counters (same fields as `summary` of the ingestion response) once finished.
+        errors:
+          type: array
+          nullable: true
+          description: >-
+            Row errors of the finished ingestion, same shape as `errors[]` of the synchronous
+            response (up to 1000; `result_summary.errors_count` has the full count). A `partial`
+            ingestion whose rows have `dfid_unavailable` (the DFID allocator went down mid-way)
+            frees its Idempotency-Key: resend the same request with the same key and only the
+            missing rows are ingested (rows already written are not duplicated).
+          items:
+            $ref: '#/components/schemas/PartnerIntakeErrorOutput'
         error_message:
           type: string
           nullable: true
@@ -2865,7 +2892,10 @@ components:
             `tag_replacement_old_not_found`, `tag_replacement_conflict` (tag replacement:
             substituto=1 with numeroElementoIdentificacaoSubstituido), `reactivation_conflict`,
             `batch_processing_failed`, `row_processing_failed` (the row passed validation but
-            could not be written; resend it, the rest of the batch is not affected).
+            could not be written; resend it, the rest of the batch is not affected),
+            `invalid_dfid_parts` (the DFID allocator refused the row's value_chain, country or
+            year), `dfid_unavailable` (the DFID allocator was down after part of the request was
+            written; resend these rows).
           x-extensible-enum:
           - missing_value_chain
           - invalid_value_chain
@@ -2881,6 +2911,8 @@ components:
           - reactivation_conflict
           - batch_processing_failed
           - row_processing_failed
+          - invalid_dfid_parts
+          - dfid_unavailable
         message:
           type: string
           description: 'Human-readable error description with suggested next step.'
@@ -3387,7 +3419,9 @@ components:
           type: integer
           format: int64
           nullable: true
-          description: 'Token lifetime in minutes. Default 15; values outside 1..240 are clamped into that range.'
+          minimum: 1
+          maximum: 240
+          description: 'Token lifetime in minutes, 1 to 240. Defaults to 15 if not specified. Values outside the range are rejected with 400.'
         audience:
           type: string
           nullable: true
@@ -4001,15 +4035,6 @@ components:
           type: string
           format: date-time
           nullable: true
-        content_hash:
-          type: string
-          nullable: true
-        is_duplicate:
-          type: boolean
-        original_event_id:
-          type: string
-          format: uuid
-          nullable: true
         source_id:
           type: string
           format: uuid
@@ -4025,10 +4050,6 @@ components:
         user_id:
           type: string
           format: uuid
-          nullable: true
-        visibility:
-          type: string
-        visible_to_roles:
           nullable: true
         visibility:
           type: string
@@ -5037,6 +5058,28 @@ components:
           format: uuid
           description: Mapping template used for this ingestion
           nullable: true
+        errors:
+          type: array
+          description: Rows that were not ingested, with the same reason codes as the partner
+            intake. Omitted when every row was processed.
+          items:
+            $ref: '#/components/schemas/IngestionRowError'
+    IngestionRowError:
+      type: object
+      required:
+      - row_index
+      - reason_code
+      - message
+      properties:
+        row_index:
+          type: integer
+          minimum: 0
+          description: 0-based data row of the CSV (the header is not counted).
+        reason_code:
+          type: string
+          description: Open set, same as PartnerIntakeErrorOutput.reason_code.
+        message:
+          type: string
     IngestionQualityReport:
       type: object
       required:
@@ -9830,7 +9873,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreatePartnerApiKeyResponse'
         '400':
-          description: Invalid request
+          description: 'validation_error: a required body field is missing or has an invalid value; `message` names the field (and the allowed values for an enum).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized - invalid or missing JWT token
         '403':
@@ -9886,10 +9933,8 @@ paths:
           description: API key revoked. Idempotent, revoking an already revoked key also returns 204.
         '401':
           description: Unauthorized
-        '403':
-          description: Forbidden - you don't own this key
         '404':
-          description: API key not found
+          description: API key not found, or not a key you can manage (same answer, so key ids cannot be probed).
         '500':
           description: Internal server error
       security:
@@ -9921,10 +9966,8 @@ paths:
                 $ref: '#/components/schemas/ApiKeyMetricsResponse'
         '401':
           description: Unauthorized
-        '403':
-          description: Forbidden - you don't own this key
         '404':
-          description: API key not found
+          description: API key not found, or not a key you can manage (same answer, so key ids cannot be probed).
         '500':
           description: Internal server error
       security:
@@ -9961,13 +10004,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/SwitchPartnerStagingCircuitResponse'
         '400':
-          description: Invalid request
+          description: 'validation_error: a required body field is missing or has an invalid value; `message` names the field (and the allowed values for an enum).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden
+          description: 'insufficient_permissions: the staging circuit is not in the key''s workspace (an unknown circuit gets the same answer), or you lack permission on it.'
         '404':
-          description: Not found
+          description: API key not found, or not a key you can manage (same answer, so key ids cannot be probed).
         '500':
           description: Internal server error
       security:
@@ -10030,6 +10077,12 @@ paths:
                 $ref: '#/components/schemas/RoutingRuleResponse'
         '403':
           description: circuit_id is not a circuit of your workspace (unknown circuits get the same answer).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: 'validation_error: a required body field is missing or has an invalid value; `message` names the field (and the allowed values for an enum).'
           content:
             application/json:
               schema:
@@ -10253,6 +10306,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoutingIssueActionResponse'
+        '400':
+          description: 'validation_error: a required body field is missing or has an invalid value; `message` names the field (and the allowed values for an enum).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
   /api/partner/ingestions/issues/{id}/reopen:
@@ -10308,10 +10367,13 @@ paths:
           and reuse the same key on retries: a retry with the same key and the same
           request replays the original response and status instead of re-ingesting.
           A key reused with a different request is rejected (400); a key whose first
-          request is still in flight returns 409.
+          request is still in flight returns 409. Leading and trailing spaces are
+          trimmed; a header that is present but blank, or longer than 128 characters,
+          is rejected with 400 validation_error.
         required: false
         schema:
           type: string
+          minLength: 1
           maxLength: 128
       requestBody:
         required: true
@@ -10323,7 +10385,7 @@ paths:
               jsonArray:
                 summary: Direct JSON array body
                 value:
-                - sisbov: '105500497219983'
+                - sisbov: '076000000019983'
                   car: MT-1234.56789.0000.00
                   value_chain: BEEF
               jsonEnvelope:
@@ -10337,7 +10399,7 @@ paths:
                       numero_sisbov: sisbov
                   auto_create_circuit: true
                   items:
-                  - sisbov: '105500497219983'
+                  - sisbov: '076000000019983'
                     car: MT-1234.56789.0000.00
                     value_chain: BEEF
           multipart/form-data:
@@ -10414,6 +10476,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '502':
+          description: 'The DFID allocator is unavailable and nothing was ingested (`dfid_service_error`). The Idempotency-Key is released: resend the same request with the same key. If part of the request was already written when the allocator failed, the answer is a 201 instead, with `dfid_unavailable` on the rows that were not ingested.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
@@ -10485,7 +10553,7 @@ paths:
               jsonArray:
                 summary: Direct JSON array body
                 value:
-                - sisbov: '105500497219983'
+                - sisbov: '076000000019983'
                   car: MT-1234.56789.0000.00
                   value_chain: BEEF
               jsonEnvelope:
@@ -10499,7 +10567,7 @@ paths:
                       numero_sisbov: sisbov
                   auto_create_circuit: true
                   items:
-                  - sisbov: '105500497219983'
+                  - sisbov: '076000000019983'
                     car: MT-1234.56789.0000.00
                     value_chain: BEEF
           multipart/form-data:
@@ -10580,7 +10648,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateEmbedTokenResponse'
         '400':
-          description: '`item_ids` missing or empty, or an item that does not belong to `circuit_id`.'
+          description: 'validation_error: `item_ids` missing or empty, an item that does not belong to `circuit_id`, `expires_in_minutes` outside 1..240, or another missing/invalid body field (`message` names it).'
           content:
             application/json:
               schema:
@@ -13696,7 +13764,7 @@ paths:
         - Template is optional: uses `template_id` when provided; otherwise auto-uses workspace default and falls back to an Official DeFarm template
         - Optional idempotency field: `idempotency_key` for safe retries
 
-        - Required CSV columns: value_chain, country
+        - Required CSV column: value_chain (an active value chain, e.g. BEEF); country is optional (default BR)
 
         - Optional columns: metadata.*, tags, status
 
@@ -13716,11 +13784,19 @@ paths:
 
         **Processing:**
 
-        - Validates all rows before inserting any
+        - Rows are processed one by one: a bad row does not stop the others
 
-        - Atomic transaction (all succeed or all fail)
+        - value_chain follows the partner intake rule: required on every row and one of the
+        active value chains (`/admin/value-chains`). A row without it (column absent or cell
+        empty) is `missing_value_chain`; a code outside the active list is
+        `invalid_value_chain`. Until 2026-10 a CSV without the column was ingested as BEEF.
 
-        - Returns detailed error report for failed rows
+        - A row whose value_chain/country/year the DFID allocator refuses is
+        `invalid_dfid_parts`. Refused rows are reported in `errors[]` and the receipt status
+        is `partial` (or `failed` when no row was ingested)
+
+        - 502 only when the DFID allocator is unreachable (safe to retry with the same
+        idempotency key); never for a bad row
 
         - Generates audit trail for bulk operation
 
@@ -13774,13 +13850,13 @@ paths:
                   maxLength: 128
       responses:
         '200':
-          description: Idempotent replay; existing receipt returned
+          description: Idempotent replay (existing receipt returned), or every row was refused (`status` = `failed`, nothing created, rows in `errors[]`), as in the v1 ingestion.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/IngestionReceipt'
         '201':
-          description: Ingestion completed successfully
+          description: Ingestion wrote at least one row (`completed` or `partial`; refused rows in `errors[]`).
           content:
             application/json:
               schema:
@@ -13793,6 +13869,12 @@ paths:
           description: Permission denied
         '500':
           description: Internal server error
+        '502':
+          description: The DFID allocator is unreachable. Nothing was ingested; retry later with the same idempotency key. Row problems never return 502, they come in `errors[]` of a 201.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
       - apiKeyAuth: []
