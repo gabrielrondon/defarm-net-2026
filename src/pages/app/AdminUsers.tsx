@@ -36,6 +36,7 @@ import {
   type WorkspaceTrustProfile,
 } from "@/lib/api/workspace-trust-profiles";
 import { upsertEntitlement } from "@/lib/api/partner-entitlements";
+import { passwordTooLong } from "@/lib/passwordLimit";
 
 const WORKSPACE_TYPES = ["producer", "partner", "certifier", "processor", "government"] as const;
 const WORKSPACE_TIERS = ["free", "basic", "pro", "enterprise"] as const;
@@ -227,6 +228,14 @@ export default function AdminUsers() {
         });
         return;
       }
+    }
+    if (!newUser.send_set_password_email && passwordTooLong(newUser.password)) {
+      toast({
+        title: "Senha inválida",
+        description: "A senha inicial pode ter no máximo 72 bytes (letra acentuada conta 2).",
+        variant: "destructive",
+      });
+      return;
     }
     if (!newUser.send_set_password_email && newUser.password.length < 8) {
       toast({
@@ -442,12 +451,20 @@ export default function AdminUsers() {
 
   // #549: setar/resetar a senha direto (sem email). Após isto o usuário loga na hora.
   const handleSetPassword = async (user: AdminUser) => {
-    const password = window.prompt(`Nova senha para "${user.email}" (mín. 8 caracteres):`);
+    const password = window.prompt(`Nova senha para "${user.email}" (mín. 8 caracteres, máx. 72 bytes):`);
     if (password === null) return; // cancelou
     if (password.length < 8) {
       toast({
         title: "Senha muito curta",
         description: "Mínimo 8 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (passwordTooLong(password)) {
+      toast({
+        title: "Senha muito longa",
+        description: "Máximo 72 bytes (letra acentuada conta 2).",
         variant: "destructive",
       });
       return;

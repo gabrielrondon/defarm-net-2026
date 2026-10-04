@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { resetPassword } from "@/lib/defarm-api";
 import logoIcon from "@/assets/logo-icon.png";
+import { passwordTooLong } from "@/lib/passwordLimit";
 
 export default function ResetSenha() {
   const navigate = useNavigate();
@@ -32,6 +33,15 @@ export default function ResetSenha() {
       toast({
         title: "Token obrigatório",
         description: "Informe o token de recuperação para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordTooLong(password)) {
+      toast({
+        title: "Senha muito longa",
+        description: "A senha pode ter no máximo 72 bytes (letra acentuada conta 2).",
         variant: "destructive",
       });
       return;
@@ -71,7 +81,7 @@ export default function ResetSenha() {
           </div>
           <h2 className="text-3xl font-bold text-foreground mb-4">Defina uma nova senha</h2>
           <p className="text-lg text-muted-foreground">
-            Use uma senha forte com pelo menos 8 caracteres.
+            Use uma senha forte com pelo menos 8 caracteres e no máximo 72 bytes.
           </p>
         </div>
       </div>

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { AnchorStatus } from "@/components/proof";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
+import { passwordTooLong } from "@/lib/passwordLimit";
 
 // /cadastro (signup self-serve do produtor) — visual Ledger v2 (chunk 2).
 // VISUAL do design; LÓGICA real preservada: useAuth().register(...) -> /app,
@@ -60,6 +61,7 @@ export default function Cadastro() {
 
   const passwordRequirements = [
     { label: t("register.passwordReqs.length"), test: (p: string) => p.length >= 8 },
+    { label: t("register.passwordReqs.maxBytes"), test: (p: string) => !passwordTooLong(p) },
     { label: t("register.passwordReqs.uppercase"), test: (p: string) => /[A-Z]/.test(p) },
     { label: t("register.passwordReqs.lowercase"), test: (p: string) => /[a-z]/.test(p) },
     { label: t("register.passwordReqs.number"), test: (p: string) => /\d/.test(p) },

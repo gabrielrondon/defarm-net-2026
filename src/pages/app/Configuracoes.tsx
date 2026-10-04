@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { passwordTooLong } from "@/lib/passwordLimit";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
@@ -541,6 +542,14 @@ export default function Configuracoes() {
   };
 
   const handleChangePassword = async () => {
+    if (passwordTooLong(newPassword)) {
+      toast({
+        title: t("settings.toasts.passwordChangeErrorTitle"),
+        description: t("settings.toasts.passwordTooLongDesc"),
+        variant: "destructive",
+      });
+      return;
+    }
     if (!currentPassword || !newPassword) {
       toast({
         title: t("settings.toasts.passwordRequiredTitle"),
@@ -966,7 +975,12 @@ export default function Configuracoes() {
                   <Button
                     variant="outline"
                     onClick={handleChangePassword}
-                    disabled={passwordLoading || !currentPassword || newPassword.length < 8}
+                    disabled={
+                      passwordLoading ||
+                      !currentPassword ||
+                      newPassword.length < 8 ||
+                      passwordTooLong(newPassword)
+                    }
                   >
                     {passwordLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t("settings.security.updatePassword")}
                   </Button>

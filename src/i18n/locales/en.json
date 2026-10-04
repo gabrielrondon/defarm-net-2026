@@ -618,6 +618,7 @@
     "sideDescription": "Create your account and start tracing your supply chain with transparency and blockchain technology.",
     "passwordReqs": {
       "length": "At least 8 characters",
+      "maxBytes": "At most 72 bytes (an accented letter counts 2)",
       "uppercase": "One uppercase letter",
       "lowercase": "One lowercase letter",
       "number": "One number",
@@ -951,6 +952,7 @@
       "profileSaveErrorTitle": "Error saving",
       "passwordRequiredTitle": "Required fields",
       "passwordRequiredDesc": "Enter your current password and the new password.",
+      "passwordTooLongDesc": "The password can have at most 72 bytes (an accented letter counts 2).",
       "passwordChangedTitle": "Password changed",
       "passwordChangeErrorTitle": "Failed to change password"
     }

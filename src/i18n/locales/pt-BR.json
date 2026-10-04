@@ -618,6 +618,7 @@
     "sideDescription": "Crie sua conta e comece a rastrear sua cadeia produtiva com transparência e tecnologia blockchain.",
     "passwordReqs": {
       "length": "Mínimo 8 caracteres",
+      "maxBytes": "No máximo 72 bytes (letra acentuada conta 2)",
       "uppercase": "Uma letra maiúscula",
       "lowercase": "Uma letra minúscula",
       "number": "Um número",
@@ -951,6 +952,7 @@
       "profileSaveErrorTitle": "Erro ao salvar",
       "passwordRequiredTitle": "Campos obrigatórios",
       "passwordRequiredDesc": "Informe a senha atual e a nova senha.",
+      "passwordTooLongDesc": "A senha pode ter no máximo 72 bytes (letra acentuada conta 2).",
       "passwordChangedTitle": "Senha alterada",
       "passwordChangeErrorTitle": "Falha ao alterar senha"
     }
