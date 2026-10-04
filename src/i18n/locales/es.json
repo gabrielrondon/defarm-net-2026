@@ -735,6 +735,7 @@
     "sideDescription": "Crea tu cuenta y empieza a rastrear tu cadena de suministro con transparencia y tecnología blockchain.",
     "passwordReqs": {
       "length": "Al menos 8 caracteres",
+      "maxBytes": "Como máximo 72 bytes (una letra con tilde cuenta 2)",
       "uppercase": "Una letra mayúscula",
       "lowercase": "Una letra minúscula",
       "number": "Un número",
@@ -1010,7 +1011,7 @@
       "changePasswordTitle": "Cambiar contraseña",
       "changePasswordHint": "Actualiza tu contraseña con regularidad",
       "currentPasswordPlaceholder": "Contraseña actual",
-      "newPasswordPlaceholder": "Nueva contraseña (mín. 8 caracteres)",
+      "newPasswordPlaceholder": "Nueva contraseña (8 a 72 bytes)",
       "updatePassword": "Actualizar contraseña",
       "twofaTitle": "Autenticación en dos pasos (2FA)",
       "twofaStatus": "Estado: {{status}} · Códigos de recuperación restantes: {{remaining}}",
@@ -1088,6 +1089,7 @@
       "profileSaveErrorTitle": "Error al guardar",
       "passwordRequiredTitle": "Campos obligatorios",
       "passwordRequiredDesc": "Ingresa la contraseña actual y la nueva contraseña.",
+      "passwordTooLongDesc": "La contraseña puede tener como máximo 72 bytes (una letra con tilde cuenta 2).",
       "passwordChangedTitle": "Contraseña cambiada",
       "passwordChangeErrorTitle": "No se pudo cambiar la contraseña"
     }

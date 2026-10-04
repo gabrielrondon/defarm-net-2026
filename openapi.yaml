@@ -450,7 +450,8 @@ components:
           format: email
         password:
           type: string
-          description: Minimum 8 characters when send_set_password_email=false
+          description: "Minimum 8 characters when send_set_password_email=false. At most 72 bytes UTF-8 (bcrypt). maxLength counts characters; with multi-byte characters the byte limit is reached earlier and the API answers 400."
+          maxLength: 72
           nullable: true
         send_set_password_email:
           type: boolean
@@ -765,6 +766,8 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 72
+          description: "At most 72 bytes UTF-8 (bcrypt). maxLength counts characters; with multi-byte characters the byte limit is reached earlier and the API answers 400."
           example: SecurePassword123!
         full_name:
           type: string
@@ -841,6 +844,8 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 72
+          description: "At most 72 bytes UTF-8 (bcrypt). maxLength counts characters; with multi-byte characters the byte limit is reached earlier and the API answers 400."
     ForgotPasswordRequest:
       type: object
       required:
@@ -861,6 +866,8 @@ components:
           type: string
           format: password
           minLength: 8
+          maxLength: 72
+          description: "At most 72 bytes UTF-8 (bcrypt). maxLength counts characters; with multi-byte characters the byte limit is reached earlier and the API answers 400."
     VerifyEmailRequest:
       type: object
       required:
@@ -3872,6 +3879,15 @@ components:
       - error
       - message
       properties:
+        code:
+          type: string
+          nullable: true
+          description: Stable machine-readable reason, when the error has one. Sealed-field rejections
+            (`sealed_field_not_allowlisted`, `sealed_field_not_sealable`, `sealed_field_also_clear`,
+            `sealed_field_duplicate`, `sealed_field_path_mismatch`, `sealed_field_array_path`,
+            `sealed_field_required_missing`, `sealed_field_invalid_envelope`, `sealed_too_many_fields`,
+            `sealed_payload_not_object`, `sealed_section_malformed`, `sealed_key_reserved`,
+            `sealed_client_event_id_mismatch`) carry one; `details` names the field.
         details:
           type: string
           nullable: true
