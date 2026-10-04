@@ -61,7 +61,8 @@ export default function Cadastro() {
 
   const passwordRequirements = [
     { label: t("register.passwordReqs.length"), test: (p: string) => p.length >= 8 },
-    { label: t("register.passwordReqs.maxBytes"), test: (p: string) => !passwordTooLong(p) },
+    // Teto: quando estoura é preciso APAGAR, não completar; por isso fica vermelho (não cinza).
+    { label: t("register.passwordReqs.maxBytes"), test: (p: string) => !passwordTooLong(p), limit: true },
     { label: t("register.passwordReqs.uppercase"), test: (p: string) => /[A-Z]/.test(p) },
     { label: t("register.passwordReqs.lowercase"), test: (p: string) => /[a-z]/.test(p) },
     { label: t("register.passwordReqs.number"), test: (p: string) => /\d/.test(p) },
@@ -193,7 +194,11 @@ export default function Cadastro() {
                       key={idx}
                       className={cn(
                         "flex items-center gap-2 text-xs transition-colors",
-                        req.test(password) ? "text-primary" : "text-muted-foreground",
+                        req.test(password)
+                          ? "text-primary"
+                          : "limit" in req && req.limit
+                            ? "text-destructive"
+                            : "text-muted-foreground",
                       )}
                     >
                       <Check className={cn("h-3 w-3", req.test(password) ? "opacity-100" : "opacity-30")} />

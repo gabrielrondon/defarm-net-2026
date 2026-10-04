@@ -874,7 +874,7 @@
       "changePasswordTitle": "Change password",
       "changePasswordHint": "Update your password regularly",
       "currentPasswordPlaceholder": "Current password",
-      "newPasswordPlaceholder": "New password (min. 8 chars)",
+      "newPasswordPlaceholder": "New password (8 to 72 bytes)",
       "updatePassword": "Update password",
       "twofaTitle": "Two-factor authentication (2FA)",
       "twofaStatus": "Status: {{status}} · Recovery codes remaining: {{remaining}}",

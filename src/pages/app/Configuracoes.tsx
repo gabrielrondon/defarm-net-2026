@@ -542,14 +542,6 @@ export default function Configuracoes() {
   };
 
   const handleChangePassword = async () => {
-    if (passwordTooLong(newPassword)) {
-      toast({
-        title: t("settings.toasts.passwordChangeErrorTitle"),
-        description: t("settings.toasts.passwordTooLongDesc"),
-        variant: "destructive",
-      });
-      return;
-    }
     if (!currentPassword || !newPassword) {
       toast({
         title: t("settings.toasts.passwordRequiredTitle"),
@@ -971,7 +963,13 @@ export default function Configuracoes() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     minLength={8}
+                    aria-invalid={passwordTooLong(newPassword)}
                   />
+                  {passwordTooLong(newPassword) && (
+                    <p className="text-xs text-destructive">
+                      {t("settings.toasts.passwordTooLongDesc")}
+                    </p>
+                  )}
                   <Button
                     variant="outline"
                     onClick={handleChangePassword}

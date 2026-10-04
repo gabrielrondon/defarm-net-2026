@@ -874,7 +874,7 @@
       "changePasswordTitle": "Alterar senha",
       "changePasswordHint": "Atualize sua senha regularmente",
       "currentPasswordPlaceholder": "Senha atual",
-      "newPasswordPlaceholder": "Nova senha (mín. 8 chars)",
+      "newPasswordPlaceholder": "Nova senha (8 a 72 bytes)",
       "updatePassword": "Atualizar senha",
       "twofaTitle": "Autenticação em dois fatores (2FA)",
       "twofaStatus": "Status: {{status}} · Recovery codes restantes: {{remaining}}",

@@ -1011,7 +1011,7 @@
       "changePasswordTitle": "Cambiar contraseña",
       "changePasswordHint": "Actualiza tu contraseña con regularidad",
       "currentPasswordPlaceholder": "Contraseña actual",
-      "newPasswordPlaceholder": "Nueva contraseña (mín. 8 caracteres)",
+      "newPasswordPlaceholder": "Nueva contraseña (8 a 72 bytes)",
       "updatePassword": "Actualizar contraseña",
       "twofaTitle": "Autenticación en dos pasos (2FA)",
       "twofaStatus": "Estado: {{status}} · Códigos de recuperación restantes: {{remaining}}",
