@@ -957,19 +957,23 @@ export default function Configuracoes() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                   />
-                  <Input
-                    type="password"
-                    placeholder={t("settings.security.newPasswordPlaceholder")}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    minLength={8}
-                    aria-invalid={passwordTooLong(newPassword)}
-                  />
-                  {passwordTooLong(newPassword) && (
-                    <p className="text-xs text-destructive">
-                      {t("settings.toasts.passwordTooLongDesc")}
-                    </p>
-                  )}
+                  {/* Input + ajuda num bloco só: no grid de 3 colunas a ajuda não pode virar 4º item. */}
+                  <div className="space-y-1">
+                    <Input
+                      type="password"
+                      placeholder={t("settings.security.newPasswordPlaceholder")}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      minLength={8}
+                      aria-invalid={passwordTooLong(newPassword)}
+                      className="aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive"
+                    />
+                    {passwordTooLong(newPassword) && (
+                      <p className="text-xs text-destructive">
+                        {t("settings.toasts.passwordTooLongDesc")}
+                      </p>
+                    )}
+                  </div>
                   <Button
                     variant="outline"
                     onClick={handleChangePassword}
