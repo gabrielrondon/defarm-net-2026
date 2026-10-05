@@ -2592,7 +2592,9 @@
         "ok": "La firma coincide con la clave del sellador, la misma que este navegador vio la primera vez.",
         "changed": "La clave del sellador es distinta de la que este navegador vio antes. Confirme con quien selló antes de confiar.",
         "unknown": "No se pudo verificar la firma del sellador."
-      }
+      },
+      "accept": "Confirmar clave nueva",
+      "acceptConfirm": "¿Confirmó con quien selló que la clave {{key}} es suya? Tras confirmar, los campos firmados con ella aparecen como válidos en este navegador."
     },
     "errors": {
       "wrongPassphrase": "Contraseña incorrecta, o el archivo es de otro workspace.",

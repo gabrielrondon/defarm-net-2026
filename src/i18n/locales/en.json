@@ -2475,7 +2475,9 @@
         "ok": "The signature matches the sealer's key, the same one this browser saw the first time.",
         "changed": "The sealer's key differs from the one this browser saw before. Confirm with the sealer before trusting it.",
         "unknown": "The sealer's signature could not be checked."
-      }
+      },
+      "accept": "Confirm new key",
+      "acceptConfirm": "Did you confirm with the sealer that key {{key}} is theirs? Once confirmed, fields signed with it show as valid in this browser."
     },
     "errors": {
       "wrongPassphrase": "Wrong passphrase, or the file belongs to another workspace.",

@@ -40,7 +40,7 @@ import {
   registerSigningKey,
   type RecipientSealedField,
 } from "@/lib/api/sealed";
-import { classifyAuthorship, loadSealerPins, saveSealerPins, wrapperMatchesEnvelope } from "@/lib/sealing/inbox";
+import { acceptSealerKey, classifyAuthorship, loadSealerPins, saveSealerPins, wrapperMatchesEnvelope } from "@/lib/sealing/inbox";
 
 const MIN_PASSPHRASE = 12;
 
@@ -137,12 +137,22 @@ function CamposSeladosDoWorkspace({ workspaceId }: { workspaceId: string }) {
     },
   });
 
+  const [pinsVersion, setPinsVersion] = useState(0);
   const authorship = useMemo(() => {
     if (!inbox.data) return {};
     const r = classifyAuthorship(inbox.data, loadSealerPins(workspaceId));
     if (r.changed) saveSealerPins(workspaceId, r.pins);
     return r.byField;
-  }, [inbox.data, workspaceId]);
+    // pinsVersion: reclassifica depois de confirmar uma chave nova.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inbox.data, workspaceId, pinsVersion]);
+
+  // Rotação legítima do selador: a pessoa confirma por fora e aceita a chave nova.
+  function acceptNewSealerKey(f: RecipientSealedField) {
+    if (!f.sealer_public_key_b64 || !window.confirm(t("sealed.inbox.acceptConfirm", { key: f.sealer_key_id }))) return;
+    saveSealerPins(workspaceId, acceptSealerKey(loadSealerPins(workspaceId), f.sealer_workspace_id, f.sealer_public_key_b64));
+    setPinsVersion((v) => v + 1);
+  }
 
   const strongEnough = passphraseIsStrong(passphrase, MIN_PASSPHRASE);
 
@@ -439,6 +449,11 @@ function CamposSeladosDoWorkspace({ workspaceId }: { workspaceId: string }) {
                           >
                             {t(`sealed.inbox.authorship.${a}`)}
                           </Badge>
+                          {a === "changed" && (
+                            <Button size="sm" variant="ghost" onClick={() => acceptNewSealerKey(f)}>
+                              {t("sealed.inbox.accept")}
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" onClick={() => open(f)}>
                             {t("sealed.inbox.open")}
                           </Button>

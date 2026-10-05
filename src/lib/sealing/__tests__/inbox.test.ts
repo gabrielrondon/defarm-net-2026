@@ -8,13 +8,18 @@ import {
   toBase64,
 } from "@defarm/sdk/core";
 import type { RecipientSealedField } from "@/lib/api/sealed";
-import { classifyAuthorship, wrapperMatchesEnvelope } from "../inbox";
+import { acceptSealerKey, classifyAuthorship, wrapperMatchesEnvelope } from "../inbox";
 
 const ME = "11111111-1111-1111-1111-111111111111";
 const SEALER = "22222222-2222-2222-2222-222222222222";
 const DFID = "DFID-BEEF-BR-2026-000001-abcdef";
 
-async function field(sealerSeed: Uint8Array, keyId = "erp-sign-1"): Promise<RecipientSealedField> {
+async function field(
+  sealerSeed: Uint8Array,
+  keyId = "erp-sign-1",
+  occurredAt = "2026-10-05T12:00:00Z",
+  eventId = "evt-1"
+): Promise<RecipientSealedField> {
   const enc = generateX25519KeyPair();
   const sealed = signSealedField(
     await sealField(DFID, "cev-1", "geo", "application/json", new TextEncoder().encode('{"lat":-20.4}'), [
@@ -26,9 +31,9 @@ async function field(sealerSeed: Uint8Array, keyId = "erp-sign-1"): Promise<Reci
   );
   return {
     dfid: DFID,
-    event_id: "evt-1",
+    event_id: eventId,
     event_type: "observation",
-    occurred_at: "2026-10-05T12:00:00Z",
+    occurred_at: occurredAt,
     field_path: "geo",
     content_type: "application/json",
     recipient_enc_key_id: "web-enc-1",
@@ -71,6 +76,21 @@ describe("sealed inbox checks (#755)", () => {
     // não passa em silêncio.
     const rotated = await field(generateEd25519KeyPair().seed, "rotated-sign-2");
     expect(classifyAuthorship([rotated], r1.pins).byField["evt-1geo"]).toBe("changed");
+  });
+
+  it("first use pins the oldest key, so a rotation shows as a change, and it can be accepted", async () => {
+    const oldKey = await field(generateEd25519KeyPair().seed, "sign-f66", "2026-10-01T12:00:00Z", "evt-old");
+    const newKey = await field(generateEd25519KeyPair().seed, "rotated-sign-2", "2026-10-05T12:00:00Z", "evt-new");
+    // A caixa vem do mais novo para o mais antigo.
+    const r = classifyAuthorship([newKey, oldKey], {});
+    expect(r.byField["evt-oldgeo"]).toBe("ok");
+    expect(r.byField["evt-newgeo"]).toBe("changed");
+
+    const accepted = acceptSealerKey(r.pins, SEALER, newKey.sealer_public_key_b64!);
+    const r2 = classifyAuthorship([newKey, oldKey], accepted);
+    expect(r2.byField["evt-oldgeo"]).toBe("ok");
+    expect(r2.byField["evt-newgeo"]).toBe("ok");
+    expect(acceptSealerKey(accepted, SEALER, newKey.sealer_public_key_b64!)).toBe(accepted);
   });
 
   it("does not trust the server flag alone", async () => {

@@ -2475,7 +2475,9 @@
         "ok": "A assinatura confere com a chave do selador, a mesma vista neste navegador da primeira vez.",
         "changed": "A chave do selador é diferente da vista antes neste navegador. Confirme com quem selou antes de confiar.",
         "unknown": "Não foi possível conferir a assinatura do selador."
-      }
+      },
+      "accept": "Confirmar nova chave",
+      "acceptConfirm": "Confirmou com quem selou que a chave {{key}} é dele? Depois de confirmar, os campos assinados com ela aparecem como válidos neste navegador."
     },
     "errors": {
       "wrongPassphrase": "Senha errada, ou o arquivo é de outro workspace.",

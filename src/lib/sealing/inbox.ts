@@ -20,46 +20,63 @@ export function wrapperMatchesEnvelope(f: RecipientSealedField): boolean {
   );
 }
 
+/** Chaves de assinatura aceitas por workspace selador (a primeira vista e as confirmadas depois). */
+export type SealerPins = Record<string, string[]>;
+
 /**
  * Autoria com a chave do selador fixada no primeiro uso, por workspace selador (como o SDK .NET).
- * A chave pública vem do servidor; fixá-la faz uma troca posterior, inclusive com outro key_id,
- * aparecer como "changed", em vez de ser aceita em silêncio. Devolve o
- * resultado por campo e os pins atualizados (o chamador decide onde guardar).
+ * A chave pública vem do servidor; fixá-la faz uma chave diferente, inclusive com outro key_id,
+ * aparecer como "changed" até alguém confirmar (`acceptSealerKey`), em vez de passar em silêncio.
+ * Os campos são lidos do mais antigo para o mais novo, então o primeiro uso fixa a chave mais
+ * antiga e uma rotação aparece como mudança, não o contrário.
  */
 export function classifyAuthorship(
   fields: RecipientSealedField[],
-  pins: Record<string, string>
-): { byField: Record<string, Authorship>; pins: Record<string, string>; changed: boolean } {
-  const next = { ...pins };
+  pins: SealerPins
+): { byField: Record<string, Authorship>; pins: SealerPins; changed: boolean } {
+  const next: SealerPins = Object.fromEntries(Object.entries(pins).map(([k, v]) => [k, [...v]]));
   const byField: Record<string, Authorship> = {};
   let changed = false;
-  for (const f of fields) {
-    const id = f.sealer_workspace_id;
+  const ordered = [...fields].sort((x, y) => Date.parse(x.occurred_at) - Date.parse(y.occurred_at));
+  for (const f of ordered) {
+    const ws = f.sealer_workspace_id;
     const pub = f.sealer_public_key_b64;
     let a: Authorship = "unknown";
     if (f.authorship_verified && pub && wrapperMatchesEnvelope(f) && verifySealerSignature(f.sealed_field, pub)) {
-      if (!next[id]) {
-        next[id] = pub;
+      if (!next[ws]?.length) {
+        next[ws] = [pub];
         changed = true;
       }
-      a = next[id] === pub ? "ok" : "changed";
+      a = next[ws].includes(pub) ? "ok" : "changed";
     }
     byField[f.event_id + f.field_path] = a;
   }
   return { byField, pins: next, changed };
 }
 
-const pinsKey = (workspaceId: string) => `defarm.sealer-pins.v2.${workspaceId}`;
+/** A pessoa confirmou (por fora) que a chave nova do selador é legítima. */
+export function acceptSealerKey(pins: SealerPins, sealerWorkspaceId: string, pub: string): SealerPins {
+  const list = pins[sealerWorkspaceId] ?? [];
+  return list.includes(pub) ? pins : { ...pins, [sealerWorkspaceId]: [...list, pub] };
+}
 
-export function loadSealerPins(workspaceId: string): Record<string, string> {
+const pinsKey = (workspaceId: string) => `defarm.sealer-pins.v3.${workspaceId}`;
+
+export function loadSealerPins(workspaceId: string): SealerPins {
   try {
-    return JSON.parse(localStorage.getItem(pinsKey(workspaceId)) ?? "{}");
+    const raw: unknown = JSON.parse(localStorage.getItem(pinsKey(workspaceId)) ?? "{}");
+    if (!raw || typeof raw !== "object") return {};
+    return Object.fromEntries(
+      Object.entries(raw as Record<string, unknown>)
+        .filter(([, v]) => Array.isArray(v))
+        .map(([k, v]) => [k, (v as unknown[]).filter((x): x is string => typeof x === "string")])
+    );
   } catch {
     return {};
   }
 }
 
-export function saveSealerPins(workspaceId: string, pins: Record<string, string>) {
+export function saveSealerPins(workspaceId: string, pins: SealerPins) {
   try {
     localStorage.setItem(pinsKey(workspaceId), JSON.stringify(pins));
   } catch {
