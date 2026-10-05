@@ -1443,6 +1443,10 @@
           "active": "Active: the circuit appears as operational and enters the default flows.",
           "inactive": "Inactive: keeps history, but leaves the main operational flows."
         },
+        "shareSealedHistory": {
+          "label": "New participants can read the current sealed values",
+          "hint": "Whoever joins later can read the latest value of each sealed field once the sealer's system re-shares it (DeFarm does not open the fields). Turning this off does not undo what was already shared. Circuit owner or admin setting."
+        },
         "itemsPublic": {
           "label": "Show items to the public (even with the circuit private)",
           "hint": "Each animal's page (/i/) becomes visible to the public, with identifiers masked (SISBOV, map). The circuit page stays private. Useful to share a single animal's link without opening the whole circuit.",
