@@ -64,7 +64,7 @@ const NARRATIVE_META: Record<DemoActor["id"], Omit<NarrativeStep, "id" | "actor"
     title: "Etapa 5 - OESA / Órgão sanitário",
     objective: "Carimbar a GTA e ver fraude: OESA Studio + Painel.",
     highlights: [
-      "Carimba a movimentação pela GTA (prova pública, trust 100)",
+      "Carimba a movimentação pela GTA (prova no circuito, trust 100)",
       "Painel com agregados + alertas de fraude",
       "GTA duplicada / movimentação simultânea do mesmo animal",
     ],

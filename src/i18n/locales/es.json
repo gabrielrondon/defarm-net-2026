@@ -60,7 +60,7 @@
       },
       "oesa": {
         "name": "Autoridad (OESA)",
-        "desc": "La GTA que emites, con prueba pública."
+        "desc": "La GTA que emites, con prueba auditable."
       },
       "parceiro": {
         "name": "Socio / Banco",
@@ -1918,6 +1918,7 @@
         "delegatePrompt": "Ingresa el workspace_id que recibirá la delegación:",
         "delegateDone": "Delegación registrada.",
         "visibilityFailed": "No se pudo cambiar la visibilidad.",
+        "visibilityFieldsNotPublic": "Este evento tiene campos que no pueden ser públicos ({{fields}}). Manténgalo restringido al circuito.",
         "empty": "No hay eventos registrados",
         "emptyDesc": "Los eventos aparecerán aquí a medida que el ítem se modifique"
       },

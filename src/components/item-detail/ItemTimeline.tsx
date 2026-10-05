@@ -17,6 +17,7 @@ import {
   grantEventDelegation,
   updateEventVisibility,
 } from "@/lib/api/events";
+import { ApiError } from "@/lib/api/client";
 
 interface ItemTimelineProps {
   events: Event[];
@@ -154,10 +155,14 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
       await updateEventVisibility(eventId, { visibility });
       window.location.reload();
     } catch (err) {
-      // #635: a public event cannot carry fields like the GTA; the backend says which.
+      // #635: a public event cannot carry fields like the GTA; the backend names them.
+      const notPublic =
+        err instanceof ApiError && err.reason === "public_payload_field_not_allowed";
       toast({
         title: t("portal.items.timeline.visibilityFailed"),
-        description: err instanceof Error ? err.message : undefined,
+        description: notPublic
+          ? t("portal.items.timeline.visibilityFieldsNotPublic", { fields: err.details ?? "" })
+          : undefined,
         variant: "destructive",
       });
     } finally {
@@ -322,7 +327,10 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                           <DropdownMenuContent align="end">
                             {canManage ? (
                               <>
-                                {(["public", "circuit_only", "private"] as const).map((v) => (
+                                {(["public", "circuit_only", "private"] as const)
+                                  // item_movement carries the GTA and can never be public (#635)
+                                  .filter((v) => v !== "public" || event.event_type !== "item_movement")
+                                  .map((v) => (
                                   <DropdownMenuItem key={v} onClick={() => changeVisibility(event.id, v)}>
                                     {t(`portal.enums.eventVisibility.${v}`)}
                                   </DropdownMenuItem>

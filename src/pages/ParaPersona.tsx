@@ -74,11 +74,11 @@ const PERSONAS: Record<PersonaKey, Persona> = {
   oesas: {
     code: "OSA",
     eyebrow: "Para OESAs",
-    headline: ["A GTA que você emite, com ", "prova pública", "."],
+    headline: ["A GTA que você emite, com ", "prova auditável", "."],
     subtitle:
-      "A DeFarm não substitui a GTA — lê a movimentação e devolve valor: carimbo público auditável por GTA, histórico DFID linkado e alertas de inconsistência. A soberania da OESA é preservada.",
+      "A DeFarm não substitui a GTA — lê a movimentação e devolve valor: carimbo auditável por GTA no circuito, histórico DFID linkado e alertas de inconsistência. A soberania da OESA é preservada.",
     bullets: [
-      "Carimbe a movimentação pelo número da GTA: vira prova pública, com a sua palavra como órgão sanitário.",
+      "Carimbe a movimentação pelo número da GTA: vira prova auditável no circuito, com a sua palavra como órgão sanitário.",
       "Receba alertas de integridade — GTA clonada entre animais, mesmo animal em dois lugares.",
       "Ferramenta extra de fiscalização, sem ônus operacional.",
     ],

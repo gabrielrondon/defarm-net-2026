@@ -18,7 +18,9 @@ export class ApiError extends Error {
     public status: number,
     public code: string,
     message: string,
-    public details?: string
+    public details?: string,
+    /** Stable machine-readable reason from the body's `code` (e.g. public_payload_field_not_allowed). */
+    public reason?: string
   ) {
     super(message);
     this.name = "ApiError";
@@ -178,7 +180,8 @@ export async function registryRequest<T>(
         response.status,
         errorData.error || "UNKNOWN_ERROR",
         errorData.message || `Request failed with status ${response.status}`,
-        errorData.details
+        errorData.details,
+        typeof errorData.code === "string" ? errorData.code : undefined
       );
     }
 
