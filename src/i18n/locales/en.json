@@ -908,7 +908,7 @@
       "retired": "Key retired",
       "revoke": "Revoke",
       "revokeTitle": "Revoke key {{key}}?",
-      "revokeBody": "Use it when the key is not yours or may have leaked. The key is no longer accepted from now on, and the encryption keys it vouched for leave the directory: the workspace stops receiving sealed fields until it registers a new signing key and a new encryption key. What was already sealed stays readable and keeps its authorship.",
+      "revokeBody": "Use it when the key is not yours or may have leaked. Every event signature made with it stops counting, including old ones (retiring keeps the old ones). The encryption keys it vouched for leave the directory: the workspace stops receiving sealed fields until it registers a new signing key and a new encryption key. What was already sealed stays readable.",
       "revoked": "Key revoked",
       "actionError": "Could not complete",
       "adminOnly": "Only the workspace owner or an admin can manage keys.",

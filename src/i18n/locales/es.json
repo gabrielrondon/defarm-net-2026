@@ -1045,7 +1045,7 @@
       "retired": "Clave retirada",
       "revoke": "Revocar",
       "revokeTitle": "¿Revocar la clave {{key}}?",
-      "revokeBody": "Úselo cuando la clave no es suya o pudo filtrarse. La clave deja de aceptarse desde ahora, y las claves de cifrado avaladas por ella salen del directorio: el workspace deja de recibir campos sellados hasta registrar una clave de firma y una clave de cifrado nuevas. Lo ya sellado sigue legible y conserva la autoría.",
+      "revokeBody": "Úselo cuando la clave no es suya o pudo filtrarse. Todas las firmas de eventos hechas con ella dejan de valer, incluso las antiguas (retirar conserva las antiguas). Las claves de cifrado avaladas por ella salen del directorio: el workspace deja de recibir campos sellados hasta registrar una clave de firma y una clave de cifrado nuevas. Lo ya sellado sigue legible.",
       "revoked": "Clave revocada",
       "actionError": "No se pudo completar",
       "adminOnly": "Solo el dueño o un admin del workspace puede gestionar claves.",

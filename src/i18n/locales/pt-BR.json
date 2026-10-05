@@ -908,7 +908,7 @@
       "retired": "Chave aposentada",
       "revoke": "Revogar",
       "revokeTitle": "Revogar a chave {{key}}?",
-      "revokeBody": "Use quando a chave não é sua ou pode ter vazado. A chave deixa de ser aceita daqui em diante, e as chaves de cifra garantidas por ela saem do diretório: o workspace deixa de receber campos selados até registrar uma chave de assinatura e uma chave de cifra novas. O que já foi selado continua legível e mantém a autoria.",
+      "revokeBody": "Use quando a chave não é sua ou pode ter vazado. Todas as assinaturas de evento feitas com ela deixam de valer, inclusive as antigas (aposentar mantém as antigas). As chaves de cifra garantidas por ela saem do diretório: o workspace deixa de receber campos selados até registrar uma chave de assinatura e uma chave de cifra novas. O que já foi selado continua legível.",
       "revoked": "Chave revogada",
       "actionError": "Não foi possível concluir",
       "adminOnly": "Só o dono ou um admin do workspace pode gerenciar chaves.",
