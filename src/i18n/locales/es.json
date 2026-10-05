@@ -1045,7 +1045,7 @@
       "retired": "Clave retirada",
       "revoke": "Revocar",
       "revokeTitle": "¿Revocar la clave {{key}}?",
-      "revokeBody": "Úselo cuando la clave no es suya o pudo filtrarse. Las firmas y la autoría hechas con ella dejan de valer, y las claves de cifrado avaladas por ella salen del directorio: el workspace deja de recibir campos sellados hasta registrar una clave nueva. Lo ya sellado sigue legible.",
+      "revokeBody": "Úselo cuando la clave no es suya o pudo filtrarse. La clave deja de aceptarse desde ahora, y las claves de cifrado avaladas por ella salen del directorio: el workspace deja de recibir campos sellados hasta registrar una clave de firma y una clave de cifrado nuevas. Lo ya sellado sigue legible y conserva la autoría.",
       "revoked": "Clave revocada",
       "actionError": "No se pudo completar",
       "adminOnly": "Solo el dueño o un admin del workspace puede gestionar claves.",
@@ -1057,7 +1057,10 @@
         "active": "activa",
         "retired": "retirada",
         "revoked": "revocada"
-      }
+      },
+      "grantTitle": "¿Habilitar una clave nueva para el sistema integrado?",
+      "grantBody": "Quien tenga la API key del workspace podrá registrar una clave de firma en las próximas 24 horas. Si la clave revocada no era suya, la API key pudo filtrarse con ella: cambie la API key antes de habilitar.",
+      "grantConfirm": "Habilitar por 24 h"
     },
     "sessions": {
       "title": "Sesiones activas",

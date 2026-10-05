@@ -908,7 +908,7 @@
       "retired": "Chave aposentada",
       "revoke": "Revogar",
       "revokeTitle": "Revogar a chave {{key}}?",
-      "revokeBody": "Use quando a chave não é sua ou pode ter vazado. As assinaturas e a autoria feitas com ela deixam de valer, e as chaves de cifra garantidas por ela saem do diretório: o workspace deixa de receber campos selados até registrar uma chave nova. O que já foi selado continua legível.",
+      "revokeBody": "Use quando a chave não é sua ou pode ter vazado. A chave deixa de ser aceita daqui em diante, e as chaves de cifra garantidas por ela saem do diretório: o workspace deixa de receber campos selados até registrar uma chave de assinatura e uma chave de cifra novas. O que já foi selado continua legível e mantém a autoria.",
       "revoked": "Chave revogada",
       "actionError": "Não foi possível concluir",
       "adminOnly": "Só o dono ou um admin do workspace pode gerenciar chaves.",
@@ -920,7 +920,10 @@
         "active": "ativa",
         "retired": "aposentada",
         "revoked": "revogada"
-      }
+      },
+      "grantTitle": "Liberar uma chave nova para o sistema integrado?",
+      "grantBody": "Quem tem a API key do workspace poderá registrar uma chave de assinatura nas próximas 24 horas. Se a chave revogada não era sua, a API key pode ter vazado junto: troque a API key antes de liberar.",
+      "grantConfirm": "Liberar por 24 h"
     },
     "sessions": {
       "title": "Sessões ativas",

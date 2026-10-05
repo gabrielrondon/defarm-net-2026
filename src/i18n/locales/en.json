@@ -908,7 +908,7 @@
       "retired": "Key retired",
       "revoke": "Revoke",
       "revokeTitle": "Revoke key {{key}}?",
-      "revokeBody": "Use it when the key is not yours or may have leaked. Signatures and authorship made with it stop counting, and the encryption keys it vouched for leave the directory: the workspace stops receiving sealed fields until a new key is registered. What was already sealed stays readable.",
+      "revokeBody": "Use it when the key is not yours or may have leaked. The key is no longer accepted from now on, and the encryption keys it vouched for leave the directory: the workspace stops receiving sealed fields until it registers a new signing key and a new encryption key. What was already sealed stays readable and keeps its authorship.",
       "revoked": "Key revoked",
       "actionError": "Could not complete",
       "adminOnly": "Only the workspace owner or an admin can manage keys.",
@@ -920,7 +920,10 @@
         "active": "active",
         "retired": "retired",
         "revoked": "revoked"
-      }
+      },
+      "grantTitle": "Allow a new key for the integrated system?",
+      "grantBody": "Whoever holds the workspace API key will be able to register a signing key in the next 24 hours. If the revoked key was not yours, the API key may have leaked with it: replace the API key before allowing.",
+      "grantConfirm": "Allow for 24 h"
     },
     "sessions": {
       "title": "Active sessions",

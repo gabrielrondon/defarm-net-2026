@@ -165,9 +165,25 @@ export function SigningKeysPanel() {
               })}
             </p>
           ) : null}
-          <Button size="sm" variant="outline" disabled={allow.isPending} onClick={() => allow.mutate()}>
-            {t("settings.signingKeys.grant")}
-          </Button>
+          {/* Quem tem a API key registra a chave liberada: se a chave revogada não era sua, a API key
+              vazou junto e precisa ser trocada antes. */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline" disabled={allow.isPending}>
+                {t("settings.signingKeys.grant")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("settings.signingKeys.grantTitle")}</AlertDialogTitle>
+                <AlertDialogDescription>{t("settings.signingKeys.grantBody")}</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("settings.signingKeys.cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => allow.mutate()}>{t("settings.signingKeys.grantConfirm")}</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>
