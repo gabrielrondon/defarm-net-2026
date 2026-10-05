@@ -1443,6 +1443,10 @@
           "active": "Ativo: o circuito aparece como operacional e entra nos fluxos padrão.",
           "inactive": "Inativo: mantém histórico, mas sai dos fluxos operacionais principais."
         },
+        "shareSealedHistory": {
+          "label": "Novos participantes recebem o histórico selado",
+          "hint": "Quem entrar no circuito depois também passa a ler os campos selados antes da entrada. Quem selou cada campo recompartilha automaticamente; a DeFarm continua sem ver os valores."
+        },
         "itemsPublic": {
           "label": "Mostrar os itens ao público (mesmo com o circuito privado)",
           "hint": "A página de cada animal (/i/) fica visível ao público, com os identificadores mascarados (SISBOV, mapa). A página do circuito continua privada. Útil para compartilhar o link de um animal sem abrir o circuito inteiro.",

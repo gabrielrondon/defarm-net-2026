@@ -46,6 +46,7 @@ export default function EditarCircuito() {
   const [publicShowCompliance, setPublicShowCompliance] = useState(false);
   // Opt-in: expõe os itens (mascarados) nas páginas /i/ mesmo com o circuito privado.
   const [itemsPubliclyVisible, setItemsPubliclyVisible] = useState(false);
+  const [shareSealedHistory, setShareSealedHistory] = useState(false);
 
   // Fetch circuit data
   const { data: circuit, isLoading: isLoadingCircuit } = useQuery({
@@ -72,6 +73,10 @@ export default function EditarCircuito() {
       setPublicLogoUrl(circuit.public_logo_url || "");
       const showCompliance = (circuit.settings as Record<string, unknown> | null | undefined)?.public_show_compliance;
       setPublicShowCompliance(showCompliance === true);
+      // #757: participantes novos recebem o histórico selado (quem selou recompartilha).
+      setShareSealedHistory(
+        (circuit.settings as Record<string, unknown> | null | undefined)?.share_sealed_history === true
+      );
       setItemsPubliclyVisible(circuit.items_publicly_visible ?? false);
     }
   }, [circuit]);
@@ -107,6 +112,7 @@ export default function EditarCircuito() {
       settings: {
         ...((circuit?.settings as Record<string, unknown> | null) || {}),
         public_show_compliance: publicShowCompliance,
+        share_sealed_history: shareSealedHistory,
       },
       name,
       description,
@@ -290,6 +296,22 @@ export default function EditarCircuito() {
               </div>
             </div>
           )}
+          {/* #757: histórico selado para quem entra depois. Vale em qualquer visibilidade. */}
+          <div className="space-y-3 pt-4 border-t border-border">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label>{t("portal.circuits.edit.shareSealedHistory.label")}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("portal.circuits.edit.shareSealedHistory.hint")}
+                </p>
+              </div>
+              <Switch
+                checked={shareSealedHistory}
+                onCheckedChange={setShareSealedHistory}
+                aria-label={t("portal.circuits.edit.shareSealedHistory.label")}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Discovery & Public Profile */}
