@@ -2561,7 +2561,7 @@
     "passphrase": "Contraseña de las claves en este navegador",
     "passphraseHint": "Protege las claves guardadas aquí y el archivo de respaldo. Mínimo {{min}} caracteres, sin repetir un mismo patrón. DeFarm no puede recuperarla.",
     "confirmPassphrase": "Repita la contraseña",
-    "created": "Claves creadas. Se descargó el archivo de respaldo: guárdelo.",
+    "created": "Claves creadas y respaldo descargado. Guarde el archivo y confirme abajo para registrar.",
     "imported": "Claves importadas",
     "forgetConfirm": "¿Borrar las claves de este navegador? Sin el respaldo, lo sellado para ellas ya no se puede abrir.",
     "keys": {
@@ -2576,8 +2576,8 @@
       "import": "Importar archivo de claves o respaldo",
       "export": "Descargar respaldo",
       "forget": "Borrar de este navegador",
-      "unregistered": "Las claves están guardadas en este navegador, pero el registro en el workspace no terminó.",
-      "complete": "Completar registro"
+      "unregistered": "Las claves están en este navegador, pero aún no se registraron en el workspace. Guarde el archivo de respaldo (si no se descargó, descárguelo de nuevo abajo): sin él, perder este navegador es perder lo sellado para estas claves.",
+      "complete": "Ya guardé el respaldo, registrar"
     },
     "inbox": {
       "title": "Bandeja de entrada",
@@ -2601,9 +2601,10 @@
       "notThisWorkspace": "Estas claves no son la clave de cifrado activa de este workspace.",
       "openFailed": "No se pudo abrir este campo con la clave de este navegador.",
       "anotherKey": "El workspace ya tiene una clave de cifrado activa. Importe su archivo de claves en lugar de crear otra.",
-      "incomplete": "Las claves se guardaron y se descargó el respaldo, pero el registro no terminó. Intente \"Completar registro\".",
+      "incomplete": "El registro no terminó. Intente de nuevo.",
       "adminOnly": "Solo el dueño o un admin del workspace puede registrar claves.",
       "mismatch": "Este campo no coincide con su sobre sellado y no se abrió."
-    }
+    },
+    "registered": "Claves registradas en el workspace."
   }
 }

@@ -21,8 +21,9 @@ export function wrapperMatchesEnvelope(f: RecipientSealedField): boolean {
 }
 
 /**
- * Autoria com a chave do selador fixada no primeiro uso. A chave pública vem do servidor; fixá-la
- * faz uma troca posterior aparecer como "changed", em vez de ser aceita em silêncio. Devolve o
+ * Autoria com a chave do selador fixada no primeiro uso, por workspace selador (como o SDK .NET).
+ * A chave pública vem do servidor; fixá-la faz uma troca posterior, inclusive com outro key_id,
+ * aparecer como "changed", em vez de ser aceita em silêncio. Devolve o
  * resultado por campo e os pins atualizados (o chamador decide onde guardar).
  */
 export function classifyAuthorship(
@@ -33,7 +34,7 @@ export function classifyAuthorship(
   const byField: Record<string, Authorship> = {};
   let changed = false;
   for (const f of fields) {
-    const id = `${f.sealer_workspace_id}/${f.sealer_key_id}`;
+    const id = f.sealer_workspace_id;
     const pub = f.sealer_public_key_b64;
     let a: Authorship = "unknown";
     if (f.authorship_verified && pub && wrapperMatchesEnvelope(f) && verifySealerSignature(f.sealed_field, pub)) {
@@ -48,7 +49,7 @@ export function classifyAuthorship(
   return { byField, pins: next, changed };
 }
 
-const pinsKey = (workspaceId: string) => `defarm.sealer-pins.v1.${workspaceId}`;
+const pinsKey = (workspaceId: string) => `defarm.sealer-pins.v2.${workspaceId}`;
 
 export function loadSealerPins(workspaceId: string): Record<string, string> {
   try {

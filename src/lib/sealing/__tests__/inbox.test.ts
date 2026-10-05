@@ -14,14 +14,14 @@ const ME = "11111111-1111-1111-1111-111111111111";
 const SEALER = "22222222-2222-2222-2222-222222222222";
 const DFID = "DFID-BEEF-BR-2026-000001-abcdef";
 
-async function field(sealerSeed: Uint8Array): Promise<RecipientSealedField> {
+async function field(sealerSeed: Uint8Array, keyId = "erp-sign-1"): Promise<RecipientSealedField> {
   const enc = generateX25519KeyPair();
   const sealed = signSealedField(
     await sealField(DFID, "cev-1", "geo", "application/json", new TextEncoder().encode('{"lat":-20.4}'), [
       { workspaceId: ME, encKeyId: "web-enc-1", encPubkeyB64: toBase64(enc.publicKey) },
     ]),
     SEALER,
-    "erp-sign-1",
+    keyId,
     sealerSeed
   );
   return {
@@ -34,7 +34,7 @@ async function field(sealerSeed: Uint8Array): Promise<RecipientSealedField> {
     recipient_enc_key_id: "web-enc-1",
     sealed_field: sealed,
     sealer_workspace_id: SEALER,
-    sealer_key_id: "erp-sign-1",
+    sealer_key_id: keyId,
     authorship_verified: true,
     sealer_public_key_b64: toBase64(ed25519PublicKey(sealerSeed)),
   };
@@ -66,6 +66,11 @@ describe("sealed inbox checks (#755)", () => {
     const r2 = classifyAuthorship([swapped], r1.pins);
     expect(r2.byField["evt-1geo"]).toBe("changed");
     expect(r2.changed).toBe(false);
+
+    // Outra chave com outro key_id no mesmo workspace selador (rotação ou key_id forjado): também
+    // não passa em silêncio.
+    const rotated = await field(generateEd25519KeyPair().seed, "rotated-sign-2");
+    expect(classifyAuthorship([rotated], r1.pins).byField["evt-1geo"]).toBe("changed");
   });
 
   it("does not trust the server flag alone", async () => {

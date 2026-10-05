@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Lock, Download, Upload, KeyRound, ShieldCheck } from "lucide-react";
@@ -45,6 +45,7 @@ import { classifyAuthorship, loadSealerPins, saveSealerPins, wrapperMatchesEnvel
 const MIN_PASSPHRASE = 12;
 
 class AnotherEncryptionKeyError extends Error {}
+class WorkspaceChangedError extends Error {}
 
 function randomId(prefix: string) {
   const b = crypto.getRandomValues(new Uint8Array(4));
@@ -64,10 +65,27 @@ function download(name: string, text: string) {
 // nascem e ficam neste navegador (cifradas com uma senha local), e o valor é aberto localmente.
 // A DeFarm não recebe a chave privada nem o valor.
 export default function CamposSelados() {
-  const { t, i18n } = useTranslation();
-  const { toast } = useToast();
   const { user } = useAuth();
   const workspaceId = user?.workspace_id ?? "";
+  // Uma instância por workspace: trocar de workspace desmonta esta e descarta o estado dela.
+  return <CamposSeladosDoWorkspace key={workspaceId} workspaceId={workspaceId} />;
+}
+
+function CamposSeladosDoWorkspace({ workspaceId }: { workspaceId: string }) {
+  const { t, i18n } = useTranslation();
+  const { toast } = useToast();
+  // A sessão (token) já pode ser de outro workspace quando uma operação lenta termina (PBKDF2,
+  // rede). Nenhuma escrita sai de uma instância desmontada.
+  const alive = useRef(true);
+  useEffect(
+    () => () => {
+      alive.current = false;
+    },
+    []
+  );
+  const ensureAlive = () => {
+    if (!alive.current) throw new WorkspaceChangedError();
+  };
 
   const [hasLocal, setHasLocal] = useState<boolean | null>(null);
   const [keystore, setKeystore] = useState<Keystore | null>(null);
@@ -86,13 +104,7 @@ export default function CamposSelados() {
     [encKeys.data]
   );
 
-  // Trocar de workspace (ou sair) fecha as chaves abertas e limpa o que foi aberto.
   useEffect(() => {
-    setKeystore(null);
-    setOpened({});
-    setPassphrase("");
-    setConfirm("");
-    setHasLocal(null);
     if (!workspaceId) return;
     let current = true;
     loadEncrypted(workspaceId).then((e) => current && setHasLocal(!!e));
@@ -169,9 +181,11 @@ export default function CamposSelados() {
     );
     if (otherActiveEnc) throw new AnotherEncryptionKeyError();
     if (!signingKeys.some((k) => k.key_id === signing.key_id)) {
+      ensureAlive();
       await registerSigningKey(signing.key_id, signingPub);
     }
     if (!encryptionKeys.some((k) => k.key_id === encryption.key_id)) {
+      ensureAlive();
       await registerEncryptionKey(
         encryption.key_id,
         encPub,
@@ -193,8 +207,9 @@ export default function CamposSelados() {
     setBusy(true);
     try {
       await finishRegistration(keystore);
-      toast({ title: t("sealed.created") });
+      toast({ title: t("sealed.registered") });
     } catch (e) {
+      if (e instanceof WorkspaceChangedError) return;
       toast({
         title: registrationError(e),
         variant: "destructive",
@@ -224,21 +239,16 @@ export default function CamposSelados() {
           encryption: { key_id: randomId("web-enc-"), private_key_b64: toBase64(encryption.privateKey) },
         },
       };
-      // Guarda e baixa o backup ANTES de registrar: se algo falhar no meio, as chaves não se perdem
-      // e o registro é concluído depois.
+      // Nada é registrado aqui. As chaves ficam guardadas e o backup é baixado; o registro só vem
+      // quando a pessoa confirma que guardou o backup ("concluir registro"). O download pode falhar
+      // calado, e sem backup perder este navegador é perder o que for selado para estas chaves.
+      ensureAlive();
       await protectAndSave(ks);
+      await navigator.storage?.persist?.().catch(() => false);
       download(`defarm-chaves-${workspaceId}.json`, JSON.stringify(await encryptKeystore(ks, workspaceId, passphrase), null, 2));
-      try {
-        await finishRegistration(ks);
-        toast({ title: t("sealed.created") });
-      } catch (e) {
-        toast({
-          title: registrationError(e),
-          variant: "destructive",
-        });
-      }
-      encKeys.refetch();
-    } catch {
+      toast({ title: t("sealed.created") });
+    } catch (e) {
+      if (e instanceof WorkspaceChangedError) return;
       toast({ title: t("sealed.errors.generic"), variant: "destructive" });
     } finally {
       setBusy(false);

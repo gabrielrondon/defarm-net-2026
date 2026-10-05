@@ -2444,7 +2444,7 @@
     "passphrase": "Passphrase for the keys in this browser",
     "passphraseHint": "Protects the keys stored here and the backup file. At least {{min}} characters, without repeating one pattern. DeFarm cannot recover it.",
     "confirmPassphrase": "Repeat the passphrase",
-    "created": "Keys created. The backup file was downloaded: keep it safe.",
+    "created": "Keys created and backup downloaded. Keep the file and confirm below to register.",
     "imported": "Keys imported",
     "forgetConfirm": "Delete the keys from this browser? Without the backup, what was sealed to them can no longer be opened.",
     "keys": {
@@ -2459,8 +2459,8 @@
       "import": "Import key file or backup",
       "export": "Download backup",
       "forget": "Delete from this browser",
-      "unregistered": "The keys are stored in this browser, but the registration in the workspace did not finish.",
-      "complete": "Finish registration"
+      "unregistered": "The keys are in this browser but not yet registered in the workspace. Keep the backup file (if it did not download, download it again below): without it, losing this browser means losing what is sealed to these keys.",
+      "complete": "I kept the backup, register"
     },
     "inbox": {
       "title": "Inbox",
@@ -2484,9 +2484,10 @@
       "notThisWorkspace": "These keys are not this workspace's active encryption key.",
       "openFailed": "This field could not be opened with this browser's key.",
       "anotherKey": "The workspace already has an active encryption key. Import its key file instead of creating another.",
-      "incomplete": "The keys were stored and the backup downloaded, but the registration did not finish. Try \"Finish registration\".",
+      "incomplete": "The registration did not finish. Try again.",
       "adminOnly": "Only the workspace owner or an admin can register keys.",
       "mismatch": "This field does not match its sealed envelope and was not opened."
-    }
+    },
+    "registered": "Keys registered in the workspace."
   }
 }

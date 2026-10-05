@@ -2444,7 +2444,7 @@
     "passphrase": "Senha das chaves neste navegador",
     "passphraseHint": "Protege as chaves guardadas aqui e o arquivo de backup. Mínimo de {{min}} caracteres, sem repetir o mesmo padrão. A DeFarm não tem como recuperá-la.",
     "confirmPassphrase": "Repita a senha",
-    "created": "Chaves criadas. O arquivo de backup foi baixado: guarde-o.",
+    "created": "Chaves criadas e backup baixado. Guarde o arquivo e confirme abaixo para registrar.",
     "imported": "Chaves importadas",
     "forgetConfirm": "Apagar as chaves deste navegador? Sem o backup, o que foi selado para elas não abre mais.",
     "keys": {
@@ -2459,8 +2459,8 @@
       "import": "Importar arquivo de chaves ou backup",
       "export": "Baixar backup",
       "forget": "Apagar deste navegador",
-      "unregistered": "As chaves estão guardadas neste navegador, mas o registro no workspace não terminou.",
-      "complete": "Concluir registro"
+      "unregistered": "As chaves estão neste navegador, mas ainda não foram registradas no workspace. Guarde o arquivo de backup (se não baixou, baixe de novo abaixo): sem ele, perder este navegador é perder o que for selado para estas chaves.",
+      "complete": "Já guardei o backup, registrar"
     },
     "inbox": {
       "title": "Caixa de entrada",
@@ -2484,9 +2484,10 @@
       "notThisWorkspace": "Estas chaves não são a chave de cifra ativa deste workspace.",
       "openFailed": "Não foi possível abrir este campo com a chave deste navegador.",
       "anotherKey": "O workspace já tem uma chave de cifra ativa. Importe o arquivo de chaves dela em vez de criar outra.",
-      "incomplete": "As chaves foram guardadas e o backup baixado, mas o registro não terminou. Tente \"Concluir registro\".",
+      "incomplete": "O registro não terminou. Tente de novo.",
       "adminOnly": "Só o dono ou um admin do workspace pode registrar chaves.",
       "mismatch": "Este campo não confere com o envelope selado e não foi aberto."
-    }
+    },
+    "registered": "Chaves registradas no workspace."
   }
 }
