@@ -6,7 +6,7 @@
     "getStarted": "Minha Caderneta",
     "back": "Voltar",
     "groups": { "operate": "Operar", "catalog": "Catálogo", "advanced": "Avançado", "actions": "Ações" },
-    "items": { "portal": "Portal Parceiro", "send": "Enviar dados", "logs": "Central de Envios", "myCircuits": "Meus Circuitos", "items": "Itens", "routing": "Roteamento", "kit": "Kit", "embed": "Link de Visualização", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configurações" },
+    "items": { "portal": "Portal Parceiro", "send": "Enviar dados", "logs": "Central de Envios", "myCircuits": "Meus Circuitos", "items": "Itens", "routing": "Roteamento", "kit": "Kit", "embed": "Link de Visualização", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configurações", "sealed": "Campos selados" },
     "logout": "Sair",
     "emailBanner": { "text": "Seu email ainda não foi verificado. Verifique para aumentar a segurança da conta.", "cta": "Reenviar verificação" }
   },
@@ -2472,5 +2472,59 @@
     "ts_revoked_after": "chave revogada depois — o carimbo prova que existia no ato",
     "ts_pending": "carimbo pendente",
     "ts_none": "sem carimbo ainda"
+  },
+  "sealed": {
+    "title": "Campos selados",
+    "subtitle": "Abra aqui, no seu navegador, os campos selados para o seu workspace. A chave fica só neste navegador; a DeFarm não recebe a chave nem o valor.",
+    "passphrase": "Senha das chaves neste navegador",
+    "passphraseHint": "Protege as chaves guardadas aqui e o arquivo de backup. Mínimo de {{min}} caracteres, sem repetir o mesmo padrão. A DeFarm não tem como recuperá-la.",
+    "confirmPassphrase": "Repita a senha",
+    "created": "Chaves criadas e backup baixado. Guarde o arquivo e confirme abaixo para registrar.",
+    "imported": "Chaves importadas",
+    "forgetConfirm": "Apagar as chaves deste navegador? Sem o backup, o que foi selado para elas não abre mais.",
+    "keys": {
+      "title": "Chaves deste navegador",
+      "ready": "Pronto. Os campos selados para esta chave aparecem abaixo.",
+      "inactive": "Estas chaves não são a chave de cifra ativa do workspace: campos novos não serão selados para elas.",
+      "locked": "As chaves deste navegador estão protegidas. Digite a senha para abrir.",
+      "unlock": "Abrir",
+      "createHint": "O workspace ainda não tem chave de cifra. Crie as chaves aqui só se nenhum sistema integrado vai receber campos selados por este workspace: o workspace recebe numa chave de cifra só. Se um sistema integrado vai usar, crie as chaves nele e importe o arquivo aqui. As chaves nascem e ficam neste navegador, e um arquivo de backup é baixado.",
+      "importOnly": "O workspace já tem uma chave de cifra (por exemplo, a do sistema integrado). Para ler aqui, importe o arquivo de chaves dele ou o backup; criar outra deixaria o sistema integrado sem receber.",
+      "create": "Criar chaves neste navegador",
+      "import": "Importar arquivo de chaves ou backup",
+      "export": "Baixar backup",
+      "forget": "Apagar deste navegador",
+      "unregistered": "As chaves estão neste navegador, mas ainda não foram registradas no workspace. Guarde o arquivo de backup (se não baixou, baixe de novo abaixo): sem ele, perder este navegador é perder o que for selado para estas chaves.",
+      "complete": "Já guardei o backup, registrar"
+    },
+    "inbox": {
+      "title": "Caixa de entrada",
+      "empty": "Nenhum campo selado para esta chave.",
+      "open": "Abrir",
+      "authorship": {
+        "ok": "assinatura confere",
+        "changed": "chave do selador mudou",
+        "unknown": "assinatura não verificada"
+      },
+      "authorshipHint": {
+        "ok": "A assinatura confere com a chave do selador, a mesma vista neste navegador da primeira vez.",
+        "changed": "A chave do selador é diferente da vista antes neste navegador. Confirme com quem selou antes de confiar.",
+        "unknown": "Não foi possível conferir a assinatura do selador."
+      },
+      "accept": "Confirmar nova chave",
+      "acceptConfirm": "Confirmou com quem selou que a chave {{key}} é dele? Depois de confirmar, os campos assinados com ela aparecem como válidos neste navegador."
+    },
+    "errors": {
+      "wrongPassphrase": "Senha errada, ou o arquivo é de outro workspace.",
+      "generic": "Não foi possível concluir.",
+      "badFile": "Arquivo de chaves inválido.",
+      "notThisWorkspace": "Estas chaves não são a chave de cifra ativa deste workspace.",
+      "openFailed": "Não foi possível abrir este campo com a chave deste navegador.",
+      "anotherKey": "O workspace já tem uma chave de cifra ativa. Importe o arquivo de chaves dela em vez de criar outra.",
+      "incomplete": "O registro não terminou. Tente de novo.",
+      "adminOnly": "Só o dono ou um admin do workspace pode registrar chaves.",
+      "mismatch": "Este campo não confere com o envelope selado e não foi aberto."
+    },
+    "registered": "Chaves registradas no workspace."
   }
 }

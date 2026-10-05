@@ -39,8 +39,7 @@ import {
   Upload,
   Route,
   PackageOpen,
-  Share2,
-} from "lucide-react";
+  Share2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import logoIcon from "@/assets/logo-icon.png";
@@ -282,6 +281,14 @@ export function AppLayout({ children }: AppLayoutProps) {
         Boolean(s.route) &&
         (!s.personas || s.personas.includes(workspaceType))
     );
+  // #755: campos selados abertos no navegador. Vale para qualquer workspace (quem recebe um campo
+  // selado sem ter sistema próprio), por isso entra fixo e não pelas capacidades do papel.
+  actionSections.push({
+    key: "read.sealed",
+    label: t("nav.items.sealed", { defaultValue: "Campos selados" }),
+    icon: Lock,
+    route: "/app/selados",
+  });
 
   const handleResendVerification = async () => {
     try {
