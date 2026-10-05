@@ -11,11 +11,13 @@ import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
 import { eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   getEventGovernance,
   grantEventDelegation,
   updateEventVisibility,
 } from "@/lib/api/events";
+import { ApiError } from "@/lib/api/client";
 
 interface ItemTimelineProps {
   events: Event[];
@@ -107,6 +109,7 @@ function compactDetails(event: Event): string[] {
 
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [showOperational, setShowOperational] = useState(false);
   const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
   const [governanceByEvent, setGovernanceByEvent] = useState<Record<string, {
@@ -151,6 +154,17 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
     try {
       await updateEventVisibility(eventId, { visibility });
       window.location.reload();
+    } catch (err) {
+      // #635: a public event cannot carry fields like the GTA; the backend names them.
+      const notPublic =
+        err instanceof ApiError && err.reason === "public_payload_field_not_allowed";
+      toast({
+        title: t("portal.items.timeline.visibilityFailed"),
+        description: notPublic
+          ? t("portal.items.timeline.visibilityFieldsNotPublic", { fields: err.details ?? "" })
+          : undefined,
+        variant: "destructive",
+      });
     } finally {
       setLoadingEventId(null);
     }
@@ -313,7 +327,10 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                           <DropdownMenuContent align="end">
                             {canManage ? (
                               <>
-                                {(["public", "circuit_only", "private"] as const).map((v) => (
+                                {(["public", "circuit_only", "private"] as const)
+                                  // item_movement carries the GTA and can never be public (#635)
+                                  .filter((v) => v !== "public" || event.event_type !== "item_movement")
+                                  .map((v) => (
                                   <DropdownMenuItem key={v} onClick={() => changeVisibility(event.id, v)}>
                                     {t(`portal.enums.eventVisibility.${v}`)}
                                   </DropdownMenuItem>

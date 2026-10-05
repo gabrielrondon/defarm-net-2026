@@ -46,7 +46,7 @@
       "rastreador": { "name": "SISBOV tracker", "desc": "Issue ear tags as on-chain identity." },
       "certificadora": { "name": "Certifier", "desc": "From signed PDF to verifiable attestation." },
       "frigorifico": { "name": "Processor", "desc": "Create your premium seal with public proof." },
-      "oesa": { "name": "Authority (OESA)", "desc": "The GTA you issue, with public proof." },
+      "oesa": { "name": "Authority (OESA)", "desc": "The GTA you issue, with auditable proof." },
       "parceiro": { "name": "Partner / Bank", "desc": "Read the score, decide credit and purchase." }
     },
     "prim": {
@@ -1780,6 +1780,8 @@
         "delegate": "Delegate",
         "delegatePrompt": "Enter the workspace_id that will receive delegation:",
         "delegateDone": "Delegation registered.",
+        "visibilityFailed": "Could not change the visibility.",
+        "visibilityFieldsNotPublic": "This event has fields that cannot be public ({{fields}}). Keep it restricted to the circuit.",
         "empty": "No events recorded",
         "emptyDesc": "Events will appear here as the item is modified"
       },

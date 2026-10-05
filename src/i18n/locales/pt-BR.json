@@ -46,7 +46,7 @@
       "rastreador": { "name": "Rastreadora SISBOV", "desc": "Emita brincos como identidade on-chain." },
       "certificadora": { "name": "Certificadora", "desc": "Do PDF assinado ao atestado verificável." },
       "frigorifico": { "name": "Frigorífico", "desc": "Crie o seu selo de bonificação com prova pública." },
-      "oesa": { "name": "OESA", "desc": "A GTA que você emite, com prova pública." },
+      "oesa": { "name": "OESA", "desc": "A GTA que você emite, com prova auditável." },
       "parceiro": { "name": "Parceiro / Banco", "desc": "Leia o score e decida crédito e compra." }
     },
     "prim": {
@@ -1780,6 +1780,8 @@
         "delegate": "Delegar",
         "delegatePrompt": "Informe o workspace_id que receberá delegação:",
         "delegateDone": "Delegação registrada.",
+        "visibilityFailed": "Não foi possível mudar a visibilidade.",
+        "visibilityFieldsNotPublic": "Este evento tem campos que não podem ser públicos ({{fields}}). Mantenha-o restrito ao circuito.",
         "empty": "Nenhum evento registrado",
         "emptyDesc": "Eventos aparecerão aqui conforme o item é modificado"
       },

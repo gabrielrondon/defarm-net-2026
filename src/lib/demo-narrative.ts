@@ -78,7 +78,7 @@ export const DEMO_ACTORS: DemoActor[] = [
     id: "government",
     title: "OESA / Órgão sanitário",
     description:
-      "Carimba a movimentação por GTA (prova pública) e vê o painel de integridade com alertas de fraude.",
+      "Carimba a movimentação por GTA (prova auditável no circuito) e vê o painel de integridade com alertas de fraude.",
     workspaceType: "government",
     email: "qa.government.2026@defarm.net",
     password: "DeFarmQA#2026!",

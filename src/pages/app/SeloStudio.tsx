@@ -9,7 +9,6 @@ import { createEvent } from "@/lib/api/events";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -29,7 +28,6 @@ export default function SeloStudio() {
   const [sealName, setSealName] = useState("");
   const [level, setLevel] = useState("");
   const [validity, setValidity] = useState("");
-  const [notes, setNotes] = useState("");
   const [lastDfid, setLastDfid] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -45,7 +43,6 @@ export default function SeloStudio() {
           seal_name: sealName.trim(),
           ...(level.trim() ? { level: level.trim() } : {}),
           ...(validity.trim() ? { validity: validity.trim() } : {}),
-          ...(notes.trim() ? { notes: notes.trim() } : {}),
           occurred_at: new Date().toISOString(),
         },
       });
@@ -59,7 +56,6 @@ export default function SeloStudio() {
       setSealName("");
       setLevel("");
       setValidity("");
-      setNotes("");
     },
     onError: (err) => {
       toast({
@@ -132,15 +128,6 @@ export default function SeloStudio() {
                 onChange={(e) => setValidity(e.target.value)}
               />
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">Observações (opcional)</Label>
-            <Textarea
-              id="notes"
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
           </div>
           <Button
             onClick={() => mutation.mutate()}

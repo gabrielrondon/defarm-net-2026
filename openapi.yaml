@@ -13196,7 +13196,7 @@ paths:
       tags:
       - Events
       summary: Create typed event
-      description: '[Advanced / Stellar Tranche 2] Create a new typed event for an item/circuit (e.g. movement, vaccination). Recommended for integrators/SDK/CLI flows.'
+      description: '[Advanced / Stellar Tranche 2] Create a new typed event for an item/circuit (e.g. movement, vaccination). Recommended for integrators/SDK/CLI flows. A public event (visibility public) is served raw to anyone, so its payload may only use the public allow-list (dates, weight, vaccine/treatment names, zootechnical classification, certificate_type/scope/level/seal_name/validity); any other field (GTA, CAR, coordinates, people, free text) gets 400 public_payload_field_not_allowed. Event metadata on a public event may only carry signature and source. Send other fields with visibility circuit_only.'
       x-audience: advanced
       operationId: create_event
       requestBody:
@@ -13576,6 +13576,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Invalid visibility, or the event payload has fields that cannot be public (public_payload_field_not_allowed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '403':
           description: Not owner/delegate/admin
           content:

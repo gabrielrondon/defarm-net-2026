@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { Truck, ExternalLink, Loader2 } from "lucide-react";
+import { Truck, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getPublicItem } from "@/lib/api/join-requests";
@@ -20,8 +19,9 @@ import {
 
 // OESA Studio — fase 1 (emissão) do épico OESA Dashboard (#111). A OESA (ou um
 // produtor) registra uma movimentação baseada em GTA, emitindo `item_movement`.
-// É o "carimbo público auditável" por GTA — a DeFarm não substitui a GTA, lê e
-// devolve prova. O backend exige `payload.gta_number`. OESA = government (trust 85).
+// A DeFarm não substitui a GTA, lê e devolve prova. O backend exige
+// `payload.gta_number`. OESA = government (trust 85). A GTA identifica produtor e
+// propriedade, então o evento fica no circuito (circuit_only), nunca público (#635).
 export default function OesaStudio() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -41,7 +41,7 @@ export default function OesaStudio() {
         event_type: "item_movement",
         source_type: user?.workspace_type || "government",
         item_id: item.id,
-        visibility: "public",
+        visibility: "circuit_only",
         payload: {
           gta_number: gta.trim(),
           ...(origin.trim() ? { origin: origin.trim() } : {}),
@@ -56,7 +56,7 @@ export default function OesaStudio() {
       setLastDfid(dfid.trim());
       toast({
         title: "Movimentação registrada",
-        description: "GTA carimbada e pública no verificador do ativo.",
+        description: "GTA carimbada no circuito do ativo.",
       });
       setGta("");
       setOrigin("");
@@ -86,9 +86,9 @@ export default function OesaStudio() {
         <h1 className="text-2xl font-semibold">OESA Studio · Movimentação</h1>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Registre uma movimentação baseada em GTA. É um carimbo público auditável
-        por GTA — a DeFarm não substitui a GTA, lê e devolve prova. Aparece no
-        verificador como prova do seu órgão.
+        Registre uma movimentação baseada em GTA. A DeFarm não substitui a GTA,
+        lê e devolve prova. A GTA identifica produtor e propriedade, por isso o
+        registro fica restrito ao circuito e não aparece na página pública.
       </p>
 
       <Card>
@@ -171,15 +171,9 @@ export default function OesaStudio() {
 
           {lastDfid && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm">
-              <p className="text-emerald-800 font-medium mb-1">
+              <p className="text-emerald-800 font-medium">
                 Movimentação registrada para {lastDfid}.
               </p>
-              <Link
-                to={`/i/${lastDfid}`}
-                className="inline-flex items-center gap-1 text-emerald-700 hover:underline"
-              >
-                Ver no verificador público <ExternalLink className="h-3.5 w-3.5" />
-              </Link>
             </div>
           )}
         </CardContent>
