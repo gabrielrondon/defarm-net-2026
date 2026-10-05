@@ -2442,7 +2442,7 @@
     "title": "Sealed fields",
     "subtitle": "Open here, in your browser, the fields sealed to your workspace. The key stays in this browser only; DeFarm receives neither the key nor the value.",
     "passphrase": "Passphrase for the keys in this browser",
-    "passphraseHint": "Protects the keys stored here and the backup file. At least {{min}} characters. DeFarm cannot recover it.",
+    "passphraseHint": "Protects the keys stored here and the backup file. At least {{min}} characters, without repeating one pattern. DeFarm cannot recover it.",
     "confirmPassphrase": "Repeat the passphrase",
     "created": "Keys created. The backup file was downloaded: keep it safe.",
     "imported": "Keys imported",
@@ -2453,26 +2453,40 @@
       "inactive": "These keys are not the workspace's active encryption key: new fields will not be sealed to them.",
       "locked": "The keys in this browser are protected. Enter the passphrase to open them.",
       "unlock": "Open",
-      "createHint": "The workspace has no encryption key yet. Create the keys here: they are generated and kept in this browser, and a backup file is downloaded.",
+      "createHint": "The workspace has no encryption key yet. Create the keys here only if no integrated system will receive sealed fields for this workspace: the workspace receives on a single encryption key. If an integrated system will use it, create the keys there and import the file here. The keys are generated and kept in this browser, and a backup file is downloaded.",
       "importOnly": "The workspace already has an encryption key (for example, the integrated system's). To read here, import its key file or the backup; creating another would leave the integrated system without new fields.",
       "create": "Create keys in this browser",
       "import": "Import key file or backup",
       "export": "Download backup",
-      "forget": "Delete from this browser"
+      "forget": "Delete from this browser",
+      "unregistered": "The keys are stored in this browser, but the registration in the workspace did not finish.",
+      "complete": "Finish registration"
     },
     "inbox": {
       "title": "Inbox",
       "empty": "No field sealed to this key.",
       "open": "Open",
-      "authorshipOk": "authorship verified",
-      "authorshipUnknown": "authorship not verified"
+      "authorship": {
+        "ok": "signature checks out",
+        "changed": "sealer key changed",
+        "unknown": "signature not verified"
+      },
+      "authorshipHint": {
+        "ok": "The signature matches the sealer's key, the same one this browser saw the first time.",
+        "changed": "The sealer's key differs from the one this browser saw before. Confirm with the sealer before trusting it.",
+        "unknown": "The sealer's signature could not be checked."
+      }
     },
     "errors": {
       "wrongPassphrase": "Wrong passphrase, or the file belongs to another workspace.",
       "generic": "Could not complete.",
       "badFile": "Invalid key file.",
       "notThisWorkspace": "These keys are not this workspace's active encryption key.",
-      "openFailed": "This field could not be opened with this browser's key."
+      "openFailed": "This field could not be opened with this browser's key.",
+      "anotherKey": "The workspace already has an active encryption key. Import its key file instead of creating another.",
+      "incomplete": "The keys were stored and the backup downloaded, but the registration did not finish. Try \"Finish registration\".",
+      "adminOnly": "Only the workspace owner or an admin can register keys.",
+      "mismatch": "This field does not match its sealed envelope and was not opened."
     }
   }
 }

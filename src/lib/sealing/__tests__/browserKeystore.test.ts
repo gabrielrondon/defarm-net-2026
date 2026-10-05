@@ -7,6 +7,7 @@ import {
   isEncryptedKeystore,
   type Keystore,
   parseKeystore,
+  passphraseIsStrong,
   privateKey,
   WrongPassphraseError,
 } from "../browserKeystore";
@@ -42,6 +43,23 @@ describe("browser keystore (#755)", () => {
     await expect(decryptKeystore(enc, "22222222-2222-2222-2222-222222222222", "senha-longa-de-teste")).rejects.toBeInstanceOf(
       WrongPassphraseError
     );
+  });
+
+  it("refuses a backup with key derivation parameters out of range", async () => {
+    const enc = await encryptKeystore(newKeystore(), WS, "senha-longa-de-teste");
+    expect(enc.iterations).toBe(600_000);
+    for (const iterations of [1, 99_999, 5_000_001, 1.5]) {
+      await expect(decryptKeystore({ ...enc, iterations }, WS, "senha-longa-de-teste")).rejects.toBeInstanceOf(
+        InvalidKeystoreError
+      );
+    }
+  });
+
+  it("asks for a passphrase with length and some variety", () => {
+    expect(passphraseIsStrong("aaaaaaaaaaaa", 12)).toBe(false);
+    expect(passphraseIsStrong("121212121212", 12)).toBe(false);
+    expect(passphraseIsStrong("curta-1", 12)).toBe(false);
+    expect(passphraseIsStrong("senha-longa-de-teste", 12)).toBe(true);
   });
 
   it("accepts the SDK key file format and rejects anything else", () => {

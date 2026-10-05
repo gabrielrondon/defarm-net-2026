@@ -25,7 +25,11 @@ interface EncryptedKeystore {
 
 const DB_NAME = "defarm";
 const STORE = "sealed-keystores";
-const ITERATIONS = 310_000;
+const ITERATIONS = 600_000;
+// Limites para o que vem de um backup: abaixo do mínimo a senha fica barata de quebrar; acima do
+// máximo um arquivo malicioso trava a aba.
+const MIN_ITERATIONS = 100_000;
+const MAX_ITERATIONS = 5_000_000;
 
 const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
@@ -80,8 +84,12 @@ export async function encryptKeystore(ks: Keystore, workspaceId: string, passphr
 }
 
 export class WrongPassphraseError extends Error {}
+export class InvalidKeystoreError extends Error {}
 
 export async function decryptKeystore(enc: EncryptedKeystore, workspaceId: string, passphrase: string): Promise<Keystore> {
+  if (!Number.isInteger(enc.iterations) || enc.iterations < MIN_ITERATIONS || enc.iterations > MAX_ITERATIONS) {
+    throw new InvalidKeystoreError("unsupported key derivation parameters");
+  }
   const key = await deriveKey(passphrase, unb64(enc.salt_b64), enc.iterations);
   try {
     const pt = await crypto.subtle.decrypt(
@@ -95,8 +103,6 @@ export async function decryptKeystore(enc: EncryptedKeystore, workspaceId: strin
     throw new WrongPassphraseError("wrong passphrase or another workspace");
   }
 }
-
-export class InvalidKeystoreError extends Error {}
 
 /** Valida o formato aberto (o mesmo do FileKeystore dos SDKs). */
 export function parseKeystore(text: string): Keystore {
@@ -148,3 +154,8 @@ export function privateKey(k: StoredKey): Uint8Array {
 }
 
 export { b64 as toB64 };
+
+/** Senha mínima: comprimento e alguma variedade (barra "aaaaaaaaaaaa" e "123412341234"). */
+export function passphraseIsStrong(p: string, min: number): boolean {
+  return p.length >= min && new Set(p).size >= 6;
+}

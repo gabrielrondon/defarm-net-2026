@@ -2442,7 +2442,7 @@
     "title": "Campos selados",
     "subtitle": "Abra aqui, no seu navegador, os campos selados para o seu workspace. A chave fica só neste navegador; a DeFarm não recebe a chave nem o valor.",
     "passphrase": "Senha das chaves neste navegador",
-    "passphraseHint": "Protege as chaves guardadas aqui e o arquivo de backup. Mínimo de {{min}} caracteres. A DeFarm não tem como recuperá-la.",
+    "passphraseHint": "Protege as chaves guardadas aqui e o arquivo de backup. Mínimo de {{min}} caracteres, sem repetir o mesmo padrão. A DeFarm não tem como recuperá-la.",
     "confirmPassphrase": "Repita a senha",
     "created": "Chaves criadas. O arquivo de backup foi baixado: guarde-o.",
     "imported": "Chaves importadas",
@@ -2453,26 +2453,40 @@
       "inactive": "Estas chaves não são a chave de cifra ativa do workspace: campos novos não serão selados para elas.",
       "locked": "As chaves deste navegador estão protegidas. Digite a senha para abrir.",
       "unlock": "Abrir",
-      "createHint": "O workspace ainda não tem chave de cifra. Crie as chaves aqui: elas nascem e ficam neste navegador, e um arquivo de backup é baixado.",
+      "createHint": "O workspace ainda não tem chave de cifra. Crie as chaves aqui só se nenhum sistema integrado vai receber campos selados por este workspace: o workspace recebe numa chave de cifra só. Se um sistema integrado vai usar, crie as chaves nele e importe o arquivo aqui. As chaves nascem e ficam neste navegador, e um arquivo de backup é baixado.",
       "importOnly": "O workspace já tem uma chave de cifra (por exemplo, a do sistema integrado). Para ler aqui, importe o arquivo de chaves dele ou o backup; criar outra deixaria o sistema integrado sem receber.",
       "create": "Criar chaves neste navegador",
       "import": "Importar arquivo de chaves ou backup",
       "export": "Baixar backup",
-      "forget": "Apagar deste navegador"
+      "forget": "Apagar deste navegador",
+      "unregistered": "As chaves estão guardadas neste navegador, mas o registro no workspace não terminou.",
+      "complete": "Concluir registro"
     },
     "inbox": {
       "title": "Caixa de entrada",
       "empty": "Nenhum campo selado para esta chave.",
       "open": "Abrir",
-      "authorshipOk": "autoria verificada",
-      "authorshipUnknown": "autoria não verificada"
+      "authorship": {
+        "ok": "assinatura confere",
+        "changed": "chave do selador mudou",
+        "unknown": "assinatura não verificada"
+      },
+      "authorshipHint": {
+        "ok": "A assinatura confere com a chave do selador, a mesma vista neste navegador da primeira vez.",
+        "changed": "A chave do selador é diferente da vista antes neste navegador. Confirme com quem selou antes de confiar.",
+        "unknown": "Não foi possível conferir a assinatura do selador."
+      }
     },
     "errors": {
       "wrongPassphrase": "Senha errada, ou o arquivo é de outro workspace.",
       "generic": "Não foi possível concluir.",
       "badFile": "Arquivo de chaves inválido.",
       "notThisWorkspace": "Estas chaves não são a chave de cifra ativa deste workspace.",
-      "openFailed": "Não foi possível abrir este campo com a chave deste navegador."
+      "openFailed": "Não foi possível abrir este campo com a chave deste navegador.",
+      "anotherKey": "O workspace já tem uma chave de cifra ativa. Importe o arquivo de chaves dela em vez de criar outra.",
+      "incomplete": "As chaves foram guardadas e o backup baixado, mas o registro não terminou. Tente \"Concluir registro\".",
+      "adminOnly": "Só o dono ou um admin do workspace pode registrar chaves.",
+      "mismatch": "Este campo não confere com o envelope selado e não foi aberto."
     }
   }
 }

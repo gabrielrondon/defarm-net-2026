@@ -5,13 +5,14 @@ import { Lock, Download, Upload, KeyRound, ShieldCheck } from "lucide-react";
 import {
   generateEd25519KeyPair,
   generateX25519KeyPair,
+  ed25519PublicKey,
   openField,
   signEncKeyBinding,
   toBase64,
-  verifySealerSignature,
   x25519PublicKey,
 } from "@defarm/sdk/core";
 import { useAuth } from "@/contexts/AuthContext";
+import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import {
   type Keystore,
   loadEncrypted,
   parseKeystore,
+  passphraseIsStrong,
   privateKey,
   removeEncrypted,
   saveEncrypted,
@@ -33,12 +35,16 @@ import {
 import {
   listEncryptionKeys,
   listSealedFields,
+  listSigningKeys,
   registerEncryptionKey,
   registerSigningKey,
   type RecipientSealedField,
 } from "@/lib/api/sealed";
+import { classifyAuthorship, loadSealerPins, saveSealerPins, wrapperMatchesEnvelope } from "@/lib/sealing/inbox";
 
 const MIN_PASSPHRASE = 12;
+
+class AnotherEncryptionKeyError extends Error {}
 
 function randomId(prefix: string) {
   const b = crypto.getRandomValues(new Uint8Array(4));
@@ -70,15 +76,29 @@ export default function CamposSelados() {
   const [busy, setBusy] = useState(false);
   const [opened, setOpened] = useState<Record<string, string>>({});
 
-  const encKeys = useQuery({ queryKey: ["workspace-encryption-keys"], queryFn: listEncryptionKeys, enabled: !!workspaceId });
+  const encKeys = useQuery({
+    queryKey: ["workspace-encryption-keys", workspaceId],
+    queryFn: listEncryptionKeys,
+    enabled: !!workspaceId,
+  });
   const activeEncKeys = useMemo(
     () => (encKeys.data ?? []).filter((k) => k.is_active && !k.revoked_at && !k.retired_at),
     [encKeys.data]
   );
 
+  // Trocar de workspace (ou sair) fecha as chaves abertas e limpa o que foi aberto.
   useEffect(() => {
+    setKeystore(null);
+    setOpened({});
+    setPassphrase("");
+    setConfirm("");
+    setHasLocal(null);
     if (!workspaceId) return;
-    loadEncrypted(workspaceId).then((e) => setHasLocal(!!e));
+    let current = true;
+    loadEncrypted(workspaceId).then((e) => current && setHasLocal(!!e));
+    return () => {
+      current = false;
+    };
   }, [workspaceId]);
 
   const myEncKeyId = keystore?.keys.encryption?.key_id;
@@ -88,8 +108,10 @@ export default function CamposSelados() {
       (k) => k.key_id === myEncKeyId && k.public_key_b64.trim() === toBase64(x25519PublicKey(privateKey(keystore.keys.encryption!)))
     );
 
+  const myEncKeyRegistered = !!myEncKeyId && (encKeys.data ?? []).some((k) => k.key_id === myEncKeyId);
+
   const inbox = useQuery({
-    queryKey: ["sealed-inbox", myEncKeyId],
+    queryKey: ["sealed-inbox", workspaceId, myEncKeyId],
     enabled: !!keystore,
     queryFn: async () => {
       const all: RecipientSealedField[] = [];
@@ -103,7 +125,14 @@ export default function CamposSelados() {
     },
   });
 
-  const strongEnough = passphrase.length >= MIN_PASSPHRASE;
+  const authorship = useMemo(() => {
+    if (!inbox.data) return {};
+    const r = classifyAuthorship(inbox.data, loadSealerPins(workspaceId));
+    if (r.changed) saveSealerPins(workspaceId, r.pins);
+    return r.byField;
+  }, [inbox.data, workspaceId]);
+
+  const strongEnough = passphraseIsStrong(passphrase, MIN_PASSPHRASE);
 
   async function protectAndSave(ks: Keystore) {
     await saveEncrypted(workspaceId, await encryptKeystore(ks, workspaceId, passphrase));
@@ -127,31 +156,90 @@ export default function CamposSelados() {
     }
   }
 
+  // Registra no workspace as chaves já guardadas neste navegador. Retomável: pula o que já está
+  // registrado, então uma falha no meio se resolve com "concluir registro", sem chave órfã.
+  async function finishRegistration(ks: Keystore) {
+    const signing = ks.keys.signing!;
+    const encryption = ks.keys.encryption!;
+    const signingPub = toBase64(ed25519PublicKey(privateKey(signing)));
+    const encPub = toBase64(x25519PublicKey(privateKey(encryption)));
+    const [signingKeys, encryptionKeys] = await Promise.all([listSigningKeys(), listEncryptionKeys()]);
+    const otherActiveEnc = encryptionKeys.some(
+      (k) => k.key_id !== encryption.key_id && k.is_active && !k.revoked_at && !k.retired_at
+    );
+    if (otherActiveEnc) throw new AnotherEncryptionKeyError();
+    if (!signingKeys.some((k) => k.key_id === signing.key_id)) {
+      await registerSigningKey(signing.key_id, signingPub);
+    }
+    if (!encryptionKeys.some((k) => k.key_id === encryption.key_id)) {
+      await registerEncryptionKey(
+        encryption.key_id,
+        encPub,
+        signing.key_id,
+        signEncKeyBinding(workspaceId, encryption.key_id, encPub, privateKey(signing))
+      );
+    }
+  }
+
+  const registrationError = (e: unknown) =>
+    e instanceof AnotherEncryptionKeyError
+      ? t("sealed.errors.anotherKey")
+      : e instanceof ApiError && e.code === "key_management_requires_admin"
+        ? t("sealed.errors.adminOnly")
+        : t("sealed.errors.incomplete");
+
+  async function completeRegistration() {
+    if (!keystore) return;
+    setBusy(true);
+    try {
+      await finishRegistration(keystore);
+      toast({ title: t("sealed.created") });
+    } catch (e) {
+      toast({
+        title: registrationError(e),
+        variant: "destructive",
+      });
+    } finally {
+      encKeys.refetch();
+      setBusy(false);
+    }
+  }
+
   async function createKeys() {
     if (!strongEnough || passphrase !== confirm) return;
     setBusy(true);
     try {
+      // A lista na tela pode estar velha: o sistema integrado pode ter registrado a chave dele agora.
+      const fresh = await listEncryptionKeys();
+      if (fresh.some((k) => k.is_active && !k.revoked_at && !k.retired_at)) {
+        toast({ title: t("sealed.errors.anotherKey"), variant: "destructive" });
+        return;
+      }
       const signing = generateEd25519KeyPair();
       const encryption = generateX25519KeyPair();
-      const signingId = randomId("web-sign-");
-      const encId = randomId("web-enc-");
-      const encPubB64 = toBase64(encryption.publicKey);
-      await registerSigningKey(signingId, toBase64(signing.publicKey));
-      await registerEncryptionKey(encId, encPubB64, signingId, signEncKeyBinding(workspaceId, encId, encPubB64, signing.seed));
       const ks: Keystore = {
         version: 1,
         keys: {
-          signing: { key_id: signingId, private_key_b64: toBase64(signing.seed) },
-          encryption: { key_id: encId, private_key_b64: toBase64(encryption.privateKey) },
+          signing: { key_id: randomId("web-sign-"), private_key_b64: toBase64(signing.seed) },
+          encryption: { key_id: randomId("web-enc-"), private_key_b64: toBase64(encryption.privateKey) },
         },
       };
+      // Guarda e baixa o backup ANTES de registrar: se algo falhar no meio, as chaves não se perdem
+      // e o registro é concluído depois.
       await protectAndSave(ks);
-      // Backup imediato: sem ele, perder este navegador é perder o que foi selado para o workspace.
       download(`defarm-chaves-${workspaceId}.json`, JSON.stringify(await encryptKeystore(ks, workspaceId, passphrase), null, 2));
+      try {
+        await finishRegistration(ks);
+        toast({ title: t("sealed.created") });
+      } catch (e) {
+        toast({
+          title: registrationError(e),
+          variant: "destructive",
+        });
+      }
       encKeys.refetch();
-      toast({ title: t("sealed.created") });
-    } catch (e) {
-      toast({ title: t("sealed.errors.generic"), description: e instanceof Error ? e.message : undefined, variant: "destructive" });
+    } catch {
+      toast({ title: t("sealed.errors.generic"), variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -194,10 +282,16 @@ export default function CamposSelados() {
     setKeystore(null);
     setHasLocal(false);
     setPassphrase("");
+    setConfirm("");
+    setOpened({});
   }
 
   async function open(f: RecipientSealedField) {
     if (!keystore) return;
+    if (!wrapperMatchesEnvelope(f)) {
+      toast({ title: t("sealed.errors.mismatch"), variant: "destructive" });
+      return;
+    }
     try {
       const raw = await openField(f.sealed_field, keystore.keys.encryption!.key_id, privateKey(keystore.keys.encryption!));
       let text = new TextDecoder().decode(raw);
@@ -243,8 +337,17 @@ export default function CamposSelados() {
           {hasLocal === null || encKeys.isLoading ? null : keystore ? (
             <div className="space-y-3">
               <p className="text-sm">
-                {myKeyIsActive ? t("sealed.keys.ready") : t("sealed.keys.inactive")}
+                {myKeyIsActive
+                  ? t("sealed.keys.ready")
+                  : myEncKeyRegistered
+                    ? t("sealed.keys.inactive")
+                    : t("sealed.keys.unregistered")}
               </p>
+              {!myEncKeyRegistered && (
+                <Button onClick={completeRegistration} disabled={busy}>
+                  {t("sealed.keys.complete")}
+                </Button>
+              )}
               <div className="flex flex-wrap gap-2 items-end">
                 <div className="min-w-[16rem]">{passphraseInput}</div>
                 <Button variant="outline" onClick={exportBackup} disabled={!strongEnough}>
@@ -309,8 +412,7 @@ export default function CamposSelados() {
               <ul className="divide-y divide-border">
                 {(inbox.data ?? []).map((f) => {
                   const k = f.event_id + f.field_path;
-                  const localAuthorship =
-                    f.sealer_public_key_b64 ? verifySealerSignature(f.sealed_field, f.sealer_public_key_b64) : false;
+                  const a = authorship[k] ?? "unknown";
                   return (
                     <li key={k} className="py-3 space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -321,8 +423,11 @@ export default function CamposSelados() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant={f.authorship_verified && localAuthorship ? "secondary" : "outline"}>
-                            {f.authorship_verified && localAuthorship ? t("sealed.inbox.authorshipOk") : t("sealed.inbox.authorshipUnknown")}
+                          <Badge
+                            variant={a === "ok" ? "secondary" : a === "changed" ? "destructive" : "outline"}
+                            title={t(`sealed.inbox.authorshipHint.${a}`)}
+                          >
+                            {t(`sealed.inbox.authorship.${a}`)}
                           </Badge>
                           <Button size="sm" variant="outline" onClick={() => open(f)}>
                             {t("sealed.inbox.open")}
