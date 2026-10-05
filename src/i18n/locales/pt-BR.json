@@ -894,6 +894,24 @@
       "endAllSessions": "Encerrar todas as sessões",
       "logout": "Sair da conta"
     },
+    "signingKeys": {
+      "title": "Chaves de assinatura",
+      "subtitle": "As chaves com que o seu workspace assina. Uma chave registrada pelo sistema integrado, sem login, aparece marcada; se você não a reconhece, revogue.",
+      "empty": "Nenhuma chave de assinatura registrada.",
+      "viaApiKey": "registrada pela API key",
+      "createdAt": "Registrada em {{date}}",
+      "revoke": "Revogar",
+      "cancel": "Cancelar",
+      "confirmTitle": "Revogar a chave {{key}}?",
+      "confirmBody": "Use quando a chave não é sua ou pode ter vazado. As assinaturas feitas com ela deixam de valer, e o sistema que a usa precisa registrar outra.",
+      "revoked": "Chave revogada",
+      "revokeError": "Não foi possível revogar",
+      "status": {
+        "active": "ativa",
+        "retired": "aposentada",
+        "revoked": "revogada"
+      }
+    },
     "sessions": {
       "title": "Sessões ativas",
       "empty": "Nenhuma sessão ativa além desta — bom sinal de segurança.",

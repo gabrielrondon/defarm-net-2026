@@ -894,6 +894,24 @@
       "endAllSessions": "End all sessions",
       "logout": "Sign out"
     },
+    "signingKeys": {
+      "title": "Signing keys",
+      "subtitle": "The keys your workspace signs with. A key registered by the integrated system, without a login, is marked; if you do not recognize it, revoke it.",
+      "empty": "No signing key registered.",
+      "viaApiKey": "registered by the API key",
+      "createdAt": "Registered on {{date}}",
+      "revoke": "Revoke",
+      "cancel": "Cancel",
+      "confirmTitle": "Revoke key {{key}}?",
+      "confirmBody": "Use it when the key is not yours or may have leaked. Signatures made with it stop being valid, and the system that uses it must register another.",
+      "revoked": "Key revoked",
+      "revokeError": "Could not revoke",
+      "status": {
+        "active": "active",
+        "retired": "retired",
+        "revoked": "revoked"
+      }
+    },
     "sessions": {
       "title": "Active sessions",
       "empty": "No active sessions besides this one — a good security sign.",

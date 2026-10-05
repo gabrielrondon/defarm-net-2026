@@ -1031,6 +1031,24 @@
       "endAllSessions": "Cerrar todas las sesiones",
       "logout": "Cerrar sesión"
     },
+    "signingKeys": {
+      "title": "Claves de firma",
+      "subtitle": "Las claves con las que firma su workspace. Una clave registrada por el sistema integrado, sin login, aparece marcada; si no la reconoce, revóquela.",
+      "empty": "Ninguna clave de firma registrada.",
+      "viaApiKey": "registrada por la API key",
+      "createdAt": "Registrada el {{date}}",
+      "revoke": "Revocar",
+      "cancel": "Cancelar",
+      "confirmTitle": "¿Revocar la clave {{key}}?",
+      "confirmBody": "Úselo cuando la clave no es suya o pudo haberse filtrado. Las firmas hechas con ella dejan de ser válidas, y el sistema que la usa debe registrar otra.",
+      "revoked": "Clave revocada",
+      "revokeError": "No se pudo revocar",
+      "status": {
+        "active": "activa",
+        "retired": "retirada",
+        "revoked": "revocada"
+      }
+    },
     "sessions": {
       "title": "Sesiones activas",
       "empty": "Ninguna sesión activa además de esta — buena señal de seguridad.",
