@@ -6,7 +6,7 @@
     "getStarted": "My Passbook",
     "back": "Back",
     "groups": { "operate": "Operate", "catalog": "Catalog", "advanced": "Advanced", "actions": "Actions" },
-    "items": { "portal": "Partner Portal", "send": "Send data", "logs": "Submissions", "myCircuits": "My Circuits", "items": "Items", "routing": "Routing", "kit": "Kit", "embed": "View Link", "verify": "Verify DFID", "docs": "Docs", "settings": "Settings" },
+    "items": { "portal": "Partner Portal", "send": "Send data", "logs": "Submissions", "myCircuits": "My Circuits", "items": "Items", "routing": "Routing", "kit": "Kit", "embed": "View Link", "verify": "Verify DFID", "docs": "Docs", "settings": "Settings", "sealed": "Sealed fields" },
     "logout": "Log out",
     "emailBanner": { "text": "Your email is not verified yet. Verify it to increase account security.", "cta": "Resend verification" }
   },
@@ -2437,5 +2437,42 @@
     "ts_revoked_after": "key revoked afterwards — the stamp proves it existed at the time",
     "ts_pending": "timestamp pending",
     "ts_none": "no timestamp yet"
+  },
+  "sealed": {
+    "title": "Sealed fields",
+    "subtitle": "Open here, in your browser, the fields sealed to your workspace. The key stays in this browser only; DeFarm receives neither the key nor the value.",
+    "passphrase": "Passphrase for the keys in this browser",
+    "passphraseHint": "Protects the keys stored here and the backup file. At least {{min}} characters. DeFarm cannot recover it.",
+    "confirmPassphrase": "Repeat the passphrase",
+    "created": "Keys created. The backup file was downloaded: keep it safe.",
+    "imported": "Keys imported",
+    "forgetConfirm": "Delete the keys from this browser? Without the backup, what was sealed to them can no longer be opened.",
+    "keys": {
+      "title": "Keys in this browser",
+      "ready": "Ready. Fields sealed to this key appear below.",
+      "inactive": "These keys are not the workspace's active encryption key: new fields will not be sealed to them.",
+      "locked": "The keys in this browser are protected. Enter the passphrase to open them.",
+      "unlock": "Open",
+      "createHint": "The workspace has no encryption key yet. Create the keys here: they are generated and kept in this browser, and a backup file is downloaded.",
+      "importOnly": "The workspace already has an encryption key (for example, the integrated system's). To read here, import its key file or the backup; creating another would leave the integrated system without new fields.",
+      "create": "Create keys in this browser",
+      "import": "Import key file or backup",
+      "export": "Download backup",
+      "forget": "Delete from this browser"
+    },
+    "inbox": {
+      "title": "Inbox",
+      "empty": "No field sealed to this key.",
+      "open": "Open",
+      "authorshipOk": "authorship verified",
+      "authorshipUnknown": "authorship not verified"
+    },
+    "errors": {
+      "wrongPassphrase": "Wrong passphrase, or the file belongs to another workspace.",
+      "generic": "Could not complete.",
+      "badFile": "Invalid key file.",
+      "notThisWorkspace": "These keys are not this workspace's active encryption key.",
+      "openFailed": "This field could not be opened with this browser's key."
+    }
   }
 }

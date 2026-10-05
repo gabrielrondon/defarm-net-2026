@@ -60,6 +60,7 @@ import SnapshotsList from "./pages/app/SnapshotsList";
 import MerkleTreesList from "./pages/app/MerkleTreesList";
 import ApiKeys from "./pages/app/ApiKeys";
 import Configuracoes from "./pages/app/Configuracoes";
+import CamposSelados from "./pages/app/CamposSelados";
 import FinanceDashboard from "./pages/app/FinanceDashboard";
 import FinanceCreditLines from "./pages/app/FinanceCreditLines";
 import FinanceSimulador from "./pages/app/FinanceSimulador";
@@ -573,6 +574,7 @@ const App = () => (
               }
             />
             <Route path="/app/configuracoes" element={<AppLayout><Configuracoes /></AppLayout>} />
+            <Route path="/app/selados" element={<AppLayout><CamposSelados /></AppLayout>} />
             
             {/* Admin routes */}
             <Route

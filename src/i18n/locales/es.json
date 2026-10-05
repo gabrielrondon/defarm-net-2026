@@ -6,7 +6,7 @@
     "getStarted": "Empezar",
     "back": "Volver",
     "groups": { "operate": "Operar", "catalog": "Catálogo", "advanced": "Avanzado", "actions": "Acciones" },
-    "items": { "portal": "Portal del Socio", "send": "Enviar datos", "logs": "Central de Envíos", "myCircuits": "Mis Circuitos", "items": "Ítems", "routing": "Ruteo", "kit": "Kit", "embed": "Enlace de Visualización", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configuración" },
+    "items": { "portal": "Portal del Socio", "send": "Enviar datos", "logs": "Central de Envíos", "myCircuits": "Mis Circuitos", "items": "Ítems", "routing": "Ruteo", "kit": "Kit", "embed": "Enlace de Visualización", "verify": "Verificar DFID", "docs": "Docs", "settings": "Configuración", "sealed": "Campos sellados" },
     "logout": "Cerrar sesión",
     "emailBanner": { "text": "Tu email todavía no fue verificado. Verifícalo para aumentar la seguridad de la cuenta.", "cta": "Reenviar verificación" }
   },
@@ -2554,5 +2554,42 @@
     "ts_revoked_after": "clave revocada después — el sello prueba que existía en el momento",
     "ts_pending": "sello pendiente",
     "ts_none": "sin sello aún"
+  },
+  "sealed": {
+    "title": "Campos sellados",
+    "subtitle": "Abra aquí, en su navegador, los campos sellados para su workspace. La clave queda solo en este navegador; DeFarm no recibe la clave ni el valor.",
+    "passphrase": "Contraseña de las claves en este navegador",
+    "passphraseHint": "Protege las claves guardadas aquí y el archivo de respaldo. Mínimo {{min}} caracteres. DeFarm no puede recuperarla.",
+    "confirmPassphrase": "Repita la contraseña",
+    "created": "Claves creadas. Se descargó el archivo de respaldo: guárdelo.",
+    "imported": "Claves importadas",
+    "forgetConfirm": "¿Borrar las claves de este navegador? Sin el respaldo, lo sellado para ellas ya no se puede abrir.",
+    "keys": {
+      "title": "Claves de este navegador",
+      "ready": "Listo. Los campos sellados para esta clave aparecen abajo.",
+      "inactive": "Estas claves no son la clave de cifrado activa del workspace: los campos nuevos no se sellarán para ellas.",
+      "locked": "Las claves de este navegador están protegidas. Escriba la contraseña para abrirlas.",
+      "unlock": "Abrir",
+      "createHint": "El workspace aún no tiene clave de cifrado. Cree las claves aquí: nacen y quedan en este navegador, y se descarga un archivo de respaldo.",
+      "importOnly": "El workspace ya tiene una clave de cifrado (por ejemplo, la del sistema integrado). Para leer aquí, importe su archivo de claves o el respaldo; crear otra dejaría al sistema integrado sin recibir.",
+      "create": "Crear claves en este navegador",
+      "import": "Importar archivo de claves o respaldo",
+      "export": "Descargar respaldo",
+      "forget": "Borrar de este navegador"
+    },
+    "inbox": {
+      "title": "Bandeja de entrada",
+      "empty": "Ningún campo sellado para esta clave.",
+      "open": "Abrir",
+      "authorshipOk": "autoría verificada",
+      "authorshipUnknown": "autoría no verificada"
+    },
+    "errors": {
+      "wrongPassphrase": "Contraseña incorrecta, o el archivo es de otro workspace.",
+      "generic": "No se pudo completar.",
+      "badFile": "Archivo de claves inválido.",
+      "notThisWorkspace": "Estas claves no son la clave de cifrado activa de este workspace.",
+      "openFailed": "No se pudo abrir este campo con la clave de este navegador."
+    }
   }
 }
