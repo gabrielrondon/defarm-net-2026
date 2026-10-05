@@ -1917,6 +1917,7 @@
         "delegate": "Delegar",
         "delegatePrompt": "Ingresa el workspace_id que recibirá la delegación:",
         "delegateDone": "Delegación registrada.",
+        "visibilityFailed": "No se pudo cambiar la visibilidad.",
         "empty": "No hay eventos registrados",
         "emptyDesc": "Los eventos aparecerán aquí a medida que el ítem se modifique"
       },

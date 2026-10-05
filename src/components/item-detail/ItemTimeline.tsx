@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
 import { eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   getEventGovernance,
   grantEventDelegation,
@@ -107,6 +108,7 @@ function compactDetails(event: Event): string[] {
 
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [showOperational, setShowOperational] = useState(false);
   const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
   const [governanceByEvent, setGovernanceByEvent] = useState<Record<string, {
@@ -151,6 +153,13 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
     try {
       await updateEventVisibility(eventId, { visibility });
       window.location.reload();
+    } catch (err) {
+      // #635: a public event cannot carry fields like the GTA; the backend says which.
+      toast({
+        title: t("portal.items.timeline.visibilityFailed"),
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     } finally {
       setLoadingEventId(null);
     }
