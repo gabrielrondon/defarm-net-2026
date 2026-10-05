@@ -894,6 +894,37 @@
       "endAllSessions": "Encerrar todas as sessões",
       "logout": "Sair da conta"
     },
+    "signingKeys": {
+      "title": "Chaves de assinatura",
+      "subtitle": "As chaves com que o seu workspace assina. Uma chave registrada pelo sistema integrado, sem login, aparece marcada; se você não a reconhece, revogue.",
+      "empty": "Nenhuma chave de assinatura registrada.",
+      "loadError": "Não foi possível carregar as chaves.",
+      "viaApiKey": "registrada pela API key",
+      "createdAt": "Registrada em {{date}}",
+      "cancel": "Cancelar",
+      "retire": "Aposentar",
+      "retireTitle": "Aposentar a chave {{key}}?",
+      "retireBody": "Rotação normal: a chave para de assinar daqui em diante, e o que ela já assinou continua válido. Depois registre a nova chave.",
+      "retired": "Chave aposentada",
+      "revoke": "Revogar",
+      "revokeTitle": "Revogar a chave {{key}}?",
+      "revokeBody": "Use quando a chave não é sua ou pode ter vazado. Todas as assinaturas de evento feitas com ela deixam de valer, inclusive as antigas (aposentar mantém as antigas). As chaves de cifra garantidas por ela saem do diretório: o workspace deixa de receber campos selados até registrar uma chave de assinatura e uma chave de cifra novas. O que já foi selado continua legível.",
+      "revoked": "Chave revogada",
+      "actionError": "Não foi possível concluir",
+      "adminOnly": "Só o dono ou um admin do workspace pode gerenciar chaves.",
+      "grantHint": "O sistema integrado registra sozinho a primeira chave do workspace. Para ele registrar uma chave nova (troca ou depois de revogar), libere aqui: vale uma vez, por 24 horas.",
+      "grant": "Liberar nova chave para o sistema integrado (24 h)",
+      "grantActive": "Liberado até {{date}}.",
+      "grantCreated": "Liberado por 24 horas",
+      "status": {
+        "active": "ativa",
+        "retired": "aposentada",
+        "revoked": "revogada"
+      },
+      "grantTitle": "Liberar uma chave nova para o sistema integrado?",
+      "grantBody": "Quem tem a API key do workspace poderá registrar uma chave de assinatura nas próximas 24 horas. Se a chave revogada não era sua, a API key pode ter vazado junto: troque a API key antes de liberar.",
+      "grantConfirm": "Liberar por 24 h"
+    },
     "sessions": {
       "title": "Sessões ativas",
       "empty": "Nenhuma sessão ativa além desta — bom sinal de segurança.",

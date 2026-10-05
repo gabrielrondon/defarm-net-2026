@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { passwordTooLong } from "@/lib/passwordLimit";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PARTNER_CANVAS } from "@/components/partner/PartnerPage";
+import { SigningKeysPanel } from "@/components/settings/SigningKeysPanel";
 import { cn } from "@/lib/utils";
 import {
   addWorkspaceMember,
@@ -88,7 +89,14 @@ export default function Configuracoes() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<SettingsTab>("perfil");
+  // ?tab=seguranca abre direto numa aba (link do e-mail de chave de assinatura, #753).
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    tabFromUrl === "workspace" || tabFromUrl === "notificacoes" || tabFromUrl === "seguranca"
+      ? (tabFromUrl as SettingsTab)
+      : "perfil"
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   // Profile state
@@ -1142,6 +1150,7 @@ export default function Configuracoes() {
                 </div>
               </DialogContent>
             </Dialog>
+            <SigningKeysPanel />
           </div>
         );
 

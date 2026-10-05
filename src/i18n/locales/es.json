@@ -1031,6 +1031,37 @@
       "endAllSessions": "Cerrar todas las sesiones",
       "logout": "Cerrar sesión"
     },
+    "signingKeys": {
+      "title": "Claves de firma",
+      "subtitle": "Las claves con las que firma su workspace. Una clave registrada por el sistema integrado, sin login, aparece marcada; si no la reconoce, revóquela.",
+      "empty": "Ninguna clave de firma registrada.",
+      "loadError": "No se pudieron cargar las claves.",
+      "viaApiKey": "registrada por la API key",
+      "createdAt": "Registrada el {{date}}",
+      "cancel": "Cancelar",
+      "retire": "Retirar",
+      "retireTitle": "¿Retirar la clave {{key}}?",
+      "retireBody": "Rotación normal: la clave deja de firmar desde ahora, y lo que ya firmó sigue válido. Después registre la clave nueva.",
+      "retired": "Clave retirada",
+      "revoke": "Revocar",
+      "revokeTitle": "¿Revocar la clave {{key}}?",
+      "revokeBody": "Úselo cuando la clave no es suya o pudo filtrarse. Todas las firmas de eventos hechas con ella dejan de valer, incluso las antiguas (retirar conserva las antiguas). Las claves de cifrado avaladas por ella salen del directorio: el workspace deja de recibir campos sellados hasta registrar una clave de firma y una clave de cifrado nuevas. Lo ya sellado sigue legible.",
+      "revoked": "Clave revocada",
+      "actionError": "No se pudo completar",
+      "adminOnly": "Solo el dueño o un admin del workspace puede gestionar claves.",
+      "grantHint": "El sistema integrado registra solo la primera clave del workspace. Para que registre una clave nueva (rotación o tras revocar), habilítelo aquí: vale una vez, por 24 horas.",
+      "grant": "Habilitar nueva clave para el sistema integrado (24 h)",
+      "grantActive": "Habilitado hasta {{date}}.",
+      "grantCreated": "Habilitado por 24 horas",
+      "status": {
+        "active": "activa",
+        "retired": "retirada",
+        "revoked": "revocada"
+      },
+      "grantTitle": "¿Habilitar una clave nueva para el sistema integrado?",
+      "grantBody": "Quien tenga la API key del workspace podrá registrar una clave de firma en las próximas 24 horas. Si la clave revocada no era suya, la API key pudo filtrarse con ella: cambie la API key antes de habilitar.",
+      "grantConfirm": "Habilitar por 24 h"
+    },
     "sessions": {
       "title": "Sesiones activas",
       "empty": "Ninguna sesión activa además de esta — buena señal de seguridad.",
