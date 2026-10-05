@@ -1,0 +1,92 @@
+{
+  "_doc": "Vetor de conformidade do commitment da Proof (#650/#652). Cada caso: `served` é o JSON EXATO que GET /api/proofs/{id} devolve (PublicProofView serializado, camelCase, datas em micros, com state/commitment/commitmentAlg presentes). `expectedCommitment` = BLAKE3(hex) sobre JCS (RFC 8785) de `served` MENOS as chaves meta {state, commitment, commitmentAlg}. O frontend deve reproduzir isto byte a byte. proofs_test::conformance_vector_matches re-deriva e afirma, então o vetor não envelhece. Regenerar: rodar o teste, pegar o `left` do assert e colar aqui.",
+  "excludedFromCommitment": [
+    "state",
+    "commitment",
+    "commitmentAlg"
+  ],
+  "commitmentAlg": "blake3-jcs-v1",
+  "cases": [
+    {
+      "name": "simples",
+      "served": {
+        "audience": "link",
+        "dfids": [
+          "DFID-BEEF-BR-2026-000001-abc"
+        ],
+        "expiresAt": "2027-01-01T00:00:00Z",
+        "fields": [
+          {
+            "key": "peso",
+            "value": "320kg"
+          }
+        ],
+        "issuedAt": "2026-09-17T12:00:00.123456Z",
+        "asOf": "2026-09-17T12:00:00.123456Z",
+        "issuer": {
+          "name": "fazenda-teste",
+          "level": 1,
+          "signer": "defarm"
+        },
+        "legalBasis": {
+          "key": "consent",
+          "purpose": "credito",
+          "fields": [
+            "peso"
+          ]
+        },
+        "mode": "frozen",
+        "recipient": "Banco X",
+        "scope": {
+          "label": "Lote 1",
+          "breakdown": []
+        },
+        "sealed": [],
+        "title": "Prova de peso",
+        "state": "active",
+        "commitment": "8d43662a3069b638eec0d2226ae48c6f4e028858167bfff179f935e0f16ea159",
+        "commitmentAlg": "blake3-jcs-v1"
+      },
+      "expectedCommitment": "8d43662a3069b638eec0d2226ae48c6f4e028858167bfff179f935e0f16ea159"
+    },
+    {
+      "name": "chaves-inteiras-e-unicode",
+      "served": {
+        "audience": "link",
+        "dfids": [
+          "DFID-SOY-BR-2026-000009-zzz"
+        ],
+        "expiresAt": null,
+        "fields": {
+          "10": 1,
+          "2": 2,
+          "1": 10,
+          "nome": "café ☕ \"aspas\" e barra \\ e \n nova linha"
+        },
+        "issuedAt": "2026-09-17T00:00:00Z",
+        "asOf": "2026-09-17T00:00:00Z",
+        "issuer": {
+          "name": "cooperativa-x",
+          "level": 2,
+          "signer": "own"
+        },
+        "legalBasis": null,
+        "mode": "frozen",
+        "recipient": null,
+        "scope": null,
+        "sealed": [
+          {
+            "field": "car",
+            "commitment": "hmac-sha256:deadbeef",
+            "alg": "hmac-sha256"
+          }
+        ],
+        "title": null,
+        "state": "active",
+        "commitment": "6ab4e0b9193e155eb033001fec34c9d7ae953dea28f14e8fe68e073ca1b99fbc",
+        "commitmentAlg": "blake3-jcs-v1"
+      },
+      "expectedCommitment": "6ab4e0b9193e155eb033001fec34c9d7ae953dea28f14e8fe68e073ca1b99fbc"
+    }
+  ]
+}
