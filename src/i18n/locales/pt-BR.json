@@ -1444,8 +1444,8 @@
           "inactive": "Inativo: mantém histórico, mas sai dos fluxos operacionais principais."
         },
         "shareSealedHistory": {
-          "label": "Novos participantes recebem o histórico selado",
-          "hint": "Quem entrar no circuito depois também passa a ler os campos selados antes da entrada. Quem selou cada campo recompartilha automaticamente; a DeFarm continua sem ver os valores."
+          "label": "Novos participantes podem ler os valores selados atuais",
+          "hint": "Quem entrar depois passa a ler o valor mais recente de cada campo selado, quando o sistema de quem selou fizer o recompartilhamento (a DeFarm não abre os campos). Desligar não desfaz o que já foi compartilhado. Ajuste de dono ou administrador do circuito."
         },
         "itemsPublic": {
           "label": "Mostrar os itens ao público (mesmo com o circuito privado)",

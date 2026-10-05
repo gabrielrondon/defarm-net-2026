@@ -1444,8 +1444,8 @@
           "inactive": "Inactive: keeps history, but leaves the main operational flows."
         },
         "shareSealedHistory": {
-          "label": "New participants receive the sealed history",
-          "hint": "Whoever joins the circuit later can also read fields sealed before they joined. Each sealer re-shares automatically; DeFarm still never sees the values."
+          "label": "New participants can read the current sealed values",
+          "hint": "Whoever joins later can read the latest value of each sealed field once the sealer's system re-shares it (DeFarm does not open the fields). Turning this off does not undo what was already shared. Circuit owner or admin setting."
         },
         "itemsPublic": {
           "label": "Show items to the public (even with the circuit private)",
