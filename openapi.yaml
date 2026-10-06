@@ -2548,6 +2548,36 @@ components:
           allOf:
           - $ref: '#/components/schemas/PartnerIntakeVerbose'
           nullable: true
+        warnings:
+          type: array
+          description: >-
+            Request-level warnings: the request went through, but not entirely as asked. Absent
+            when there are none. Today the only code is `source_circuit_not_allowed` (API-key
+            ingestion with a `source_circuit_id` the key cannot use, while the strict mode is
+            off: the data went to the key's own circuit, named in `used_circuit_id`).
+          items:
+            $ref: '#/components/schemas/PartnerIntakeWarning'
+    PartnerIntakeWarning:
+      type: object
+      required:
+      - code
+      - message
+      - reason
+      properties:
+        code:
+          type: string
+          example: source_circuit_not_allowed
+        message:
+          type: string
+        reason:
+          type: string
+          description: '`not_staging` (a circuit of your workspace that is not a staging circuit), `circuit_key` (a circuit-scoped key asked for another circuit) or `not_allowed`.'
+        requested_circuit_id:
+          type: string
+          format: uuid
+        used_circuit_id:
+          type: string
+          format: uuid
     PartnerIntakeSummary:
       type: object
       description: 'High-level counters for the ingestion result. Use for dashboards and logs without parsing the full response.'
@@ -2718,11 +2748,13 @@ components:
           nullable: true
           description: >-
             Optional source staging circuit. If omitted, DeFarm infers workspace staging.
-            When given, it must be a staging circuit (metadata.partner_staging=true) of the caller's
-            workspace (for a circuit-scoped API key, the key's own circuit). Otherwise the request
-            is refused: with an API key, 400 with code `source_circuit_not_allowed` (also on
-            preview); with a JWT, 403 `permission_denied` or 400 `missing_staging_circuit`.
-            The circuit is never replaced silently.
+            When given, it should be a staging circuit (metadata.partner_staging=true) of the
+            caller's workspace (for a circuit-scoped API key, the key's own circuit); then it is
+            used. Otherwise, with a JWT: 403 `permission_denied` or 400 `missing_staging_circuit`.
+            With an API key, `source_circuit_not_allowed` comes either as a warning in `warnings[]`
+            (the data goes to the key's own circuit, named in the warning and in `routes`) or, once
+            strict mode is on, as a 400 error with nothing written. Same on preview. The circuit is
+            never replaced silently.
         template_id:
           type: string
           format: uuid
@@ -10374,7 +10406,7 @@ paths:
         DeFarm persists the original payload, applies routing rules, and creates or updates items automatically.
         Auth: Bearer JWT or `x-api-key` with scope `workspace_ingestion`.
         In both cases `source_circuit_id` is optional — the staging circuit is inferred automatically.
-        A `source_circuit_id` the caller cannot ingest into is refused (API key: 400 `source_circuit_not_allowed`), never replaced.
+        A `source_circuit_id` an API key cannot ingest into is reported as `source_circuit_not_allowed`: a warning in `warnings[]` (data in the key's own circuit) or, in strict mode, a 400 with nothing written. It is never replaced silently.
       operationId: create_partner_ingestion
       parameters:
       - name: verbose
