@@ -5315,7 +5315,13 @@ components:
       - preset
       - proof_hash
       - disclosed_payload
+      - signing_input_b64
       properties:
+        signing_input_b64:
+          type: string
+          description: Base64 (standard) of the exact bytes the issuer signs with Ed25519 to
+            turn the receipt into a verifiable credential (POST /api/disclosures/{receipt_id}/sign,
+            field value). Stable for the receipt; this response alone is enough to sign.
         receipt_id:
           type: string
           format: uuid
@@ -7066,22 +7072,37 @@ components:
           type: string
           format: date-time
     CreateWebhookApiKeyResponse:
-      description: 'The webhook and its signing secret, shown only here. Each delivery
-        carries `X-Webhook-Signature: sha256=<hex>`, the HMAC-SHA256 of the raw request
-        body keyed with the secret.'
+      description: 'The webhook and its signing secret, shown only here.
+
+        Signature: each delivery carries `X-Webhook-Timestamp: <unix seconds>` and
+        `X-Webhook-Signature: sha256=<hex>`, where
+        `hex = HMAC-SHA256(key, "<timestamp>.<raw body>")`. The key is the WHOLE secret
+        string, including the `whsec_` prefix, as UTF-8 bytes (it is not base64-decoded).
+        Recompute over the bytes received, compare in constant time, and reject timestamps
+        outside a 5-minute window (replay). Verifiable example: secret
+        `whsec_0123456789abcdef`, timestamp `1700000000`, body
+        `{"event_id":"39d8f033-39ee-4260-97f8-d8f9d5c36b42","event_type":"item_vaccinated"}`
+        gives `sha256=70545af61af63fd5328bdf816271a7f69e406898b8ce60fb9e897ce9a9e02d30`.'
       type: object
       required:
       - webhook
       - secret
       - signature_header
+      - timestamp_header
       - signature_algorithm
       properties:
         webhook:
           $ref: '#/components/schemas/WebhookApiKeyView'
         secret:
           type: string
+          description: HMAC key = this whole string (with the whsec_ prefix) as UTF-8 bytes.
+          example: whsec_0123456789abcdef
         signature_header:
           type: string
+          example: X-Webhook-Signature
+        timestamp_header:
+          type: string
+          example: X-Webhook-Timestamp
         signature_algorithm:
           type: string
     CreateSanitaryAttestationRequest:
@@ -16130,9 +16151,20 @@ paths:
         and the workspace owners and admins are notified by email.
 
 
-        Deliveries carry only events the webhook owner can read, and each carries
-        `X-Webhook-Signature: sha256=<hex>` (HMAC-SHA256 of the raw body with the secret)
-        when the webhook has a secret. At delivery time the destination host is resolved and
+        Deliveries carry only events the webhook owner can read.
+
+        Signature: each delivery carries `X-Webhook-Timestamp: <unix seconds>` and
+        `X-Webhook-Signature: sha256=<hex>`, where
+        `hex = HMAC-SHA256(key, "<timestamp>.<raw body>")`. The key is the WHOLE secret
+        string, including the `whsec_` prefix, as UTF-8 bytes (it is not base64-decoded).
+        Recompute over the bytes received, compare in constant time, and reject timestamps
+        outside a 5-minute window (replay). Verifiable example: secret
+        `whsec_0123456789abcdef`, timestamp `1700000000`, body
+        `{"event_id":"39d8f033-39ee-4260-97f8-d8f9d5c36b42","event_type":"item_vaccinated"}`
+        gives `sha256=70545af61af63fd5328bdf816271a7f69e406898b8ce60fb9e897ce9a9e02d30`.
+
+
+        At delivery time the destination host is resolved and
         the delivery is refused (status failed, error_message destination_not_public, no
         retry) if any resolved address is not public; redirects are not followed.'
       operationId: create_webhook
