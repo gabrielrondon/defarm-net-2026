@@ -14078,6 +14078,9 @@ paths:
                   type: boolean
                 visibility:
                   type: string
+                  enum:
+                  - private
+                  - public
       responses:
         '200':
           description: Circuit updated
