@@ -1413,6 +1413,124 @@ components:
           type: string
           format: uuid
           nullable: true
+    WorkspaceCircuit:
+      type: object
+      description: 'A circuit the API key''s workspace owns (relation=owner) or takes part
+        in (relation=member). #774.'
+      properties:
+        circuit_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        relation:
+          type: string
+          enum:
+          - owner
+          - member
+        visibility:
+          type: string
+        items_publicly_visible:
+          type: boolean
+        share_sealed_history:
+          type: boolean
+          description: Owner's rule for members who join later (#757).
+        owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+        owner_workspace_name:
+          type: string
+          nullable: true
+    WorkspaceCircuitParticipant:
+      type: object
+      properties:
+        workspace_id:
+          type: string
+          format: uuid
+        workspace_name:
+          type: string
+          nullable: true
+        role:
+          type: string
+          description: Highest role of the workspace in the circuit.
+        terms_status:
+          type: string
+          nullable: true
+        is_owner:
+          type: boolean
+    CircuitInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        circuit_id:
+          type: string
+          format: uuid
+        invited_by:
+          type: string
+          format: uuid
+        invited_user_id:
+          type: string
+          format: uuid
+          nullable: true
+        invited_email:
+          type: string
+          nullable: true
+        invited_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Invitation addressed to a workspace (#774).
+        role:
+          type: string
+        message:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+          - pending
+          - accepted
+          - declined
+          - expired
+          - cancelled
+        expires_at:
+          type: string
+          format: date-time
+        accepted_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WorkspaceInvitation:
+      type: object
+      properties:
+        invitation:
+          $ref: '#/components/schemas/CircuitInvitation'
+        circuit_name:
+          type: string
+          nullable: true
+        owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+        owner_workspace_name:
+          type: string
+          nullable: true
+        term:
+          type: object
+          nullable: true
+          description: The circuit term to read before accepting, when the circuit requires
+            one.
+        requires_terms:
+          type: boolean
     Circuit:
       description: 'Multi-tenant data repository that serves as the primary permission
         boundary in DeFarm.
@@ -13847,6 +13965,393 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/workspace/circuits:
+    get:
+      tags:
+      - Circuits
+      summary: GET /workspace/circuits - Circuits of the API key workspace
+      description: 'With the dashboard API key (no login): circuits the workspace owns and circuits it takes part in. #774. Every circuit change by key (create, settings, invite, accept, decline) acts as the person who issued the key and requires that person to still be an active member of the workspace (403 api_key_owner_inactive). Actions are audited with via=api_key and the key id.'
+      operationId: list_workspace_circuits
+      responses:
+        '200':
+          description: Circuits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceCircuit'
+        '403':
+          description: Circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+    post:
+      tags:
+      - Circuits
+      summary: POST /workspace/circuits - Create a circuit
+      description: 'Creates a circuit of the API key''s workspace. The circuit owner is the person who issued the key in the dashboard; every circuit action by API key emails the workspace owners and admins.'
+      operationId: create_workspace_circuit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                visibility:
+                  type: string
+                  enum:
+                  - private
+                  - public
+                items_publicly_visible:
+                  type: boolean
+                settings:
+                  type: object
+      responses:
+        '201':
+          description: Circuit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/circuits/{id}/settings:
+    patch:
+      tags:
+      - Circuits
+      summary: PATCH /workspace/circuits/{id}/settings - Change circuit settings
+      description: 'Patch over the current settings of a circuit of the API key''s workspace: new keys are added, existing keys replaced, keys sent as null removed; the rest stays (#773). The merge is shallow: a top-level key replaces the whole value (a nested object is replaced, not merged). Known boolean settings only take true/false; the resulting object is capped at 16 KiB. Requires UpdateCircuits for the key issuer (the same as the user route, for settings, visibility and items_publicly_visible). Also items_publicly_visible and visibility.'
+      operationId: update_workspace_circuit_settings
+      parameters:
+      - name: id
+        in: path
+        description: Circuit ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                settings:
+                  type: object
+                items_publicly_visible:
+                  type: boolean
+                visibility:
+                  type: string
+                  enum:
+                  - private
+                  - public
+      responses:
+        '200':
+          description: Circuit updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitResponse'
+        '403':
+          description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: A known boolean setting (public_show_counts, public_show_compliance, share_sealed_history) is not true/false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: The resulting settings object is over 16 KiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/circuits/{id}/members:
+    get:
+      tags:
+      - Circuits
+      summary: GET /workspace/circuits/{id}/members - Participating workspaces
+      description: 'The workspaces that take part in a circuit the API key''s workspace owns or takes part in, with their names.'
+      operationId: list_workspace_circuit_members
+      parameters:
+      - name: id
+        in: path
+        description: Circuit ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Participants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceCircuitParticipant'
+        '403':
+          description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/circuits/{id}/invitations:
+    post:
+      tags:
+      - Circuits
+      summary: POST /workspace/circuits/{id}/invitations - Invite a workspace
+      description: 'Invites another workspace to a circuit of the API key''s workspace. The person who issued the key must be able to manage the circuit''s members. Roles: member (default), editor, viewer.'
+      operationId: invite_workspace
+      parameters:
+      - name: id
+        in: path
+        description: Circuit ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - workspace_id
+              properties:
+                workspace_id:
+                  type: string
+                  format: uuid
+                role:
+                  type: string
+                  enum:
+                  - member
+                  - editor
+                  - viewer
+                message:
+                  type: string
+                expires_in_days:
+                  type: integer
+      responses:
+        '201':
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitInvitation'
+        '400':
+          description: Invalid role, own workspace, or already a participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: A pending invitation already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/invitations:
+    get:
+      tags:
+      - Circuits
+      summary: GET /workspace/invitations - Invitations to the workspace
+      description: 'Pending invitations addressed to the API key''s workspace, each with the circuit term to read when the circuit requires one.'
+      operationId: list_workspace_invitations
+      responses:
+        '200':
+          description: Pending invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkspaceInvitation'
+        '403':
+          description: Circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/invitations/{invitation_id}/accept:
+    post:
+      tags:
+      - Circuits
+      summary: POST /workspace/invitations/{invitation_id}/accept - Join the circuit
+      description: 'The API key''s workspace joins the circuit. If the circuit requires a term, send accept_term_id (the current term); a wrong term is refused before anything changes. Without it the workspace joins pending the term and does not reach the circuit''s data until it accepts.'
+      operationId: accept_workspace_invitation
+      parameters:
+      - name: invitation_id
+        in: path
+        description: Invitation ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accept_term_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitInvitation'
+        '400':
+          description: Expired, not pending, or not the current term
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The key's issuer already takes part in the circuit through another workspace (issuer_already_member_via_other_workspace); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/invitations/{invitation_id}/decline:
+    post:
+      tags:
+      - Circuits
+      summary: POST /workspace/invitations/{invitation_id}/decline - Decline
+      description: 'The API key''s workspace declines the invitation; it can no longer be accepted.'
+      operationId: decline_workspace_invitation
+      parameters:
+      - name: invitation_id
+        in: path
+        description: Invitation ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Invitation declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitInvitation'
+        '400':
+          description: Not pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
   /api/events/{id}/signatures:
     post:
       tags:
