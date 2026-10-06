@@ -4003,7 +4003,6 @@ components:
       - name
       - url
       - events
-      - created_by
       properties:
         circuit_id:
           type: string
@@ -4011,6 +4010,7 @@ components:
         created_by:
           type: string
           format: uuid
+          description: Ignored. The server records the caller who creates the webhook.
         events:
           type: array
           items:
@@ -5433,7 +5433,13 @@ components:
       - preset
       - proof_hash
       - disclosed_payload
+      - signing_input_b64
       properties:
+        signing_input_b64:
+          type: string
+          description: Base64 (standard) of the exact bytes the issuer signs with Ed25519 to
+            turn the receipt into a verifiable credential (POST /api/disclosures/{receipt_id}/sign,
+            field value). Stable for the receipt; this response alone is enough to sign.
         receipt_id:
           type: string
           format: uuid
@@ -7092,11 +7098,182 @@ components:
         secret:
           type: string
           nullable: true
+        owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Workspace that registered the webhook. Deliveries carry only events
+            this owner can read.
+        created_via:
+          type: string
+          enum:
+          - user
+          - api_key
+          nullable: true
         updated_at:
           type: string
           format: date-time
         url:
           type: string
+    CreateWebhookApiKeyRequest:
+      description: Webhook registered with an API key (workspace key). The server generates
+        the signing secret and returns it once.
+      type: object
+      additionalProperties: false
+      required:
+      - circuit_id
+      - name
+      - url
+      - events
+      properties:
+        circuit_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+        url:
+          type: string
+          maxLength: 500
+          description: Public https URL (no localhost, private, loopback or link-local
+            address, no credentials).
+        events:
+          type: array
+          minItems: 1
+          maxItems: 64
+          items:
+            type: string
+          description: Event types (e.g. item_vaccinated) or ["*"] for all.
+        headers:
+          nullable: true
+        retry_config:
+          allOf:
+          - $ref: '#/components/schemas/WebhookRetryConfig'
+          nullable: true
+    WebhookApiKeyView:
+      description: Webhook as seen through an API key. Never carries the secret.
+      type: object
+      required:
+      - id
+      - circuit_id
+      - name
+      - url
+      - events
+      - is_active
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        circuit_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+        events: {}
+        is_active:
+          type: boolean
+        owner_workspace_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_via:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateWebhookApiKeyResponse:
+      description: 'The webhook and its signing secret, shown only here.
+
+        Signature: each delivery carries `X-Webhook-Timestamp: <unix seconds>` and
+        `X-Webhook-Signature: sha256=<hex>`, where
+        `hex = HMAC-SHA256(key, "<timestamp>.<raw body>")`. The key is the WHOLE secret
+        string, including the `whsec_` prefix, as UTF-8 bytes (it is not base64-decoded).
+        Recompute over the bytes received, compare in constant time, and reject timestamps
+        outside a 5-minute window (replay). Verifiable example: secret
+        `whsec_0123456789abcdef`, timestamp `1700000000`, body
+        `{"event_id":"39d8f033-39ee-4260-97f8-d8f9d5c36b42","event_type":"item_vaccinated"}`
+        gives `sha256=70545af61af63fd5328bdf816271a7f69e406898b8ce60fb9e897ce9a9e02d30`.'
+      type: object
+      required:
+      - webhook
+      - secret
+      - signature_header
+      - timestamp_header
+      - signature_algorithm
+      properties:
+        webhook:
+          $ref: '#/components/schemas/WebhookApiKeyView'
+        secret:
+          type: string
+          description: HMAC key = this whole string (with the whsec_ prefix) as UTF-8 bytes.
+          example: whsec_0123456789abcdef
+        signature_header:
+          type: string
+          example: X-Webhook-Signature
+        timestamp_header:
+          type: string
+          example: X-Webhook-Timestamp
+        signature_algorithm:
+          type: string
+    CreateSanitaryAttestationRequest:
+      type: object
+      required:
+      - sanitary_status
+      - animal_status
+      properties:
+        sanitary_status:
+          type: string
+          description: e.g. regular | irregular | suspended
+        animal_status:
+          type: string
+          description: e.g. active | inactive
+        valid_in_days:
+          type: integer
+          format: int64
+          nullable: true
+        audience:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    SignDisclosureRequest:
+      type: object
+      required:
+      - key_id
+      - value
+      properties:
+        key_id:
+          type: string
+        algorithm:
+          type: string
+          default: ed25519
+        value:
+          type: string
+          description: Base64 (standard) Ed25519 signature over signing_input_b64.
+    SignDisclosureResponse:
+      type: object
+      required:
+      - receipt_id
+      - signature_verified
+      - signed_at
+      properties:
+        receipt_id:
+          type: string
+          format: uuid
+        signature_verified:
+          type: boolean
+        signed_at:
+          type: string
+          format: date-time
     WebhookDelivery:
       description: Record of webhook delivery attempt including status, response,
         and retry count.
@@ -13810,6 +13987,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - apiKeyAuth: []
     post:
@@ -13854,7 +14037,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Key not issued by a person of the workspace (api_key_without_owner) or circuit-scoped key
+          description: The key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
           content:
             application/json:
               schema:
@@ -13872,7 +14055,7 @@ paths:
       tags:
       - Circuits
       summary: PATCH /workspace/circuits/{id}/settings - Change circuit settings
-      description: 'Patch over the current settings of a circuit of the API key''s workspace: new keys are added, existing keys replaced, keys sent as null removed; the rest stays (#773). Also items_publicly_visible and visibility.'
+      description: 'Patch over the current settings of a circuit of the API key''s workspace: new keys are added, existing keys replaced, keys sent as null removed; the rest stays (#773). The merge is shallow: a top-level key replaces the whole value (a nested object is replaced, not merged). Known boolean settings only take true/false; the resulting object is capped at 16 KiB. Requires UpdateCircuits for the key issuer (the same as the user route, for settings, visibility and items_publicly_visible). Also items_publicly_visible and visibility.'
       operationId: update_workspace_circuit_settings
       parameters:
       - name: id
@@ -13914,6 +14097,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '400':
+          description: A known boolean setting (public_show_counts, public_show_compliance, share_sealed_history) is not true/false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: The resulting settings object is over 16 KiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - apiKeyAuth: []
   /api/workspace/circuits/{id}/members:
@@ -13942,6 +14137,12 @@ paths:
                   $ref: '#/components/schemas/WorkspaceCircuitParticipant'
         '403':
           description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
           content:
             application/json:
               schema:
@@ -14040,6 +14241,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - apiKeyAuth: []
   /api/workspace/invitations/{invitation_id}/accept:
@@ -14081,7 +14288,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          description: The key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
           content:
             application/json:
               schema:
@@ -14129,7 +14336,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          description: The key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
           content:
             application/json:
               schema:
@@ -16391,7 +16598,12 @@ paths:
       description: 'List webhook subscriptions visible to the caller for the specified
         circuit
 
-        or workspace. Use filters to narrow by circuit or active status.'
+        or workspace. Use filters to narrow by circuit or active status.
+
+        With an API key (x-api-key, workspace key): webhooks of the workspace''s circuits and
+        of circuits it joined as an active member with can_manage_webhooks and the term
+        accepted; in a circuit it does not own, only its own webhooks.
+        The secret is never returned.'
       operationId: list_webhooks
       parameters:
       - name: circuit_id
@@ -16431,13 +16643,40 @@ paths:
 
         Configure the target URL, subscribed events, and optional secret for
 
-        signature verification.'
+        signature verification.
+
+        With an API key (x-api-key, workspace key): webhooks of the workspace''s circuits and
+        of circuits it joined as an active member with can_manage_webhooks and the term
+        accepted; in a circuit it does not own, only its own webhooks.
+        The body is CreateWebhookApiKeyRequest, the url must be a public https address,
+        the server generates the secret and returns it once (CreateWebhookApiKeyResponse),
+        and the workspace owners and admins are notified by email.
+
+
+        Deliveries carry only events the webhook owner can read.
+
+        Signature: each delivery carries `X-Webhook-Timestamp: <unix seconds>` and
+        `X-Webhook-Signature: sha256=<hex>`, where
+        `hex = HMAC-SHA256(key, "<timestamp>.<raw body>")`. The key is the WHOLE secret
+        string, including the `whsec_` prefix, as UTF-8 bytes (it is not base64-decoded).
+        Recompute over the bytes received, compare in constant time, and reject timestamps
+        outside a 5-minute window (replay). Verifiable example: secret
+        `whsec_0123456789abcdef`, timestamp `1700000000`, body
+        `{"event_id":"39d8f033-39ee-4260-97f8-d8f9d5c36b42","event_type":"item_vaccinated"}`
+        gives `sha256=70545af61af63fd5328bdf816271a7f69e406898b8ce60fb9e897ce9a9e02d30`.
+
+
+        At delivery time the destination host is resolved and
+        the delivery is refused (status failed, error_message destination_not_public, no
+        retry) if any resolved address is not public; redirects are not followed.'
       operationId: create_webhook
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateWebhookInput'
+              oneOf:
+              - $ref: '#/components/schemas/CreateWebhookInput'
+              - $ref: '#/components/schemas/CreateWebhookApiKeyRequest'
         required: true
       responses:
         '201':
@@ -16445,7 +16684,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Webhook'
+                oneOf:
+                - $ref: '#/components/schemas/Webhook'
+                - $ref: '#/components/schemas/CreateWebhookApiKeyResponse'
         '400':
           description: Invalid input
         '403':
@@ -16582,6 +16823,79 @@ paths:
           description: Webhook not found
         '500':
           description: Internal server error
+  /api/items/{dfid}/sanitary-attestation:
+    post:
+      tags:
+      - Disclosures
+      summary: Issue a sanitary attestation for an animal
+      description: 'A sanitary authority workspace (government, sanitary_agency or authority)
+        issues an unsigned attestation receipt ("this animal is regular/active") for an
+        animal in a circuit it reaches, then signs it with POST
+        /api/disclosures/{receipt_id}/sign. The signed attestation shows on /api/verify/{dfid}.
+
+
+        With a user session: the caller is an active member of a circuit holding the animal.
+        With an API key (x-api-key, workspace key): the animal is in one of the workspace''s
+        circuits or in a circuit it joined as an active member with the term accepted; the
+        workspace type is confirmed with the identity service (fail-closed), and the receipt
+        records which API key issued it.'
+      operationId: create_sanitary_attestation
+      parameters:
+      - name: dfid
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSanitaryAttestationRequest'
+      responses:
+        '200':
+          description: Attestation receipt created (unsigned); sign signing_input_b64
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateDisclosureResponse'
+        '403':
+          description: Not a sanitary authority, or the type could not be confirmed
+        '404':
+          description: Animal not found in a circuit the caller reaches
+  /api/disclosures/{receipt_id}/sign:
+    post:
+      tags:
+      - Disclosures
+      summary: Sign a disclosure or attestation receipt
+      description: 'The issuer signs one of its own workspace''s receipts with its registered
+        Ed25519 key (verified before storing). Accepts a user session or an API key
+        (x-api-key, workspace key).'
+      operationId: sign_disclosure
+      parameters:
+      - name: receipt_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignDisclosureRequest'
+      responses:
+        '200':
+          description: Receipt signed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignDisclosureResponse'
+        '400':
+          description: Signature or key invalid
+        '404':
+          description: No receipt with that id in the caller's workspace
   /api/webhooks/{id}/retry:
     post:
       tags:
