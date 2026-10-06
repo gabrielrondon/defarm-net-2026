@@ -16132,7 +16132,9 @@ paths:
 
         Deliveries carry only events the webhook owner can read, and each carries
         `X-Webhook-Signature: sha256=<hex>` (HMAC-SHA256 of the raw body with the secret)
-        when the webhook has a secret.'
+        when the webhook has a secret. At delivery time the destination host is resolved and
+        the delivery is refused (status failed, error_message destination_not_public, no
+        retry) if any resolved address is not public; redirects are not followed.'
       operationId: create_webhook
       requestBody:
         content:
@@ -16301,7 +16303,8 @@ paths:
         With a user session: the caller is an active member of a circuit holding the animal.
         With an API key (x-api-key, workspace key): the animal is in one of the workspace''s
         circuits or in a circuit it joined as an active member with the term accepted; the
-        workspace type is confirmed with the identity service (fail-closed).'
+        workspace type is confirmed with the identity service (fail-closed), and the receipt
+        records which API key issued it.'
       operationId: create_sanitary_attestation
       parameters:
       - name: dfid
