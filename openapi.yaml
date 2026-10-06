@@ -4192,6 +4192,142 @@ components:
         trust_model_version:
           type: string
           description: Version of the trust scoring model.
+        attached_signatures:
+          type: array
+          description: 'Only on reads with an API key (x-api-key): the attached signatures
+            (signature_attached) that verify for this event, and who signed. Absent on the
+            signature_attached event itself and on user-session reads. The full proof is on
+            /api/verify/{dfid}.'
+          items:
+            $ref: '#/components/schemas/EventAttachedSignature'
+    EventAttachedSignature:
+      type: object
+      required:
+      - signature_event_id
+      - signer_workspace_id
+      - signer_key_id
+      - key_status
+      - signed_at
+      properties:
+        signature_event_id:
+          type: string
+          format: uuid
+          description: The signature_attached event that holds the signature.
+        signer_workspace_id:
+          type: string
+          format: uuid
+        signer_key_id:
+          type: string
+        key_status:
+          type: string
+          enum:
+          - valid_and_current
+          - valid_at_act_revoked_after
+        signed_at:
+          type: string
+          format: date-time
+    SignatureAttachedRequest:
+      type: object
+      description: 'defarm.signature_attached.v1. The signer signs (Ed25519) the RFC 8785 (JCS)
+        bytes of {"schema":"defarm.signature_statement.v1","hash_alg":"blake3","target":{"kind":"event","event_id","item_id","event_type","content_hash"}},
+        with event_id/item_id/event_type/content_hash read from the event; statement_hash
+        and signed_statement_hash are hex(blake3(those bytes)).'
+      required:
+      - schema
+      - target
+      - statement
+      - signature
+      - signer
+      - evidence_of_consent
+      properties:
+        schema:
+          type: string
+          enum:
+          - defarm.signature_attached.v1
+        target:
+          type: object
+          required:
+          - kind
+          - event_id
+          - event_type
+          - content_hash
+          properties:
+            kind:
+              type: string
+              enum:
+              - event
+            event_id:
+              type: string
+              format: uuid
+            item_id:
+              type: string
+              format: uuid
+              nullable: true
+            event_type:
+              type: string
+            content_hash:
+              type: string
+        statement:
+          type: object
+          required:
+          - schema
+          - hash_alg
+          - statement_hash
+          properties:
+            schema:
+              type: string
+              enum:
+              - defarm.signature_statement.v1
+            hash_alg:
+              type: string
+              enum:
+              - blake3
+            statement_hash:
+              type: string
+        signature:
+          type: object
+          required:
+          - format
+          - value_b64
+          - signed_statement_hash
+          properties:
+            format:
+              type: string
+              enum:
+              - ed25519_jcs_v1
+            value_b64:
+              type: string
+            signed_statement_hash:
+              type: string
+        signer:
+          type: object
+          required:
+          - role
+          - workspace_id
+          - key_id
+          properties:
+            role:
+              type: string
+            workspace_id:
+              type: string
+              format: uuid
+              description: The caller's workspace (with an API key, the key's workspace).
+            key_id:
+              type: string
+              description: A signing key registered by that workspace (/api/workspace/signing-keys).
+        evidence_of_consent:
+          type: object
+          required:
+          - type
+          properties:
+            type:
+              type: string
+              enum:
+              - none
+              - implied
+              - explicit_document
+              - external_registry
+              - not_applicable
     CreateEventRequest:
       type: object
       required:
@@ -12987,7 +13123,11 @@ paths:
       tags:
       - Items
       summary: GET /search/identifier - Search by identifier
-      description: Search items by canonical/auxiliary identifiers (e.g. SISBOV, CPF, chip, lote, brinco).
+      description: 'Search items by canonical/auxiliary identifiers (e.g. SISBOV, CPF, chip,
+        lote, brinco). Only items the caller can read come back; a miss is an empty list.
+        With an API key (x-api-key, workspace key): items in the workspace''s circuits and
+        in circuits the workspace joined as an active member with event-creation rights
+        and the circuit term accepted.'
       operationId: search_by_identifier
       parameters:
       - name: identifier_type
@@ -13030,6 +13170,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
+      - apiKeyAuth: []
   /api/analytics/kpis:
     get:
       tags:
@@ -13529,6 +13670,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/events/{id}/signatures:
+    post:
+      tags:
+      - Events
+      summary: POST /events/:id/signatures - Attach a signature to an existing event
+      description: 'Attaches the caller''s Ed25519 signature to an event that already exists
+        (append-only: a new signature_attached event, the target is not changed). The
+        signature is bound to the event''s real content_hash, event_type and item; it
+        is verified on attach and shows on /api/verify/{dfid} and on API-key event reads
+        (attached_signatures).
+
+
+        With a user session: the caller is a circuit member with event-creation rights
+        and the circuit term accepted. With an API key (x-api-key, workspace key): the
+        event is in one of the workspace''s circuits, or in a circuit the workspace joined
+        as an active member with event-creation rights and the term accepted; in such a
+        member circuit only events the key can read (public or circuit_only) can be signed.'
+      operationId: attach_event_signature
+      parameters:
+      - name: id
+        in: path
+        description: Target event ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatureAttachedRequest'
+      responses:
+        '201':
+          description: Signature attached and verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signature_event_id:
+                    type: string
+                    format: uuid
+                  target_event_id:
+                    type: string
+                    format: uuid
+                  verified:
+                    type: boolean
+                  verifier_version:
+                    type: string
+        '400':
+          description: Invalid payload or binding (e.g. target_content_hash_mismatch, signature_invalid,
+            key_not_valid_now)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Event or circuit not reachable by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - bearerAuth: []
+      - apiKeyAuth: []
   /api/events/{id}/status:
     put:
       tags:
