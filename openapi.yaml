@@ -13793,7 +13793,7 @@ paths:
       tags:
       - Circuits
       summary: GET /workspace/circuits - Circuits of the API key workspace
-      description: 'With the dashboard API key (no login): circuits the workspace owns and circuits it takes part in. #774.'
+      description: 'With the dashboard API key (no login): circuits the workspace owns and circuits it takes part in. #774. Every circuit change by key (create, settings, invite, accept, decline) acts as the person who issued the key and requires that person to still be an active member of the workspace (403 api_key_owner_inactive). Actions are audited with via=api_key and the key id.'
       operationId: list_workspace_circuits
       responses:
         '200':
@@ -13859,6 +13859,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - apiKeyAuth: []
   /api/workspace/circuits/{id}/settings:
@@ -13898,6 +13904,12 @@ paths:
                 $ref: '#/components/schemas/CircuitResponse'
         '403':
           description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
           content:
             application/json:
               schema:
@@ -13998,6 +14010,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - apiKeyAuth: []
   /api/workspace/invitations:
@@ -14068,6 +14086,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '409':
+          description: The key's issuer already takes part in the circuit through another workspace (issuer_already_member_via_other_workspace); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
       - apiKeyAuth: []
   /api/workspace/invitations/{invitation_id}/decline:
@@ -14100,6 +14130,12 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Not a circuit of this workspace, invitation not addressed to it, or a circuit-scoped key (api_key_scope_forbidden)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
           content:
             application/json:
               schema:
