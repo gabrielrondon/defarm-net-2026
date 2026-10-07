@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, Link, useSearchParams, useLocation } from "react-router-dom";
+import { safeReturnPath } from "@/lib/safeReturnPath";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,12 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { login, isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  // net#237: destino de volta (da guarda de rota ou do ?redirect=), só caminho interno.
+  const returnTo =
+    safeReturnPath((location.state as { from?: unknown } | null)?.from) ??
+    safeReturnPath(searchParams.get("redirect"));
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -76,9 +82,8 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
 
   useEffect(() => {
     if (isAuthLoading || !isAuthenticated) return;
-    const redirectTo = searchParams.get("redirect");
-    if (redirectTo && redirectTo.startsWith("/")) {
-      navigate(redirectTo, { replace: true });
+    if (returnTo) {
+      navigate(returnTo, { replace: true });
       return;
     }
     const destination =
@@ -96,7 +101,7 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
         ? "/app/governo/docs"
         : "/app";
     navigate(destination, { replace: true });
-  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate, searchParams]);
+  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate, returnTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +121,8 @@ export default function Login({ forcedMode = "default" }: LoginProps) {
             ? "/login/2fa?mode=partner"
             : isGovernmentMode
             ? "/login/2fa?mode=government"
-            : "/login/2fa"
+            : "/login/2fa",
+          { state: returnTo ? { from: returnTo } : undefined }
         );
         return;
       }

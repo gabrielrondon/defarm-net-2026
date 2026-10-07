@@ -86,22 +86,34 @@ export async function encryptKeystore(ks: Keystore, workspaceId: string, passphr
 export class WrongPassphraseError extends Error {}
 export class InvalidKeystoreError extends Error {}
 
+/**
+ * Abre o backup. A senha é tentada como digitada e, se não abrir, nas formas Unicode NFC e NFD
+ * (um "ç" digitado em teclados diferentes): é o mesmo que o SDK faz ao importar (net#244). A
+ * cifragem continua usando a senha como digitada, igual ao SDK, para os dois lados gerarem o mesmo
+ * arquivo.
+ */
 export async function decryptKeystore(enc: EncryptedKeystore, workspaceId: string, passphrase: string): Promise<Keystore> {
   if (!Number.isInteger(enc.iterations) || enc.iterations < MIN_ITERATIONS || enc.iterations > MAX_ITERATIONS) {
     throw new InvalidKeystoreError("unsupported key derivation parameters");
   }
-  const key = await deriveKey(passphrase, unb64(enc.salt_b64), enc.iterations);
-  try {
-    const pt = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: unb64(enc.iv_b64), additionalData: new TextEncoder().encode(workspaceId) },
-      key,
-      unb64(enc.ciphertext_b64)
-    );
+  const candidates = [passphrase, passphrase.normalize("NFC"), passphrase.normalize("NFD")].filter(
+    (p, i, all) => all.indexOf(p) === i
+  );
+  for (const candidate of candidates) {
+    const key = await deriveKey(candidate, unb64(enc.salt_b64), enc.iterations);
+    let pt: ArrayBuffer;
+    try {
+      pt = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: unb64(enc.iv_b64), additionalData: new TextEncoder().encode(workspaceId) },
+        key,
+        unb64(enc.ciphertext_b64)
+      );
+    } catch {
+      continue; // senha (nesta forma) errada ou outro workspace: tenta a próxima forma
+    }
     return parseKeystore(new TextDecoder().decode(pt));
-  } catch (e) {
-    if (e instanceof WrongPassphraseError || e instanceof InvalidKeystoreError) throw e;
-    throw new WrongPassphraseError("wrong passphrase or another workspace");
   }
+  throw new WrongPassphraseError("wrong passphrase or another workspace");
 }
 
 /** Valida o formato aberto (o mesmo do FileKeystore dos SDKs). */
