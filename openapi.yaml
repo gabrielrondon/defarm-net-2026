@@ -2821,6 +2821,14 @@ components:
         error_message:
           type: string
           nullable: true
+        warnings:
+          type: array
+          description: >-
+            Request-level warnings of this ingestion, the same `warnings[]` the `202` carried
+            (e.g. `source_circuit_not_allowed`), kept from the first poll to the final status.
+            Absent when there are none.
+          items:
+            $ref: '#/components/schemas/PartnerIntakeWarning'
     IngestionProgress:
       type: object
       description: >-
