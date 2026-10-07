@@ -5537,6 +5537,9 @@ components:
           items:
             type: string
           nullable: true
+        signing_input_b64:
+          type: string
+          description: Disclosure receipts only, while unsigned. Base64 (standard) of the bytes the issuer signs, the same signing_input_b64 the create returned, so signing can resume with just the receipt id. Absent once signed and for ingestion receipts.
     IngestionSummary:
       type: object
       description: Statistics for a completed ingestion
@@ -14305,6 +14308,66 @@ paths:
                 $ref: '#/components/schemas/Error'
         '409':
           description: The key's issuer already takes part in the circuit through another workspace (issuer_already_member_via_other_workspace); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/circuits/{id}/terms/accept:
+    post:
+      tags:
+      - Circuits
+      summary: POST /workspace/circuits/{id}/terms/accept - Accept the circuit's term
+      description: 'The API key''s workspace accepts the circuit''s current data-sharing term, for example after joining without it (pending_terms) or when the owner publishes a new term. The consent is recorded for the person who issued the key, who must take part in the circuit through this workspace.'
+      operationId: accept_workspace_circuit_term
+      parameters:
+      - name: id
+        in: path
+        description: Circuit ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - term_id
+              properties:
+                term_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Term accepted
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Not the circuit's current term; nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The workspace does not take part in the circuit, the key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The key's issuer does not take part in the circuit through this workspace (issuer_not_member_via_this_workspace); accept in the dashboard
           content:
             application/json:
               schema:
