@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useNavigate, Link, useSearchParams, useLocation } from "react-router-dom";
+import { safeReturnPath } from "@/lib/safeReturnPath";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,8 +50,10 @@ export default function Login2FA() {
   const [pending, setPending] = useState<Pending2FA | null>(null);
   const { verifyLogin2FA, isAuthenticated, user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const returnTo = safeReturnPath((location.state as { from?: unknown } | null)?.from);
 
   const isPartnerHost =
     typeof window !== "undefined" &&
@@ -82,6 +85,10 @@ export default function Login2FA() {
   // Redirect after successful authentication
   useEffect(() => {
     if (isAuthLoading || !isAuthenticated) return;
+    if (returnTo) {
+      navigate(returnTo, { replace: true });
+      return;
+    }
     const destination =
       user?.workspace_type === "partner"
         ? "/app/parceiro"
@@ -97,7 +104,7 @@ export default function Login2FA() {
         ? "/app/governo/docs"
         : "/app";
     navigate(destination, { replace: true });
-  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate]);
+  }, [isAuthLoading, isAuthenticated, user?.workspace_type, isPartnerMode, isGovernmentMode, navigate, returnTo]);
 
   const normalizedCode = twofaCode.trim().replace(/\s+/g, "");
   const canSubmit = isValidTwofaInput(normalizedCode) && !!pending;

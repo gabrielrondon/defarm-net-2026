@@ -147,11 +147,17 @@ function TokenAwareIndex() {
   return <Index />;
 }
 
+// net#237: guarda a página pedida para o login voltar a ela depois (o Login saneia o destino).
+function RedirectToLogin() {
+  const location = useLocation();
+  return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+}
+
 function RequireAdmin({ children }: { children: ReactNode }) {
   const { isLoading, isAuthenticated, user } = useAuth();
 
   if (isLoading) return null;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <RedirectToLogin />;
   if (!user?.is_admin) return <Navigate to="/app" replace />;
   return children;
 }
@@ -166,7 +172,7 @@ function RequireWorkspaceAccess({
   const { isLoading, isAuthenticated, user } = useAuth();
 
   if (isLoading) return null;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <RedirectToLogin />;
   if (!user?.is_admin && !allowed.includes((user?.workspace_type || "producer") as WorkspaceType)) {
     return <Navigate to="/app" replace />;
   }
@@ -202,7 +208,7 @@ function RequireExactWorkspaceType({
 }) {
   const { isLoading, isAuthenticated, user } = useAuth();
   if (isLoading) return null;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <RedirectToLogin />;
   if ((user?.workspace_type || "producer") !== expected) {
     return (
       <AppLayout>
@@ -216,7 +222,7 @@ function RequireExactWorkspaceType({
 function WorkspaceHome() {
   const { isLoading, isAuthenticated, user } = useAuth();
   if (isLoading) return null;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <RedirectToLogin />;
   if (!user?.is_admin) {
     if (user?.workspace_type === "partner") return <Navigate to="/app/parceiro" replace />;
     if (user?.workspace_type === "government") return <Navigate to="/app/governo/docs" replace />;
