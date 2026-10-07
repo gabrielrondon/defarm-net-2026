@@ -10376,7 +10376,7 @@ paths:
         '403':
           description: 'Forbidden: insufficient permissions in the circuit, or `api_key_creation_requires_admin`:
             scope `workspace` / `workspace_ingestion` (and the dashboard integration key) needs an owner or admin
-            of the workspace.'
+            of the workspace; or `workspace_offboarded`: the workspace was archived or removed.'
         '500':
           description: Internal server error
       security:
