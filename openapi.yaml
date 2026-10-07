@@ -16774,6 +16774,9 @@ paths:
           description: Invalid input
         '403':
           description: Permission denied
+        '409':
+          description: 'webhook_url_already_registered: this circuit already has a webhook with
+            this url. List the webhooks and reuse or delete the existing one.'
         '500':
           description: Internal server error
   /api/webhooks/{id}:
@@ -16847,6 +16850,9 @@ paths:
           description: Permission denied
         '404':
           description: Webhook not found
+        '409':
+          description: 'webhook_url_already_registered: the new url is already used by another
+            webhook in this circuit.'
         '500':
           description: Internal server error
     delete:
