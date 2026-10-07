@@ -37,6 +37,18 @@ describe("browser keystore (#755)", () => {
     expect(await decryptKeystore(enc, WS, "senha-longa-de-teste")).toEqual(ks);
   });
 
+  it("opens with the passphrase in another Unicode form (NFC vs NFD), like the SDK (net#244)", async () => {
+    const nfc = "senha-com-ação-12".normalize("NFC");
+    const nfd = nfc.normalize("NFD");
+    expect(nfc).not.toBe(nfd);
+    const ks = newKeystore();
+    const encNfd = await encryptKeystore(ks, WS, nfd);
+    expect(await decryptKeystore(encNfd, WS, nfc)).toEqual(ks);
+    const encNfc = await encryptKeystore(ks, WS, nfc);
+    expect(await decryptKeystore(encNfc, WS, nfd)).toEqual(ks);
+    await expect(decryptKeystore(encNfc, WS, "outra-senha-qualquer")).rejects.toBeInstanceOf(WrongPassphraseError);
+  });
+
   it("refuses a wrong passphrase and another workspace", async () => {
     const enc = await encryptKeystore(newKeystore(), WS, "senha-longa-de-teste");
     await expect(decryptKeystore(enc, WS, "outra-senha-qualquer")).rejects.toBeInstanceOf(WrongPassphraseError);
