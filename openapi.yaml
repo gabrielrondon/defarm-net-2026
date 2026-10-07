@@ -5545,6 +5545,9 @@ components:
           items:
             type: string
           nullable: true
+        signing_input_b64:
+          type: string
+          description: Disclosure receipts only, while unsigned. Base64 (standard) of the bytes the issuer signs, the same signing_input_b64 the create returned, so signing can resume with just the receipt id. Absent once signed and for ingestion receipts.
     IngestionSummary:
       type: object
       description: Statistics for a completed ingestion
@@ -13432,7 +13435,8 @@ paths:
         lote, brinco). Only items the caller can read come back; a miss is an empty list.
         With an API key (x-api-key, workspace key): items in the workspace''s circuits and
         in circuits the workspace joined as an active member with event-creation rights
-        and the circuit term accepted.'
+        and the circuit term accepted. identifier_type is case-insensitive (sisbov finds
+        SISBOV).'
       operationId: search_by_identifier
       parameters:
       - name: identifier_type
@@ -13681,7 +13685,7 @@ paths:
       tags:
       - Events
       summary: Create typed event
-      description: '[Advanced / Stellar Tranche 2] Create a new typed event for an item/circuit (e.g. movement, vaccination). Recommended for integrators/SDK/CLI flows. A public event (visibility public) is served raw to anyone, so its payload may only use the public allow-list (dates, weight, vaccine/treatment names, zootechnical classification, certificate_type/scope/level/seal_name/validity); any other field (GTA, CAR, coordinates, people, free text) gets 400 public_payload_field_not_allowed. Event metadata on a public event may only carry signature and source. Send other fields with visibility circuit_only.'
+      description: '[Advanced / Stellar Tranche 2] Create a new typed event for an item/circuit (e.g. movement, vaccination). Recommended for integrators/SDK/CLI flows. A public event (visibility public) is served raw to anyone, so its payload may only use the public allow-list (dates, weight, vaccine/treatment names, zootechnical classification, certificate_type/scope/level/seal_name/validity); any other field (GTA, CAR, coordinates, people, free text) gets 400 public_payload_field_not_allowed. Event metadata on a public event may only carry signature and source. Send other fields with visibility circuit_only. With an API key, an event carrying $sealed fields needs write access to the circuit: a workspace that only takes part in it gets 403 permission_denied with code sealing_requires_write_access (participants receive and open sealed fields, they do not seal).'
       x-audience: advanced
       operationId: create_event
       requestBody:
@@ -13945,6 +13949,10 @@ paths:
         Authorization: Bearer <access_token>
 
         ```
+
+
+        With an API key (x-api-key): an event that does not exist and an event outside the
+        key''s reach give the same 403 ("Event not accessible by this API key scope").
 
         '
       operationId: get_event
@@ -14308,6 +14316,66 @@ paths:
                 $ref: '#/components/schemas/Error'
         '409':
           description: The key's issuer already takes part in the circuit through another workspace (issuer_already_member_via_other_workspace); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Could not confirm that the key's issuer is still an active member of the workspace (issuer_check_unavailable); nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - apiKeyAuth: []
+  /api/workspace/circuits/{id}/terms/accept:
+    post:
+      tags:
+      - Circuits
+      summary: POST /workspace/circuits/{id}/terms/accept - Accept the circuit's term
+      description: 'The API key''s workspace accepts the circuit''s current data-sharing term, for example after joining without it (pending_terms) or when the owner publishes a new term. The consent is recorded for the person who issued the key, who must take part in the circuit through this workspace.'
+      operationId: accept_workspace_circuit_term
+      parameters:
+      - name: id
+        in: path
+        description: Circuit ID
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - term_id
+              properties:
+                term_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Term accepted
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Not the circuit's current term; nothing changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: The workspace does not take part in the circuit, the key issuer is no longer an active member (api_key_owner_inactive), is not an owner or admin of the workspace (api_key_owner_not_workspace_admin), or the key is circuit-scoped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The key's issuer does not take part in the circuit through this workspace (issuer_not_member_via_this_workspace); accept in the dashboard
           content:
             application/json:
               schema:
@@ -16614,9 +16682,11 @@ paths:
         or workspace. Use filters to narrow by circuit or active status.
 
         With an API key (x-api-key, workspace key): webhooks of the workspace''s circuits and
-        of circuits it joined as an active member with can_manage_webhooks and the term
-        accepted; in a circuit it does not own, only its own webhooks.
-        The secret is never returned.'
+        of circuits it takes part in as an active participant (not removed, term accepted
+        when the circuit requires one); in a circuit it does not own, only its own
+        workspace''s webhooks.
+        With a user session: webhooks of the circuits the user reads.
+        The secret is never returned (only on creation).'
       operationId: list_webhooks
       parameters:
       - name: circuit_id
@@ -16658,15 +16728,23 @@ paths:
 
         signature verification.
 
+        Any active participant of the circuit (not removed, term accepted when the circuit
+        requires one) registers a webhook for its own workspace; can_manage_webhooks is not
+        needed for that. A webhook is managed (updated, deleted, retried, deliveries read) by
+        whoever registered it or by someone with can_manage_webhooks in the circuit (the
+        circuit owner''s key, for keys). A webhook registered by an API key belongs to that
+        workspace: any active key of it, and its owners and admins by login, manage it.
+        Revoking the key that registered a webhook deactivates the webhook.
+        Reads return header names only (values masked as ***), for everyone.
         With an API key (x-api-key, workspace key): webhooks of the workspace''s circuits and
-        of circuits it joined as an active member with can_manage_webhooks and the term
-        accepted; in a circuit it does not own, only its own webhooks.
+        of circuits it takes part in as an active participant.
         The body is CreateWebhookApiKeyRequest, the url must be a public https address,
         the server generates the secret and returns it once (CreateWebhookApiKeyResponse),
         and the workspace owners and admins are notified by email.
 
 
-        Deliveries carry only events the webhook owner can read.
+        Deliveries carry only events whoever registered the webhook can read; once that
+        participant leaves the circuit, nothing more is delivered, not even public events.
 
         Signature: each delivery carries `X-Webhook-Timestamp: <unix seconds>` and
         `X-Webhook-Signature: sha256=<hex>`, where
@@ -16704,6 +16782,9 @@ paths:
           description: Invalid input
         '403':
           description: Permission denied
+        '409':
+          description: 'webhook_url_already_registered: this circuit already has a webhook with
+            this url. List the webhooks and reuse or delete the existing one.'
         '500':
           description: Internal server error
   /api/webhooks/{id}:
@@ -16741,7 +16822,14 @@ paths:
       description: 'Update a webhook configuration (URL, subscribed events, status,
         and secret).
 
-        Use this to rotate secrets or pause/resume deliveries.'
+        Use this to rotate secrets or pause/resume deliveries.
+
+        Allowed for whoever registered the webhook, or someone with can_manage_webhooks in
+        the circuit, or (webhook registered by an API key) an owner or admin of that
+        workspace. Only the user who registered it can change url, secret, events, headers
+        or retry_config (403 for anyone else, can_manage_webhooks included): deliveries are
+        filtered by what that user reads. The secret is not returned and header values come
+        back masked.'
       operationId: update_webhook
       parameters:
       - name: id
@@ -16770,13 +16858,17 @@ paths:
           description: Permission denied
         '404':
           description: Webhook not found
+        '409':
+          description: 'webhook_url_already_registered: the new url is already used by another
+            webhook in this circuit.'
         '500':
           description: Internal server error
     delete:
       tags:
       - Webhooks
       summary: Delete webhook
-      description: Delete a webhook subscription and stop future deliveries.
+      description: Delete a webhook subscription and stop future deliveries. Allowed for
+        whoever registered it, or someone with can_manage_webhooks in the circuit.
       operationId: delete_webhook
       parameters:
       - name: id
@@ -16803,7 +16895,11 @@ paths:
       description: 'List delivery attempts for a webhook, including status, response
         codes,
 
-        and timestamps. Useful for troubleshooting failed deliveries.'
+        and timestamps. Useful for troubleshooting failed deliveries.
+
+        Each attempt that fails records its reason in error_message, including attempts that
+        will be retried. Readable by whoever registered the webhook, or someone with
+        can_manage_webhooks in the circuit (the body of each delivery is in the history).'
       operationId: get_webhook_deliveries
       parameters:
       - name: id
@@ -16873,7 +16969,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateDisclosureResponse'
         '403':
-          description: Not a sanitary authority, or the type could not be confirmed
+          description: Not a sanitary authority (error permission_denied, code
+            attestation_requires_sanitary_authority), or the type could not be confirmed
+            (permission_denied, no code)
         '404':
           description: Animal not found in a circuit the caller reaches
   /api/disclosures/{receipt_id}/sign:
@@ -16917,7 +17015,8 @@ paths:
       description: 'Trigger a retry for recent failed webhook deliveries. This schedules
         a
 
-        re-delivery attempt with the latest payload.'
+        re-delivery attempt with the latest payload. Allowed for whoever registered the
+        webhook, or someone with can_manage_webhooks in the circuit.'
       operationId: retry_webhook
       parameters:
       - name: id
