@@ -16660,8 +16660,11 @@ paths:
         Any active participant of the circuit (not removed, term accepted when the circuit
         requires one) registers a webhook for its own workspace; can_manage_webhooks is not
         needed for that. A webhook is managed (updated, deleted, retried, deliveries read) by
-        whoever registered it (the user, or the API key) or by someone with
-        can_manage_webhooks in the circuit (the circuit owner''s key, for keys).
+        whoever registered it or by someone with can_manage_webhooks in the circuit (the
+        circuit owner''s key, for keys). A webhook registered by an API key belongs to that
+        workspace: any active key of it, and its owners and admins by login, manage it.
+        Revoking the key that registered a webhook deactivates the webhook.
+        Reads return header names only (values masked as ***), for everyone.
         With an API key (x-api-key, workspace key): webhooks of the workspace''s circuits and
         of circuits it takes part in as an active participant.
         The body is CreateWebhookApiKeyRequest, the url must be a public https address,
@@ -16748,9 +16751,11 @@ paths:
         Use this to rotate secrets or pause/resume deliveries.
 
         Allowed for whoever registered the webhook, or someone with can_manage_webhooks in
-        the circuit. Only the user who registered it can change its url (403 for anyone
-        else, can_manage_webhooks included): deliveries are filtered by what that user
-        reads. The secret is not returned.'
+        the circuit, or (webhook registered by an API key) an owner or admin of that
+        workspace. Only the user who registered it can change url, secret, events, headers
+        or retry_config (403 for anyone else, can_manage_webhooks included): deliveries are
+        filtered by what that user reads. The secret is not returned and header values come
+        back masked.'
       operationId: update_webhook
       parameters:
       - name: id
