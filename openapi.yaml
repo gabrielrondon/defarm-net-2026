@@ -16783,8 +16783,10 @@ paths:
         '403':
           description: Permission denied
         '409':
-          description: 'webhook_url_already_registered: this circuit already has a webhook with
-            this url. List the webhooks and reuse or delete the existing one.'
+          description: 'webhook_url_already_registered: your workspace already has a webhook
+            with this url in this circuit (the url is compared normalized: scheme and host in
+            lowercase, no default port, no trailing slash). Another workspace of the circuit may
+            use the same url. List your webhooks and reuse or delete the existing one.'
         '500':
           description: Internal server error
   /api/webhooks/{id}:
@@ -16860,7 +16862,7 @@ paths:
           description: Webhook not found
         '409':
           description: 'webhook_url_already_registered: the new url is already used by another
-            webhook in this circuit.'
+            webhook of your workspace in this circuit (url compared normalized).'
         '500':
           description: Internal server error
     delete:
