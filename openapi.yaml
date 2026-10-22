@@ -4326,11 +4326,18 @@ components:
             /api/verify/{dfid}.'
           items:
             $ref: '#/components/schemas/EventAttachedSignature'
+        operational:
+          type: boolean
+          description: 'Only on reads with an API key (x-api-key): true for the events
+            that record the anchoring of the animal (blockchain_anchor_created, blockchain_anchor_confirmed,
+            ipfs_upload_completed), not a fact about it. One anchoring yields a created
+            and a confirmed event for the same transaction; they are not duplicates.'
     EventAttachedSignature:
       type: object
       required:
       - signature_event_id
       - signer_workspace_id
+      - signer_workspace_name
       - signer_key_id
       - key_status
       - signed_at
@@ -4342,6 +4349,11 @@ components:
         signer_workspace_id:
           type: string
           format: uuid
+        signer_workspace_name:
+          type: string
+          nullable: true
+          description: Name of the workspace that signed. null when the name is not
+            available at the moment; the read never fails because of it.
         signer_key_id:
           type: string
         key_status:
