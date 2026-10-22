@@ -6868,6 +6868,10 @@ components:
           type: boolean
           nullable: true
         settings:
+          description: 'Patch over the current settings (#773): keys sent are added
+            or replaced, keys sent as null are removed, the rest stays. The merge is
+            shallow (a nested object is replaced). Leave it out to keep the settings
+            as they are.'
           nullable: true
         status:
           type: string
