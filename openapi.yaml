@@ -4533,9 +4533,11 @@ components:
         can_manage_visibility:
           type: boolean
           nullable: true
+          description: Delegate may change the event's visibility. Omitted = false (only what is asked is granted).
         can_manage_disclosure:
           type: boolean
           nullable: true
+          description: Delegate may manage disclosure (who sees what). Omitted = false.
         notes:
           type: string
           nullable: true
