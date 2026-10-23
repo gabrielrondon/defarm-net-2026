@@ -14659,8 +14659,10 @@ paths:
       - Events
       summary: POST /events/:id/delegations
       description: Grant or update delegated governance permissions for an event. Only the flags sent
-        as true are granted on a new delegation; on an active one, a flag left out keeps what was
-        granted and false takes it away. A delegation that would grant nothing is refused (400
+        as true are granted on a new delegation; on an active one, a field left out (a flag, notes,
+        expires_at) keeps what is stored, a field sent replaces it, and a flag sent as false takes it
+        away. An expired delegation is over, so granting again starts a new one with nothing
+        carried over. A delegation that would grant nothing is refused (400
         delegation_grants_nothing); to end one, use DELETE /events/{id}/delegations/{delegation_id}.
       operationId: grant_event_delegation
       parameters:
