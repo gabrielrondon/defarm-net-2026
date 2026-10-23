@@ -5798,6 +5798,7 @@ components:
       - item
       - identifiers
       - events
+      - events_truncated
       properties:
         item:
           $ref: '#/components/schemas/ItemResponse'
@@ -5810,8 +5811,13 @@ components:
           nullable: true
         events:
           type: array
+          description: The newest events the caller may see, newest first, at most 100.
           items:
             $ref: '#/components/schemas/Event'
+        events_truncated:
+          type: boolean
+          description: '`true` when the caller may see more events than the ones in `events`.
+            Page through the full history with `GET /v1/events?dfid={dfid}&limit=&offset=`.'
     CreateItemResponse:
       description: Item creation response with identifiers, events, and deduplication
         status.
@@ -13271,7 +13277,14 @@ paths:
           default: 0
       responses:
         '200':
-          description: List of public events
+          description: 'List of public events. When more public events follow this page, the
+            `X-Next-Offset` header carries the `offset` of the next page; it is absent on the
+            last page.'
+          headers:
+            X-Next-Offset:
+              description: The `offset` of the next page. Absent on the last page.
+              schema:
+                type: integer
           content:
             application/json:
               schema:
