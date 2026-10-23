@@ -91,7 +91,7 @@ const navCatalog: NavItem[] = [
   { icon: Compass, label: "Descobrir", href: "/app/descobrir" },
   { icon: Shield, label: "Auditoria", href: "/app/auditoria" },
   { icon: Camera, label: "Snapshots", href: "/app/snapshots" },
-  { icon: Landmark, label: "DeFarm Finance", href: "/app/finance" },
+  { icon: Landmark, label: "bovi.finance", href: "/app/finance" },
   { icon: ClipboardCheck, label: "DeFarm Compliance", href: "/app/compliance" },
   { icon: Trees, label: "EUDR — Polígono", href: "/app/eudr/poligono" },
 ];
