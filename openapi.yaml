@@ -13802,6 +13802,10 @@ paths:
 
         - `item_id`: Events for specific item
 
+        - `dfid`: Events for specific item, by DFID (same as `item_id`; both must name the
+        same item, else 400). An unknown DFID never widens the list: by login it is empty, by API
+        key it is the same 403 as an item out of reach
+
         - `user_id`: Events triggered by specific user
 
         - `status`: Processing status (pending, completed, failed)
@@ -13856,6 +13860,12 @@ paths:
         schema:
           type: string
           format: uuid
+          nullable: true
+      - name: dfid
+        in: query
+        required: false
+        schema:
+          type: string
           nullable: true
       - name: user_id
         in: query
