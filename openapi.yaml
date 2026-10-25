@@ -13315,10 +13315,13 @@ paths:
                     redacted:
                       type: boolean
                       description: 'True when the event is shown only as its type and date
-                        (a movement, whose transit permit stays private). `payload` then carries
-                        at most `occurred_at` (YYYY-MM-DD); `metadata`, `content_hash`, the
-                        signature fields and the attribution are null, and there is nothing to
-                        recompute.'
+                        (a movement, whose transit permit stays private). Only movements written
+                        in a circuit that exposes the item are shown this way: a public circuit,
+                        or a private circuit whose owner turned on publishing its items
+                        (`items_publicly_visible`). `visibility` then keeps
+                        the event''s own value (`circuit_only`), `payload` carries at most
+                        `occurred_at` (YYYY-MM-DD), and `metadata`, `content_hash`, the signature
+                        fields and the attribution are null; there is nothing to recompute.'
         '404':
           description: Item not found or not in any public circuit
           content:
