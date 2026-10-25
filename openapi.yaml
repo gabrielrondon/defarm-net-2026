@@ -13312,6 +13312,13 @@ paths:
                     created_at:
                       type: string
                       format: date-time
+                    redacted:
+                      type: boolean
+                      description: 'True when the event is shown only as its type and date
+                        (a movement, whose transit permit stays private). `payload` then carries
+                        at most `occurred_at` (YYYY-MM-DD); `metadata`, `content_hash`, the
+                        signature fields and the attribution are null, and there is nothing to
+                        recompute.'
         '404':
           description: Item not found or not in any public circuit
           content:
