@@ -1822,7 +1822,8 @@
         "emptyDesc": "Events will appear here as the item is modified",
         "occurredOn": "Happened on {{date}}",
         "declaredOn": "declared on {{date}}",
-        "technicalRecords": "{{count}} technical record(s)"
+        "technicalRecords_one": "{{count}} technical record",
+        "technicalRecords_other": "{{count}} technical records"
       },
       "deprecateDialog": {
         "toastSuccess": "Item deprecated successfully",

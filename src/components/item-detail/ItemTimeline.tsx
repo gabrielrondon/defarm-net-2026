@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
-import { eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
+import { eventTypeColors, eventTypeIcons, REAL_LIFE_EVENT_TYPES } from "./constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -85,14 +85,31 @@ function humanizeCode(raw: string): string {
  * The day the fact happened, when the event says so and it differs from the day it was
  * declared. Returns null otherwise, so the line only shows one date when they agree.
  */
-function occurredDay(event: Event): string | null {
+function occurredDay(event: Event, locale: string): string | null {
   const occurred = event.payload?.occurred_at;
   if (typeof occurred !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(occurred)) return null;
-  const day = occurred.slice(0, 10);
+  const [y, m, d] = occurred.slice(0, 10).split("-").map(Number);
   const declared = event.created_at ? new Date(event.created_at) : null;
-  if (declared && !isNaN(declared.getTime()) && declared.toISOString().slice(0, 10) === day) return null;
-  const [y, m, d] = day.split("-");
-  return `${d}/${m}/${y}`;
+  // Compared in the viewer's timezone, the same one the declared time is shown in: a fact
+  // declared at 22h in Brasília is the same day locally even when it is already tomorrow in UTC.
+  if (
+    declared &&
+    !isNaN(declared.getTime()) &&
+    declared.getFullYear() === y &&
+    declared.getMonth() + 1 === m &&
+    declared.getDate() === d
+  ) {
+    return null;
+  }
+  return new Date(y, m - 1, d).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** The declared time in the viewer's language. */
+function formatDeclared(timestamp: string | undefined, locale: string): string {
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleString(locale, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function trustLabel(
@@ -151,7 +168,8 @@ function compactDetails(event: Event): string[] {
 
 /** The technical records as one compact block: a count per kind, then one short line each. */
 function TechnicalRecords({ events }: { events: Event[] }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
   const byType = useMemo(() => {
     const counts = new Map<string, number>();
     for (const e of events) counts.set(e.event_type, (counts.get(e.event_type) ?? 0) + 1);
@@ -176,7 +194,7 @@ function TechnicalRecords({ events }: { events: Event[] }) {
           return (
             <li key={e.id} className="flex gap-2 text-muted-foreground">
               <span className="text-foreground/80">{label(e.event_type)}</span>
-              <span>{formatTime(e.created_at)}</span>
+              <span>{formatDeclared(e.created_at, locale)}</span>
               {ref && <span className="truncate font-mono">{ref.slice(0, 12)}…</span>}
             </li>
           );
@@ -187,7 +205,8 @@ function TechnicalRecords({ events }: { events: Event[] }) {
 }
 
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
   const { toast } = useToast();
   const [showOperational, setShowOperational] = useState(false);
   const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
@@ -388,7 +407,7 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                     </div>
                     <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                       {(() => {
-                        const occurred = occurredDay(event);
+                        const occurred = occurredDay(event, locale);
                         return (
                           <span className="flex flex-col items-end leading-tight">
                             {occurred && (
@@ -399,8 +418,8 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {occurred
-                                ? t("portal.items.timeline.declaredOn", { date: formatTime(event.created_at) })
-                                : formatTime(event.created_at)}
+                                ? t("portal.items.timeline.declaredOn", { date: formatDeclared(event.created_at, locale) })
+                                : formatDeclared(event.created_at, locale)}
                             </span>
                           </span>
                         );

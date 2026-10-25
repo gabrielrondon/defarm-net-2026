@@ -1959,7 +1959,8 @@
         "emptyDesc": "Los eventos aparecerán aquí a medida que el ítem se modifique",
         "occurredOn": "Ocurrió el {{date}}",
         "declaredOn": "declarado el {{date}}",
-        "technicalRecords": "{{count}} registro(s) técnico(s)"
+        "technicalRecords_one": "{{count}} registro técnico",
+        "technicalRecords_other": "{{count}} registros técnicos"
       },
       "deprecateDialog": {
         "toastSuccess": "Ítem depreciado con éxito",

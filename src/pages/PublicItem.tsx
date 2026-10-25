@@ -786,7 +786,17 @@ function declaredLater(event: PublicItemEvent): boolean {
   if (typeof occurred !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(occurred)) return false;
   const declared = new Date(event.created_at);
   if (Number.isNaN(declared.getTime())) return false;
-  return declared.toISOString().slice(0, 10) !== occurred.slice(0, 10);
+  // Compared in the viewer's timezone, the same one `formatDeclaredDay` shows: a fact declared
+  // at 22h in Brasília is the same day locally even when it is already tomorrow in UTC.
+  const [y, m, d] = occurred.slice(0, 10).split("-").map(Number);
+  return !(declared.getFullYear() === y && declared.getMonth() + 1 === m && declared.getDate() === d);
+}
+
+/** The declared day in the page's language (the month name follows the locale). */
+function formatDeclaredDay(timestamp: string, locale: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function eventSummary(event: PublicItemEvent): string | null {
@@ -3723,7 +3733,7 @@ export default function PublicItem() {
                                       </span>
                                       {declaredLater(event) && (
                                         <span className="text-[10px] text-muted-foreground/80 tabular-nums">
-                                          {localized(metadataLocale, "· declarado em", "· declared on", "· declarado el")} {formatDateShort(event.created_at)}
+                                          {localized(metadataLocale, "· declarado em", "· declared on", "· declarado el")} {formatDeclaredDay(event.created_at, metadataLocale)}
                                         </span>
                                       )}
                                         <SignedBadge signatureVerified={event.signature_verified} signatureKeyId={event.signature_key_id} />
@@ -3825,7 +3835,7 @@ export default function PublicItem() {
                                             </span>
                                             {declaredLater(event) && (
                                               <span className="text-muted-foreground/80 tabular-nums">
-                                                {localized(metadataLocale, "(declarado em", "(declared on", "(declarado el")} {formatDateShort(event.created_at)})
+                                                {localized(metadataLocale, "(declarado em", "(declared on", "(declarado el")} {formatDeclaredDay(event.created_at, metadataLocale)})
                                               </span>
                                             )}
                                             {event.event_owner_workspace_id && issuerMap[event.event_owner_workspace_id] && (
@@ -3881,7 +3891,7 @@ export default function PublicItem() {
                   return (
                     <li key={e.id} className="flex gap-2 text-muted-foreground">
                       <span className="text-foreground/80">{eventTypeLabels[e.event_type] || e.event_type}</span>
-                      <span className="tabular-nums">{formatDateShort(e.created_at)}</span>
+                      <span className="tabular-nums">{formatDeclaredDay(e.created_at, metadataLocale)}</span>
                       {ref && <span className="truncate font-mono">{ref.slice(0, 12)}…</span>}
                     </li>
                   );

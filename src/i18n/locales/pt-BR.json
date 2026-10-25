@@ -1822,7 +1822,8 @@
         "emptyDesc": "Eventos aparecerão aqui conforme o item é modificado",
         "occurredOn": "Ocorreu em {{date}}",
         "declaredOn": "declarado em {{date}}",
-        "technicalRecords": "{{count}} registro(s) técnico(s)"
+        "technicalRecords_one": "{{count}} registro técnico",
+        "technicalRecords_other": "{{count}} registros técnicos"
       },
       "deprecateDialog": {
         "toastSuccess": "Item depreciado com sucesso",
