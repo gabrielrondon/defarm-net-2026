@@ -1800,7 +1800,8 @@
           "movementRegistered": "Movement registered",
           "weightKg": "{{weight}} kg",
           "bornOn": "Born on {{date}}",
-          "noDetails": "No additional details for this event."
+          "noDetails": "No additional details for this event.",
+          "reason": "Reason: {{reason}}"
         },
         "trust": {
           "na": "Trust n/a",
@@ -1818,7 +1819,10 @@
         "visibilityFailed": "Could not change the visibility.",
         "visibilityFieldsNotPublic": "This event has fields that cannot be public ({{fields}}). Keep it restricted to the circuit.",
         "empty": "No events recorded",
-        "emptyDesc": "Events will appear here as the item is modified"
+        "emptyDesc": "Events will appear here as the item is modified",
+        "occurredOn": "Happened on {{date}}",
+        "declaredOn": "declared on {{date}}",
+        "technicalRecords": "{{count}} technical record(s)"
       },
       "deprecateDialog": {
         "toastSuccess": "Item deprecated successfully",
