@@ -3066,7 +3066,10 @@ components:
             could not be written; resend it, the rest of the batch is not affected),
             `invalid_dfid_parts` (the DFID allocator refused the row's value_chain, country or
             year), `dfid_unavailable` (the DFID allocator was down after part of the request was
-            written; resend these rows).
+            written; resend these rows), `operation_event_missing` (the row declares an
+            operation, e.g. a PNIB `tipoHistorico`, whose event no field of the row produced, such
+            as a missing or unreadable date; nothing was ingested for the row and `message` names
+            the field to send).
           x-extensible-enum:
           - missing_value_chain
           - invalid_value_chain
@@ -3084,6 +3087,7 @@ components:
           - row_processing_failed
           - invalid_dfid_parts
           - dfid_unavailable
+          - operation_event_missing
         message:
           type: string
           description: 'Human-readable error description with suggested next step.'
