@@ -3062,6 +3062,8 @@ components:
             numeroElementoIdentificacao), `tag_replacement_missing_old`,
             `tag_replacement_old_not_found`, `tag_replacement_conflict` (tag replacement:
             substituto=1 with numeroElementoIdentificacaoSubstituido), `reactivation_conflict`,
+            `event_date_in_future` (an event date after today; the whole row is refused),
+            `invalid_event_date` (occurred_at is not a date),
             `batch_processing_failed`, `row_processing_failed` (the row passed validation but
             could not be written; resend it, the rest of the batch is not affected),
             `invalid_dfid_parts` (the DFID allocator refused the row's value_chain, country or
@@ -3083,6 +3085,8 @@ components:
           - tag_replacement_old_not_found
           - tag_replacement_conflict
           - reactivation_conflict
+          - event_date_in_future
+          - invalid_event_date
           - batch_processing_failed
           - row_processing_failed
           - invalid_dfid_parts
