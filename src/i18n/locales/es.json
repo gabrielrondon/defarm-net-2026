@@ -1937,7 +1937,8 @@
           "movementRegistered": "Movimiento registrado",
           "weightKg": "{{weight}} kg",
           "bornOn": "Nacido el {{date}}",
-          "noDetails": "Sin detalles adicionales para este evento."
+          "noDetails": "Sin detalles adicionales para este evento.",
+          "reason": "Motivo: {{reason}}"
         },
         "trust": {
           "na": "Confianza n/a",
@@ -1955,7 +1956,11 @@
         "visibilityFailed": "No se pudo cambiar la visibilidad.",
         "visibilityFieldsNotPublic": "Este evento tiene campos que no pueden ser públicos ({{fields}}). Manténgalo restringido al circuito.",
         "empty": "No hay eventos registrados",
-        "emptyDesc": "Los eventos aparecerán aquí a medida que el ítem se modifique"
+        "emptyDesc": "Los eventos aparecerán aquí a medida que el ítem se modifique",
+        "occurredOn": "Ocurrió el {{date}}",
+        "declaredOn": "declarado el {{date}}",
+        "technicalRecords_one": "{{count}} registro técnico",
+        "technicalRecords_other": "{{count}} registros técnicos"
       },
       "deprecateDialog": {
         "toastSuccess": "Ítem depreciado con éxito",

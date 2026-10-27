@@ -777,6 +777,28 @@ function extractTechnicalProof(event: PublicItemEvent): TechnicalProof | null {
   };
 }
 
+/**
+ * True when the event says the fact happened on a day other than the day it was declared, so
+ * the history shows both ("ocorreu em X · declarado em Y"). Same day: one date is enough.
+ */
+function declaredLater(event: PublicItemEvent): boolean {
+  const occurred = (event.payload || {}).occurred_at;
+  if (typeof occurred !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(occurred)) return false;
+  const declared = new Date(event.created_at);
+  if (Number.isNaN(declared.getTime())) return false;
+  // Compared in the viewer's timezone, the same one `formatDeclaredDay` shows: a fact declared
+  // at 22h in Brasília is the same day locally even when it is already tomorrow in UTC.
+  const [y, m, d] = occurred.slice(0, 10).split("-").map(Number);
+  return !(declared.getFullYear() === y && declared.getMonth() + 1 === m && declared.getDate() === d);
+}
+
+/** The declared day in the page's language (the month name follows the locale). */
+function formatDeclaredDay(timestamp: string, locale: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
+}
+
 function eventSummary(event: PublicItemEvent): string | null {
   const p = event.payload || {};
   if (event.event_type === "item_movement") {
@@ -2055,7 +2077,9 @@ export default function PublicItem() {
       .sort((a, b) => b.version - a.version);
   }, [proofs?.content_versions, latestContentVersion]);
 
-  const visibleEvents = isAuthenticated && showOperational ? events : realEvents;
+  // Technical records (anchoring, IPFS) never interleave with the animal's history: one animal
+  // can have dozens per business event. The toggle opens them as one compact block instead.
+  const visibleEvents = realEvents;
 
   const proofOfLifeEvents = useMemo<ProofOfLifeEvent[]>(() => {
     return events
@@ -3707,6 +3731,11 @@ export default function PublicItem() {
                                       >
                                         {date}
                                       </span>
+                                      {declaredLater(event) && (
+                                        <span className="text-[10px] text-muted-foreground/80 tabular-nums">
+                                          {localized(metadataLocale, "· declarado em", "· declared on", "· declarado el")} {formatDeclaredDay(event.created_at, metadataLocale)}
+                                        </span>
+                                      )}
                                         <SignedBadge signatureVerified={event.signature_verified} signatureKeyId={event.signature_key_id} />
                                         {hasPayload && <ChevronDown className={`h-3 w-3 text-muted-foreground/50 transition-transform ${isExp ? "rotate-180" : ""}`} />}
                                     </div>
@@ -3804,6 +3833,11 @@ export default function PublicItem() {
                                             >
                                               · {evtDate}
                                             </span>
+                                            {declaredLater(event) && (
+                                              <span className="text-muted-foreground/80 tabular-nums">
+                                                {localized(metadataLocale, "(declarado em", "(declared on", "(declarado el")} {formatDeclaredDay(event.created_at, metadataLocale)})
+                                              </span>
+                                            )}
                                             {event.event_owner_workspace_id && issuerMap[event.event_owner_workspace_id] && (
                                               <span className="text-muted-foreground">
                                                 · por {issuerMap[event.event_owner_workspace_id].name}
@@ -3830,6 +3864,40 @@ export default function PublicItem() {
                 ));
               })()}
             </div>
+          )}
+
+          {isAuthenticated && showOperational && operationalEvents.length > 0 && (
+            <details className="mt-4 rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs" open>
+              <summary className="cursor-pointer text-muted-foreground">
+                {localized(
+                  metadataLocale,
+                  `${operationalEvents.length} registro${operationalEvents.length !== 1 ? "s" : ""} técnico${operationalEvents.length !== 1 ? "s" : ""}`,
+                  `${operationalEvents.length} technical record${operationalEvents.length !== 1 ? "s" : ""}`,
+                  `${operationalEvents.length} registro${operationalEvents.length !== 1 ? "s" : ""} técnico${operationalEvents.length !== 1 ? "s" : ""}`,
+                )}
+                {" · "}
+                {Array.from(
+                  operationalEvents.reduce((m, e) => m.set(e.event_type, (m.get(e.event_type) ?? 0) + 1), new Map<string, number>()),
+                )
+                  .map(([type, n]) => `${n} ${eventTypeLabels[type] || type}`)
+                  .join(" · ")}
+              </summary>
+              <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto">
+                {operationalEvents.map((e) => {
+                  const p = (e.payload || {}) as Record<string, unknown>;
+                  const ref = [p.transaction_hash, p.tx_hash, p.content_id, p.cid].find(
+                    (v): v is string => typeof v === "string" && v.length > 0,
+                  );
+                  return (
+                    <li key={e.id} className="flex gap-2 text-muted-foreground">
+                      <span className="text-foreground/80">{eventTypeLabels[e.event_type] || e.event_type}</span>
+                      <span className="tabular-nums">{formatDeclaredDay(e.created_at, metadataLocale)}</span>
+                      {ref && <span className="truncate font-mono">{ref.slice(0, 12)}…</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
           )}
         </section>
       </div>

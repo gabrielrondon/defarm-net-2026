@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Event } from "@/lib/defarm-api";
-import { eventTypeColors, eventTypeIcons, formatTime, REAL_LIFE_EVENT_TYPES } from "./constants";
+import { eventTypeColors, eventTypeIcons, REAL_LIFE_EVENT_TYPES } from "./constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -50,7 +50,66 @@ function eventSummary(event: Event, t: TFunction): string | null {
     return t("portal.items.timeline.summary.bornOn", { date: occurredAt });
   }
 
+  // The name of what was applied or decided, not just the kind of event.
+  const named: Record<string, unknown> = {
+    item_vaccinated: payload.vaccine,
+    item_treated: payload.treatment,
+    item_classified: payload.classification,
+  };
+  const name = named[event.event_type];
+  if (typeof name === "string" && name.trim()) return name.trim();
+
+  const reason =
+    event.event_type === "item_terminated" ? payload.motivo_baixa
+      : event.event_type === "item_reactivated" ? payload.reactivation_reason
+        : undefined;
+  if (typeof reason === "string" && reason.trim()) {
+    return t("portal.items.timeline.summary.reason", { reason: humanizeCode(reason) });
+  }
+
   return null;
+}
+
+/** A code as the partner sends it ("MORTE_NATURAL", "MorteNatural") → "Morte natural". */
+function humanizeCode(raw: string): string {
+  const text = raw
+    .trim()
+    .replace(/([a-zà-ÿ])([A-ZÀ-Þ])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : raw;
+}
+
+/**
+ * The day the fact happened, when the event says so and it differs from the day it was
+ * declared. Returns null otherwise, so the line only shows one date when they agree.
+ */
+function occurredDay(event: Event, locale: string): string | null {
+  const occurred = event.payload?.occurred_at;
+  if (typeof occurred !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(occurred)) return null;
+  const [y, m, d] = occurred.slice(0, 10).split("-").map(Number);
+  const declared = event.created_at ? new Date(event.created_at) : null;
+  // Compared in the viewer's timezone, the same one the declared time is shown in: a fact
+  // declared at 22h in Brasília is the same day locally even when it is already tomorrow in UTC.
+  if (
+    declared &&
+    !isNaN(declared.getTime()) &&
+    declared.getFullYear() === y &&
+    declared.getMonth() + 1 === m &&
+    declared.getDate() === d
+  ) {
+    return null;
+  }
+  return new Date(y, m - 1, d).toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** The declared time in the viewer's language. */
+function formatDeclared(timestamp: string | undefined, locale: string): string {
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleString(locale, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function trustLabel(
@@ -107,8 +166,47 @@ function compactDetails(event: Event): string[] {
   return details.slice(0, 4);
 }
 
+/** The technical records as one compact block: a count per kind, then one short line each. */
+function TechnicalRecords({ events }: { events: Event[] }) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
+  const byType = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of events) counts.set(e.event_type, (counts.get(e.event_type) ?? 0) + 1);
+    return Array.from(counts.entries());
+  }, [events]);
+  const label = (type: string) =>
+    t(`portal.enums.eventType.${type.toLowerCase()}`, { defaultValue: type });
+
+  return (
+    <details className="mt-3 rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs">
+      <summary className="cursor-pointer text-muted-foreground">
+        {t("portal.items.timeline.technicalRecords", { count: events.length })}
+        {" · "}
+        {byType.map(([type, n]) => `${n} ${label(type)}`).join(" · ")}
+      </summary>
+      <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto">
+        {events.map((e) => {
+          const p = e.payload || {};
+          const ref = [p.transaction_hash, p.tx_hash, p.content_id, p.cid].find(
+            (v): v is string => typeof v === "string" && v.length > 0,
+          );
+          return (
+            <li key={e.id} className="flex gap-2 text-muted-foreground">
+              <span className="text-foreground/80">{label(e.event_type)}</span>
+              <span>{formatDeclared(e.created_at, locale)}</span>
+              {ref && <span className="truncate font-mono">{ref.slice(0, 12)}…</span>}
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
+}
+
 export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
   const { toast } = useToast();
   const [showOperational, setShowOperational] = useState(false);
   const [loadingEventId, setLoadingEventId] = useState<string | null>(null);
@@ -118,20 +216,23 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
   }>>({});
   const { user } = useAuth();
 
-  const { realEvents, operationalCount } = useMemo(() => {
-    let opCount = 0;
+  const { realEvents, operationalEvents } = useMemo(() => {
     const real: Event[] = [];
+    const ops: Event[] = [];
     for (const e of events) {
       if (REAL_LIFE_EVENT_TYPES.has(e.event_type)) {
         real.push(e);
       } else {
-        opCount++;
+        ops.push(e);
       }
     }
-    return { realEvents: real, operationalCount: opCount };
+    return { realEvents: real, operationalEvents: ops };
   }, [events]);
+  const operationalCount = operationalEvents.length;
 
-  const visibleEvents = showOperational ? events : realEvents;
+  // Technical records (anchoring, IPFS) never interleave with the animal's history: there can
+  // be dozens of them per event. They open as one compact block under it.
+  const visibleEvents = realEvents;
 
   const loadGovernance = async (eventId: string) => {
     setLoadingEventId(eventId);
@@ -305,10 +406,24 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatTime(event.created_at)}
-                      </span>
+                      {(() => {
+                        const occurred = occurredDay(event, locale);
+                        return (
+                          <span className="flex flex-col items-end leading-tight">
+                            {occurred && (
+                              <span className="text-foreground/80">
+                                {t("portal.items.timeline.occurredOn", { date: occurred })}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {occurred
+                                ? t("portal.items.timeline.declaredOn", { date: formatDeclared(event.created_at, locale) })
+                                : formatDeclared(event.created_at, locale)}
+                            </span>
+                          </span>
+                        );
+                      })()}
                       {/* Governança de visibilidade num menu — eram 4 botões soltos por evento. */}
                       {(isOwner || governance?.canManageVisibility) && (
                         <DropdownMenu>
@@ -355,7 +470,10 @@ export function ItemTimeline({ events, isLoading }: ItemTimelineProps) {
               </div>
               );
             })}
+            {showOperational && <TechnicalRecords events={operationalEvents} />}
           </div>
+        ) : operationalCount > 0 && showOperational ? (
+          <TechnicalRecords events={operationalEvents} />
         ) : operationalCount > 0 ? (
           /* Não é "nenhum evento": existem N eventos técnicos. Dizer a verdade e oferecer
              o caminho, em duas linhas — não um vazio ilustrado que contradiz a contagem. */
