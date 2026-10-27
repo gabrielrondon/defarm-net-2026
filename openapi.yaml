@@ -3070,8 +3070,8 @@ components:
             year), `dfid_unavailable` (the DFID allocator was down after part of the request was
             written; resend these rows), `operation_event_missing` (the row declares an
             operation, e.g. a PNIB `tipoHistorico`, whose event no field of the row produced, such
-            as a missing or unreadable date; nothing was ingested for the row and `message` names
-            the field to send).
+            as a missing date; nothing was ingested for the row and `message` names the field to
+            send; a date that is present but unreadable is `invalid_event_date`).
           x-extensible-enum:
           - missing_value_chain
           - invalid_value_chain
