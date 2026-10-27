@@ -1,0 +1,32 @@
+/* DeFarm Design System · base (tokens/base.css), escopado a `.df-root`.
+   O portal atual (Tailwind preflight + shadcn) continua dono do `body`; aqui só o que está dentro da casca nova. */
+
+.df-root { min-height: 100vh; background: var(--surface-page); color: var(--text-body); font-family: var(--font-ui); font-size: var(--fs-body); line-height: var(--lh-body); -webkit-font-smoothing: antialiased; }
+.df-root *, .df-root *::before, .df-root *::after { box-sizing: border-box; }
+.df-root h1, .df-root h2, .df-root h3, .df-root h4 { font-family: var(--font-display); color: var(--text-strong); letter-spacing: var(--ls-snug); margin: 0; }
+.df-root code, .df-root kbd, .df-root pre, .df-root samp { font-family: var(--font-mono); }
+.df-root a { color: var(--green-700); text-decoration: none; font-weight: var(--fw-semibold); }
+.df-root a:hover { color: var(--green-900); text-decoration: underline; text-underline-offset: 3px; }
+.df-root :focus-visible { outline: none; box-shadow: var(--ring-focus); }
+.df-root ::selection { background: var(--green-200); color: var(--gray-900); }
+.df-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.df-skip { position: absolute; left: var(--s-4); top: -60px; z-index: 200; padding: 10px 16px; border-radius: var(--r-sm); background: var(--surface-ink); color: var(--text-on-ink); font: var(--fw-bold) var(--fs-sm) / 1 var(--font-ui); transition: top var(--dur-fast) var(--ease-out); }
+.df-skip:focus { top: var(--s-4); }
+.df-num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: var(--ls-tight); }
+
+/* Layout utilities: as únicas regras responsivas por classe do sistema. Breakpoints 640 / 900 / 1200. */
+.df-page { padding: var(--s-7) var(--s-8) var(--s-10); max-width: var(--page-max); }
+.df-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s-5); }
+.df-split { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+.df-split > *, .df-split-even > *, .df-split-aside > *, .df-metrics > * { min-width: 0; }
+.df-split-even { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); }
+.df-split-aside { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s-5); align-items: start; }
+.df-hero { display: flex; align-items: center; gap: var(--s-6); }
+.df-hero > figure { flex: 0 0 auto; }
+.df-shell { display: flex; min-height: 100vh; }
+@media (max-width: 1199px) { .df-page { padding: var(--s-6) var(--s-6) var(--s-10); } }
+@media (max-width: 899px) { .df-split, .df-split-aside { grid-template-columns: minmax(0, 1fr); } .df-hero { flex-direction: column; align-items: flex-start; } .df-hero > figure { width: 100% !important; max-width: 360px; } }
+@media (max-width: 639px) { .df-page { padding: var(--s-5) var(--s-4) calc(var(--s-10) + 72px); } .df-split-even { grid-template-columns: minmax(0, 1fr); } .df-shell { flex-direction: column; } .df-metrics { grid-template-columns: minmax(0, 1fr); } }
+
+/* Impressão: a página pública da prova vira o documento. */
+@media print { .df-root { background: #fff; } .df-no-print { display: none !important; } }
