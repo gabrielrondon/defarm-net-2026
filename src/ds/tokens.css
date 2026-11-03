@@ -1,0 +1,140 @@
+/* DeFarm Design System · tokens
+   Fonte: Claude Design "DeFarm Design System" (projeto 9f23111e), tokens/{fonts,colors,typography,spacing,elevation,motion}.css
+   Portado em 2026-09-17. Valores exatos; nada arredondado.
+   Escopo: `.df-root` em vez de `:root` para conviver com o portal atual (shadcn/Tailwind) sem vazar. */
+
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+.df-root {
+  /* --- Verde Elétrico DeFarm --- */
+  --green-50: #EAFDF2; --green-100: #D2FBE3; --green-200: #A8F5C8; --green-300: #6EF0A6;
+  --green-400: #2EEA7B; --green-500: #18B35A; --green-600: #0F8E46; --green-700: #0A6633; --green-900: #053D1F;
+  /* --- Neutros grafite / papel --- */
+  --paper-0: #FFFFFF; --paper-1: #FAFAFA; --paper-2: #F4F6F4; --paper-3: #ECEFEC;
+  --gray-200: #E3E7E4; --gray-300: #CBD2CD; --gray-400: #9AA39D; --gray-500: #6B7280;
+  --gray-600: #4B5563; --gray-700: #374151; --gray-900: #111827;
+  /* --- Acentos funcionais --- */
+  --blue-100: #DCEBFF; --blue-300: #7FB6FF; --blue-400: #2E8BFF; --blue-500: #1666D6; --blue-700: #0F4694;
+  --amber-100: #FFF1D6; --amber-300: #FFCF6B; --amber-400: #FFB020; --amber-500: #D98600; --amber-700: #965C00;
+  --purple-100: #EDE3FF; --purple-300: #BE9BFF; --purple-400: #8A4FFF; --purple-500: #6B2FE0; --purple-700: #4A1DA3;
+  --red-100: #FFE1DE; --red-400: #F0453A; --red-500: #C92A20; --red-700: #8E1811;
+
+  /* --- Aliases semânticos --- */
+  --brand: var(--green-400); --brand-deep: var(--green-500); --brand-edge: var(--green-600);
+  --brand-gradient: linear-gradient(150deg, var(--green-400) 0%, var(--green-500) 100%);
+  --brand-gradient-soft: linear-gradient(150deg, var(--green-100) 0%, var(--green-200) 100%);
+
+  --surface-page: var(--paper-1);
+  --surface-sunken: var(--paper-2);
+  --surface-card: var(--paper-0);
+  --surface-inset: var(--paper-2);
+  --surface-ink: var(--gray-900);
+
+  --text-strong: var(--gray-900);
+  --text-body: var(--gray-700);
+  --text-muted: var(--gray-500);
+  --text-faint: var(--gray-400);
+  --text-on-brand: #04331A;
+  /* Verde como TEXTO: sempre --text-brand (g700, 6.8:1 no papel). --brand/g400 é só superfície. */
+  --text-brand: var(--green-700);
+  --text-brand-large: var(--green-600);
+  --text-anchor: var(--blue-700); --text-staging: var(--amber-700); --text-sealed: var(--purple-700); --text-danger: var(--red-500);
+  --text-on-ink: var(--paper-1);
+
+  --border-hair: var(--gray-200);
+  --border-firm: var(--gray-300);
+  --border-brand: var(--green-200);
+
+  /* estados / domínios */
+  --anchor: var(--blue-400); --anchor-deep: var(--blue-500); --anchor-soft: var(--blue-100);
+  --staging: var(--amber-400); --staging-deep: var(--amber-500); --staging-soft: var(--amber-100);
+  --sealed: var(--purple-400); --sealed-deep: var(--purple-500); --sealed-soft: var(--purple-100);
+  --danger: var(--red-400); --danger-deep: var(--red-500); --danger-soft: var(--red-100);
+  --ok: var(--green-400); --ok-deep: var(--green-500); --ok-soft: var(--green-100);
+  --focus-ring: color-mix(in oklch, var(--green-400) 55%, transparent);
+
+  /* --- Tipografia --- */
+  --font-display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-ui: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --fs-hero: 56px; --fs-metric: 44px; --fs-h1: 34px; --fs-h2: 26px; --fs-h3: 20px;
+  --fs-lead: 17px; --fs-body: 15px; --fs-sm: 13.5px; --fs-xs: 12px; --fs-micro: 10.5px;
+
+  --lh-tight: 1.05; --lh-snug: 1.2; --lh-body: 1.55; --lh-loose: 1.7;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700; --fw-black: 800;
+  --ls-tight: -0.03em; --ls-snug: -0.015em; --ls-normal: 0; --ls-caps: 0.09em; --ls-mono: -0.01em;
+
+  --text-metric: var(--fw-bold) var(--fs-metric) / var(--lh-tight) var(--font-display);
+  --text-title: var(--fw-bold) var(--fs-h2) / var(--lh-snug) var(--font-display);
+  --text-label: var(--fw-semibold) var(--fs-xs) / 1.2 var(--font-ui);
+  --text-code: var(--fw-medium) var(--fs-sm) / 1.5 var(--font-mono);
+
+  /* --- Espaço e raios --- */
+  --s-0: 0; --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+  --s-7: 32px; --s-8: 40px; --s-9: 48px; --s-10: 64px; --s-11: 80px; --s-12: 112px;
+
+  --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 20px; --r-xl: 24px; --r-2xl: 32px; --r-pill: 999px;
+
+  --gutter-card: var(--s-6);
+  --gutter-section: var(--s-9);
+  --stack-tight: var(--s-2);
+  --stack-body: var(--s-4);
+  --page-max: 1440px;
+  --nav-w: 248px;
+  --nav-w-collapsed: 76px;
+  --topbar-h: 72px;
+  --tap-min: 44px;
+  --bp-sm: 640px; --bp-md: 900px; --bp-lg: 1200px;
+  --border-w: 1.5px;
+
+  /* --- Relevo tátil --- */
+  --lift-1: 2px; --lift-2: 3px; --lift-3: 5px;
+
+  --border-tactile: #E5E7EB;
+  --border-tactile-deep: #D1D5DB;
+  --border-tactile-w: 2px;
+  --border-tactile-depth: 4px;
+  --elev-flat: 0 1px 0 var(--border-hair);
+  --elev-card: 0 3px 0 var(--paper-3), 0 6px 16px -10px rgba(17, 24, 39, .20);
+  --elev-card-hover: 0 5px 0 var(--paper-3), 0 14px 28px -14px rgba(17, 24, 39, .24);
+  --elev-raised: 0 3px 0 var(--gray-200), 0 10px 24px -12px rgba(17, 24, 39, .22);
+  --elev-overlay: 0 24px 60px -18px rgba(17, 24, 39, .34), 0 2px 0 var(--paper-3);
+  --elev-inset: inset 0 2px 0 rgba(17, 24, 39, .06);
+
+  --edge-brand: 0 3px 0 var(--brand-edge);
+  --edge-brand-press: 0 1px 0 var(--brand-edge);
+  --edge-neutral: 0 3px 0 var(--gray-300);
+  --edge-neutral-press: 0 1px 0 var(--gray-300);
+  --edge-ink: 0 3px 0 #000;
+  --edge-danger: 0 3px 0 var(--danger-deep);
+  --edge-anchor: 0 3px 0 var(--anchor-deep);
+  --edge-sealed: 0 3px 0 var(--sealed-deep);
+
+  --glow-brand: 0 0 0 6px color-mix(in oklch, var(--green-400) 22%, transparent);
+  --glow-anchor: 0 0 0 6px color-mix(in oklch, var(--blue-400) 20%, transparent);
+  --ring-focus: 0 0 0 3px var(--focus-ring);
+
+  /* --- Movimento --- */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-spring-soft: cubic-bezier(.22, 1.20, .36, 1);
+  --ease-spring-big: cubic-bezier(.30, 1.75, .55, 1);
+  --ease-out: cubic-bezier(.25, 1, .5, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+
+  --dur-instant: 80ms; --dur-tap: 120ms; --dur-fast: 180ms; --dur-base: 260ms;
+  --dur-drawer: 380ms; --dur-slow: 600ms; --dur-pulse: 2400ms;
+
+  --press-scale: .98; --press-shift: 2px;
+  --motion-tap: transform var(--dur-tap) var(--ease-out), box-shadow var(--dur-tap) var(--ease-out);
+  --motion-lift: transform var(--dur-base) var(--ease-spring), box-shadow var(--dur-base) var(--ease-spring);
+  --motion-enter: opacity var(--dur-fast) linear, transform var(--dur-base) var(--ease-spring);
+}
+
+@keyframes df-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--green-400) 60%, transparent) } 70% { box-shadow: 0 0 0 10px transparent } 100% { box-shadow: 0 0 0 0 transparent } }
+@keyframes df-pop { 0% { transform: scale(.94) translateY(6px); opacity: 0 } 100% { transform: scale(1) translateY(0); opacity: 1 } }
+@keyframes df-slide-up { 0% { transform: translateY(14px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
+@keyframes df-dash { to { stroke-dashoffset: -24 } }
+@keyframes df-shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+@keyframes df-spin { to { transform: rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .df-root * { animation-duration: .001ms !important; transition-duration: .001ms !important } }
