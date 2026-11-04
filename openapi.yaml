@@ -2778,7 +2778,11 @@ components:
           description: >-
             Operational warnings for the integrator. Free text, not a closed list. Includes,
             for example, a notice when the ingested items are not publicly visible because
-            their circuit is private and does not expose its items.
+            their circuit is private and does not expose its items. A warning about one row
+            starts with a stable code and the row's 0-based index, e.g.
+            `history_value_superseded: row 3: ...`: an animal data value at a `dataHistorico`
+            that an earlier request already replaced at that same `dataHistorico`, so it was
+            not applied; to correct the data, send it with a newer `dataHistorico`.
           items:
             type: string
     IngestionStatusResponse:
@@ -3073,7 +3077,7 @@ components:
             as a missing date; nothing was ingested for the row and `message` names the field to
             send; a date that is present but unreadable is `invalid_event_date`),
             `history_write_contention` (other requests were writing the same animal's history at
-            the same time; nothing was ingested for the row; resend it).
+            the same time; the animal data and history of the row were not written; resend it).
           x-extensible-enum:
           - missing_value_chain
           - invalid_value_chain
