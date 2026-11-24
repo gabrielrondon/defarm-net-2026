@@ -2689,7 +2689,11 @@ components:
           type: string
         reason:
           type: string
-          description: '`not_staging` (a circuit of your workspace that is not a staging circuit), `circuit_key` (a circuit-scoped key asked for another circuit) or `not_allowed`.'
+          description: 'For `source_circuit_not_allowed`: `not_staging` (a circuit of your workspace that is not a staging circuit), `circuit_key` (a circuit-scoped key asked for another circuit) or `not_allowed`. For the row warning `history_value_superseded` (asynchronous status only): `superseded`.'
+        row_index:
+          type: integer
+          minimum: 0
+          description: 0-based row of the payload, for a row warning (`history_value_superseded`). Absent for request-level warnings.
         requested_circuit_id:
           type: string
           format: uuid
@@ -2782,7 +2786,9 @@ components:
             starts with a stable code and the row's 0-based index, e.g.
             `history_value_superseded: row 3: ...`: an animal data value at a `dataHistorico`
             that an earlier request already replaced at that same `dataHistorico`, so it was
-            not applied; to correct the data, send it with a newer `dataHistorico`.
+            not applied; to correct the data, send it with a newer `dataHistorico`. Within one
+            request, for each animal, `dataHistorico` and field, only the last row counts, so
+            resending the same file never raises it. The dry run does not predict it.
           items:
             type: string
     IngestionStatusResponse:
@@ -2830,7 +2836,10 @@ components:
           description: >-
             Request-level warnings of this ingestion, the same `warnings[]` the `202` carried
             (e.g. `source_circuit_not_allowed`), kept from the first poll to the final status.
-            Absent when there are none.
+            Once finished, followed by the row warnings (`history_value_superseded`, with
+            `row_index` and `reason: superseded`; up to 1000,
+            `result_summary.row_warnings_count` has the full count). Absent when there are
+            none.
           items:
             $ref: '#/components/schemas/PartnerIntakeWarning'
     IngestionProgress:
