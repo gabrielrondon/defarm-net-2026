@@ -3088,7 +3088,11 @@ components:
             as a missing date; nothing was ingested for the row and `message` names the field to
             send; a date that is present but unreadable is `invalid_event_date`),
             `history_write_contention` (other requests were writing the same animal's history at
-            the same time; the animal data and history of the row were not written; resend it).
+            the same time; the animal data and history of the row were not written; resend it),
+            `animal_inactive` (the animal has a baixa with no reactivation after it, or was
+            slaughtered, and the row records an act of life dated after it, an undated one, or a
+            second baixa; nothing was ingested for the row; send the reactivation with its reason
+            first, while an abate is final).
           x-extensible-enum:
           - missing_value_chain
           - invalid_value_chain
@@ -3110,6 +3114,7 @@ components:
           - dfid_unavailable
           - operation_event_missing
           - history_write_contention
+          - animal_inactive
         message:
           type: string
           description: 'Human-readable error description with suggested next step.'
@@ -13783,6 +13788,17 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Item or circuit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: >-
+            `animal_inactive`: the animal has a baixa (item_terminated) with no reactivation
+            after it, or was slaughtered, and the event is an act of life (movement, arrival,
+            vaccination, treatment, weighing, classification, another baixa) dated after it or
+            undated. Acts dated on or before the baixa day still enter. Send the reactivation
+            first; an abate is final.
           content:
             application/json:
               schema:
