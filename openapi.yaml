@@ -2670,9 +2670,11 @@ components:
           type: array
           description: >-
             Request-level warnings: the request went through, but not entirely as asked. Absent
-            when there are none. Today the only code is `source_circuit_not_allowed` (API-key
-            ingestion with a `source_circuit_id` the key cannot use, while the strict mode is
-            off: the data went to the key's own circuit, named in `used_circuit_id`).
+            when there are none. `source_circuit_not_allowed`: API-key ingestion with a
+            `source_circuit_id` the key cannot use, while the strict mode is off (the data went
+            to the key's own circuit, named in `used_circuit_id`). After them, the row warnings
+            `history_value_superseded`, with `row_index` and `reason: superseded` (the same ones
+            `summary.warnings` has as text).
           items:
             $ref: '#/components/schemas/PartnerIntakeWarning'
     PartnerIntakeWarning:
@@ -2689,7 +2691,7 @@ components:
           type: string
         reason:
           type: string
-          description: 'For `source_circuit_not_allowed`: `not_staging` (a circuit of your workspace that is not a staging circuit), `circuit_key` (a circuit-scoped key asked for another circuit) or `not_allowed`. For the row warning `history_value_superseded` (asynchronous status only): `superseded`.'
+          description: 'For `source_circuit_not_allowed`: `not_staging` (a circuit of your workspace that is not a staging circuit), `circuit_key` (a circuit-scoped key asked for another circuit) or `not_allowed`. For the row warning `history_value_superseded`: `superseded`.'
         row_index:
           type: integer
           minimum: 0
