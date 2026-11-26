@@ -2,4 +2,7 @@
 # PRIMÁRIO, senão o passo de verificação independente cai no SPA (HTML). Proxy pro gateway,
 # ANTES do catch-all (primeira regra que casa vence).
 /.well-known/defarm-cert-signing-key  https://gateway.defarm.net/.well-known/defarm-cert-signing-key  200
+# Proxy do Check API (função Netlify). Precisa vir ANTES do catch-all: este arquivo é lido
+# antes do netlify.toml, então a regra de lá nunca era alcançada.
+/api/check/*  /.netlify/functions/check-api/:splat  200
 /*    /index.html   200
