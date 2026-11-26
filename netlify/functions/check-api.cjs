@@ -1,4 +1,4 @@
-const DEFAULT_CHECK_API_BASE = "https://check.89.167.96.182.sslip.io";
+const DEFAULT_CHECK_API_BASE = "https://check.defarm.net";
 const ALLOWED_HOST_SUFFIXES = [
   "defarm.net",
   "compliance.defarm.net",
