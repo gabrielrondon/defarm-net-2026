@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { AnchorStatus, PolygonMap, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
+import { CarFireCaption, useCarFireS2 } from "@/components/onboarding/CarFireCaption";
 import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { emitEudr, listEudrEmissions, getEudrEmission, getEudrEmissionFull, getPartnerUsage, type EudrStatement, type EudrEmissionSummary } from "@/lib/api/products";
 import { downloadEudrPdf, type EudrPdfLabels } from "@/lib/eudr-pdf";
@@ -145,6 +146,7 @@ export default function EudrScreen() {
   // Mapa REAL do polígono (satélite + CAR via /car/:car/geojson), como em /i/:dfid.
   // Busca pro CAR de origem do statement; se não resolver, cai no placeholder.
   const originCar = stmt.origin[0]?.car;
+  const fireS2 = useCarFireS2(view === "emitted" || view === "consulted" ? originCar : null);
   useEffect(() => {
     setMapGeo(null);
     // Só busca o mapa real de uma DDS REAL (emitida/consultada). No demo/estado
@@ -496,7 +498,10 @@ export default function EudrScreen() {
                 )}
               </div>
               {mapGeo ? (
-                <PropertyMap geojson={mapGeo} className="h-[220px] w-full overflow-hidden rounded-xl" />
+                <>
+                  <PropertyMap geojson={mapGeo} burnedAreas={fireS2} className="h-[220px] w-full overflow-hidden rounded-xl" />
+                  <CarFireCaption fire={fireS2} className="mt-2" />
+                </>
               ) : (
                 <PolygonMap ok={complianceOk} height={220} ring={ring} />
               )}

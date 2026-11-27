@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { AnchorStatus, anchorStateOf } from "@/components/proof";
 import { PropertyMap } from "@/components/onboarding/PropertyMap";
+import { CarFireCaption, useCarFireS2 } from "@/components/onboarding/CarFireCaption";
 import { getCarGeoJSON, type CarGeoJSON } from "@/lib/check-api/car";
 import { verifyEudrPublic, type EudrStatement } from "@/lib/api/products";
 import { downloadEudrPdf } from "@/lib/eudr-pdf";
@@ -48,6 +49,7 @@ export default function PublicEudrVerify() {
   }, [dfid]);
 
   const originCar = stmt?.origin?.[0]?.car;
+  const fireS2 = useCarFireS2(originCar);
   useEffect(() => {
     setMapGeo(null);
     if (!originCar) return;
@@ -252,7 +254,8 @@ export default function PublicEudrVerify() {
               {mapGeo && originCar && (
                 <section className="mt-5 rounded-2xl border border-border bg-card p-6">
                   <h3 className="mb-4 text-[18px] font-semibold">{t("eudr.origin_t")}</h3>
-                  <PropertyMap geojson={mapGeo} className="h-[260px] w-full overflow-hidden rounded-xl" />
+                  <PropertyMap geojson={mapGeo} burnedAreas={fireS2} className="h-[260px] w-full overflow-hidden rounded-xl" />
+                  <CarFireCaption fire={fireS2} className="mt-2" />
                   <p className="mt-3 font-mono text-[11px] text-muted-foreground">{t("eudr.map_hint")} · {originCar}</p>
                 </section>
               )}

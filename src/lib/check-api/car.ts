@@ -157,3 +157,36 @@ export async function getSampleCarNumbers(): Promise<string[]> {
 export function getRandomSampleCar(samples: string[]): string {
   return samples[Math.floor(Math.random() * samples.length)];
 }
+
+// --- Área queimada por CAR (Sentinel-2, classificador DeFarm) ---
+// GET /car/:car/fire-s2 — FeatureCollection com uma mancha por data de queima, já cortada
+// pelo polígono do CAR. 404 = CAR ainda não processado (cobertura inicial: MS 2024).
+
+export interface CarFireS2 {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    geometry: CarGeometry;
+    properties: { burnDate: string; areaHa: number };
+  }>;
+  properties: {
+    carNumber: string;
+    year: number;
+    burnedPct: number | null;
+    burnedHa: number | null;
+    observedPct: number | null;
+    lowerBound: boolean;
+    methodVersion: string;
+    computedAt: string;
+    availableYears: number[];
+    source: string;
+  };
+}
+
+export async function getCarFireS2(carNumber: string): Promise<CarFireS2 | null> {
+  try {
+    return await publicFetch<CarFireS2>(`/car/${encodeURIComponent(carNumber)}/fire-s2`);
+  } catch {
+    return null; // sem leitura para o CAR (ou serviço fora): o mapa segue sem a camada
+  }
+}

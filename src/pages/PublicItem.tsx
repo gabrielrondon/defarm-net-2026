@@ -75,6 +75,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getPrivateItemLocation } from "@/lib/api/join-requests";
 import { getItem } from "@/lib/api/items";
 import { PropertyMap, isRenderableGeoJson } from "@/components/onboarding/PropertyMap";
+import { CarFireCaption, useCarFireS2 } from "@/components/onboarding/CarFireCaption";
 import type { GeoJsonObject } from "geojson";
 import {
   Area,
@@ -2061,6 +2062,8 @@ export default function PublicItem() {
     () => (carValue ? isOfficialCarFormat(carValue) : false),
     [carValue]
   );
+  // Área queimada (Sentinel-2) do CAR aberto no diálogo; só busca com o diálogo aberto.
+  const carFireS2 = useCarFireS2(showCarDialog ? carDialogValue || carValue : null);
 
   const latestContentVersion = useMemo(() => {
     if (!proofs?.content_versions?.length) return null;
@@ -3938,7 +3941,10 @@ export default function PublicItem() {
                       <Loader2 className="h-4 w-4 animate-spin" /> {localized(metadataLocale, "Carregando mapa...", "Loading map...", "Cargando mapa...")}
                     </div>
                   ) : carGeojson ? (
-                    <PropertyMap geojson={carGeojson} className="h-64 w-full" />
+                    <>
+                      <PropertyMap geojson={carGeojson} burnedAreas={carFireS2} className="h-64 w-full" />
+                      <CarFireCaption fire={carFireS2} className="mt-2" />
+                    </>
                   ) : carGeoError ? (
                     <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200/60 rounded-md px-3 py-4">
                       <AlertTriangle className="h-4 w-4 shrink-0" /> {carGeoError}
