@@ -33,9 +33,16 @@ interface PropertyMapProps {
   geojson: GeoJsonObject;
   className?: string;
   compact?: boolean;
+  /** Camada por cima do polígono: áreas queimadas (GET /car/:car/fire-s2). Feature.properties: burnDate, areaHa. */
+  burnedAreas?: GeoJsonObject | null;
 }
 
-export function PropertyMap({ geojson, className = "", compact = false }: PropertyMapProps) {
+const fmtBurnDate = (iso: string) => {
+  const [y, m, d] = iso.split("-");
+  return d && m && y ? `${d}/${m}/${y}` : iso;
+};
+
+export function PropertyMap({ geojson, className = "", compact = false, burnedAreas = null }: PropertyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
 
@@ -70,6 +77,21 @@ export function PropertyMap({ geojson, className = "", compact = false }: Proper
       },
     }).addTo(map);
 
+    if (burnedAreas && isRenderableGeoJson(burnedAreas)) {
+      L.geoJSON(burnedAreas, {
+        style: { color: "#f97316", weight: 1, fillColor: "#ef4444", fillOpacity: 0.55 },
+        onEachFeature: (feature, layer) => {
+          const p = (feature?.properties ?? {}) as { burnDate?: string; areaHa?: number };
+          if (p.burnDate) {
+            layer.bindTooltip(
+              `${fmtBurnDate(p.burnDate)}${typeof p.areaHa === "number" ? ` · ${p.areaHa.toLocaleString(undefined, { maximumFractionDigits: 1 })} ha` : ""}`,
+              { sticky: true },
+            );
+          }
+        },
+      }).addTo(map);
+    }
+
     const padding: [number, number] = compact ? [15, 15] : [40, 40];
     const bounds = geoLayer.getBounds();
     if (bounds.isValid()) {
@@ -98,7 +120,7 @@ export function PropertyMap({ geojson, className = "", compact = false }: Proper
         mapInstance.current = null;
       }
     };
-  }, [geojson, compact]);
+  }, [geojson, compact, burnedAreas]);
 
   return (
     <div
