@@ -59,20 +59,22 @@ export function CarFireCaption({ fire, className = "" }: { fire: CarFireS2 | nul
     .map((d) => d.split("-").reverse().slice(0, 2).join("/"));
   return (
     <div className={`text-[12px] leading-snug ${className}`}>
-      <div className="flex items-center gap-1.5 font-medium" style={{ color: burned ? "#c2410c" : undefined }}>
-        <Flame className="h-3.5 w-3.5 shrink-0" />
-        {burned
-          ? t.burned(
-              (p.burnedHa ?? 0).toLocaleString(loc, { maximumFractionDigits: 0 }),
-              (p.burnedPct ?? 0).toLocaleString(loc, { maximumFractionDigits: 1 }),
-              p.year,
-            )
-          : t.none(p.year)}
-        {burned && dates.length > 0 && (
-          <span className="font-normal text-muted-foreground">
-            · {t.dates} {dates.join(", ")}
-          </span>
-        )}
+      <div className="flex items-start gap-1.5 font-medium" style={{ color: burned ? "#c2410c" : undefined }}>
+        <Flame className="mt-[2px] h-3.5 w-3.5 shrink-0" />
+        <span>
+          {burned
+            ? t.burned(
+                (p.burnedHa ?? 0).toLocaleString(loc, { maximumFractionDigits: 0 }),
+                (p.burnedPct ?? 0).toLocaleString(loc, { maximumFractionDigits: 1 }),
+                p.year,
+              )
+            : t.none(p.year)}
+          {burned && dates.length > 0 && (
+            <span className="font-normal text-muted-foreground">
+              {" "}· {t.dates} {dates.join(", ")}
+            </span>
+          )}
+        </span>
       </div>
       <div className="text-muted-foreground">{t.note}</div>
     </div>
